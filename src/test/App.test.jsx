@@ -6,79 +6,29 @@ beforeEach(() => {
   localStorage.clear();
 });
 
-describe('App navigation', () => {
-  it('renders the header title', () => {
+describe('Auth flow', () => {
+  it('shows login page when not authenticated', () => {
     render(<App />);
-    expect(screen.getByText('東京旅遊攻略')).toBeInTheDocument();
+    expect(screen.getByText('共享行事曆')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('your@email.com')).toBeInTheDocument();
   });
 
-  it('shows itinerary tab by default', () => {
+  it('can register a new account', async () => {
     render(<App />);
-    expect(screen.getByText('淺草寺')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('註冊'));
+    fireEvent.change(screen.getByPlaceholderText('你的名字'), { target: { value: '測試用戶' } });
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: 'test@example.com' } });
+    fireEvent.change(screen.getByPlaceholderText('至少 6 個字元'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByPlaceholderText('再次輸入密碼'), { target: { value: 'password123' } });
+    fireEvent.click(screen.getByRole('button', { name: '建立帳號' }));
+    expect(await screen.findByText('共享行事曆')).toBeInTheDocument();
   });
 
-  it('switches to dining tab', () => {
+  it('shows error on wrong password', async () => {
     render(<App />);
-    // Click dining tab in desktop nav (first occurrence)
-    fireEvent.click(screen.getAllByText('美食')[0]);
-    expect(screen.getByText('壽司大（築地）')).toBeInTheDocument();
-  });
-
-  it('switches to travel info tab', () => {
-    render(<App />);
-    fireEvent.click(screen.getAllByText('旅遊資訊')[0]);
-    expect(screen.getByText('交通指南')).toBeInTheDocument();
-  });
-
-  it('switches to favorites tab', () => {
-    render(<App />);
-    fireEvent.click(screen.getAllByText('收藏')[0]);
-    expect(screen.getByText('還沒有收藏項目')).toBeInTheDocument();
-  });
-
-  it('search filters itinerary spots', () => {
-    render(<App />);
-    const input = screen.getByPlaceholderText(/搜尋/);
-    fireEvent.change(input, { target: { value: '淺草' } });
-    expect(screen.getByText('淺草寺')).toBeInTheDocument();
-    expect(screen.queryByText('新宿御苑')).not.toBeInTheDocument();
-  });
-
-  it('search filters dining across tabs', () => {
-    render(<App />);
-    const input = screen.getByPlaceholderText(/搜尋/);
-    fireEvent.change(input, { target: { value: '一蘭' } });
-    // Switch to dining to see results
-    fireEvent.click(screen.getAllByText('美食')[0]);
-    expect(screen.getByText('一蘭拉麵（澀谷）')).toBeInTheDocument();
-  });
-
-  it('favorites badge shows count after favoriting', () => {
-    render(<App />);
-    // Click heart on first spot on day 1
-    const hearts = screen.getAllByLabelText('加入收藏');
-    fireEvent.click(hearts[0]);
-    // Badge with "1" should appear in nav
-    const badges = screen.getAllByText('1');
-    expect(badges.length).toBeGreaterThan(0);
-  });
-
-  it('favorited item appears in favorites tab', () => {
-    render(<App />);
-    const hearts = screen.getAllByLabelText('加入收藏');
-    fireEvent.click(hearts[0]); // favorite 淺草寺
-    fireEvent.click(screen.getAllByText('收藏')[0]);
-    expect(screen.getByText('淺草寺')).toBeInTheDocument();
-  });
-
-  it('unfavoriting from favorites tab removes the item', () => {
-    render(<App />);
-    // Favorite 淺草寺
-    fireEvent.click(screen.getAllByLabelText('加入收藏')[0]);
-    // Go to favorites
-    fireEvent.click(screen.getAllByText('收藏')[0]);
-    // Unfavorite
-    fireEvent.click(screen.getByLabelText('取消收藏'));
-    expect(screen.getByText('還沒有收藏項目')).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: 'nobody@example.com' } });
+    fireEvent.change(screen.getByPlaceholderText('••••••••'), { target: { value: 'wrongpass' } });
+    fireEvent.click(screen.getAllByRole('button', { name: '登入' })[1]);
+    expect(await screen.findByText('Email 或密碼錯誤')).toBeInTheDocument();
   });
 });
