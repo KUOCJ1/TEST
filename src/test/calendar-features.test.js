@@ -169,6 +169,40 @@ describe('expandRecurringEvents', () => {
     const result = expandRecurringEvents([noUntil], rangeStart, rangeEnd);
     expect(result.length).toBe(30); // all 30 days of June
   });
+
+  it('monthly recurrence generates instances on same day each month', () => {
+    const monthly = {
+      ...baseEvent,
+      id: 'm1',
+      startAt: '2026-01-15T09:00:00.000Z',
+      endAt:   '2026-01-15T10:00:00.000Z',
+      recurrence: { freq: 'monthly', until: '2026-06-30' },
+    };
+    const start = new Date('2026-01-01T00:00:00.000Z');
+    const end   = new Date('2026-06-30T23:59:59.000Z');
+    const result = expandRecurringEvents([monthly], start, end);
+    // Jan 15, Feb 15, Mar 15, Apr 15, May 15, Jun 15 = 6
+    expect(result).toHaveLength(6);
+    result.forEach(e => {
+      expect(new Date(e.startAt).getUTCDate()).toBe(15);
+    });
+  });
+
+  it('yearly recurrence generates one instance per year', () => {
+    const yearly = {
+      ...baseEvent,
+      id: 'y1',
+      startAt: '2024-03-20T09:00:00.000Z',
+      endAt:   '2024-03-20T10:00:00.000Z',
+      recurrence: { freq: 'yearly', until: '2027-12-31' },
+    };
+    const start = new Date('2024-01-01T00:00:00.000Z');
+    const end   = new Date('2027-12-31T23:59:59.000Z');
+    const result = expandRecurringEvents([yearly], start, end);
+    expect(result).toHaveLength(4); // 2024, 2025, 2026, 2027
+    const years = result.map(e => new Date(e.startAt).getUTCFullYear());
+    expect(years).toEqual([2024, 2025, 2026, 2027]);
+  });
 });
 
 // ── ICS import/export roundtrip ───────────────────────────────────
