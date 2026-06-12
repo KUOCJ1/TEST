@@ -465,6 +465,9 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
           <div className="flex items-center gap-3 py-2 px-3 bg-slate-50 rounded-xl">
             <button
               type="button"
+              role="switch"
+              aria-checked={form.isPrivate}
+              aria-label="私人事項"
               onClick={() => set('isPrivate', !form.isPrivate)}
               className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${
                 form.isPrivate ? 'bg-slate-600' : 'bg-slate-200'
