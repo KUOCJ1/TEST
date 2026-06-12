@@ -1,5 +1,6 @@
+import { useState, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { MONTH_NAMES, getWeekDays, formatWeekTitle, formatDayTitle } from '../../utils/calendar';
+import { MONTH_NAMES, getWeekDays, formatWeekTitle, formatDayTitle, formatDateInput } from '../../utils/calendar';
 
 const VIEWS = [
   { id: 'month', label: '月' },
@@ -13,7 +14,25 @@ function getTitle(view, date) {
   return formatDayTitle(date);
 }
 
-export default function CalendarHeader({ currentDate, view, onPrev, onNext, onToday, onViewChange, onAddEvent }) {
+export default function CalendarHeader({ currentDate, view, onPrev, onNext, onToday, onViewChange, onAddEvent, onNavigate }) {
+  const [showPicker, setShowPicker] = useState(false);
+  const pickerRef = useRef(null);
+
+  function handleTitleClick() {
+    setShowPicker(true);
+    setTimeout(() => pickerRef.current?.showPicker?.(), 50);
+  }
+
+  function handlePickerChange(e) {
+    if (!e.target.value) return;
+    onNavigate?.(new Date(e.target.value + (view === 'month' ? '-01' : '')));
+    setShowPicker(false);
+  }
+
+  const pickerValue = view === 'month'
+    ? `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
+    : formatDateInput(currentDate);
+
   return (
     <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-white shrink-0 gap-2 flex-wrap">
       {/* Left: nav + title */}
@@ -36,9 +55,24 @@ export default function CalendarHeader({ currentDate, view, onPrev, onNext, onTo
         >
           <ChevronRight size={18} />
         </button>
-        <h2 className="text-base font-semibold text-slate-800 ml-1 truncate">
-          {getTitle(view, currentDate)}
-        </h2>
+        <div className="relative ml-1">
+          <button
+            onClick={handleTitleClick}
+            className="text-base font-semibold text-slate-800 hover:text-indigo-600 transition-colors truncate"
+            title="點擊跳轉日期"
+          >
+            {getTitle(view, currentDate)}
+          </button>
+          <input
+            ref={pickerRef}
+            type={view === 'month' ? 'month' : 'date'}
+            value={pickerValue}
+            onChange={handlePickerChange}
+            onBlur={() => setShowPicker(false)}
+            className="absolute opacity-0 pointer-events-none top-0 left-0"
+            style={{ width: 1, height: 1 }}
+          />
+        </div>
       </div>
 
       {/* Right: view switcher + add button */}

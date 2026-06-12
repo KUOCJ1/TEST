@@ -613,6 +613,7 @@ export default function CalendarPage() {
             onToday={goToday}
             onViewChange={setView}
             onAddEvent={() => handleSlotClick(new Date())}
+            onNavigate={setCurrentDate}
           />
 
           <FilterBar
