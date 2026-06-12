@@ -224,7 +224,7 @@ export default function CalendarPage() {
       updateEvent(event.id, data);
     } else if (scope === 'future') {
       events
-        .filter(e => e.recurringBaseId === event.recurringBaseId && new Date(e.startAt) >= new Date(event.startAt))
+        .filter(e => (e.recurringBaseId || e.id) === event.id && new Date(e.startAt) >= new Date(event.startAt))
         .forEach(e => {
           const diff = new Date(data.startAt).getTime() - new Date(event.startAt).getTime();
           const dur = new Date(data.endAt).getTime() - new Date(data.startAt).getTime();
@@ -236,7 +236,7 @@ export default function CalendarPage() {
         });
     } else {
       events
-        .filter(e => e.recurringBaseId === event.recurringBaseId)
+        .filter(e => (e.recurringBaseId || e.id) === event.id)
         .forEach(e => {
           const diff = new Date(data.startAt).getTime() - new Date(event.startAt).getTime();
           const dur = new Date(data.endAt).getTime() - new Date(data.startAt).getTime();
@@ -274,11 +274,11 @@ export default function CalendarPage() {
       deleteEvent(event.id);
     } else if (scope === 'future') {
       events
-        .filter(e => e.recurringBaseId === event.recurringBaseId && new Date(e.startAt) >= new Date(event.startAt))
+        .filter(e => (e.recurringBaseId || e.id) === event.id && new Date(e.startAt) >= new Date(event.startAt))
         .forEach(e => deleteEvent(e.id));
     } else {
       events
-        .filter(e => e.recurringBaseId === event.recurringBaseId)
+        .filter(e => (e.recurringBaseId || e.id) === event.id)
         .forEach(e => deleteEvent(e.id));
     }
     addToast({ type: 'info', title: '事件已刪除', body: event.title });
