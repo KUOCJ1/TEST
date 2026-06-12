@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Calendar, Download, Upload, LogOut } from 'lucide-react';
 
 export default function GoogleSettingsModal({
@@ -11,6 +11,13 @@ export default function GoogleSettingsModal({
   const [inputClientId, setInputClientId] = useState(clientId || '');
   const [saved, setSaved] = useState(false);
   const fileRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = e => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
