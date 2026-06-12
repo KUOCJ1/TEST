@@ -87,7 +87,7 @@ export default function CalendarPage() {
   const [selectedIds, setSelectedIds] = useState(new Set());
 
   // ── Notifications ─────────────────────────────────────────────
-  const { permission, requestPermission, upcomingReminders, toasts, dismissToast } = useNotifications(events);
+  const { permission, requestPermission, upcomingReminders, toasts, addToast, dismissToast } = useNotifications(events);
 
   // ── Google Calendar ───────────────────────────────────────────
   const googleCalendar = useGoogleCalendar();
@@ -188,16 +188,21 @@ export default function CalendarPage() {
   }
 
   function handleSave(data) {
-    if (selectedEvent) updateEvent(selectedEvent.id, data);
-    else addEvent(data);
+    if (selectedEvent) {
+      updateEvent(selectedEvent.id, data);
+      addToast({ type: 'success', title: '事件已更新', body: data.title });
+    } else {
+      addEvent(data);
+      addToast({ type: 'success', title: '事件已新增', body: data.title });
+    }
     closeEventModal();
   }
 
   function handleDelete(id) {
-    if (confirm('確定要刪除這個事件嗎？')) {
-      deleteEvent(id);
-      closeEventModal();
-    }
+    const evt = events.find(e => e.id === id);
+    deleteEvent(id);
+    closeEventModal();
+    if (evt) addToast({ type: 'info', title: '事件已刪除', body: evt.title });
   }
 
   // ── Drag-and-drop (MonthView: day-level) ─────────────────────
@@ -208,14 +213,16 @@ export default function CalendarPage() {
     const newStart = new Date(new Date(evt.startAt).getTime() + diff);
     const newEnd   = new Date(new Date(evt.endAt).getTime() + diff);
     updateEvent(eventId, { ...evt, startAt: newStart.toISOString(), endAt: newEnd.toISOString() });
-  }, [events, updateEvent]);
+    addToast({ type: 'success', title: '已移動事件', body: evt.title });
+  }, [events, updateEvent, addToast]);
 
   // ── Drag-and-drop (WeekView/DayView: time-level) ─────────────
   const handleMoveEventToTime = useCallback((eventId, newStartAt, newEndAt) => {
     const evt = events.find(e => e.id === eventId);
     if (!evt) return;
     updateEvent(eventId, { ...evt, startAt: newStartAt, endAt: newEndAt });
-  }, [events, updateEvent]);
+    addToast({ type: 'success', title: '已移動事件', body: evt.title });
+  }, [events, updateEvent, addToast]);
 
   // ── Bulk select ──────────────────────────────────────────────
   function toggleSelectMode() {
@@ -234,10 +241,11 @@ export default function CalendarPage() {
 
   function deleteSelected() {
     if (!selectedIds.size) return;
-    if (!confirm(`確定要刪除選取的 ${selectedIds.size} 個事件嗎？`)) return;
+    const count = selectedIds.size;
     selectedIds.forEach(id => deleteEvent(id));
     setSelectedIds(new Set());
     setSelectMode(false);
+    addToast({ type: 'info', title: `已刪除 ${count} 個事件` });
   }
 
   function exportSelected() {
@@ -308,7 +316,7 @@ export default function CalendarPage() {
       addEvent({ ...e, title: e.title || '匯入事件' });
       count++;
     }
-    alert(`成功匯入 ${count} 個事件`);
+    addToast({ type: 'success', title: '匯入完成', body: `成功匯入 ${count} 個事件` });
   }
 
   return (

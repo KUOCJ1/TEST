@@ -108,5 +108,5 @@ export function useNotifications(events) {
     return () => clearInterval(id);
   }, [events, checkReminders]);
 
-  return { permission, requestPermission, upcomingReminders, toasts, dismissToast };
+  return { permission, requestPermission, upcomingReminders, toasts, addToast, dismissToast };
 }
