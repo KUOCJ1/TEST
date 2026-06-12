@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { generateId } from '../utils/calendar';
 
 const CalendarContext = createContext(null);
@@ -43,8 +43,13 @@ export function CalendarProvider({ children, userId }) {
     });
   }, [userId]);
 
+  const value = useMemo(
+    () => ({ events, addEvent, updateEvent, deleteEvent }),
+    [events, addEvent, updateEvent, deleteEvent]
+  );
+
   return (
-    <CalendarContext.Provider value={{ events, addEvent, updateEvent, deleteEvent }}>
+    <CalendarContext.Provider value={value}>
       {children}
     </CalendarContext.Provider>
   );

@@ -17,50 +17,50 @@ describe('AuthContext', () => {
     expect(result.current.currentUser).toBeNull();
   });
 
-  it('registers a new user', () => {
+  it('registers a new user', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
-    act(() => { result.current.register('Alice', 'alice@example.com', 'pass123'); });
+    await act(async () => { await result.current.register('Alice', 'alice@example.com', 'pass123'); });
     expect(result.current.currentUser).not.toBeNull();
     expect(result.current.currentUser.name).toBe('Alice');
   });
 
-  it('logs in an existing user', () => {
+  it('logs in an existing user', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
-    act(() => { result.current.register('Bob', 'bob@example.com', 'pass123'); });
+    await act(async () => { await result.current.register('Bob', 'bob@example.com', 'pass123'); });
     act(() => { result.current.logout(); });
     expect(result.current.currentUser).toBeNull();
-    act(() => { result.current.login('bob@example.com', 'pass123'); });
+    await act(async () => { await result.current.login('bob@example.com', 'pass123'); });
     expect(result.current.currentUser.name).toBe('Bob');
   });
 
-  it('throws on wrong password', () => {
+  it('throws on wrong password', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
-    act(() => { result.current.register('Carol', 'carol@example.com', 'correct'); });
+    await act(async () => { await result.current.register('Carol', 'carol@example.com', 'correct'); });
     act(() => { result.current.logout(); });
-    expect(() => {
-      act(() => { result.current.login('carol@example.com', 'wrong'); });
-    }).toThrow('Email 或密碼錯誤');
+    await expect(
+      act(async () => { await result.current.login('carol@example.com', 'wrong'); })
+    ).rejects.toThrow('Email 或密碼錯誤');
   });
 
-  it('throws when registering duplicate email', () => {
+  it('throws when registering duplicate email', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
-    act(() => { result.current.register('Dave', 'dave@example.com', 'pass123'); });
+    await act(async () => { await result.current.register('Dave', 'dave@example.com', 'pass123'); });
     act(() => { result.current.logout(); });
-    expect(() => {
-      act(() => { result.current.register('Dave2', 'dave@example.com', 'pass456'); });
-    }).toThrow('此 Email 已被使用');
+    await expect(
+      act(async () => { await result.current.register('Dave2', 'dave@example.com', 'pass456'); })
+    ).rejects.toThrow('此 Email 已被使用');
   });
 
-  it('persists session to localStorage', () => {
+  it('persists session to localStorage', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
-    act(() => { result.current.register('Eve', 'eve@example.com', 'pass123'); });
+    await act(async () => { await result.current.register('Eve', 'eve@example.com', 'pass123'); });
     const stored = JSON.parse(localStorage.getItem('cal_session'));
     expect(stored.name).toBe('Eve');
   });
 
-  it('logs out and clears session', () => {
+  it('logs out and clears session', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
-    act(() => { result.current.register('Frank', 'frank@example.com', 'pass123'); });
+    await act(async () => { await result.current.register('Frank', 'frank@example.com', 'pass123'); });
     act(() => { result.current.logout(); });
     expect(result.current.currentUser).toBeNull();
     expect(localStorage.getItem('cal_session')).toBeNull();

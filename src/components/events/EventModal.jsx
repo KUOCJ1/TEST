@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
-import { X, Trash2, Lock } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, Trash2, Lock, MapPin, Link, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useCalendar } from '../../context/CalendarContext';
 import { EVENT_COLORS, EVENT_TYPES, REMINDER_OPTIONS, getTypeDefaultColor, getColorHex } from '../../utils/colors';
+import { FREQ_OPTIONS } from '../../utils/recurrence';
+import { findConflicts } from '../../utils/conflicts';
 import { formatDateInput, formatTimeInput, combineDatetime } from '../../utils/calendar';
 
 const DEFAULT_FORM = {
@@ -17,6 +20,10 @@ const DEFAULT_FORM = {
   tags: '',
   description: '',
   reminder: '',
+  location: '',
+  url: '',
+  recurrenceFreq: '',
+  recurrenceUntil: '',
 };
 
 function buildForm(event, initialDate) {
@@ -36,6 +43,10 @@ function buildForm(event, initialDate) {
       tags: (event.tags || []).join(', '),
       description: event.description || '',
       reminder: event.reminder || '',
+      location: event.location || '',
+      url: event.url || '',
+      recurrenceFreq: event.recurrence?.freq || '',
+      recurrenceUntil: event.recurrence?.until || '',
     };
   }
   const base = initialDate || new Date();
@@ -47,6 +58,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
   const [form, setForm] = useState(() => buildForm(event, initialDate));
   const [error, setError] = useState('');
   const isMobile = useIsMobile();
+  const { events } = useCalendar();
 
   useEffect(() => {
     if (isOpen) {
@@ -58,9 +70,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
   function set(field, value) {
     setForm(f => {
       const next = { ...f, [field]: value };
-      // Auto-update color when type changes
       if (field === 'type') next.color = getTypeDefaultColor(value);
-      // Auto-extend end date to match start date if end is before start
       if (field === 'startDate' && next.endDate < value) next.endDate = value;
       return next;
     });
@@ -72,9 +82,21 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
     new Date(combineDatetime(form.endDate, form.endTime)) <
     new Date(combineDatetime(form.startDate, form.startTime));
 
+  const conflicts = useMemo(() => {
+    if (form.isAllDay || !form.startDate || !form.startTime || !form.endDate || !form.endTime) return [];
+    if (endBeforeStart) return [];
+    const candidate = {
+      startAt: combineDatetime(form.startDate, form.startTime),
+      endAt: combineDatetime(form.endDate, form.endTime),
+      isAllDay: false,
+    };
+    return findConflicts(events, candidate, event?.id);
+  }, [form.startDate, form.startTime, form.endDate, form.endTime, form.isAllDay, events, event?.id, endBeforeStart]);
+
   function handleSubmit(e) {
     e.preventDefault();
     if (!form.title.trim()) return setError('請輸入標題');
+    if (endBeforeStart) return setError('結束時間不可早於開始時間');
 
     const startAt = form.isAllDay
       ? new Date(`${form.startDate}T00:00:00`).toISOString()
@@ -83,12 +105,10 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
       ? new Date(`${form.endDate}T23:59:59`).toISOString()
       : combineDatetime(form.endDate, form.endTime);
 
-    if (new Date(endAt) < new Date(startAt)) return setError('結束時間不可早於開始時間');
-
-    const tags = form.tags
-      .split(',')
-      .map(t => t.trim())
-      .filter(Boolean);
+    const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean);
+    const recurrence = form.recurrenceFreq
+      ? { freq: form.recurrenceFreq, until: form.recurrenceUntil || null }
+      : null;
 
     onSave({
       title: form.title.trim(),
@@ -101,6 +121,9 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
       tags,
       description: form.description.trim(),
       reminder: form.reminder,
+      location: form.location.trim(),
+      url: form.url.trim(),
+      recurrence,
     });
   }
 
@@ -111,7 +134,9 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
   return (
     <div className={isMobile ? 'fixed inset-0 z-50 flex items-end' : 'fixed inset-0 z-50 flex items-center justify-center p-4'}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={isMobile ? 'relative bg-white rounded-t-2xl shadow-2xl w-full max-h-[92vh] overflow-y-auto animate-slide-up' : 'relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'}>
+      <div className={isMobile
+        ? 'relative bg-white rounded-t-2xl shadow-2xl w-full max-h-[92vh] overflow-y-auto animate-slide-up'
+        : 'relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h2 className="text-lg font-semibold text-slate-800">
@@ -136,7 +161,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
           </div>
 
           {/* Type + Color */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-start gap-4">
             <div className="flex-1">
               <label className="block text-xs font-medium text-slate-500 mb-1.5">類型</label>
               <div className="flex gap-2 flex-wrap">
@@ -237,6 +262,67 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
                 />
               )}
             </div>
+          </div>
+
+          {/* Conflict warning */}
+          {conflicts.length > 0 && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+              <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+              <p className="text-xs text-amber-700">
+                與「{conflicts[0].title}」時間重疊
+                {conflicts.length > 1 && `，及另外 ${conflicts.length - 1} 個事件`}
+              </p>
+            </div>
+          )}
+
+          {/* Recurrence */}
+          <div className="flex items-center gap-3">
+            <RefreshCw size={14} className="text-slate-400 shrink-0" />
+            <select
+              value={form.recurrenceFreq}
+              onChange={e => set('recurrenceFreq', e.target.value)}
+              className="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+            >
+              {FREQ_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            {form.recurrenceFreq && (
+              <>
+                <span className="text-xs text-slate-500 shrink-0">結束於</span>
+                <input
+                  type="date"
+                  value={form.recurrenceUntil}
+                  min={form.startDate}
+                  onChange={e => set('recurrenceUntil', e.target.value)}
+                  className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </>
+            )}
+          </div>
+
+          {/* Location */}
+          <div className="relative">
+            <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={form.location}
+              onChange={e => set('location', e.target.value)}
+              placeholder="新增地點"
+              className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* URL */}
+          <div className="relative">
+            <Link size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="url"
+              value={form.url}
+              onChange={e => set('url', e.target.value)}
+              placeholder="相關連結 https://..."
+              className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
 
           {/* Tags */}

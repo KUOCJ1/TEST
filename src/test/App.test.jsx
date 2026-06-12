@@ -21,7 +21,8 @@ describe('Auth flow', () => {
     fireEvent.change(screen.getByPlaceholderText('至少 6 個字元'), { target: { value: 'password123' } });
     fireEvent.change(screen.getByPlaceholderText('再次輸入密碼'), { target: { value: 'password123' } });
     fireEvent.click(screen.getByRole('button', { name: '建立帳號' }));
-    expect(await screen.findByText('共享行事曆')).toBeInTheDocument();
+    // After registration, CalendarPage should show the user's name
+    expect(await screen.findByText('測試用戶')).toBeInTheDocument();
   });
 
   it('shows error on wrong password', async () => {
