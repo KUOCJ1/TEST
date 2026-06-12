@@ -70,7 +70,7 @@ const EventPill = memo(function EventPill({
 const DayCell = memo(function DayCell({
   day, events, onDayClick, onEventClick, currentUserId, compact,
   selectMode, selectedIds, onToggleSelect,
-  onDragStart, onDrop,
+  onDragStart, onDrop, onNavigateDay,
 }) {
   const today = isToday(day.date);
   const visible = events.slice(0, MAX_VISIBLE);
@@ -121,7 +121,7 @@ const DayCell = memo(function DayCell({
           ))}
           {overflow > 0 && (
             <button
-              onClick={e => { e.stopPropagation(); onDayClick(day.date); }}
+              onClick={e => { e.stopPropagation(); (onNavigateDay || onDayClick)(day.date); }}
               className="w-full text-left text-xs text-indigo-500 px-1.5 hover:underline"
             >
               + {overflow} 更多
@@ -136,7 +136,7 @@ const DayCell = memo(function DayCell({
 export default function MonthView({
   currentDate, events, onDayClick, onEventClick, currentUserId,
   selectMode, selectedIds, onToggleSelect,
-  onMoveEvent,
+  onMoveEvent, onNavigateDay,
 }) {
   const isMobile = useIsMobile();
   const year = currentDate.getFullYear();
@@ -189,6 +189,7 @@ export default function MonthView({
               onToggleSelect={onToggleSelect}
               onDragStart={handleDragStart}
               onDrop={handleDrop}
+              onNavigateDay={onNavigateDay}
             />
           );
         })}

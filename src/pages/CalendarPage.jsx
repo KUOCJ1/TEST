@@ -638,6 +638,7 @@ export default function CalendarPage() {
               selectedIds={selectedIds}
               onToggleSelect={toggleSelectId}
               onMoveEvent={handleMoveEvent}
+              onNavigateDay={date => { setCurrentDate(date); setView('day'); }}
             />
           )}
           {view === 'week' && (
