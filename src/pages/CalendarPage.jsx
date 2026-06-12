@@ -499,7 +499,7 @@ export default function CalendarPage() {
             onPrev={() => navigate(-1)}
             onNext={() => navigate(1)}
             onToday={goToday}
-            onViewChange={v => { setView(v); goToday(); }}
+            onViewChange={setView}
             onAddEvent={() => handleSlotClick(new Date())}
           />
 
@@ -576,13 +576,19 @@ export default function CalendarPage() {
       <CreateGroupModal
         isOpen={showCreateGroup}
         onClose={() => setShowCreateGroup(false)}
-        onCreated={g => setActiveGroupId(g.id)}
+        onCreated={g => {
+          setActiveGroupId(g.id);
+          addToast({ type: 'success', title: '已建立群組', body: g.name });
+        }}
       />
 
       <JoinGroupModal
         isOpen={showJoinGroup}
         onClose={() => setShowJoinGroup(false)}
-        onJoined={g => setActiveGroupId(g.id)}
+        onJoined={g => {
+          setActiveGroupId(g.id);
+          addToast({ type: 'success', title: '已加入群組', body: g.name });
+        }}
       />
 
       {managingGroupId && (
