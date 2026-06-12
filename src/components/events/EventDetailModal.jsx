@@ -1,4 +1,5 @@
-import { X, Clock, Tag, Lock, User, Users, ExternalLink, MapPin, Link, RefreshCw, Copy } from 'lucide-react';
+import { X, Clock, Tag, Lock, User, Users, ExternalLink, MapPin, Link, RefreshCw, Copy, Download } from 'lucide-react';
+import { exportToIcs } from '../../utils/ics';
 import { getColorHex } from '../../utils/colors';
 import { formatDisplayTime } from '../../utils/calendar';
 import { FREQ_OPTIONS } from '../../utils/recurrence';
@@ -7,6 +8,17 @@ const TYPE_LABELS = { work: '工作', meeting: '會議', personal: '私人', rem
 
 function freqLabel(freq) {
   return FREQ_OPTIONS.find(o => o.value === freq)?.label || freq;
+}
+
+function exportSingleEvent(event) {
+  const content = exportToIcs([event]);
+  const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${event.title.replace(/[^\w一-鿿]/g, '_')}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCopy }) {
@@ -163,7 +175,7 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
         )}
 
         {/* Footer */}
-        {!isPrivate && (event?.htmlLink || (onEdit && event?.source !== 'google') || onCopy) && (
+        {!isPrivate && (
           <div className="border-t border-slate-100 px-5 py-3 flex justify-between items-center gap-3">
             <div className="flex items-center gap-2">
               {event?.htmlLink && (
@@ -171,21 +183,32 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
                   href={event.htmlLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
                 >
                   <ExternalLink size={13} />
                   在 Google 開啟
                 </a>
               )}
-              {onCopy && event?.source !== 'google' && (
-                <button
-                  onClick={onCopy}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                  title="複製事件"
-                >
-                  <Copy size={13} />
-                  複製
-                </button>
+              {event?.source !== 'google' && (
+                <>
+                  <button
+                    onClick={() => exportSingleEvent(event)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                    title="匯出為 .ics"
+                  >
+                    <Download size={13} />
+                  </button>
+                  {onCopy && (
+                    <button
+                      onClick={onCopy}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                      title="複製事件"
+                    >
+                      <Copy size={13} />
+                      複製
+                    </button>
+                  )}
+                </>
               )}
             </div>
             {onEdit && event?.source !== 'google' && (
