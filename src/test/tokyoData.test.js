@@ -1,138 +1,206 @@
-import { describe, it, expect } from 'vitest';
-import { itinerary, restaurants, travelInfo } from '../data/tokyo';
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  getDaysInMonth,
+  getFirstDayOfMonth,
+  getMonthCalendarDays,
+  isSameDay,
+  formatDateInput,
+  combineDatetime,
+  getWeekStart,
+  getWeekDays,
+  layoutDayEvents,
+  formatWeekTitle,
+  formatDayTitle,
+  generateId,
+} from '../utils/calendar';
 
-describe('itinerary data', () => {
-  it('has exactly 5 days', () => {
-    expect(itinerary).toHaveLength(5);
+beforeEach(() => {
+  localStorage.clear();
+});
+
+describe('getDaysInMonth', () => {
+  it('returns 30 for June', () => {
+    expect(getDaysInMonth(2026, 5)).toBe(30);
   });
 
-  it('days are numbered 1 to 5', () => {
-    const days = itinerary.map((d) => d.day);
-    expect(days).toEqual([1, 2, 3, 4, 5]);
+  it('returns 31 for January', () => {
+    expect(getDaysInMonth(2026, 0)).toBe(31);
   });
 
-  it('every day has at least 2 spots', () => {
-    itinerary.forEach((d) => {
-      expect(d.spots.length).toBeGreaterThanOrEqual(2);
-    });
+  it('returns 28 for February 2025 (non-leap)', () => {
+    expect(getDaysInMonth(2025, 1)).toBe(28);
   });
 
-  it('every spot has required fields', () => {
-    itinerary.forEach((day) => {
-      day.spots.forEach((spot) => {
-        expect(spot).toHaveProperty('id');
-        expect(spot).toHaveProperty('name');
-        expect(spot).toHaveProperty('desc');
-        expect(spot).toHaveProperty('address');
-        expect(spot).toHaveProperty('lat');
-        expect(spot).toHaveProperty('lng');
-        expect(spot).toHaveProperty('tag');
-        expect(spot).toHaveProperty('duration');
-        expect(spot).toHaveProperty('tip');
-      });
-    });
-  });
-
-  it('all spot ids are unique', () => {
-    const ids = itinerary.flatMap((d) => d.spots.map((s) => s.id));
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it('spot coordinates are within Tokyo bounds', () => {
-    itinerary.forEach((day) => {
-      day.spots.forEach((spot) => {
-        expect(spot.lat).toBeGreaterThan(35.5);
-        expect(spot.lat).toBeLessThan(35.9);
-        expect(spot.lng).toBeGreaterThan(139.5);
-        expect(spot.lng).toBeLessThan(140.0);
-      });
-    });
+  it('returns 29 for February 2024 (leap)', () => {
+    expect(getDaysInMonth(2024, 1)).toBe(29);
   });
 });
 
-describe('restaurants data', () => {
-  it('has at least 20 restaurants', () => {
-    expect(restaurants.length).toBeGreaterThanOrEqual(20);
+describe('getMonthCalendarDays', () => {
+  it('always returns exactly 42 days', () => {
+    for (let m = 0; m < 12; m++) {
+      expect(getMonthCalendarDays(2026, m)).toHaveLength(42);
+    }
   });
 
-  it('every restaurant has required fields', () => {
-    restaurants.forEach((r) => {
-      expect(r).toHaveProperty('id');
-      expect(r).toHaveProperty('name');
-      expect(r).toHaveProperty('cuisine');
-      expect(r).toHaveProperty('priceRange');
-      expect(r).toHaveProperty('address');
-      expect(r).toHaveProperty('lat');
-      expect(r).toHaveProperty('lng');
-      expect(r).toHaveProperty('desc');
-      expect(r).toHaveProperty('mustTry');
-    });
+  it('first day of grid is Sunday when month starts on Sunday', () => {
+    // 2026-03 starts on Sunday
+    const days = getMonthCalendarDays(2026, 2);
+    expect(days[0].date.getDay()).toBe(0);
+    expect(days[0].isCurrentMonth).toBe(true);
   });
 
-  it('all restaurant ids are unique', () => {
-    const ids = restaurants.map((r) => r.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it('price range is one of ¥, ¥¥, ¥¥¥', () => {
-    const valid = ['¥', '¥¥', '¥¥¥'];
-    restaurants.forEach((r) => {
-      expect(valid).toContain(r.priceRange);
-    });
-  });
-
-  it('mustTry is an array with at least one item', () => {
-    restaurants.forEach((r) => {
-      expect(Array.isArray(r.mustTry)).toBe(true);
-      expect(r.mustTry.length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  it('covers multiple cuisine types', () => {
-    const cuisines = new Set(restaurants.map((r) => r.cuisine));
-    expect(cuisines.size).toBeGreaterThanOrEqual(4);
+  it('marks prev/next month days correctly', () => {
+    const days = getMonthCalendarDays(2026, 5);
+    const current = days.filter(d => d.isCurrentMonth);
+    const other = days.filter(d => !d.isCurrentMonth);
+    expect(current).toHaveLength(30);
+    expect(other).toHaveLength(12);
   });
 });
 
-describe('travelInfo data', () => {
-  it('has transport options', () => {
-    expect(travelInfo.transport.length).toBeGreaterThanOrEqual(3);
+describe('isSameDay', () => {
+  it('returns true for identical dates', () => {
+    expect(isSameDay(new Date(2026, 5, 9), new Date(2026, 5, 9))).toBe(true);
   });
 
-  it('has app recommendations', () => {
-    expect(travelInfo.apps.length).toBeGreaterThanOrEqual(4);
+  it('returns false when days differ', () => {
+    expect(isSameDay(new Date(2026, 5, 9), new Date(2026, 5, 10))).toBe(false);
   });
 
-  it('has tips', () => {
-    expect(travelInfo.tips.length).toBeGreaterThanOrEqual(4);
-  });
-
-  it('has emergency contacts', () => {
-    expect(travelInfo.emergency.police).toBe('110');
-    expect(travelInfo.emergency.ambulance).toBe('119');
-    expect(travelInfo.emergency.touristHotline).toBeTruthy();
-  });
-
-  it('has budget reference', () => {
-    expect(travelInfo.budget).toHaveProperty('accommodation');
-    expect(travelInfo.budget).toHaveProperty('meal');
-    expect(travelInfo.budget).toHaveProperty('transport');
-    expect(travelInfo.budget).toHaveProperty('daily');
-  });
-
-  it('all transport items have mapQuery for Google Maps linking', () => {
-    travelInfo.transport.forEach((t) => {
-      expect(t).toHaveProperty('mapQuery');
-      expect(t.mapQuery.length).toBeGreaterThan(0);
-    });
+  it('ignores time component', () => {
+    expect(isSameDay(new Date(2026, 5, 9, 8, 0), new Date(2026, 5, 9, 23, 59))).toBe(true);
   });
 });
 
-describe('no duplicate ids across spots and restaurants', () => {
-  it('spot and restaurant ids never clash', () => {
-    const spotIds = itinerary.flatMap((d) => d.spots.map((s) => s.id));
-    const restaurantIds = restaurants.map((r) => r.id);
-    const overlap = spotIds.filter((id) => restaurantIds.includes(id));
-    expect(overlap).toEqual([]);
+describe('formatDateInput', () => {
+  it('formats date as YYYY-MM-DD', () => {
+    expect(formatDateInput(new Date(2026, 0, 5))).toBe('2026-01-05');
+  });
+
+  it('pads month and day with leading zeros', () => {
+    expect(formatDateInput(new Date(2026, 8, 3))).toBe('2026-09-03');
+  });
+});
+
+describe('combineDatetime', () => {
+  it('combines date and time strings into ISO string', () => {
+    const result = combineDatetime('2026-06-09', '10:30');
+    const parsed = new Date(result);
+    expect(parsed.getFullYear()).toBe(2026);
+    expect(parsed.getMonth()).toBe(5);
+    expect(parsed.getDate()).toBe(9);
+    expect(parsed.getHours()).toBe(10);
+    expect(parsed.getMinutes()).toBe(30);
+  });
+});
+
+describe('generateId', () => {
+  it('returns a non-empty string', () => {
+    expect(typeof generateId()).toBe('string');
+    expect(generateId().length).toBeGreaterThan(0);
+  });
+
+  it('generates unique ids', () => {
+    const ids = new Set(Array.from({ length: 100 }, generateId));
+    expect(ids.size).toBe(100);
+  });
+});
+
+describe('getWeekStart', () => {
+  it('returns Sunday for a Wednesday', () => {
+    const wed = new Date(2026, 5, 10); // Wed June 10
+    const start = getWeekStart(wed);
+    expect(start.getDay()).toBe(0);
+    expect(start.getDate()).toBe(7); // June 7 is Sunday
+  });
+
+  it('returns same day if already Sunday', () => {
+    const sun = new Date(2026, 5, 7);
+    const start = getWeekStart(sun);
+    expect(start.getDate()).toBe(7);
+  });
+});
+
+describe('getWeekDays', () => {
+  it('returns exactly 7 days', () => {
+    expect(getWeekDays(new Date(2026, 5, 9))).toHaveLength(7);
+  });
+
+  it('starts on Sunday', () => {
+    const days = getWeekDays(new Date(2026, 5, 9));
+    expect(days[0].getDay()).toBe(0);
+  });
+
+  it('ends on Saturday', () => {
+    const days = getWeekDays(new Date(2026, 5, 9));
+    expect(days[6].getDay()).toBe(6);
+  });
+});
+
+describe('layoutDayEvents', () => {
+  const makeEvent = (id, startH, endH) => ({
+    id,
+    startAt: new Date(2026, 5, 9, startH, 0).toISOString(),
+    endAt:   new Date(2026, 5, 9, endH,   0).toISOString(),
+  });
+
+  it('returns empty array for no events', () => {
+    expect(layoutDayEvents([])).toEqual([]);
+  });
+
+  it('single event gets col 0, totalCols 1', () => {
+    const result = layoutDayEvents([makeEvent('a', 10, 11)]);
+    expect(result[0].col).toBe(0);
+    expect(result[0].totalCols).toBe(1);
+  });
+
+  it('two non-overlapping events both get col 0', () => {
+    const result = layoutDayEvents([makeEvent('a', 9, 10), makeEvent('b', 11, 12)]);
+    expect(result.find(r => r.event.id === 'a').col).toBe(0);
+    expect(result.find(r => r.event.id === 'b').col).toBe(0);
+  });
+
+  it('two overlapping events get different columns', () => {
+    const result = layoutDayEvents([makeEvent('a', 9, 11), makeEvent('b', 10, 12)]);
+    const cols = result.map(r => r.col);
+    expect(new Set(cols).size).toBe(2);
+  });
+
+  it('overlapping events report totalCols >= 2', () => {
+    const result = layoutDayEvents([makeEvent('a', 9, 11), makeEvent('b', 10, 12)]);
+    expect(result.every(r => r.totalCols >= 2)).toBe(true);
+  });
+
+  it('non-overlapping event after overlap group gets totalCols 1', () => {
+    const result = layoutDayEvents([makeEvent('a', 9, 10), makeEvent('b', 9, 10), makeEvent('c', 14, 15)]);
+    expect(result.find(r => r.event.id === 'c').totalCols).toBe(1);
+  });
+});
+
+describe('formatWeekTitle', () => {
+  it('same-month week shows date range', () => {
+    const days = getWeekDays(new Date(2026, 5, 9));
+    const title = formatWeekTitle(days);
+    expect(title).toContain('6 月');
+  });
+
+  it('cross-month week shows both months', () => {
+    const days = getWeekDays(new Date(2026, 5, 29)); // week spanning June/July
+    const title = formatWeekTitle(days);
+    expect(title).toMatch(/6|7/);
+  });
+});
+
+describe('formatDayTitle', () => {
+  it('includes day of week', () => {
+    const title = formatDayTitle(new Date(2026, 5, 9)); // Tuesday
+    expect(title).toContain('星期二');
+  });
+
+  it('includes month and date', () => {
+    const title = formatDayTitle(new Date(2026, 5, 9));
+    expect(title).toContain('6');
+    expect(title).toContain('9');
   });
 });

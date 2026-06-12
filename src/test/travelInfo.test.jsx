@@ -1,83 +1,95 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import TravelInfoTab from '../components/TravelInfoTab';
-import { travelInfo } from '../data/tokyo';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import EventModal from '../components/events/EventModal';
 
-describe('TravelInfoTab', () => {
-  it('renders all section headings', () => {
-    render(<TravelInfoTab travelInfo={travelInfo} />);
-    expect(screen.getByText('交通指南')).toBeInTheDocument();
-    expect(screen.getByText('實用 App')).toBeInTheDocument();
-    expect(screen.getByText('文化禮儀小提示')).toBeInTheDocument();
-    expect(screen.getByText('預算參考')).toBeInTheDocument();
-    expect(screen.getByText('緊急聯絡')).toBeInTheDocument();
+const baseProps = {
+  isOpen: true,
+  onClose: vi.fn(),
+  onSave: vi.fn(),
+  onDelete: vi.fn(),
+  event: null,
+  initialDate: new Date(2026, 5, 9),
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
+});
+
+describe('EventModal', () => {
+  it('renders title input', () => {
+    render(<EventModal {...baseProps} />);
+    expect(screen.getByPlaceholderText('事件標題')).toBeInTheDocument();
   });
 
-  it('renders all transport names', () => {
-    render(<TravelInfoTab travelInfo={travelInfo} />);
-    travelInfo.transport.forEach((t) => {
-      expect(screen.getByText(t.name)).toBeInTheDocument();
-    });
+  it('renders all event type buttons', () => {
+    render(<EventModal {...baseProps} />);
+    expect(screen.getByText('工作')).toBeInTheDocument();
+    expect(screen.getByText('會議')).toBeInTheDocument();
+    expect(screen.getByText('私人')).toBeInTheDocument();
+    expect(screen.getByText('提醒')).toBeInTheDocument();
   });
 
-  it('transport detail is hidden by default', () => {
-    render(<TravelInfoTab travelInfo={travelInfo} />);
-    // First transport desc should not be visible until expanded
-    expect(screen.queryByText(travelInfo.transport[0].desc)).not.toBeInTheDocument();
+  it('shows validation error when submitting empty title', () => {
+    render(<EventModal {...baseProps} />);
+    fireEvent.click(screen.getByText('新增'));
+    expect(screen.getByText('請輸入標題')).toBeInTheDocument();
   });
 
-  it('expands transport detail on click', () => {
-    render(<TravelInfoTab travelInfo={travelInfo} />);
-    fireEvent.click(screen.getByText(travelInfo.transport[0].name));
-    expect(screen.getByText(travelInfo.transport[0].desc)).toBeInTheDocument();
+  it('calls onSave with correct data when form is valid', () => {
+    render(<EventModal {...baseProps} />);
+    fireEvent.change(screen.getByPlaceholderText('事件標題'), { target: { value: '團隊會議' } });
+    fireEvent.click(screen.getByText('新增'));
+    expect(baseProps.onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '團隊會議' })
+    );
   });
 
-  it('collapses transport detail on second click', () => {
-    render(<TravelInfoTab travelInfo={travelInfo} />);
-    const btn = screen.getByText(travelInfo.transport[0].name);
-    fireEvent.click(btn);
-    fireEvent.click(btn);
-    expect(screen.queryByText(travelInfo.transport[0].desc)).not.toBeInTheDocument();
+  it('calls onClose when cancel is clicked', () => {
+    render(<EventModal {...baseProps} />);
+    fireEvent.click(screen.getByText('取消'));
+    expect(baseProps.onClose).toHaveBeenCalled();
   });
 
-  it('only one transport item expanded at a time', () => {
-    render(<TravelInfoTab travelInfo={travelInfo} />);
-    fireEvent.click(screen.getByText(travelInfo.transport[0].name));
-    fireEvent.click(screen.getByText(travelInfo.transport[1].name));
-    expect(screen.queryByText(travelInfo.transport[0].desc)).not.toBeInTheDocument();
-    expect(screen.getByText(travelInfo.transport[1].desc)).toBeInTheDocument();
+  it('shows edit mode when event is provided', () => {
+    const event = {
+      id: 'e1',
+      title: '既有事件',
+      type: 'work',
+      color: 'blue',
+      startAt: '2026-06-09T10:00:00.000Z',
+      endAt: '2026-06-09T11:00:00.000Z',
+      isAllDay: false,
+      isPrivate: false,
+      tags: [],
+      description: '',
+      reminder: '',
+    };
+    render(<EventModal {...baseProps} event={event} />);
+    expect(screen.getByText('編輯事件')).toBeInTheDocument();
+    expect(screen.getByText('刪除')).toBeInTheDocument();
   });
 
-  it('expanded transport shows a Google Maps link', () => {
-    render(<TravelInfoTab travelInfo={travelInfo} />);
-    fireEvent.click(screen.getByText(travelInfo.transport[0].name));
-    const mapLinks = screen.getAllByText('Google Maps 查詢');
-    expect(mapLinks[0].closest('a')).toHaveAttribute('href', expect.stringContaining('google.com/maps'));
+  it('does not render when isOpen is false', () => {
+    render(<EventModal {...baseProps} isOpen={false} />);
+    expect(screen.queryByPlaceholderText('事件標題')).not.toBeInTheDocument();
   });
 
-  it('renders all app names', () => {
-    render(<TravelInfoTab travelInfo={travelInfo} />);
-    travelInfo.apps.forEach((app) => {
-      expect(screen.getByText(app.name)).toBeInTheDocument();
-    });
-  });
-
-  it('renders all culture tips', () => {
-    render(<TravelInfoTab travelInfo={travelInfo} />);
-    travelInfo.tips.forEach((tip) => {
-      expect(screen.getByText(tip.title)).toBeInTheDocument();
-    });
-  });
-
-  it('renders emergency numbers as telephone links', () => {
-    render(<TravelInfoTab travelInfo={travelInfo} />);
-    expect(screen.getByText('110').closest('a')).toHaveAttribute('href', 'tel:110');
-    expect(screen.getByText('119').closest('a')).toHaveAttribute('href', 'tel:119');
-  });
-
-  it('renders budget rows', () => {
-    render(<TravelInfoTab travelInfo={travelInfo} />);
-    expect(screen.getByText('住宿')).toBeInTheDocument();
-    expect(screen.getByText('每日總計')).toBeInTheDocument();
+  it('pre-fills tags when editing', () => {
+    const event = {
+      id: 'e1',
+      title: 'Tagged Event',
+      type: 'work',
+      color: 'blue',
+      startAt: '2026-06-09T10:00:00.000Z',
+      endAt: '2026-06-09T11:00:00.000Z',
+      isAllDay: false,
+      isPrivate: false,
+      tags: ['行銷', '重要'],
+      description: '',
+      reminder: '',
+    };
+    render(<EventModal {...baseProps} event={event} />);
+    expect(screen.getByDisplayValue('行銷, 重要')).toBeInTheDocument();
   });
 });

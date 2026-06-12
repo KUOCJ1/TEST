@@ -1,67 +1,221 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useFavorites } from '../hooks/useFavorites';
-
-const KEY = 'test-favorites';
+import React from 'react';
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import { CalendarProvider, useCalendar } from '../context/CalendarContext';
+import { GroupProvider, useGroups } from '../context/GroupContext';
 
 beforeEach(() => {
   localStorage.clear();
 });
 
-describe('useFavorites', () => {
-  it('starts with empty favorites', () => {
-    const { result } = renderHook(() => useFavorites(KEY));
-    const [favorites] = result.current;
-    expect(favorites).toEqual([]);
+const authWrapper = ({ children }) => React.createElement(AuthProvider, null, children);
+
+describe('AuthContext', () => {
+  it('starts with no current user', () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
+    expect(result.current.currentUser).toBeNull();
   });
 
-  it('adds a favorite on toggle', () => {
-    const { result } = renderHook(() => useFavorites(KEY));
-    act(() => result.current[1]('s1'));
-    expect(result.current[0]).toContain('s1');
+  it('registers a new user', () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
+    act(() => { result.current.register('Alice', 'alice@example.com', 'pass123'); });
+    expect(result.current.currentUser).not.toBeNull();
+    expect(result.current.currentUser.name).toBe('Alice');
   });
 
-  it('removes a favorite when toggled again', () => {
-    const { result } = renderHook(() => useFavorites(KEY));
-    act(() => result.current[1]('s1'));
-    act(() => result.current[1]('s1'));
-    expect(result.current[0]).not.toContain('s1');
+  it('logs in an existing user', () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
+    act(() => { result.current.register('Bob', 'bob@example.com', 'pass123'); });
+    act(() => { result.current.logout(); });
+    expect(result.current.currentUser).toBeNull();
+    act(() => { result.current.login('bob@example.com', 'pass123'); });
+    expect(result.current.currentUser.name).toBe('Bob');
   });
 
-  it('can hold multiple favorites', () => {
-    const { result } = renderHook(() => useFavorites(KEY));
-    act(() => result.current[1]('s1'));
-    act(() => result.current[1]('r3'));
-    expect(result.current[0]).toEqual(['s1', 'r3']);
+  it('throws on wrong password', () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
+    act(() => { result.current.register('Carol', 'carol@example.com', 'correct'); });
+    act(() => { result.current.logout(); });
+    expect(() => {
+      act(() => { result.current.login('carol@example.com', 'wrong'); });
+    }).toThrow('Email 或密碼錯誤');
   });
 
-  it('isFavorite returns true for saved id', () => {
-    const { result } = renderHook(() => useFavorites(KEY));
-    act(() => result.current[1]('s2'));
-    expect(result.current[2]('s2')).toBe(true);
+  it('throws when registering duplicate email', () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
+    act(() => { result.current.register('Dave', 'dave@example.com', 'pass123'); });
+    act(() => { result.current.logout(); });
+    expect(() => {
+      act(() => { result.current.register('Dave2', 'dave@example.com', 'pass456'); });
+    }).toThrow('此 Email 已被使用');
   });
 
-  it('isFavorite returns false for unsaved id', () => {
-    const { result } = renderHook(() => useFavorites(KEY));
-    expect(result.current[2]('s99')).toBe(false);
+  it('persists session to localStorage', () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
+    act(() => { result.current.register('Eve', 'eve@example.com', 'pass123'); });
+    const stored = JSON.parse(localStorage.getItem('cal_session'));
+    expect(stored.name).toBe('Eve');
   });
 
-  it('persists to localStorage', () => {
-    const { result } = renderHook(() => useFavorites(KEY));
-    act(() => result.current[1]('s5'));
-    const stored = JSON.parse(localStorage.getItem(KEY));
-    expect(stored).toContain('s5');
+  it('logs out and clears session', () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: authWrapper });
+    act(() => { result.current.register('Frank', 'frank@example.com', 'pass123'); });
+    act(() => { result.current.logout(); });
+    expect(result.current.currentUser).toBeNull();
+    expect(localStorage.getItem('cal_session')).toBeNull();
+  });
+});
+
+describe('CalendarContext', () => {
+  const makeWrapper = (userId) =>
+    ({ children }) => React.createElement(CalendarProvider, { userId }, children);
+
+  it('starts with empty events', () => {
+    const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper('u1') });
+    expect(result.current.events).toEqual([]);
   });
 
-  it('loads existing favorites from localStorage on mount', () => {
-    localStorage.setItem(KEY, JSON.stringify(['s1', 's2']));
-    const { result } = renderHook(() => useFavorites(KEY));
-    expect(result.current[0]).toEqual(['s1', 's2']);
+  it('adds an event', () => {
+    const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper('u1') });
+    act(() => {
+      result.current.addEvent({
+        title: 'Test Event',
+        type: 'work',
+        color: 'blue',
+        startAt: '2026-06-09T10:00:00.000Z',
+        endAt: '2026-06-09T11:00:00.000Z',
+        isAllDay: false,
+        isPrivate: false,
+        tags: [],
+        description: '',
+        reminder: '',
+      });
+    });
+    expect(result.current.events).toHaveLength(1);
+    expect(result.current.events[0].title).toBe('Test Event');
   });
 
-  it('handles corrupted localStorage gracefully', () => {
-    localStorage.setItem(KEY, 'NOT_VALID_JSON{{{');
-    const { result } = renderHook(() => useFavorites(KEY));
-    expect(result.current[0]).toEqual([]);
+  it('updates an event', () => {
+    const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper('u2') });
+    let eventId;
+    act(() => {
+      const e = result.current.addEvent({ title: 'Original', type: 'work', color: 'blue',
+        startAt: '2026-06-09T10:00:00.000Z', endAt: '2026-06-09T11:00:00.000Z',
+        isAllDay: false, isPrivate: false, tags: [], description: '', reminder: '' });
+      eventId = e.id;
+    });
+    act(() => { result.current.updateEvent(eventId, { title: 'Updated' }); });
+    expect(result.current.events[0].title).toBe('Updated');
+  });
+
+  it('deletes an event', () => {
+    const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper('u3') });
+    let eventId;
+    act(() => {
+      const e = result.current.addEvent({ title: 'To Delete', type: 'work', color: 'blue',
+        startAt: '2026-06-09T10:00:00.000Z', endAt: '2026-06-09T11:00:00.000Z',
+        isAllDay: false, isPrivate: false, tags: [], description: '', reminder: '' });
+      eventId = e.id;
+    });
+    act(() => { result.current.deleteEvent(eventId); });
+    expect(result.current.events).toHaveLength(0);
+  });
+
+  it('persists events to localStorage', () => {
+    const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper('u4') });
+    act(() => {
+      result.current.addEvent({ title: 'Persisted', type: 'work', color: 'blue',
+        startAt: '2026-06-09T10:00:00.000Z', endAt: '2026-06-09T11:00:00.000Z',
+        isAllDay: false, isPrivate: false, tags: [], description: '', reminder: '' });
+    });
+    const stored = JSON.parse(localStorage.getItem('cal_events_u4'));
+    expect(stored[0].title).toBe('Persisted');
+  });
+});
+
+describe('GroupContext', () => {
+  const user1 = { id: 'g-u1', name: 'Alice', email: 'alice@test.com' };
+  const user2 = { id: 'g-u2', name: 'Bob', email: 'bob@test.com' };
+  const makeWrapper = (user) =>
+    ({ children }) => React.createElement(GroupProvider, { currentUser: user }, children);
+
+  it('starts with no groups', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    expect(result.current.groups).toHaveLength(0);
+  });
+
+  it('creates a group with invite code', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let group;
+    act(() => { group = result.current.createGroup('Team Alpha'); });
+    expect(result.current.groups).toHaveLength(1);
+    expect(result.current.groups[0].name).toBe('Team Alpha');
+    expect(result.current.groups[0].inviteCode).toHaveLength(6);
+    expect(result.current.groups[0].members).toHaveLength(1);
+  });
+
+  it('owner has role "owner"', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    act(() => { result.current.createGroup('My Group'); });
+    expect(result.current.groups[0].members[0].role).toBe('owner');
+  });
+
+  it('second user can join with invite code', () => {
+    const { result: r1 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let inviteCode;
+    act(() => { r1.current.createGroup('Shared'); });
+    inviteCode = r1.current.groups[0].inviteCode;
+
+    // user2 joins
+    const { result: r2 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user2) });
+    act(() => { r2.current.joinGroup(inviteCode); });
+    expect(r2.current.groups).toHaveLength(1);
+    expect(r2.current.groups[0].members).toHaveLength(2);
+  });
+
+  it('throws when joining with wrong invite code', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    expect(() => {
+      act(() => { result.current.joinGroup('XXXXXX'); });
+    }).toThrow('找不到此邀請碼');
+  });
+
+  it('throws when joining a group you are already in', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let code;
+    act(() => { const g = result.current.createGroup('G'); code = g.inviteCode; });
+    expect(() => {
+      act(() => { result.current.joinGroup(code); });
+    }).toThrow('你已是此群組的成員');
+  });
+
+  it('leaveGroup removes user from group', () => {
+    const { result: r1 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let groupId;
+    act(() => { const g = r1.current.createGroup('LeaveTest'); groupId = g.id; });
+    act(() => { r1.current.leaveGroup(groupId); });
+    expect(r1.current.groups).toHaveLength(0);
+  });
+
+  it('getGroupById returns correct group', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let groupId;
+    act(() => { const g = result.current.createGroup('FindMe'); groupId = g.id; });
+    const found = result.current.getGroupById(groupId);
+    expect(found?.name).toBe('FindMe');
+  });
+
+  it('getGroupById returns null for unknown id', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    expect(result.current.getGroupById('nonexistent')).toBeNull();
+  });
+
+  it('renameGroup updates name', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let groupId;
+    act(() => { const g = result.current.createGroup('OldName'); groupId = g.id; });
+    act(() => { result.current.renameGroup(groupId, 'NewName'); });
+    expect(result.current.groups[0].name).toBe('NewName');
   });
 });
