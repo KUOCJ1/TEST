@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Calendar, Download, Upload, LogOut } from 'lucide-react';
+import { X, Calendar, Download, Upload, LogOut, Database } from 'lucide-react';
 
 export default function GoogleSettingsModal({
   isOpen, onClose,
@@ -10,7 +10,9 @@ export default function GoogleSettingsModal({
 }) {
   const [inputClientId, setInputClientId] = useState(clientId || '');
   const [saved, setSaved] = useState(false);
+  const [backupMsg, setBackupMsg] = useState('');
   const fileRef = useRef(null);
+  const jsonRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -34,6 +36,41 @@ export default function GoogleSettingsModal({
     const reader = new FileReader();
     reader.onload = evt => {
       onImportIcs(evt.target.result);
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  }
+
+  function handleBackupExport() {
+    const data = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), events }, null, 2);
+    const blob = new Blob([data], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `行事曆備份_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleBackupImport(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try {
+        const { events: imported } = JSON.parse(evt.target.result);
+        if (!Array.isArray(imported)) throw new Error('格式錯誤');
+        let added = 0;
+        const existingIds = new Set(events.map(ev => ev.id));
+        imported.forEach(ev => {
+          if (!existingIds.has(ev.id)) { addEvent(ev); added++; }
+        });
+        setBackupMsg(`已還原 ${added} 個事件（重複略過）`);
+        setTimeout(() => setBackupMsg(''), 4000);
+      } catch {
+        setBackupMsg('備份檔格式不正確');
+        setTimeout(() => setBackupMsg(''), 4000);
+      }
       e.target.value = '';
     };
     reader.readAsText(file);
@@ -136,6 +173,37 @@ export default function GoogleSettingsModal({
             </div>
             <p className="text-xs text-slate-400 mt-2">
               匯出可匯入 Google Calendar、Apple 行事曆等應用。匯入支援標準 .ics 格式。
+            </p>
+          </section>
+
+          {/* Backup & Restore section */}
+          <section>
+            <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <Database size={15} className="text-emerald-500" />
+              資料備份與還原
+            </h3>
+            <div className="flex gap-3">
+              <button
+                onClick={handleBackupExport}
+                className="flex items-center gap-2 text-sm border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-xl transition-colors"
+              >
+                <Download size={15} />
+                備份 .json
+              </button>
+              <button
+                onClick={() => jsonRef.current?.click()}
+                className="flex items-center gap-2 text-sm border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-xl transition-colors"
+              >
+                <Upload size={15} />
+                還原 .json
+              </button>
+              <input ref={jsonRef} type="file" accept=".json" className="hidden" onChange={handleBackupImport} />
+            </div>
+            {backupMsg && (
+              <p className="text-xs text-emerald-600 mt-2 bg-emerald-50 px-3 py-1.5 rounded-lg">{backupMsg}</p>
+            )}
+            <p className="text-xs text-slate-400 mt-2">
+              備份包含所有本機事件。還原時會合併事件，重複 ID 不重複匯入。
             </p>
           </section>
 

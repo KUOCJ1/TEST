@@ -162,6 +162,19 @@ export default function CalendarPage() {
 
   const activeGroupName = activeGroupId ? groups.find(g => g.id === activeGroupId)?.name : null;
 
+  // ── Document title with today's event count ───────────────────
+  useEffect(() => {
+    const today = new Date();
+    const todayCount = rawEvents.filter(e => {
+      const s = new Date(e.startAt);
+      return s.getFullYear() === today.getFullYear() &&
+             s.getMonth()    === today.getMonth()    &&
+             s.getDate()     === today.getDate();
+    }).length;
+    document.title = todayCount > 0 ? `(${todayCount}) 共享行事曆` : '共享行事曆';
+    return () => { document.title = '共享行事曆'; };
+  }, [rawEvents]);
+
   // ── Event click handlers ─────────────────────────────────────
   function handleEventClick(event) {
     if (event.source === 'google') {
