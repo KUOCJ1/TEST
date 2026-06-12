@@ -78,3 +78,64 @@ export function generateId() {
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
+
+export function getWeekStart(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+export function getWeekDays(date) {
+  const start = getWeekStart(date);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+}
+
+// Lay out timed events for a single day, assigning column positions for overlaps.
+// Returns: [{ event, col, totalCols }]
+export function layoutDayEvents(events) {
+  if (!events.length) return [];
+
+  const sorted = [...events].sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
+
+  function overlaps(a, b) {
+    return new Date(a.startAt) < new Date(b.endAt) && new Date(b.startAt) < new Date(a.endAt);
+  }
+
+  // Greedy column assignment
+  const layouts = sorted.map(e => ({ event: e, col: 0 }));
+  const colEnds = [];
+
+  for (const layout of layouts) {
+    const start = new Date(layout.event.startAt);
+    let col = 0;
+    while (colEnds[col] && colEnds[col] > start) col++;
+    layout.col = col;
+    colEnds[col] = new Date(layout.event.endAt);
+  }
+
+  // Per-event totalCols = widest concurrent group involving this event
+  return layouts.map(layout => {
+    const concurrent = layouts.filter(o => overlaps(layout.event, o.event));
+    const neededCols = Math.max(...concurrent.map(o => o.col + 1), 1);
+    return { ...layout, totalCols: neededCols };
+  });
+}
+
+export function formatWeekTitle(days) {
+  const first = days[0];
+  const last = days[6];
+  if (first.getMonth() === last.getMonth()) {
+    return `${first.getFullYear()} 年 ${first.getMonth() + 1} 月 ${first.getDate()} - ${last.getDate()} 日`;
+  }
+  return `${first.getMonth() + 1} 月 ${first.getDate()} 日 - ${last.getMonth() + 1} 月 ${last.getDate()} 日`;
+}
+
+export function formatDayTitle(date) {
+  const dayNames = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+  return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月 ${date.getDate()} 日　${dayNames[date.getDay()]}`;
+}

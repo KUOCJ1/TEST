@@ -1,0 +1,164 @@
+import { useRef, useEffect } from 'react';
+import { getEventsForDay, isToday, layoutDayEvents, formatDisplayTime, formatDateInput } from '../../utils/calendar';
+import { getColorHex } from '../../utils/colors';
+
+const HOUR_HEIGHT = 60;
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+const TYPE_LABELS = { work: '工作', meeting: '會議', personal: '私人', reminder: '提醒' };
+
+function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
+  const start = new Date(event.startAt);
+  const end = new Date(event.endAt);
+  const startMin = start.getHours() * 60 + start.getMinutes();
+  const endMin = Math.min(end.getHours() * 60 + end.getMinutes(), 24 * 60);
+  const duration = Math.max(endMin - startMin, 20);
+
+  const isOwn = event.creatorId === currentUserId;
+  const isOtherPrivate = event.isPrivate && !isOwn;
+  const color = getColorHex(event.color);
+  const colW = 100 / totalCols;
+
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); onClick(event); }}
+      style={{
+        position: 'absolute',
+        top: startMin,
+        height: duration,
+        left: `${col * colW}%`,
+        width: `${colW - 1}%`,
+        backgroundColor: isOtherPrivate ? '#f1f5f9' : color,
+        color: isOtherPrivate ? '#94a3b8' : 'white',
+        zIndex: 1,
+      }}
+      className="rounded-lg text-left overflow-hidden px-2 py-1 hover:opacity-90 transition-opacity shadow-sm"
+    >
+      {isOtherPrivate ? (
+        <div className="text-sm">🔒 私人事項</div>
+      ) : (
+        <div>
+          <div className="text-sm font-semibold leading-tight truncate">{event.title}</div>
+          {duration >= 40 && (
+            <div className="text-xs opacity-90 mt-0.5">
+              {formatDisplayTime(event.startAt)} – {formatDisplayTime(event.endAt)}
+            </div>
+          )}
+          {duration >= 60 && event.type && (
+            <div className="text-xs opacity-75 mt-0.5">{TYPE_LABELS[event.type]}</div>
+          )}
+          {duration >= 70 && event.tags?.length > 0 && (
+            <div className="text-xs opacity-75 truncate">{event.tags.map(t => `#${t}`).join(' ')}</div>
+          )}
+        </div>
+      )}
+    </button>
+  );
+}
+
+export default function DayView({ currentDate, events, onEventClick, onSlotClick, currentUserId }) {
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 8 * HOUR_HEIGHT;
+  }, []);
+
+  const dayEvents = getEventsForDay(events, currentDate);
+  const timedEvents = dayEvents.filter(e => !e.isAllDay);
+  const allDayEvents = dayEvents.filter(e => e.isAllDay);
+  const layouts = layoutDayEvents(timedEvents);
+
+  const today = isToday(currentDate);
+  const now = new Date();
+  const currentMinute = now.getHours() * 60 + now.getMinutes();
+
+  function handleGridClick(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const scrollTop = scrollRef.current?.scrollTop ?? 0;
+    const y = e.clientY - rect.top + scrollTop;
+    const totalMinutes = Math.floor(y);
+    const hour = Math.floor(totalMinutes / 60);
+    const min = Math.floor((totalMinutes % 60) / 30) * 30;
+    const d = new Date(currentDate);
+    d.setHours(Math.min(hour, 23), min, 0, 0);
+    onSlotClick(d);
+  }
+
+  return (
+    <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+      {/* All-day events */}
+      {allDayEvents.length > 0 && (
+        <div className="border-b border-slate-200 px-4 py-2 bg-white flex flex-wrap gap-1.5 shrink-0">
+          <span className="text-xs text-slate-400 self-center mr-1 shrink-0">全天</span>
+          {allDayEvents.map(event => {
+            const isOwn = event.creatorId === currentUserId;
+            const isOtherPrivate = event.isPrivate && !isOwn;
+            return (
+              <button
+                key={event.id}
+                onClick={() => onEventClick(event)}
+                style={{ backgroundColor: isOtherPrivate ? '#f1f5f9' : getColorHex(event.color) }}
+                className="text-xs px-2 py-0.5 rounded text-white font-medium hover:opacity-90 truncate max-w-xs"
+              >
+                {isOtherPrivate ? '🔒 私人' : event.title}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Scrollable time grid */}
+      <div className="flex-1 overflow-y-auto" ref={scrollRef}>
+        <div className="flex" style={{ minHeight: 24 * HOUR_HEIGHT }}>
+          {/* Hour labels */}
+          <div className="w-16 shrink-0 border-r border-slate-100 relative" style={{ height: 24 * HOUR_HEIGHT }}>
+            {HOURS.map(h => (
+              <div
+                key={h}
+                className="absolute right-2 text-xs text-slate-400 -translate-y-1/2"
+                style={{ top: h * HOUR_HEIGHT }}
+              >
+                {h > 0 && `${String(h).padStart(2, '0')}:00`}
+              </div>
+            ))}
+          </div>
+
+          {/* Event column */}
+          <div
+            className="flex-1 relative cursor-pointer"
+            style={{ height: 24 * HOUR_HEIGHT }}
+            onClick={handleGridClick}
+          >
+            {HOURS.map(h => (
+              <div key={h} className="absolute w-full border-t border-slate-100" style={{ top: h * HOUR_HEIGHT }} />
+            ))}
+            {HOURS.map(h => (
+              <div key={`${h}h`} className="absolute w-full border-t border-slate-50" style={{ top: h * HOUR_HEIGHT + 30 }} />
+            ))}
+
+            {/* Current time */}
+            {today && (
+              <div className="absolute w-full pointer-events-none z-10" style={{ top: currentMinute }}>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-red-500 -ml-1.5 shrink-0" />
+                  <div className="flex-1 border-t-2 border-red-500" />
+                </div>
+              </div>
+            )}
+
+            {layouts.map(({ event, col, totalCols }) => (
+              <EventBlock
+                key={event.id}
+                event={event}
+                col={col}
+                totalCols={totalCols}
+                onClick={onEventClick}
+                currentUserId={currentUserId}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

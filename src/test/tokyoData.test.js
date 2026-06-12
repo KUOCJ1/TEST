@@ -6,6 +6,11 @@ import {
   isSameDay,
   formatDateInput,
   combineDatetime,
+  getWeekStart,
+  getWeekDays,
+  layoutDayEvents,
+  formatWeekTitle,
+  formatDayTitle,
   generateId,
 } from '../utils/calendar';
 
@@ -99,5 +104,103 @@ describe('generateId', () => {
   it('generates unique ids', () => {
     const ids = new Set(Array.from({ length: 100 }, generateId));
     expect(ids.size).toBe(100);
+  });
+});
+
+describe('getWeekStart', () => {
+  it('returns Sunday for a Wednesday', () => {
+    const wed = new Date(2026, 5, 10); // Wed June 10
+    const start = getWeekStart(wed);
+    expect(start.getDay()).toBe(0);
+    expect(start.getDate()).toBe(7); // June 7 is Sunday
+  });
+
+  it('returns same day if already Sunday', () => {
+    const sun = new Date(2026, 5, 7);
+    const start = getWeekStart(sun);
+    expect(start.getDate()).toBe(7);
+  });
+});
+
+describe('getWeekDays', () => {
+  it('returns exactly 7 days', () => {
+    expect(getWeekDays(new Date(2026, 5, 9))).toHaveLength(7);
+  });
+
+  it('starts on Sunday', () => {
+    const days = getWeekDays(new Date(2026, 5, 9));
+    expect(days[0].getDay()).toBe(0);
+  });
+
+  it('ends on Saturday', () => {
+    const days = getWeekDays(new Date(2026, 5, 9));
+    expect(days[6].getDay()).toBe(6);
+  });
+});
+
+describe('layoutDayEvents', () => {
+  const makeEvent = (id, startH, endH) => ({
+    id,
+    startAt: new Date(2026, 5, 9, startH, 0).toISOString(),
+    endAt:   new Date(2026, 5, 9, endH,   0).toISOString(),
+  });
+
+  it('returns empty array for no events', () => {
+    expect(layoutDayEvents([])).toEqual([]);
+  });
+
+  it('single event gets col 0, totalCols 1', () => {
+    const result = layoutDayEvents([makeEvent('a', 10, 11)]);
+    expect(result[0].col).toBe(0);
+    expect(result[0].totalCols).toBe(1);
+  });
+
+  it('two non-overlapping events both get col 0', () => {
+    const result = layoutDayEvents([makeEvent('a', 9, 10), makeEvent('b', 11, 12)]);
+    expect(result.find(r => r.event.id === 'a').col).toBe(0);
+    expect(result.find(r => r.event.id === 'b').col).toBe(0);
+  });
+
+  it('two overlapping events get different columns', () => {
+    const result = layoutDayEvents([makeEvent('a', 9, 11), makeEvent('b', 10, 12)]);
+    const cols = result.map(r => r.col);
+    expect(new Set(cols).size).toBe(2);
+  });
+
+  it('overlapping events report totalCols >= 2', () => {
+    const result = layoutDayEvents([makeEvent('a', 9, 11), makeEvent('b', 10, 12)]);
+    expect(result.every(r => r.totalCols >= 2)).toBe(true);
+  });
+
+  it('non-overlapping event after overlap group gets totalCols 1', () => {
+    const result = layoutDayEvents([makeEvent('a', 9, 10), makeEvent('b', 9, 10), makeEvent('c', 14, 15)]);
+    expect(result.find(r => r.event.id === 'c').totalCols).toBe(1);
+  });
+});
+
+describe('formatWeekTitle', () => {
+  it('same-month week shows date range', () => {
+    const days = getWeekDays(new Date(2026, 5, 9));
+    const title = formatWeekTitle(days);
+    expect(title).toContain('6 月');
+  });
+
+  it('cross-month week shows both months', () => {
+    const days = getWeekDays(new Date(2026, 5, 29)); // week spanning June/July
+    const title = formatWeekTitle(days);
+    expect(title).toMatch(/6|7/);
+  });
+});
+
+describe('formatDayTitle', () => {
+  it('includes day of week', () => {
+    const title = formatDayTitle(new Date(2026, 5, 9)); // Tuesday
+    expect(title).toContain('星期二');
+  });
+
+  it('includes month and date', () => {
+    const title = formatDayTitle(new Date(2026, 5, 9));
+    expect(title).toContain('6');
+    expect(title).toContain('9');
   });
 });

@@ -1,32 +1,44 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Calendar, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCalendar } from '../context/CalendarContext';
 import { useGroups } from '../context/GroupContext';
 import CalendarHeader from '../components/calendar/CalendarHeader';
 import MonthView from '../components/calendar/MonthView';
+import WeekView from '../components/calendar/WeekView';
+import DayView from '../components/calendar/DayView';
+import FilterBar from '../components/calendar/FilterBar';
 import Sidebar from '../components/groups/Sidebar';
 import EventModal from '../components/events/EventModal';
 import EventDetailModal from '../components/events/EventDetailModal';
 import CreateGroupModal from '../components/groups/CreateGroupModal';
 import JoinGroupModal from '../components/groups/JoinGroupModal';
 import MembersModal from '../components/groups/MembersModal';
+import { getWeekStart, getWeekDays } from '../utils/calendar';
 
 export default function CalendarPage() {
   const { currentUser, logout } = useAuth();
   const { events, addEvent, updateEvent, deleteEvent } = useCalendar();
   const { groups, getGroupEvents, refresh } = useGroups();
 
+  // View & navigation
+  const [view, setView] = useState('month');
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Group
   const [activeGroupId, setActiveGroupId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Event modal (create/edit own events)
+  // Filters
+  const [tagFilters, setTagFilters] = useState([]);
+  const [colorFilters, setColorFilters] = useState([]);
+
+  // Event modal
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
 
-  // Detail modal (read-only view for other users' events)
+  // Detail modal
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [detailEvent, setDetailEvent] = useState(null);
 
@@ -37,29 +49,32 @@ export default function CalendarPage() {
 
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // ── Calendar navigation ──────────────────────────────────────
-  const prevMonth = () => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
-  const nextMonth = () => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
-  const goToday = () => setCurrentDate(new Date());
-
-  // ── Active events ────────────────────────────────────────────
-  const displayEvents = activeGroupId ? getGroupEvents(activeGroupId) : events;
-
-  const activeGroupName = activeGroupId
-    ? groups.find(g => g.id === activeGroupId)?.name
-    : null;
-
-  // ── Event modal handlers ─────────────────────────────────────
-  function handleDayClick(date) {
-    // In group view, clicking a day still creates a personal event
-    setSelectedEvent(null);
-    setSelectedDate(date);
-    setEventModalOpen(true);
+  // ── Navigation ───────────────────────────────────────────────
+  function navigate(dir) {
+    setCurrentDate(d => {
+      if (view === 'month') return new Date(d.getFullYear(), d.getMonth() + dir, 1);
+      if (view === 'week')  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + dir * 7);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate() + dir);
+    });
   }
 
+  function goToday() { setCurrentDate(new Date()); }
+
+  // ── Events ───────────────────────────────────────────────────
+  const rawEvents = activeGroupId ? getGroupEvents(activeGroupId) : events;
+
+  const displayEvents = useMemo(() => {
+    let result = rawEvents;
+    if (colorFilters.length > 0) result = result.filter(e => colorFilters.includes(e.color));
+    if (tagFilters.length > 0)   result = result.filter(e => tagFilters.some(t => e.tags?.includes(t)));
+    return result;
+  }, [rawEvents, colorFilters, tagFilters]);
+
+  const activeGroupName = activeGroupId ? groups.find(g => g.id === activeGroupId)?.name : null;
+
+  // ── Event click handlers ─────────────────────────────────────
   function handleEventClick(event) {
-    const isOwn = event.creatorId === currentUser.id;
-    if (isOwn) {
+    if (event.creatorId === currentUser.id) {
       setSelectedEvent(event);
       setSelectedDate(null);
       setEventModalOpen(true);
@@ -69,6 +84,12 @@ export default function CalendarPage() {
     }
   }
 
+  function handleSlotClick(date) {
+    setSelectedEvent(null);
+    setSelectedDate(date);
+    setEventModalOpen(true);
+  }
+
   function closeEventModal() {
     setEventModalOpen(false);
     setSelectedEvent(null);
@@ -76,11 +97,8 @@ export default function CalendarPage() {
   }
 
   function handleSave(data) {
-    if (selectedEvent) {
-      updateEvent(selectedEvent.id, data);
-    } else {
-      addEvent(data);
-    }
+    if (selectedEvent) updateEvent(selectedEvent.id, data);
+    else addEvent(data);
     closeEventModal();
   }
 
@@ -91,26 +109,30 @@ export default function CalendarPage() {
     }
   }
 
+  // ── Filter handlers ──────────────────────────────────────────
+  function toggleTag(tag) {
+    setTagFilters(f => f.includes(tag) ? f.filter(t => t !== tag) : [...f, tag]);
+  }
+
+  function toggleColor(color) {
+    setColorFilters(f => f.includes(color) ? f.filter(c => c !== color) : [...f, color]);
+  }
+
+  function clearFilters() {
+    setTagFilters([]);
+    setColorFilters([]);
+  }
+
   // ── Group handlers ────────────────────────────────────────────
-  function handleGroupCreated(group) {
-    setActiveGroupId(group.id);
-  }
-
-  function handleGroupJoined(group) {
-    setActiveGroupId(group.id);
-  }
-
   function handleGroupLeft() {
     setActiveGroupId(null);
     refresh();
   }
 
-  // ── Edit from detail modal ────────────────────────────────────
   function handleEditFromDetail() {
     setDetailModalOpen(false);
     setSelectedEvent(detailEvent);
     setDetailEvent(null);
-    setSelectedDate(null);
     setEventModalOpen(true);
   }
 
@@ -118,21 +140,21 @@ export default function CalendarPage() {
     <div className="h-screen flex flex-col bg-white overflow-hidden">
       {/* Top nav */}
       <header className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-white shadow-sm z-20 shrink-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={() => setSidebarOpen(o => !o)}
-            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors lg:hidden"
+            className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors lg:hidden"
           >
             <Menu size={18} />
           </button>
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
             <Calendar size={15} className="text-white" />
           </div>
-          <span className="font-semibold text-slate-800 text-sm">共享行事曆</span>
+          <span className="font-semibold text-slate-800 text-sm shrink-0">共享行事曆</span>
           {activeGroupName && (
             <>
               <span className="text-slate-300 text-sm">/</span>
-              <span className="text-sm text-indigo-600 font-medium">{activeGroupName}</span>
+              <span className="text-sm text-indigo-600 font-medium truncate">{activeGroupName}</span>
             </>
           )}
         </div>
@@ -169,7 +191,7 @@ export default function CalendarPage() {
         </div>
       </header>
 
-      {/* Main area */}
+      {/* Main layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <Sidebar
@@ -184,22 +206,54 @@ export default function CalendarPage() {
           onClose={() => setSidebarOpen(false)}
         />
 
-        {/* Calendar area */}
+        {/* Calendar column */}
         <div className="flex flex-col flex-1 overflow-hidden min-w-0">
           <CalendarHeader
             currentDate={currentDate}
-            onPrev={prevMonth}
-            onNext={nextMonth}
+            view={view}
+            onPrev={() => navigate(-1)}
+            onNext={() => navigate(1)}
             onToday={goToday}
-            onAddEvent={() => handleDayClick(new Date())}
+            onViewChange={v => { setView(v); goToday(); }}
+            onAddEvent={() => handleSlotClick(new Date())}
           />
-          <MonthView
-            currentDate={currentDate}
-            events={displayEvents}
-            onDayClick={handleDayClick}
-            onEventClick={handleEventClick}
-            currentUserId={currentUser.id}
+
+          <FilterBar
+            events={rawEvents}
+            tagFilters={tagFilters}
+            colorFilters={colorFilters}
+            onTagToggle={toggleTag}
+            onColorToggle={toggleColor}
+            onClear={clearFilters}
           />
+
+          {view === 'month' && (
+            <MonthView
+              currentDate={currentDate}
+              events={displayEvents}
+              onDayClick={handleSlotClick}
+              onEventClick={handleEventClick}
+              currentUserId={currentUser.id}
+            />
+          )}
+          {view === 'week' && (
+            <WeekView
+              currentDate={currentDate}
+              events={displayEvents}
+              onEventClick={handleEventClick}
+              onSlotClick={handleSlotClick}
+              currentUserId={currentUser.id}
+            />
+          )}
+          {view === 'day' && (
+            <DayView
+              currentDate={currentDate}
+              events={displayEvents}
+              onEventClick={handleEventClick}
+              onSlotClick={handleSlotClick}
+              currentUserId={currentUser.id}
+            />
+          )}
         </div>
       </div>
 
@@ -223,18 +277,18 @@ export default function CalendarPage() {
       <CreateGroupModal
         isOpen={showCreateGroup}
         onClose={() => setShowCreateGroup(false)}
-        onCreated={handleGroupCreated}
+        onCreated={g => setActiveGroupId(g.id)}
       />
 
       <JoinGroupModal
         isOpen={showJoinGroup}
         onClose={() => setShowJoinGroup(false)}
-        onJoined={handleGroupJoined}
+        onJoined={g => setActiveGroupId(g.id)}
       />
 
       {managingGroupId && (
         <MembersModal
-          isOpen={!!managingGroupId}
+          isOpen
           onClose={() => setManagingGroupId(null)}
           groupId={managingGroupId}
           currentUserId={currentUser.id}
