@@ -18,7 +18,7 @@ export default function Sidebar({ groups, activeGroupId, onSelectPersonal, onSel
       `}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 lg:hidden">
           <span className="text-sm font-semibold text-slate-600">行事曆</span>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="關閉側邊欄">
             <X size={18} />
           </button>
         </div>
@@ -65,6 +65,7 @@ export default function Sidebar({ groups, activeGroupId, onSelectPersonal, onSel
                 <button
                   onClick={() => onManageGroup(group.id)}
                   className="p-1.5 mr-1 text-slate-300 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-all"
+                  aria-label={`管理 ${group.name} 成員`}
                   title="管理成員"
                 >
                   <Settings size={13} />

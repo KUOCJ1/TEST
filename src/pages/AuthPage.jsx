@@ -91,10 +91,11 @@ export default function AuthPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">姓名</label>
+                <label htmlFor="auth-name" className="block text-sm font-medium text-slate-700 mb-1.5">姓名</label>
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
+                    id="auth-name"
                     type="text"
                     value={form.name}
                     onChange={e => update('name', e.target.value)}
@@ -107,10 +108,11 @@ export default function AuthPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+              <label htmlFor="auth-email" className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="auth-email"
                   type="email"
                   value={form.email}
                   onChange={e => update('email', e.target.value)}
@@ -122,10 +124,11 @@ export default function AuthPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">密碼</label>
+              <label htmlFor="auth-password" className="block text-sm font-medium text-slate-700 mb-1.5">密碼</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="auth-password"
                   type="password"
                   value={form.password}
                   onChange={e => update('password', e.target.value)}
@@ -153,10 +156,11 @@ export default function AuthPage() {
 
             {mode === 'register' && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">確認密碼</label>
+                <label htmlFor="auth-confirm" className="block text-sm font-medium text-slate-700 mb-1.5">確認密碼</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
+                    id="auth-confirm"
                     type="password"
                     value={form.confirm}
                     onChange={e => update('confirm', e.target.value)}

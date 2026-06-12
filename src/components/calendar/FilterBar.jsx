@@ -46,6 +46,8 @@ export default function FilterBar({ events, tagFilters, colorFilters, typeFilter
               key={c.id}
               onClick={() => onColorToggle(c.id)}
               title={c.label}
+              aria-label={`篩選${c.label}${active ? '（已選取）' : ''}`}
+              aria-pressed={active}
               style={{ backgroundColor: c.hex }}
               className={`w-4 h-4 rounded-full transition-all ${
                 active

@@ -23,7 +23,7 @@ import EventDetailModal from '../components/events/EventDetailModal';
 import CreateGroupModal from '../components/groups/CreateGroupModal';
 import JoinGroupModal from '../components/groups/JoinGroupModal';
 import MembersModal from '../components/groups/MembersModal';
-import { getWeekStart, getWeekDays, isSameDay } from '../utils/calendar';
+import { getWeekStart, isSameDay } from '../utils/calendar';
 import { useIsDesktop } from '../hooks/useIsMobile';
 
 function getViewWindow(view, currentDate) {
