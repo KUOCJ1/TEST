@@ -267,7 +267,12 @@ export default function CalendarPage() {
       return;
     }
     deleteEvent(id);
-    if (evt) addToast({ type: 'info', title: '事件已刪除', body: evt.title });
+    if (evt) addToast({
+      type: 'info',
+      title: '事件已刪除',
+      body: evt.title,
+      action: { label: '復原', onClick: () => addEvent({ ...evt, id: undefined }) },
+    });
   }
 
   function applyRecurDeleteScope(scope) {
@@ -325,10 +330,15 @@ export default function CalendarPage() {
   function deleteSelected() {
     if (!selectedIds.size) return;
     const count = selectedIds.size;
+    const deleted = events.filter(e => selectedIds.has(e.id));
     selectedIds.forEach(id => deleteEvent(id));
     setSelectedIds(new Set());
     setSelectMode(false);
-    addToast({ type: 'info', title: `已刪除 ${count} 個事件` });
+    addToast({
+      type: 'info',
+      title: `已刪除 ${count} 個事件`,
+      action: { label: '復原', onClick: () => deleted.forEach(e => addEvent({ ...e, id: undefined })) },
+    });
   }
 
   function selectAll() {

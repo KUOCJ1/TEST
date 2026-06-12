@@ -39,6 +39,14 @@ export default function ToastContainer({ toasts, onDismiss }) {
                 {toast.time && (
                   <p className={`text-xs mt-0.5 ${cfg.text}`}>開始時間：{toast.time}</p>
                 )}
+                {toast.action && (
+                  <button
+                    onClick={() => { toast.action.onClick(); onDismiss(toast.id); }}
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 mt-1 underline"
+                  >
+                    {toast.action.label}
+                  </button>
+                )}
               </div>
               <button
                 onClick={() => onDismiss(toast.id)}
