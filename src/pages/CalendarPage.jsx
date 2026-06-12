@@ -331,6 +331,13 @@ export default function CalendarPage() {
     addToast({ type: 'info', title: `已刪除 ${count} 個事件` });
   }
 
+  function selectAll() {
+    const visibleIds = displayEvents
+      .filter(e => e.source !== 'google' && !e.isRecurring)
+      .map(e => e.id);
+    setSelectedIds(new Set(visibleIds));
+  }
+
   function exportSelected() {
     const toExport = events.filter(e => selectedIds.has(e.id));
     if (!toExport.length) return;
@@ -544,6 +551,12 @@ export default function CalendarPage() {
             <span className="text-indigo-700 font-medium">
               {selectedIds.size > 0 ? `已選取 ${selectedIds.size} 個事件` : '點擊事件以選取'}
             </span>
+            <button
+              onClick={selectAll}
+              className="text-xs text-indigo-500 hover:text-indigo-700 underline"
+            >
+              全選
+            </button>
           </div>
           <div className="flex items-center gap-2">
             {selectedIds.size > 0 && (
