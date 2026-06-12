@@ -30,8 +30,8 @@ export default function AgendaSidebar({ events, onEventClick }) {
 
       <div className="flex-1 overflow-y-auto">
         {days.map(({ date, events: dayEvts }) => {
-          const isToday = dayEvts === days[0].events;
-          const label = isToday
+          const todayFlag = isSameDay(date, new Date());
+          const label = todayFlag
             ? '今天'
             : date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric', weekday: 'short' });
 
@@ -71,6 +71,7 @@ export default function AgendaSidebar({ events, onEventClick }) {
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-slate-700 truncate group-hover:text-indigo-600">
+                          {e.isRecurring && <span className="mr-0.5 opacity-60">↩</span>}
                           {e.title}
                         </p>
                         <p className="text-[10px] text-slate-400">

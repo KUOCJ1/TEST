@@ -126,6 +126,32 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
         })}
       </div>
 
+      {/* All-day events strip */}
+      {weekDays.some(day => getEventsForDay(events, day).some(e => e.isAllDay)) && (
+        <div className="flex border-b border-slate-200 bg-white shrink-0">
+          <div className="w-14 shrink-0 border-r border-slate-100 flex items-center justify-end pr-2">
+            <span className="text-[10px] text-slate-400 leading-tight">全天</span>
+          </div>
+          {weekDays.map(day => {
+            const allDayEvts = getEventsForDay(events, day).filter(e => e.isAllDay);
+            return (
+              <div key={day.toISOString()} className="flex-1 border-l border-slate-100 px-1 py-1 min-w-0 space-y-0.5">
+                {allDayEvts.map(e => (
+                  <button
+                    key={e.id}
+                    onClick={() => onEventClick(e)}
+                    style={{ backgroundColor: getColorHex(e.color) }}
+                    className="w-full text-left text-[10px] text-white font-medium px-1.5 py-0.5 rounded truncate hover:opacity-80 transition-opacity block"
+                  >
+                    {e.title}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Scrollable time grid */}
       <div className="flex-1 overflow-y-auto" ref={scrollRef}>
         <div className="flex relative" style={{ minHeight: 24 * HOUR_HEIGHT }}>

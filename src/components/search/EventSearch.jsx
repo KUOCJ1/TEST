@@ -59,10 +59,10 @@ export default function EventSearch({ isOpen, onClose, events, onSelectEvent }) 
       if (e.key === 'Escape') { onClose(); return; }
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setActiveIndex(i => Math.min(i + 1, results.length - 1));
+        setActiveIndex(i => (i >= results.length - 1 ? 0 : i + 1));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setActiveIndex(i => Math.max(i - 1, -1));
+        setActiveIndex(i => (i <= 0 ? results.length - 1 : i - 1));
       } else if (e.key === 'Enter') {
         selectActive();
       }
