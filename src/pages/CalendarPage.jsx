@@ -1,8 +1,14 @@
-import { useState, useMemo } from 'react';
-import { Calendar, LogOut, Menu } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Calendar, LogOut, Menu, Settings, Search, LayoutList, CheckSquare, X, Trash2, Download } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
+import { useGoogleCalendar } from '../hooks/useGoogleCalendar';
+import { exportToIcs, parseIcs } from '../utils/ics';
+import { expandRecurringEvents } from '../utils/recurrence';
+import GoogleSettingsModal from '../components/settings/GoogleSettingsModal';
 import NotificationCenter from '../components/notifications/NotificationCenter';
 import ToastContainer from '../components/notifications/ToastContainer';
+import EventSearch from '../components/search/EventSearch';
+import AgendaSidebar from '../components/calendar/AgendaSidebar';
 import { useAuth } from '../context/AuthContext';
 import { useCalendar } from '../context/CalendarContext';
 import { useGroups } from '../context/GroupContext';
@@ -17,7 +23,23 @@ import EventDetailModal from '../components/events/EventDetailModal';
 import CreateGroupModal from '../components/groups/CreateGroupModal';
 import JoinGroupModal from '../components/groups/JoinGroupModal';
 import MembersModal from '../components/groups/MembersModal';
-import { getWeekStart, getWeekDays } from '../utils/calendar';
+import { getWeekStart, getWeekDays, isSameDay } from '../utils/calendar';
+
+function getViewWindow(view, currentDate) {
+  if (view === 'month') {
+    const start = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    const end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 0, 23, 59, 59);
+    return { start, end };
+  }
+  if (view === 'week') {
+    const ws = getWeekStart(currentDate);
+    const we = new Date(ws.getTime() + 7 * 86400000);
+    return { start: ws, end: we };
+  }
+  const start = new Date(currentDate); start.setHours(0, 0, 0, 0);
+  const end = new Date(currentDate); end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
 
 export default function CalendarPage() {
   const { currentUser, logout } = useAuth();
@@ -52,8 +74,36 @@ export default function CalendarPage() {
 
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  // Search
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Agenda sidebar
+  const [agendaOpen, setAgendaOpen] = useState(true);
+
+  // Bulk select
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
   // ── Notifications ─────────────────────────────────────────────
   const { permission, requestPermission, upcomingReminders, toasts, dismissToast } = useNotifications(events);
+
+  // ── Google Calendar ───────────────────────────────────────────
+  const googleCalendar = useGoogleCalendar();
+
+  // ── Settings modal ────────────────────────────────────────────
+  const [showSettings, setShowSettings] = useState(false);
+
+  // ── Keyboard shortcuts ────────────────────────────────────────
+  useEffect(() => {
+    function handler(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(o => !o);
+      }
+    }
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   // ── Navigation ───────────────────────────────────────────────
   function navigate(dir) {
@@ -73,15 +123,30 @@ export default function CalendarPage() {
     let result = rawEvents;
     if (colorFilters.length > 0) result = result.filter(e => colorFilters.includes(e.color));
     if (tagFilters.length > 0)   result = result.filter(e => tagFilters.some(t => e.tags?.includes(t)));
-    return result;
-  }, [rawEvents, colorFilters, tagFilters]);
+
+    // Expand recurring events within the current view window
+    const { start, end } = getViewWindow(view, currentDate);
+    result = expandRecurringEvents(result, start, end);
+
+    // Merge Google Calendar events
+    const googleVisible = googleCalendar.isConnected ? googleCalendar.googleEvents : [];
+    return [...result, ...googleVisible];
+  }, [rawEvents, colorFilters, tagFilters, view, currentDate, googleCalendar.isConnected, googleCalendar.googleEvents]);
 
   const activeGroupName = activeGroupId ? groups.find(g => g.id === activeGroupId)?.name : null;
 
   // ── Event click handlers ─────────────────────────────────────
   function handleEventClick(event) {
+    if (event.source === 'google') {
+      setDetailEvent(event);
+      setDetailModalOpen(true);
+      return;
+    }
     if (event.creatorId === currentUser.id) {
-      setSelectedEvent(event);
+      // For recurring instances: edit the base event
+      const baseId = event.recurringBaseId || event.id;
+      const baseEvent = events.find(e => e.id === baseId) || event;
+      setSelectedEvent(baseEvent);
       setSelectedDate(null);
       setEventModalOpen(true);
     } else {
@@ -91,6 +156,7 @@ export default function CalendarPage() {
   }
 
   function handleSlotClick(date) {
+    if (selectMode) return;
     setSelectedEvent(null);
     setSelectedDate(date);
     setEventModalOpen(true);
@@ -113,6 +179,52 @@ export default function CalendarPage() {
       deleteEvent(id);
       closeEventModal();
     }
+  }
+
+  // ── Drag-and-drop (MonthView) ─────────────────────────────────
+  const handleMoveEvent = useCallback((eventId, originalDate, targetDate) => {
+    const evt = events.find(e => e.id === eventId);
+    if (!evt || isSameDay(originalDate, targetDate)) return;
+    const diff = targetDate.getTime() - new Date(originalDate).getTime();
+    const newStart = new Date(new Date(evt.startAt).getTime() + diff);
+    const newEnd   = new Date(new Date(evt.endAt).getTime() + diff);
+    updateEvent(eventId, { ...evt, startAt: newStart.toISOString(), endAt: newEnd.toISOString() });
+  }, [events, updateEvent]);
+
+  // ── Bulk select ──────────────────────────────────────────────
+  function toggleSelectMode() {
+    setSelectMode(m => !m);
+    setSelectedIds(new Set());
+  }
+
+  function toggleSelectId(id) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function deleteSelected() {
+    if (!selectedIds.size) return;
+    if (!confirm(`確定要刪除選取的 ${selectedIds.size} 個事件嗎？`)) return;
+    selectedIds.forEach(id => deleteEvent(id));
+    setSelectedIds(new Set());
+    setSelectMode(false);
+  }
+
+  function exportSelected() {
+    const toExport = events.filter(e => selectedIds.has(e.id));
+    if (!toExport.length) return;
+    const content = exportToIcs(toExport);
+    const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '已選取事件.ics';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // ── Filter handlers ──────────────────────────────────────────
@@ -142,6 +254,37 @@ export default function CalendarPage() {
     setEventModalOpen(true);
   }
 
+  // ── Search handler ────────────────────────────────────────────
+  function handleSearchSelect(event) {
+    setCurrentDate(new Date(event.startAt));
+    setView('day');
+    setDetailEvent(event);
+    setDetailModalOpen(true);
+  }
+
+  // ── ICS export/import ─────────────────────────────────────────
+  function handleExportIcs() {
+    const content = exportToIcs(events);
+    const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '行事曆.ics';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleImportIcs(text) {
+    const parsed = parseIcs(text);
+    let count = 0;
+    for (const e of parsed) {
+      if (e.externalId && events.some(ev => ev.externalId === e.externalId)) continue;
+      addEvent({ ...e, title: e.title || '匯入事件' });
+      count++;
+    }
+    alert(`成功匯入 ${count} 個事件`);
+  }
+
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden">
       {/* Top nav */}
@@ -166,48 +309,132 @@ export default function CalendarPage() {
         </div>
 
         <div className="flex items-center gap-1">
+          {/* Search */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex flex-col items-center p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="搜尋"
+            title="搜尋 (Ctrl+K)"
+          >
+            <Search size={18} />
+            <span className="text-[10px] leading-none mt-0.5 sm:hidden">搜尋</span>
+          </button>
+
+          {/* Agenda sidebar toggle (desktop only) */}
+          <button
+            onClick={() => setAgendaOpen(o => !o)}
+            className={`hidden lg:flex flex-col items-center p-1.5 rounded-lg transition-colors ${
+              agendaOpen ? 'text-indigo-600 bg-indigo-50' : 'text-slate-500 hover:bg-slate-100'
+            }`}
+            aria-label="議程"
+            title="未來 7 天"
+          >
+            <LayoutList size={18} />
+          </button>
+
+          {/* Bulk select toggle */}
+          <button
+            onClick={toggleSelectMode}
+            className={`flex flex-col items-center p-1.5 rounded-lg transition-colors ${
+              selectMode ? 'text-indigo-600 bg-indigo-50' : 'text-slate-500 hover:bg-slate-100'
+            }`}
+            aria-label="選取模式"
+            title="選取模式"
+          >
+            <CheckSquare size={18} />
+            <span className="text-[10px] leading-none mt-0.5 sm:hidden">選取</span>
+          </button>
+
+          {/* Settings */}
+          <button
+            onClick={() => setShowSettings(true)}
+            className="flex flex-col items-center p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="設定"
+          >
+            <Settings size={18} />
+            <span className="text-[10px] leading-none mt-0.5 sm:hidden">設定</span>
+          </button>
+
           <NotificationCenter
             permission={permission}
             requestPermission={requestPermission}
             upcomingReminders={upcomingReminders}
           />
 
-        <div className="relative">
-          <button
-            onClick={() => setShowUserMenu(m => !m)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 transition-colors"
-          >
-            <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-semibold">
-              {currentUser.name.charAt(0).toUpperCase()}
-            </div>
-            <span className="text-sm text-slate-700 hidden sm:block">{currentUser.name}</span>
-          </button>
-
-          {showUserMenu && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowUserMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 w-44 z-20">
-                <div className="px-4 py-2 border-b border-slate-100">
-                  <p className="text-sm font-medium text-slate-800">{currentUser.name}</p>
-                  <p className="text-xs text-slate-400 truncate">{currentUser.email}</p>
-                </div>
-                <button
-                  onClick={() => { setShowUserMenu(false); logout(); }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  <LogOut size={14} />
-                  登出
-                </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(m => !m)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 transition-colors"
+            >
+              <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-semibold">
+                {currentUser.name.charAt(0).toUpperCase()}
               </div>
-            </>
-          )}
-        </div>
+              <span className="text-sm text-slate-700 hidden sm:block">{currentUser.name}</span>
+            </button>
+
+            {showUserMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowUserMenu(false)} />
+                <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 w-44 z-20">
+                  <div className="px-4 py-2 border-b border-slate-100">
+                    <p className="text-sm font-medium text-slate-800">{currentUser.name}</p>
+                    <p className="text-xs text-slate-400 truncate">{currentUser.email}</p>
+                  </div>
+                  <button
+                    onClick={() => { setShowUserMenu(false); logout(); }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    <LogOut size={14} />
+                    登出
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
+      {/* Bulk action bar */}
+      {selectMode && (
+        <div className="flex items-center justify-between px-4 py-2 bg-indigo-50 border-b border-indigo-100 text-sm shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="text-indigo-700 font-medium">
+              {selectedIds.size > 0 ? `已選取 ${selectedIds.size} 個事件` : '點擊事件以選取'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {selectedIds.size > 0 && (
+              <>
+                <button
+                  onClick={exportSelected}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"
+                >
+                  <Download size={13} />
+                  匯出
+                </button>
+                <button
+                  onClick={deleteSelected}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 size={13} />
+                  刪除
+                </button>
+              </>
+            )}
+            <button
+              onClick={toggleSelectMode}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <X size={13} />
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
+        {/* Left sidebar (groups) */}
         <Sidebar
           groups={groups}
           activeGroupId={activeGroupId}
@@ -248,6 +475,10 @@ export default function CalendarPage() {
               onDayClick={handleSlotClick}
               onEventClick={handleEventClick}
               currentUserId={currentUser.id}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelectId}
+              onMoveEvent={handleMoveEvent}
             />
           )}
           {view === 'week' && (
@@ -269,6 +500,14 @@ export default function CalendarPage() {
             />
           )}
         </div>
+
+        {/* Agenda sidebar (right, desktop only) */}
+        {agendaOpen && (
+          <AgendaSidebar
+            events={displayEvents.filter(e => e.source !== 'google')}
+            onEventClick={handleEventClick}
+          />
+        )}
       </div>
 
       {/* Modals */}
@@ -285,7 +524,7 @@ export default function CalendarPage() {
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         event={detailEvent}
-        onEdit={detailEvent?.creatorId === currentUser.id ? handleEditFromDetail : null}
+        onEdit={detailEvent?.creatorId === currentUser.id && detailEvent?.source !== 'google' ? handleEditFromDetail : null}
       />
 
       <CreateGroupModal
@@ -311,6 +550,29 @@ export default function CalendarPage() {
       )}
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      <GoogleSettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        isConnected={googleCalendar.isConnected}
+        isLoading={googleCalendar.isLoading}
+        error={googleCalendar.error}
+        scriptsReady={googleCalendar.scriptsReady}
+        clientId={googleCalendar.clientId}
+        connect={googleCalendar.connect}
+        disconnect={googleCalendar.disconnect}
+        events={events}
+        addEvent={addEvent}
+        onExportIcs={handleExportIcs}
+        onImportIcs={handleImportIcs}
+      />
+
+      <EventSearch
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        events={rawEvents}
+        onSelectEvent={handleSearchSelect}
+      />
     </div>
   );
 }

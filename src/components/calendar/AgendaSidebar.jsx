@@ -1,0 +1,93 @@
+import { useMemo } from 'react';
+import { getColorHex } from '../../utils/colors';
+import { formatDisplayTime, isSameDay } from '../../utils/calendar';
+
+const DAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
+
+export default function AgendaSidebar({ events, onEventClick }) {
+  const days = useMemo(() => {
+    const result = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today.getTime() + i * 86400000);
+      const dayEvents = events
+        .filter(e => {
+          const start = new Date(e.startAt);
+          return isSameDay(start, date);
+        })
+        .sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
+      result.push({ date, events: dayEvents });
+    }
+    return result;
+  }, [events]);
+
+  return (
+    <div className="hidden lg:flex flex-col w-64 xl:w-72 border-l border-slate-200 bg-white shrink-0 overflow-y-auto">
+      <div className="px-4 py-3 border-b border-slate-100">
+        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">未來 7 天</h3>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {days.map(({ date, events: dayEvts }) => {
+          const isToday = dayEvts === days[0].events;
+          const label = isToday
+            ? '今天'
+            : date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric', weekday: 'short' });
+
+          return (
+            <div key={date.toISOString()} className="border-b border-slate-50 last:border-0">
+              <div className={`px-4 py-2 flex items-center gap-2 ${
+                isSameDay(date, new Date()) ? 'bg-indigo-50' : ''
+              }`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
+                  isSameDay(date, new Date())
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-500'
+                }`}>
+                  {date.getDate()}
+                </div>
+                <div>
+                  <span className="text-xs font-medium text-slate-700">{DAY_NAMES[date.getDay()]}</span>
+                  {isSameDay(date, new Date()) && (
+                    <span className="ml-1 text-xs text-indigo-500">今天</span>
+                  )}
+                </div>
+              </div>
+
+              {dayEvts.length === 0 ? (
+                <p className="px-4 pb-2 text-xs text-slate-300">無行程</p>
+              ) : (
+                <div className="px-3 pb-2 space-y-1">
+                  {dayEvts.slice(0, 4).map(e => (
+                    <button
+                      key={e.id}
+                      onClick={() => onEventClick(e)}
+                      className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 transition-colors group"
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: getColorHex(e.color) }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-slate-700 truncate group-hover:text-indigo-600">
+                          {e.title}
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          {e.isAllDay ? '全天' : formatDisplayTime(e.startAt)}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                  {dayEvts.length > 4 && (
+                    <p className="text-xs text-indigo-500 px-2">+ {dayEvts.length - 4} 個更多</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

@@ -1,6 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import React from 'react';
 import EventModal from '../components/events/EventModal';
+import { CalendarProvider } from '../context/CalendarContext';
+
+const TEST_USER_ID = 'test-user-1';
+const Wrapper = ({ children }) => React.createElement(CalendarProvider, { userId: TEST_USER_ID }, children);
 
 const baseProps = {
   isOpen: true,
@@ -18,12 +23,12 @@ beforeEach(() => {
 
 describe('EventModal', () => {
   it('renders title input', () => {
-    render(<EventModal {...baseProps} />);
+    render(<EventModal {...baseProps} />, { wrapper: Wrapper });
     expect(screen.getByPlaceholderText('事件標題')).toBeInTheDocument();
   });
 
   it('renders all event type buttons', () => {
-    render(<EventModal {...baseProps} />);
+    render(<EventModal {...baseProps} />, { wrapper: Wrapper });
     expect(screen.getByText('工作')).toBeInTheDocument();
     expect(screen.getByText('會議')).toBeInTheDocument();
     expect(screen.getByText('私人')).toBeInTheDocument();
@@ -31,13 +36,13 @@ describe('EventModal', () => {
   });
 
   it('shows validation error when submitting empty title', () => {
-    render(<EventModal {...baseProps} />);
+    render(<EventModal {...baseProps} />, { wrapper: Wrapper });
     fireEvent.click(screen.getByText('新增'));
     expect(screen.getByText('請輸入標題')).toBeInTheDocument();
   });
 
   it('calls onSave with correct data when form is valid', () => {
-    render(<EventModal {...baseProps} />);
+    render(<EventModal {...baseProps} />, { wrapper: Wrapper });
     fireEvent.change(screen.getByPlaceholderText('事件標題'), { target: { value: '團隊會議' } });
     fireEvent.click(screen.getByText('新增'));
     expect(baseProps.onSave).toHaveBeenCalledWith(
@@ -46,7 +51,7 @@ describe('EventModal', () => {
   });
 
   it('calls onClose when cancel is clicked', () => {
-    render(<EventModal {...baseProps} />);
+    render(<EventModal {...baseProps} />, { wrapper: Wrapper });
     fireEvent.click(screen.getByText('取消'));
     expect(baseProps.onClose).toHaveBeenCalled();
   });
@@ -65,13 +70,13 @@ describe('EventModal', () => {
       description: '',
       reminder: '',
     };
-    render(<EventModal {...baseProps} event={event} />);
+    render(<EventModal {...baseProps} event={event} />, { wrapper: Wrapper });
     expect(screen.getByText('編輯事件')).toBeInTheDocument();
     expect(screen.getByText('刪除')).toBeInTheDocument();
   });
 
   it('does not render when isOpen is false', () => {
-    render(<EventModal {...baseProps} isOpen={false} />);
+    render(<EventModal {...baseProps} isOpen={false} />, { wrapper: Wrapper });
     expect(screen.queryByPlaceholderText('事件標題')).not.toBeInTheDocument();
   });
 
@@ -89,7 +94,7 @@ describe('EventModal', () => {
       description: '',
       reminder: '',
     };
-    render(<EventModal {...baseProps} event={event} />);
+    render(<EventModal {...baseProps} event={event} />, { wrapper: Wrapper });
     expect(screen.getByDisplayValue('行銷, 重要')).toBeInTheDocument();
   });
 });

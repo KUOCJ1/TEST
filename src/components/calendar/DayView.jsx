@@ -38,7 +38,7 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
         <div className="text-sm">🔒 私人事項</div>
       ) : (
         <div>
-          <div className="text-sm font-semibold leading-tight truncate">{event.title}</div>
+          <div className="text-sm font-semibold leading-tight truncate">{event.title}{event.source === 'google' && <span className="text-[9px] bg-white/30 rounded px-1">G</span>}</div>
           {duration >= 40 && (
             <div className="text-xs opacity-90 mt-0.5">
               {formatDisplayTime(event.startAt)} – {formatDisplayTime(event.endAt)}
@@ -156,6 +156,17 @@ export default function DayView({ currentDate, events, onEventClick, onSlotClick
                 currentUserId={currentUserId}
               />
             ))}
+
+            {timedEvents.length === 0 && allDayEvents.length === 0 && (
+              <div
+                className="absolute left-0 right-0 flex flex-col items-center pointer-events-none select-none text-center"
+                style={{ top: 660 }}
+              >
+                <span className="text-4xl mb-2">📅</span>
+                <p className="text-sm text-slate-400">這天還沒有行程</p>
+                <p className="text-xs text-slate-300 mt-1">點擊時間格新增事件</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

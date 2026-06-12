@@ -1,10 +1,15 @@
 import { useRef, useEffect } from 'react';
 import { getWeekDays, getEventsForDay, isToday, layoutDayEvents, formatDisplayTime } from '../../utils/calendar';
 import { getColorHex } from '../../utils/colors';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const HOUR_HEIGHT = 60;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
+
+function getThreeDayWindow(date) {
+  return [-1, 0, 1].map(offset => new Date(date.getTime() + offset * 86400000));
+}
 
 function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
   const start = new Date(event.startAt);
@@ -37,7 +42,7 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
         <span className="text-xs">🔒</span>
       ) : (
         <div className="text-xs">
-          <div className="font-medium leading-tight truncate">{event.title}</div>
+          <div className="font-medium leading-tight truncate">{event.title}{event.source === 'google' && <span className="text-[9px] bg-white/30 rounded px-1 ml-0.5">G</span>}</div>
           {duration >= 35 && (
             <div className="opacity-80 text-[10px]">{formatDisplayTime(event.startAt)}</div>
           )}
@@ -49,7 +54,8 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
 
 export default function WeekView({ currentDate, events, onEventClick, onSlotClick, currentUserId }) {
   const scrollRef = useRef(null);
-  const weekDays = getWeekDays(currentDate);
+  const isMobile = useIsMobile();
+  const weekDays = isMobile ? getThreeDayWindow(currentDate) : getWeekDays(currentDate);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 8 * HOUR_HEIGHT;
@@ -57,6 +63,7 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
 
   const now = new Date();
   const currentMinute = now.getHours() * 60 + now.getMinutes();
+  const allEmpty = weekDays.every(day => getEventsForDay(events, day).length === 0);
 
   function handleColumnClick(e, day) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -94,7 +101,7 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
 
       {/* Scrollable time grid */}
       <div className="flex-1 overflow-y-auto" ref={scrollRef}>
-        <div className="flex" style={{ minHeight: 24 * HOUR_HEIGHT }}>
+        <div className="flex relative" style={{ minHeight: 24 * HOUR_HEIGHT }}>
           {/* Hour labels */}
           <div className="w-14 shrink-0 border-r border-slate-100 relative" style={{ height: 24 * HOUR_HEIGHT }}>
             {HOURS.map(h => (
@@ -154,6 +161,15 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
               </div>
             );
           })}
+          {allEmpty && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none ml-14">
+              <div className="text-center -translate-y-12">
+                <span className="text-4xl">📅</span>
+                <p className="text-sm text-slate-400 mt-2">這週還沒有行程</p>
+                <p className="text-xs text-slate-300 mt-1">點擊時間格新增事件</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
