@@ -24,6 +24,7 @@ import CreateGroupModal from '../components/groups/CreateGroupModal';
 import JoinGroupModal from '../components/groups/JoinGroupModal';
 import MembersModal from '../components/groups/MembersModal';
 import { getWeekStart, getWeekDays, isSameDay } from '../utils/calendar';
+import { useIsDesktop } from '../hooks/useIsMobile';
 
 function getViewWindow(view, currentDate) {
   if (view === 'month') {
@@ -78,6 +79,7 @@ export default function CalendarPage() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   // Agenda sidebar
+  const isDesktop = useIsDesktop();
   const [agendaOpen, setAgendaOpen] = useState(true);
 
   // Bulk select
@@ -538,7 +540,7 @@ export default function CalendarPage() {
         </div>
 
         {/* Agenda sidebar (right, desktop only) */}
-        {agendaOpen && (
+        {isDesktop && agendaOpen && (
           <AgendaSidebar
             events={displayEvents.filter(e => e.source !== 'google')}
             onEventClick={handleEventClick}
