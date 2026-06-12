@@ -63,6 +63,7 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
 
   const now = new Date();
   const currentMinute = now.getHours() * 60 + now.getMinutes();
+  const allEmpty = weekDays.every(day => getEventsForDay(events, day).length === 0);
 
   function handleColumnClick(e, day) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -100,7 +101,7 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
 
       {/* Scrollable time grid */}
       <div className="flex-1 overflow-y-auto" ref={scrollRef}>
-        <div className="flex" style={{ minHeight: 24 * HOUR_HEIGHT }}>
+        <div className="flex relative" style={{ minHeight: 24 * HOUR_HEIGHT }}>
           {/* Hour labels */}
           <div className="w-14 shrink-0 border-r border-slate-100 relative" style={{ height: 24 * HOUR_HEIGHT }}>
             {HOURS.map(h => (
@@ -160,6 +161,15 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
               </div>
             );
           })}
+          {allEmpty && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none ml-14">
+              <div className="text-center -translate-y-12">
+                <span className="text-4xl">📅</span>
+                <p className="text-sm text-slate-400 mt-2">這週還沒有行程</p>
+                <p className="text-xs text-slate-300 mt-1">點擊時間格新增事件</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

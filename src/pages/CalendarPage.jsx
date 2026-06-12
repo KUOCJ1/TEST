@@ -208,10 +208,11 @@ export default function CalendarPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowSettings(true)}
-            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            className="flex flex-col items-center p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
             aria-label="設定"
           >
             <Settings size={18} />
+            <span className="text-[10px] leading-none mt-0.5 sm:hidden">設定</span>
           </button>
           <NotificationCenter
             permission={permission}

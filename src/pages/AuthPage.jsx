@@ -2,12 +2,25 @@ import { useState } from 'react';
 import { Calendar, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+function getPasswordStrength(pwd) {
+  if (!pwd || pwd.length < 6) return { level: 0, label: '太短', color: 'bg-red-400' };
+  let score = 0;
+  if (pwd.length >= 8) score++;
+  if (/[A-Z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[^A-Za-z0-9]/.test(pwd)) score++;
+  if (score <= 1) return { level: 1, label: '弱', color: 'bg-red-400' };
+  if (score === 2) return { level: 2, label: '中', color: 'bg-yellow-400' };
+  return { level: 3, label: '強', color: 'bg-green-500' };
+}
+
 export default function AuthPage() {
   const { login, register } = useAuth();
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const strength = mode === 'register' && form.password ? getPasswordStrength(form.password) : null;
 
   function update(field, value) {
     setForm(f => ({ ...f, [field]: value }));
@@ -121,6 +134,21 @@ export default function AuthPage() {
                   required
                 />
               </div>
+              {strength && (
+                <div className="mt-1.5 px-0.5">
+                  <div className="flex gap-1">
+                    {[0, 1, 2].map(i => (
+                      <div
+                        key={i}
+                        className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
+                          i < strength.level ? strength.color : 'bg-slate-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">密碼強度：{strength.label}</p>
+                </div>
+              )}
             </div>
 
             {mode === 'register' && (

@@ -67,6 +67,11 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
     setError('');
   }
 
+  const endBeforeStart = !form.isAllDay &&
+    form.startDate && form.endDate && form.startTime && form.endTime &&
+    new Date(combineDatetime(form.endDate, form.endTime)) <
+    new Date(combineDatetime(form.startDate, form.startTime));
+
   function handleSubmit(e) {
     e.preventDefault();
     if (!form.title.trim()) return setError('請輸入標題');
@@ -154,7 +159,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
 
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5">顏色</label>
-              <div className="flex gap-1.5">
+              <div className="grid grid-cols-6 gap-1.5">
                 {EVENT_COLORS.map(c => (
                   <button
                     key={c.id}
@@ -162,8 +167,10 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
                     onClick={() => set('color', c.id)}
                     title={c.label}
                     style={{ backgroundColor: c.hex }}
-                    className={`w-6 h-6 rounded-full transition-transform ${
-                      form.color === c.id ? 'scale-125 ring-2 ring-offset-1 ring-slate-400' : 'hover:scale-110'
+                    className={`w-7 h-7 rounded-lg transition-all ${
+                      form.color === c.id
+                        ? 'scale-110 ring-2 ring-offset-1 ring-slate-400'
+                        : 'hover:scale-105 hover:ring-1 hover:ring-slate-300'
                     }`}
                   />
                 ))}
@@ -222,7 +229,11 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
                   type="time"
                   value={form.endTime}
                   onChange={e => set('endTime', e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mt-2"
+                  className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 mt-2 ${
+                    endBeforeStart
+                      ? 'border-red-400 bg-red-50 focus:ring-red-400'
+                      : 'border-slate-200 focus:ring-indigo-500'
+                  }`}
                 />
               )}
             </div>

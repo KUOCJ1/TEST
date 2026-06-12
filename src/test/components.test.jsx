@@ -53,8 +53,8 @@ describe('color utilities', () => {
     expect(getColorHex('unknown')).toBe('#6366f1');
   });
 
-  it('EVENT_COLORS has 6 entries', () => {
-    expect(EVENT_COLORS).toHaveLength(6);
+  it('EVENT_COLORS has 12 entries', () => {
+    expect(EVENT_COLORS).toHaveLength(12);
   });
 
   it('EVENT_TYPES has 4 entries', () => {

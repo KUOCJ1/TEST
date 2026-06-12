@@ -156,6 +156,17 @@ export default function DayView({ currentDate, events, onEventClick, onSlotClick
                 currentUserId={currentUserId}
               />
             ))}
+
+            {timedEvents.length === 0 && allDayEvents.length === 0 && (
+              <div
+                className="absolute left-0 right-0 flex flex-col items-center pointer-events-none select-none text-center"
+                style={{ top: 660 }}
+              >
+                <span className="text-4xl mb-2">📅</span>
+                <p className="text-sm text-slate-400">這天還沒有行程</p>
+                <p className="text-xs text-slate-300 mt-1">點擊時間格新增事件</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

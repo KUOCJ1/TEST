@@ -67,3 +67,12 @@ body {
 .animate-slide-up {
   animation: slideUp 0.22s ease-out;
 }
+
+@keyframes toastProgress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+.toast-progress {
+  transform-origin: left;
+  animation: toastProgress var(--toast-duration, 6000ms) linear forwards;
+}
