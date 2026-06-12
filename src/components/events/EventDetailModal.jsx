@@ -30,7 +30,12 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detail-modal-title"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+      >
         {/* Color bar */}
         <div className="h-1.5 w-full" style={{ backgroundColor: color }} />
 
@@ -43,7 +48,7 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
                 <h2 className="text-lg font-semibold text-slate-500">私人事項</h2>
               </div>
             ) : (
-              <h2 className="text-lg font-semibold text-slate-800">{event.title}</h2>
+              <h2 id="detail-modal-title" className="text-lg font-semibold text-slate-800">{event.title}</h2>
             )}
 
             <div className="flex flex-wrap gap-1.5 mt-1">
@@ -66,7 +71,7 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
               )}
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 ml-3 shrink-0">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 ml-3 shrink-0" aria-label="關閉">
             <X size={20} />
           </button>
         </div>

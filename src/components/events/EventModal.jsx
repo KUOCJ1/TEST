@@ -168,15 +168,20 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
   return (
     <div className={isMobile ? 'fixed inset-0 z-50 flex items-end' : 'fixed inset-0 z-50 flex items-center justify-center p-4'}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={isMobile
-        ? 'relative bg-white rounded-t-2xl shadow-2xl w-full max-h-[92vh] overflow-y-auto animate-slide-up'
-        : 'relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="event-modal-title"
+        className={isMobile
+          ? 'relative bg-white rounded-t-2xl shadow-2xl w-full max-h-[92vh] overflow-y-auto animate-slide-up'
+          : 'relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-semibold text-slate-800">
+          <h2 id="event-modal-title" className="text-lg font-semibold text-slate-800">
             {isEditing ? '編輯事件' : '新增事件'}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="關閉">
             <X size={20} />
           </button>
         </div>
