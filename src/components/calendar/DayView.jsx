@@ -51,7 +51,10 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart
           {duration >= 60 && event.type && (
             <div className="text-xs opacity-75 mt-0.5">{TYPE_LABELS[event.type]}</div>
           )}
-          {duration >= 70 && event.tags?.length > 0 && (
+          {duration >= 70 && event.location && (
+            <div className="text-xs opacity-75 truncate">📍 {event.location}</div>
+          )}
+          {duration >= 90 && event.tags?.length > 0 && (
             <div className="text-xs opacity-75 truncate">{event.tags.map(t => `#${t}`).join(' ')}</div>
           )}
         </div>

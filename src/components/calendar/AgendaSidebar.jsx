@@ -81,7 +81,11 @@ export default function AgendaSidebar({ events, onEventClick }) {
                           {e.title}
                         </p>
                         <p className="text-[10px] text-slate-400">
-                          {e.isAllDay ? '全天' : formatDisplayTime(e.startAt)}
+                          {e.isAllDay ? '全天' : (() => {
+                            const dur = (new Date(e.endAt) - new Date(e.startAt)) / 60000;
+                            const dStr = dur >= 60 ? `${Math.round(dur / 60 * 10) / 10}h` : `${dur}m`;
+                            return `${formatDisplayTime(e.startAt)} · ${dStr}`;
+                          })()}
                         </p>
                       </div>
                     </button>

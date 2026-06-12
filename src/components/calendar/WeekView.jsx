@@ -50,6 +50,9 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart
           {duration >= 35 && (
             <div className="opacity-80 text-[10px]">{formatDisplayTime(event.startAt)}</div>
           )}
+          {duration >= 65 && event.location && (
+            <div className="opacity-70 text-[10px] truncate">📍 {event.location}</div>
+          )}
         </div>
       )}
     </button>
