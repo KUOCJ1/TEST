@@ -181,22 +181,9 @@ export default function CalendarPage() {
 
   // ── Event click handlers ─────────────────────────────────────
   function handleEventClick(event) {
-    if (event.source === 'google') {
-      setDetailEvent(event);
-      setDetailModalOpen(true);
-      return;
-    }
-    if (event.creatorId === currentUser.id) {
-      // For recurring instances: edit the base event
-      const baseId = event.recurringBaseId || event.id;
-      const baseEvent = events.find(e => e.id === baseId) || event;
-      setSelectedEvent(baseEvent);
-      setSelectedDate(null);
-      setEventModalOpen(true);
-    } else {
-      setDetailEvent(event);
-      setDetailModalOpen(true);
-    }
+    // All events show detail modal first; Edit button opens EventModal
+    setDetailEvent(event);
+    setDetailModalOpen(true);
   }
 
   function handleSlotClick(date) {
@@ -391,9 +378,12 @@ export default function CalendarPage() {
   }
 
   function handleEditFromDetail() {
+    if (!detailEvent) return;
+    const baseId = detailEvent.recurringBaseId || detailEvent.id;
+    const baseEvent = events.find(e => e.id === baseId) || detailEvent;
     setDetailModalOpen(false);
-    setSelectedEvent(detailEvent);
     setDetailEvent(null);
+    setSelectedEvent(baseEvent);
     setEventModalOpen(true);
   }
 
