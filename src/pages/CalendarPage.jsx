@@ -118,7 +118,11 @@ export default function CalendarPage() {
       if (typing) return;
 
       if (e.key === '?') { setShowHelp(o => !o); return; }
-      if (e.key === 'Escape') { setShowHelp(false); return; }
+      if (e.key === 'Escape') {
+        setShowHelp(false);
+        if (selectMode) { setSelectMode(false); setSelectedIds(new Set()); }
+        return;
+      }
       if (e.key === 't') { goToday(); return; }
       if (e.key === 'n') { handleSlotClick(new Date()); return; }
       if (e.key === 'm') { setView('month'); return; }
@@ -676,7 +680,7 @@ export default function CalendarPage() {
         {/* Agenda sidebar (right, desktop only) */}
         {isDesktop && agendaOpen && (
           <AgendaSidebar
-            events={displayEvents.filter(e => e.source !== 'google')}
+            events={displayEvents}
             onEventClick={handleEventClick}
           />
         )}
@@ -750,7 +754,7 @@ export default function CalendarPage() {
       <EventSearch
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
-        events={rawEvents}
+        events={googleCalendar.isConnected ? [...rawEvents, ...googleCalendar.googleEvents] : rawEvents}
         onSelectEvent={handleSearchSelect}
       />
 
@@ -758,10 +762,10 @@ export default function CalendarPage() {
       {showHelp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowHelp(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+          <div role="dialog" aria-modal="true" aria-labelledby="help-dialog-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h3 className="text-base font-semibold text-slate-800">鍵盤快捷鍵</h3>
-              <button onClick={() => setShowHelp(false)} className="text-slate-400 hover:text-slate-600">
+              <h3 id="help-dialog-title" className="text-base font-semibold text-slate-800">鍵盤快捷鍵</h3>
+              <button onClick={() => setShowHelp(false)} className="text-slate-400 hover:text-slate-600" aria-label="關閉">
                 <X size={18} />
               </button>
             </div>
@@ -793,9 +797,9 @@ export default function CalendarPage() {
       {recurScopeDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setRecurScopeDialog(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden">
+          <div role="dialog" aria-modal="true" aria-labelledby="recur-scope-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden">
             <div className="px-5 pt-5 pb-3">
-              <h3 className="text-base font-semibold text-slate-800">
+              <h3 id="recur-scope-title" className="text-base font-semibold text-slate-800">
                 {recurScopeDialog.isDelete ? '刪除重複事件' : '編輯重複事件'}
               </h3>
               <p className="text-sm text-slate-500 mt-1">要修改哪些重複事件？</p>
