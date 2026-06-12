@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Calendar, LogOut, Menu } from 'lucide-react';
+import { useNotifications } from '../hooks/useNotifications';
+import NotificationCenter from '../components/notifications/NotificationCenter';
+import ToastContainer from '../components/notifications/ToastContainer';
 import { useAuth } from '../context/AuthContext';
 import { useCalendar } from '../context/CalendarContext';
 import { useGroups } from '../context/GroupContext';
@@ -48,6 +51,9 @@ export default function CalendarPage() {
   const [managingGroupId, setManagingGroupId] = useState(null);
 
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // ── Notifications ─────────────────────────────────────────────
+  const { permission, requestPermission, upcomingReminders, toasts, dismissToast } = useNotifications(events);
 
   // ── Navigation ───────────────────────────────────────────────
   function navigate(dir) {
@@ -159,6 +165,13 @@ export default function CalendarPage() {
           )}
         </div>
 
+        <div className="flex items-center gap-1">
+          <NotificationCenter
+            permission={permission}
+            requestPermission={requestPermission}
+            upcomingReminders={upcomingReminders}
+          />
+
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(m => !m)}
@@ -188,6 +201,7 @@ export default function CalendarPage() {
               </div>
             </>
           )}
+        </div>
         </div>
       </header>
 
@@ -295,6 +309,8 @@ export default function CalendarPage() {
           onLeft={handleGroupLeft}
         />
       )}
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }
