@@ -1,4 +1,4 @@
-import { X, Clock, Tag, Lock, User, ExternalLink, MapPin, Link, RefreshCw } from 'lucide-react';
+import { X, Clock, Tag, Lock, User, Users, ExternalLink, MapPin, Link, RefreshCw } from 'lucide-react';
 import { getColorHex } from '../../utils/colors';
 import { formatDisplayTime } from '../../utils/calendar';
 import { FREQ_OPTIONS } from '../../utils/recurrence';
@@ -112,6 +112,30 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit }) {
                 >
                   {event.url.replace(/^https?:\/\//, '')}
                 </a>
+              </div>
+            )}
+
+            {/* Attendees */}
+            {event.attendees?.length > 0 && (
+              <div className="flex items-start gap-2.5">
+                <Users size={15} className="text-slate-400 mt-0.5 shrink-0" />
+                <div className="flex flex-wrap gap-1.5">
+                  {event.attendees.map(email => {
+                    const initials = email.split('@')[0].slice(0, 2).toUpperCase();
+                    return (
+                      <span
+                        key={email}
+                        title={email}
+                        className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full"
+                      >
+                        <span className="w-4 h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                          {initials}
+                        </span>
+                        {email}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

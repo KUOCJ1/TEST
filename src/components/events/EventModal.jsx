@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Trash2, Lock, MapPin, Link, RefreshCw, AlertTriangle } from 'lucide-react';
+import { X, Trash2, Lock, MapPin, Link, RefreshCw, AlertTriangle, Users } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useCalendar } from '../../context/CalendarContext';
 import { EVENT_COLORS, EVENT_TYPES, REMINDER_OPTIONS, getTypeDefaultColor, getColorHex } from '../../utils/colors';
@@ -22,6 +22,7 @@ const DEFAULT_FORM = {
   reminder: '',
   location: '',
   url: '',
+  attendees: '',
   recurrenceFreq: '',
   recurrenceUntil: '',
 };
@@ -45,6 +46,7 @@ function buildForm(event, initialDate) {
       reminder: event.reminder || '',
       location: event.location || '',
       url: event.url || '',
+      attendees: (event.attendees || []).join(', '),
       recurrenceFreq: event.recurrence?.freq || '',
       recurrenceUntil: event.recurrence?.until || '',
     };
@@ -106,6 +108,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
       : combineDatetime(form.endDate, form.endTime);
 
     const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean);
+    const attendees = form.attendees.split(',').map(t => t.trim()).filter(Boolean);
     const recurrence = form.recurrenceFreq
       ? { freq: form.recurrenceFreq, until: form.recurrenceUntil || null }
       : null;
@@ -123,6 +126,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
       reminder: form.reminder,
       location: form.location.trim(),
       url: form.url.trim(),
+      attendees,
       recurrence,
     });
   }
@@ -321,6 +325,18 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
               value={form.url}
               onChange={e => set('url', e.target.value)}
               placeholder="相關連結 https://..."
+              className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* Attendees */}
+          <div className="relative">
+            <Users size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={form.attendees}
+              onChange={e => set('attendees', e.target.value)}
+              placeholder="參與者 Email（以逗號分隔）"
               className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>

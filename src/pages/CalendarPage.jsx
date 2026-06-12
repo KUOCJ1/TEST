@@ -87,6 +87,9 @@ export default function CalendarPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
 
+  // Recurring edit scope dialog
+  const [recurScopeDialog, setRecurScopeDialog] = useState(null); // { data, event }
+
   // ── Notifications ─────────────────────────────────────────────
   const { permission, requestPermission, upcomingReminders, toasts, addToast, dismissToast } = useNotifications(events);
 
@@ -191,6 +194,11 @@ export default function CalendarPage() {
 
   function handleSave(data) {
     if (selectedEvent) {
+      if (selectedEvent.isRecurring) {
+        setRecurScopeDialog({ data, event: selectedEvent });
+        closeEventModal();
+        return;
+      }
       updateEvent(selectedEvent.id, data);
       addToast({ type: 'success', title: '事件已更新', body: data.title });
     } else {
@@ -200,11 +208,67 @@ export default function CalendarPage() {
     closeEventModal();
   }
 
+  function applyRecurScope(scope) {
+    if (!recurScopeDialog) return;
+    const { data, event } = recurScopeDialog;
+    setRecurScopeDialog(null);
+    if (scope === 'this') {
+      updateEvent(event.id, data);
+    } else if (scope === 'future') {
+      events
+        .filter(e => e.recurringBaseId === event.recurringBaseId && new Date(e.startAt) >= new Date(event.startAt))
+        .forEach(e => {
+          const diff = new Date(data.startAt).getTime() - new Date(event.startAt).getTime();
+          const dur = new Date(data.endAt).getTime() - new Date(data.startAt).getTime();
+          updateEvent(e.id, {
+            ...data,
+            startAt: new Date(new Date(e.startAt).getTime() + diff).toISOString(),
+            endAt:   new Date(new Date(e.startAt).getTime() + diff + dur).toISOString(),
+          });
+        });
+    } else {
+      events
+        .filter(e => e.recurringBaseId === event.recurringBaseId)
+        .forEach(e => {
+          const diff = new Date(data.startAt).getTime() - new Date(event.startAt).getTime();
+          const dur = new Date(data.endAt).getTime() - new Date(data.startAt).getTime();
+          updateEvent(e.id, {
+            ...data,
+            startAt: new Date(new Date(e.startAt).getTime() + diff).toISOString(),
+            endAt:   new Date(new Date(e.startAt).getTime() + diff + dur).toISOString(),
+          });
+        });
+    }
+    addToast({ type: 'success', title: '事件已更新', body: data.title });
+  }
+
   function handleDelete(id) {
     const evt = events.find(e => e.id === id);
-    deleteEvent(id);
     closeEventModal();
+    if (evt?.isRecurring) {
+      setRecurScopeDialog({ data: null, event: evt, isDelete: true });
+      return;
+    }
+    deleteEvent(id);
     if (evt) addToast({ type: 'info', title: '事件已刪除', body: evt.title });
+  }
+
+  function applyRecurDeleteScope(scope) {
+    if (!recurScopeDialog) return;
+    const { event } = recurScopeDialog;
+    setRecurScopeDialog(null);
+    if (scope === 'this') {
+      deleteEvent(event.id);
+    } else if (scope === 'future') {
+      events
+        .filter(e => e.recurringBaseId === event.recurringBaseId && new Date(e.startAt) >= new Date(event.startAt))
+        .forEach(e => deleteEvent(e.id));
+    } else {
+      events
+        .filter(e => e.recurringBaseId === event.recurringBaseId)
+        .forEach(e => deleteEvent(e.id));
+    }
+    addToast({ type: 'info', title: '事件已刪除', body: event.title });
   }
 
   // ── Drag-and-drop (MonthView: day-level) ─────────────────────
@@ -665,6 +729,42 @@ export default function CalendarPage() {
                   </kbd>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recurring edit/delete scope dialog */}
+      {recurScopeDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setRecurScopeDialog(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden">
+            <div className="px-5 pt-5 pb-3">
+              <h3 className="text-base font-semibold text-slate-800">
+                {recurScopeDialog.isDelete ? '刪除重複事件' : '編輯重複事件'}
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">要修改哪些重複事件？</p>
+            </div>
+            <div className="px-5 pb-5 flex flex-col gap-2">
+              {[
+                { scope: 'this',   label: '只此活動' },
+                { scope: 'future', label: '此活動及以後' },
+                { scope: 'all',    label: '全部重複活動' },
+              ].map(({ scope, label }) => (
+                <button
+                  key={scope}
+                  onClick={() => recurScopeDialog.isDelete ? applyRecurDeleteScope(scope) : applyRecurScope(scope)}
+                  className="w-full text-left px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
+                >
+                  {label}
+                </button>
+              ))}
+              <button
+                onClick={() => setRecurScopeDialog(null)}
+                className="w-full text-center px-4 py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                取消
+              </button>
             </div>
           </div>
         </div>
