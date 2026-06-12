@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Trash2, Lock, MapPin, Link, RefreshCw, AlertTriangle, Users } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useCalendar } from '../../context/CalendarContext';
@@ -82,8 +82,15 @@ function buildForm(event, initialDate, copyFrom) {
 export default function EventModal({ isOpen, onClose, onSave, onDelete, event, initialDate, copyFrom }) {
   const [form, setForm] = useState(() => buildForm(event, initialDate, copyFrom));
   const [error, setError] = useState('');
+  const [tagSuggestions, setTagSuggestions] = useState([]);
+  const tagsRef = useRef(null);
   const isMobile = useIsMobile();
   const { events } = useCalendar();
+
+  const allTags = useMemo(
+    () => [...new Set(events.flatMap(e => e.tags || []))].sort(),
+    [events]
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -365,17 +372,51 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
           </div>
 
           {/* Tags */}
-          <div>
+          <div className="relative">
             <label className="block text-xs font-medium text-slate-500 mb-1.5">
               標籤 <span className="font-normal text-slate-400">（以逗號分隔）</span>
             </label>
             <input
+              ref={tagsRef}
               type="text"
               value={form.tags}
-              onChange={e => set('tags', e.target.value)}
+              onChange={e => {
+                set('tags', e.target.value);
+                const lastPart = e.target.value.split(',').pop().trim().toLowerCase();
+                if (lastPart.length >= 1) {
+                  setTagSuggestions(allTags.filter(t =>
+                    t.toLowerCase().startsWith(lastPart) &&
+                    !e.target.value.split(',').map(x => x.trim()).includes(t)
+                  ).slice(0, 6));
+                } else {
+                  setTagSuggestions([]);
+                }
+              }}
+              onBlur={() => setTimeout(() => setTagSuggestions([]), 200)}
               placeholder="例：行銷, 開發, 重要"
               className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
+            {tagSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg z-10 mt-1 overflow-hidden">
+                {tagSuggestions.map(tag => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onMouseDown={e => {
+                      e.preventDefault();
+                      const parts = form.tags.split(',');
+                      parts[parts.length - 1] = ` ${tag}`;
+                      set('tags', parts.join(',').replace(/^,\s*/, '') + ', ');
+                      setTagSuggestions([]);
+                      tagsRef.current?.focus();
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Reminder */}
