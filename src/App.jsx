@@ -1,5 +1,6 @@
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CalendarProvider } from './context/CalendarContext';
+import { GroupProvider } from './context/GroupContext';
 import AuthPage from './pages/AuthPage';
 import CalendarPage from './pages/CalendarPage';
 
@@ -10,7 +11,9 @@ function AppContent() {
 
   return (
     <CalendarProvider userId={currentUser.id}>
-      <CalendarPage />
+      <GroupProvider currentUser={currentUser}>
+        <CalendarPage />
+      </GroupProvider>
     </CalendarProvider>
   );
 }

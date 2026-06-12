@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import React from 'react';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { CalendarProvider, useCalendar } from '../context/CalendarContext';
+import { GroupProvider, useGroups } from '../context/GroupContext';
 
 beforeEach(() => {
   localStorage.clear();
@@ -130,5 +131,91 @@ describe('CalendarContext', () => {
     });
     const stored = JSON.parse(localStorage.getItem('cal_events_u4'));
     expect(stored[0].title).toBe('Persisted');
+  });
+});
+
+describe('GroupContext', () => {
+  const user1 = { id: 'g-u1', name: 'Alice', email: 'alice@test.com' };
+  const user2 = { id: 'g-u2', name: 'Bob', email: 'bob@test.com' };
+  const makeWrapper = (user) =>
+    ({ children }) => React.createElement(GroupProvider, { currentUser: user }, children);
+
+  it('starts with no groups', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    expect(result.current.groups).toHaveLength(0);
+  });
+
+  it('creates a group with invite code', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let group;
+    act(() => { group = result.current.createGroup('Team Alpha'); });
+    expect(result.current.groups).toHaveLength(1);
+    expect(result.current.groups[0].name).toBe('Team Alpha');
+    expect(result.current.groups[0].inviteCode).toHaveLength(6);
+    expect(result.current.groups[0].members).toHaveLength(1);
+  });
+
+  it('owner has role "owner"', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    act(() => { result.current.createGroup('My Group'); });
+    expect(result.current.groups[0].members[0].role).toBe('owner');
+  });
+
+  it('second user can join with invite code', () => {
+    const { result: r1 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let inviteCode;
+    act(() => { r1.current.createGroup('Shared'); });
+    inviteCode = r1.current.groups[0].inviteCode;
+
+    // user2 joins
+    const { result: r2 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user2) });
+    act(() => { r2.current.joinGroup(inviteCode); });
+    expect(r2.current.groups).toHaveLength(1);
+    expect(r2.current.groups[0].members).toHaveLength(2);
+  });
+
+  it('throws when joining with wrong invite code', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    expect(() => {
+      act(() => { result.current.joinGroup('XXXXXX'); });
+    }).toThrow('找不到此邀請碼');
+  });
+
+  it('throws when joining a group you are already in', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let code;
+    act(() => { const g = result.current.createGroup('G'); code = g.inviteCode; });
+    expect(() => {
+      act(() => { result.current.joinGroup(code); });
+    }).toThrow('你已是此群組的成員');
+  });
+
+  it('leaveGroup removes user from group', () => {
+    const { result: r1 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let groupId;
+    act(() => { const g = r1.current.createGroup('LeaveTest'); groupId = g.id; });
+    act(() => { r1.current.leaveGroup(groupId); });
+    expect(r1.current.groups).toHaveLength(0);
+  });
+
+  it('getGroupById returns correct group', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let groupId;
+    act(() => { const g = result.current.createGroup('FindMe'); groupId = g.id; });
+    const found = result.current.getGroupById(groupId);
+    expect(found?.name).toBe('FindMe');
+  });
+
+  it('getGroupById returns null for unknown id', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    expect(result.current.getGroupById('nonexistent')).toBeNull();
+  });
+
+  it('renameGroup updates name', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let groupId;
+    act(() => { const g = result.current.createGroup('OldName'); groupId = g.id; });
+    act(() => { result.current.renameGroup(groupId, 'NewName'); });
+    expect(result.current.groups[0].name).toBe('NewName');
   });
 });
