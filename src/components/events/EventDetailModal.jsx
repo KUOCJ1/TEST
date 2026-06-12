@@ -180,7 +180,7 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
         )}
 
         {/* Footer */}
-        {!isPrivate && (
+        {(!isPrivate || onEdit) && (
           <div className="border-t border-slate-100 px-5 py-3 flex justify-between items-center gap-3">
             <div className="flex items-center gap-2">
               {event?.htmlLink && (
