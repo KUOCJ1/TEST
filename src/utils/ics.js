@@ -34,6 +34,8 @@ export function exportToIcs(events) {
     }
     lines.push(`SUMMARY:${escICS(e.title)}`);
     if (e.description) lines.push(`DESCRIPTION:${escICS(e.description)}`);
+    if (e.location)    lines.push(`LOCATION:${escICS(e.location)}`);
+    if (e.url)         lines.push(`URL:${e.url}`);
     if (e.tags?.length) lines.push(`CATEGORIES:${e.tags.join(',')}`);
     if (e.reminder) lines.push(`BEGIN:VALARM\r\nTRIGGER:-PT${e.reminder}M\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder\r\nEND:VALARM`);
     lines.push('END:VEVENT');
@@ -58,15 +60,30 @@ export function parseIcs(text) {
     if (line === 'END:VEVENT') { if (cur?.title && cur?.startAt) events.push(cur); cur = null; continue; }
     if (line === 'BEGIN:VALARM') { inAlarm = true; continue; }
     if (line === 'END:VALARM') { inAlarm = false; continue; }
-    if (!cur || inAlarm) continue;
+    if (!cur) continue;
 
     const colon = line.indexOf(':');
     if (colon < 0) continue;
     const prop = line.slice(0, colon).toUpperCase();
     const val  = line.slice(colon + 1);
 
+    if (inAlarm) {
+      // Parse TRIGGER to restore reminder duration
+      if (prop === 'TRIGGER') {
+        const m = val.match(/-PT(\d+)M/);
+        const h = val.match(/-PT(\d+)H/);
+        const d = val.match(/-P(\d+)D/);
+        if (m) cur.reminder = m[1];
+        else if (h) cur.reminder = String(parseInt(h[1], 10) * 60);
+        else if (d) cur.reminder = String(parseInt(d[1], 10) * 1440);
+      }
+      continue;
+    }
+
     if (prop === 'SUMMARY') { cur.title = unescICS(val); }
     else if (prop === 'DESCRIPTION') { cur.description = unescICS(val); }
+    else if (prop === 'LOCATION') { cur.location = unescICS(val); }
+    else if (prop === 'URL') { cur.url = val.trim(); }
     else if (prop.startsWith('DTSTART')) {
       if (prop.includes('VALUE=DATE') || val.length === 8) {
         cur.isAllDay = true;

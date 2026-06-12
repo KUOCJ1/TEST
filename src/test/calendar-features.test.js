@@ -276,4 +276,35 @@ describe('ICS roundtrip', () => {
     const parsed = parseIcs(malformed);
     expect(parsed).toHaveLength(0);
   });
+
+  it('roundtrips location field', () => {
+    const withLocation = { ...timed, id: 'loc1', location: 'Conference Room A, 2F' };
+    const ics = exportToIcs([withLocation]);
+    expect(ics).toContain('LOCATION:Conference Room A\\, 2F');
+    const parsed = parseIcs(ics);
+    expect(parsed[0].location).toBe('Conference Room A, 2F');
+  });
+
+  it('roundtrips url field', () => {
+    const withUrl = { ...timed, id: 'url1', url: 'https://meet.example.com/abc' };
+    const ics = exportToIcs([withUrl]);
+    expect(ics).toContain('URL:https://meet.example.com/abc');
+    const parsed = parseIcs(ics);
+    expect(parsed[0].url).toBe('https://meet.example.com/abc');
+  });
+
+  it('roundtrips reminder as VALARM TRIGGER', () => {
+    const withReminder = { ...timed, id: 'rem1', reminder: '15' };
+    const ics = exportToIcs([withReminder]);
+    expect(ics).toContain('TRIGGER:-PT15M');
+    const parsed = parseIcs(ics);
+    expect(parsed[0].reminder).toBe('15');
+  });
+
+  it('roundtrips 1-hour reminder (60 min)', () => {
+    const withReminder = { ...timed, id: 'rem2', reminder: '60' };
+    const ics = exportToIcs([withReminder]);
+    const parsed = parseIcs(ics);
+    expect(parsed[0].reminder).toBe('60');
+  });
 });
