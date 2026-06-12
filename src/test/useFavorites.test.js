@@ -218,4 +218,62 @@ describe('GroupContext', () => {
     act(() => { result.current.renameGroup(groupId, 'NewName'); });
     expect(result.current.groups[0].name).toBe('NewName');
   });
+
+  it('removeMember removes a member from the group', () => {
+    const { result: r1 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let groupId, code;
+    act(() => { const g = r1.current.createGroup('RemoveTest'); groupId = g.id; code = g.inviteCode; });
+
+    const { result: r2 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user2) });
+    act(() => { r2.current.joinGroup(code); });
+
+    act(() => { r1.current.refresh(); });
+    expect(r1.current.getGroupById(groupId).members).toHaveLength(2);
+
+    act(() => { r1.current.removeMember(groupId, user2.id); });
+    expect(r1.current.getGroupById(groupId).members).toHaveLength(1);
+    expect(r1.current.getGroupById(groupId).members[0].userId).toBe(user1.id);
+  });
+
+  it('ownership transfers when owner leaves a multi-member group', () => {
+    const { result: r1 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let groupId, code;
+    act(() => { const g = r1.current.createGroup('TransferTest'); groupId = g.id; code = g.inviteCode; });
+
+    const { result: r2 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user2) });
+    act(() => { r2.current.joinGroup(code); });
+
+    // Owner (user1) leaves
+    act(() => { r1.current.leaveGroup(groupId); });
+
+    // user2 should now own the group
+    const remaining = r2.current.getGroupById(groupId);
+    const u2member = remaining?.members.find(m => m.userId === user2.id);
+    expect(u2member?.role).toBe('owner');
+  });
+
+  it('getGroupEvents aggregates events from all members', () => {
+    const { result: r1 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    let groupId, code;
+    act(() => { const g = r1.current.createGroup('EventsGroup'); groupId = g.id; code = g.inviteCode; });
+
+    const { result: r2 } = renderHook(() => useGroups(), { wrapper: makeWrapper(user2) });
+    act(() => { r2.current.joinGroup(code); });
+
+    // Plant events for both users directly in localStorage
+    const evt1 = { id: 'e1', title: 'Alice Event', startAt: '2026-06-10T10:00:00Z', endAt: '2026-06-10T11:00:00Z' };
+    const evt2 = { id: 'e2', title: 'Bob Event',   startAt: '2026-06-10T12:00:00Z', endAt: '2026-06-10T13:00:00Z' };
+    localStorage.setItem(`cal_events_${user1.id}`, JSON.stringify([evt1]));
+    localStorage.setItem(`cal_events_${user2.id}`, JSON.stringify([evt2]));
+
+    const groupEvents = r1.current.getGroupEvents(groupId);
+    expect(groupEvents).toHaveLength(2);
+    const titles = groupEvents.map(e => e.title).sort();
+    expect(titles).toEqual(['Alice Event', 'Bob Event']);
+  });
+
+  it('getGroupEvents returns empty for unknown group', () => {
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(user1) });
+    expect(result.current.getGroupEvents('unknown-id')).toEqual([]);
+  });
 });
