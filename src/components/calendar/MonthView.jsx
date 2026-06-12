@@ -1,5 +1,6 @@
 import { DAY_NAMES, getMonthCalendarDays, getEventsForDay, isToday } from '../../utils/calendar';
 import { getColorHex } from '../../utils/colors';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const MAX_VISIBLE = 3;
 
@@ -29,12 +30,12 @@ function EventPill({ event, onClick, currentUserId }) {
       {!isOwn && event.creatorName && (
         <span className="opacity-75 mr-1">{event.creatorName.charAt(0)}·</span>
       )}
-      {event.title}
+      {event.title}{event.source === 'google' && <span className="text-[8px] opacity-60">G</span>}
     </button>
   );
 }
 
-function DayCell({ day, events, onDayClick, onEventClick, currentUserId }) {
+function DayCell({ day, events, onDayClick, onEventClick, currentUserId, compact }) {
   const today = isToday(day.date);
   const visible = events.slice(0, MAX_VISIBLE);
   const overflow = events.length - MAX_VISIBLE;
@@ -42,7 +43,7 @@ function DayCell({ day, events, onDayClick, onEventClick, currentUserId }) {
   return (
     <div
       onClick={() => onDayClick(day.date)}
-      className={`min-h-[100px] p-1 border-b border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 transition-colors ${
+      className={`min-h-[72px] sm:min-h-[100px] p-1 border-b border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 transition-colors ${
         !day.isCurrentMonth ? 'bg-slate-50/60' : 'bg-white'
       }`}
     >
@@ -57,29 +58,38 @@ function DayCell({ day, events, onDayClick, onEventClick, currentUserId }) {
           {day.date.getDate()}
         </span>
       </div>
-      <div className="space-y-0.5">
-        {visible.map(event => (
-          <EventPill
-            key={event.id}
-            event={event}
-            onClick={onEventClick}
-            currentUserId={currentUserId}
-          />
-        ))}
-        {overflow > 0 && (
-          <button
-            onClick={e => { e.stopPropagation(); onDayClick(day.date); }}
-            className="w-full text-left text-xs text-indigo-500 px-1.5 hover:underline"
-          >
-            + {overflow} 更多
-          </button>
-        )}
-      </div>
+      {compact ? (
+        <div className="flex flex-wrap gap-0.5 mt-1 px-1">
+          {events.slice(0, 5).map(e => (
+            <div key={e.id} className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getColorHex(e.color) }} />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-0.5">
+          {visible.map(event => (
+            <EventPill
+              key={event.id}
+              event={event}
+              onClick={onEventClick}
+              currentUserId={currentUserId}
+            />
+          ))}
+          {overflow > 0 && (
+            <button
+              onClick={e => { e.stopPropagation(); onDayClick(day.date); }}
+              className="w-full text-left text-xs text-indigo-500 px-1.5 hover:underline"
+            >
+              + {overflow} 更多
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 export default function MonthView({ currentDate, events, onDayClick, onEventClick, currentUserId }) {
+  const isMobile = useIsMobile();
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const days = getMonthCalendarDays(year, month);
@@ -112,6 +122,7 @@ export default function MonthView({ currentDate, events, onDayClick, onEventClic
               onDayClick={onDayClick}
               onEventClick={onEventClick}
               currentUserId={currentUserId}
+              compact={isMobile}
             />
           );
         })}

@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Calendar, LogOut, Menu } from 'lucide-react';
+import { Calendar, LogOut, Menu, Settings } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
+import { useGoogleCalendar } from '../hooks/useGoogleCalendar';
+import { exportToIcs, parseIcs } from '../utils/ics';
+import GoogleSettingsModal from '../components/settings/GoogleSettingsModal';
 import NotificationCenter from '../components/notifications/NotificationCenter';
 import ToastContainer from '../components/notifications/ToastContainer';
 import { useAuth } from '../context/AuthContext';
@@ -55,6 +58,12 @@ export default function CalendarPage() {
   // ── Notifications ─────────────────────────────────────────────
   const { permission, requestPermission, upcomingReminders, toasts, dismissToast } = useNotifications(events);
 
+  // ── Google Calendar ───────────────────────────────────────────
+  const googleCalendar = useGoogleCalendar();
+
+  // ── Settings modal ────────────────────────────────────────────
+  const [showSettings, setShowSettings] = useState(false);
+
   // ── Navigation ───────────────────────────────────────────────
   function navigate(dir) {
     setCurrentDate(d => {
@@ -73,13 +82,20 @@ export default function CalendarPage() {
     let result = rawEvents;
     if (colorFilters.length > 0) result = result.filter(e => colorFilters.includes(e.color));
     if (tagFilters.length > 0)   result = result.filter(e => tagFilters.some(t => e.tags?.includes(t)));
-    return result;
-  }, [rawEvents, colorFilters, tagFilters]);
+    // Merge Google Calendar events (read-only, not filtered by local filters)
+    const googleVisible = googleCalendar.isConnected ? googleCalendar.googleEvents : [];
+    return [...result, ...googleVisible];
+  }, [rawEvents, colorFilters, tagFilters, googleCalendar.isConnected, googleCalendar.googleEvents]);
 
   const activeGroupName = activeGroupId ? groups.find(g => g.id === activeGroupId)?.name : null;
 
   // ── Event click handlers ─────────────────────────────────────
   function handleEventClick(event) {
+    if (event.source === 'google') {
+      setDetailEvent(event);
+      setDetailModalOpen(true);
+      return;
+    }
     if (event.creatorId === currentUser.id) {
       setSelectedEvent(event);
       setSelectedDate(null);
@@ -142,6 +158,30 @@ export default function CalendarPage() {
     setEventModalOpen(true);
   }
 
+  // ── ICS export/import ─────────────────────────────────────────
+  function handleExportIcs() {
+    const content = exportToIcs(events);
+    const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '行事曆.ics';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleImportIcs(text) {
+    const parsed = parseIcs(text);
+    let count = 0;
+    for (const e of parsed) {
+      // avoid duplicates by checking externalId
+      if (e.externalId && events.some(ev => ev.externalId === e.externalId)) continue;
+      addEvent({ ...e, title: e.title || '匯入事件' });
+      count++;
+    }
+    alert(`成功匯入 ${count} 個事件`);
+  }
+
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden">
       {/* Top nav */}
@@ -166,6 +206,13 @@ export default function CalendarPage() {
         </div>
 
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="設定"
+          >
+            <Settings size={18} />
+          </button>
           <NotificationCenter
             permission={permission}
             requestPermission={requestPermission}
@@ -285,7 +332,7 @@ export default function CalendarPage() {
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         event={detailEvent}
-        onEdit={detailEvent?.creatorId === currentUser.id ? handleEditFromDetail : null}
+        onEdit={detailEvent?.creatorId === currentUser.id && detailEvent?.source !== 'google' ? handleEditFromDetail : null}
       />
 
       <CreateGroupModal
@@ -311,6 +358,22 @@ export default function CalendarPage() {
       )}
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      <GoogleSettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        isConnected={googleCalendar.isConnected}
+        isLoading={googleCalendar.isLoading}
+        error={googleCalendar.error}
+        scriptsReady={googleCalendar.scriptsReady}
+        clientId={googleCalendar.clientId}
+        connect={googleCalendar.connect}
+        disconnect={googleCalendar.disconnect}
+        events={events}
+        addEvent={addEvent}
+        onExportIcs={handleExportIcs}
+        onImportIcs={handleImportIcs}
+      />
     </div>
   );
 }

@@ -1,10 +1,15 @@
 import { useRef, useEffect } from 'react';
 import { getWeekDays, getEventsForDay, isToday, layoutDayEvents, formatDisplayTime } from '../../utils/calendar';
 import { getColorHex } from '../../utils/colors';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const HOUR_HEIGHT = 60;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
+
+function getThreeDayWindow(date) {
+  return [-1, 0, 1].map(offset => new Date(date.getTime() + offset * 86400000));
+}
 
 function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
   const start = new Date(event.startAt);
@@ -37,7 +42,7 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
         <span className="text-xs">🔒</span>
       ) : (
         <div className="text-xs">
-          <div className="font-medium leading-tight truncate">{event.title}</div>
+          <div className="font-medium leading-tight truncate">{event.title}{event.source === 'google' && <span className="text-[9px] bg-white/30 rounded px-1 ml-0.5">G</span>}</div>
           {duration >= 35 && (
             <div className="opacity-80 text-[10px]">{formatDisplayTime(event.startAt)}</div>
           )}
@@ -49,7 +54,8 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
 
 export default function WeekView({ currentDate, events, onEventClick, onSlotClick, currentUserId }) {
   const scrollRef = useRef(null);
-  const weekDays = getWeekDays(currentDate);
+  const isMobile = useIsMobile();
+  const weekDays = isMobile ? getThreeDayWindow(currentDate) : getWeekDays(currentDate);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 8 * HOUR_HEIGHT;

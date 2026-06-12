@@ -1,4 +1,4 @@
-import { X, Clock, Tag, Lock, User } from 'lucide-react';
+import { X, Clock, Tag, Lock, User, ExternalLink } from 'lucide-react';
 import { getColorHex } from '../../utils/colors';
 import { formatDisplayTime } from '../../utils/calendar';
 
@@ -27,6 +27,12 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit }) {
               </div>
             ) : (
               <h2 className="text-lg font-semibold text-slate-800">{event.title}</h2>
+            )}
+            {event?.source === 'google' && (
+              <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full mt-1">
+                <span className="w-3.5 h-3.5 rounded bg-red-500 text-white text-[8px] flex items-center justify-center font-bold">G</span>
+                Google 行事曆
+              </span>
             )}
             {event.type && (
               <span className="text-xs text-slate-500 mt-0.5 block">
@@ -88,15 +94,28 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit }) {
           <p className="px-5 pb-4 text-sm text-slate-400">此事項已設為私人，內容不對外顯示。</p>
         )}
 
-        {/* Edit button — only for own events */}
-        {onEdit && !isPrivate && (
-          <div className="border-t border-slate-100 px-5 py-3 flex justify-end">
-            <button
-              onClick={onEdit}
-              className="px-4 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors"
-            >
-              編輯
-            </button>
+        {/* Footer: Google link or Edit button */}
+        {!isPrivate && (event?.htmlLink || (onEdit && event?.source !== 'google')) && (
+          <div className="border-t border-slate-100 px-5 py-3 flex justify-end gap-3">
+            {event?.htmlLink && (
+              <a
+                href={event.htmlLink}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                <ExternalLink size={13} />
+                在 Google 開啟
+              </a>
+            )}
+            {onEdit && event?.source !== 'google' && (
+              <button
+                onClick={onEdit}
+                className="px-4 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors"
+              >
+                編輯
+              </button>
+            )}
           </div>
         )}
       </div>

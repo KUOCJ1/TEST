@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Trash2, Lock } from 'lucide-react';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { EVENT_COLORS, EVENT_TYPES, REMINDER_OPTIONS, getTypeDefaultColor, getColorHex } from '../../utils/colors';
 import { formatDateInput, formatTimeInput, combineDatetime } from '../../utils/calendar';
 
@@ -45,6 +46,7 @@ function buildForm(event, initialDate) {
 export default function EventModal({ isOpen, onClose, onSave, onDelete, event, initialDate }) {
   const [form, setForm] = useState(() => buildForm(event, initialDate));
   const [error, setError] = useState('');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (isOpen) {
@@ -102,9 +104,9 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
   const isEditing = !!event;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className={isMobile ? 'fixed inset-0 z-50 flex items-end' : 'fixed inset-0 z-50 flex items-center justify-center p-4'}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className={isMobile ? 'relative bg-white rounded-t-2xl shadow-2xl w-full max-h-[92vh] overflow-y-auto animate-slide-up' : 'relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h2 className="text-lg font-semibold text-slate-800">

@@ -38,7 +38,7 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
         <div className="text-sm">🔒 私人事項</div>
       ) : (
         <div>
-          <div className="text-sm font-semibold leading-tight truncate">{event.title}</div>
+          <div className="text-sm font-semibold leading-tight truncate">{event.title}{event.source === 'google' && <span className="text-[9px] bg-white/30 rounded px-1">G</span>}</div>
           {duration >= 40 && (
             <div className="text-xs opacity-90 mt-0.5">
               {formatDisplayTime(event.startAt)} – {formatDisplayTime(event.endAt)}

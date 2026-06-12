@@ -21,7 +21,7 @@ export default function FilterBar({ events, tagFilters, colorFilters, onTagToggl
               onClick={() => onColorToggle(c.id)}
               title={c.label}
               style={{ backgroundColor: c.hex }}
-              className={`w-4.5 h-4.5 rounded-full transition-all ${
+              className={`p-1 w-5 h-5 rounded-full transition-all ${
                 active
                   ? 'ring-2 ring-offset-1 ring-slate-500 scale-125'
                   : 'opacity-40 hover:opacity-90 hover:scale-110'
@@ -38,7 +38,7 @@ export default function FilterBar({ events, tagFilters, colorFilters, onTagToggl
           <button
             key={tag}
             onClick={() => onTagToggle(tag)}
-            className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
+            className={`text-xs px-2 py-1 rounded-full transition-colors ${
               active
                 ? 'bg-indigo-600 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
