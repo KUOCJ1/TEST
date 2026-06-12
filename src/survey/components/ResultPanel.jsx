@@ -1,0 +1,120 @@
+import { forwardRef } from 'react';
+import RadarChart from './RadarChart';
+
+/**
+ * 結果報告：總分、落點等級、雷達圖、構面長條、優劣勢與學習建議。
+ */
+const ResultPanel = forwardRef(function ResultPanel({ result, onRetake, onCopy, copied }, ref) {
+  const { total, maxScore, percent, level, dimensions, strongest, weakest } = result;
+
+  return (
+    <section
+      ref={ref}
+      aria-live="polite"
+      className="mt-8 overflow-hidden rounded-2xl border-2 border-teal-500 bg-gradient-to-b from-teal-50/70 to-white"
+    >
+      {/* 分數標頭 */}
+      <div className="bg-teal-600 px-6 py-6 text-center text-white">
+        <p className="text-sm font-medium text-teal-100">您的 AI 職能總得分</p>
+        <p className="mt-1 text-5xl font-extrabold tracking-tight">
+          {total}
+          <span className="ml-1 text-xl font-semibold text-teal-100">/ {maxScore}</span>
+        </p>
+        <span
+          className="mt-3 inline-block rounded-full px-4 py-1.5 text-lg font-bold shadow"
+          style={{ background: level.color, color: '#fff' }}
+        >
+          {level.badge}（{level.badgeEn}）
+        </span>
+        <p className="mt-2 text-sm text-teal-100">能力達成率 {percent}%</p>
+      </div>
+
+      <div className="px-5 py-6 sm:px-7">
+        {/* 雷達圖 */}
+        <div className="flex flex-col items-center">
+          <h3 className="mb-2 text-base font-bold text-slate-700">六大構面落點雷達圖</h3>
+          <RadarChart dimensions={dimensions} />
+        </div>
+
+        {/* 構面長條 */}
+        <div className="mt-6 space-y-3">
+          {dimensions.map((d) => (
+            <div key={d.id}>
+              <div className="mb-1 flex items-center justify-between text-sm">
+                <span className="font-medium text-slate-700">
+                  <span className="font-semibold" style={{ color: d.color }}>
+                    {d.subtitle}
+                  </span>
+                  <span className="ml-2 text-slate-400">{d.name}</span>
+                </span>
+                <span className="font-semibold text-slate-600">
+                  {d.score}/{d.max}
+                  <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+                    {d.rating.label}
+                  </span>
+                </span>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${d.percent}%`, background: d.color }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 優勢 / 待強化 */}
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">最強構面</p>
+            <p className="mt-1 font-bold text-emerald-800">
+              {strongest.subtitle}
+              <span className="text-sm font-normal text-emerald-600">平均 {strongest.average.toFixed(1)} 分</span>
+            </p>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">優先強化</p>
+            <p className="mt-1 font-bold text-amber-800">
+              {weakest.subtitle}
+              <span className="text-sm font-normal text-amber-600">平均 {weakest.average.toFixed(1)} 分</span>
+            </p>
+          </div>
+        </div>
+
+        {/* 等級描述 */}
+        <div className="mt-6 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+          <p className="leading-relaxed text-slate-700">{level.desc}</p>
+        </div>
+
+        {/* 學習建議 */}
+        <div className="mt-4">
+          <p className="mb-2 font-semibold text-slate-700">💡 給您的後續學習修煉建議</p>
+          <p className="rounded-r-lg border-l-4 border-teal-500 bg-white p-4 leading-relaxed text-slate-700 shadow-sm">
+            {level.advice}
+          </p>
+        </div>
+
+        {/* 操作列 */}
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={onCopy}
+            className="flex-1 rounded-lg border border-teal-500 bg-white px-4 py-2.5 font-semibold text-teal-600 transition-colors hover:bg-teal-50"
+          >
+            {copied ? '✓ 已複製結果摘要' : '📋 複製結果摘要'}
+          </button>
+          <button
+            type="button"
+            onClick={onRetake}
+            className="flex-1 rounded-lg bg-slate-700 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-slate-800"
+          >
+            ↻ 重新評測
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+});
+
+export default ResultPanel;
