@@ -27,7 +27,30 @@ const DEFAULT_FORM = {
   recurrenceUntil: '',
 };
 
-function buildForm(event, initialDate) {
+function buildForm(event, initialDate, copyFrom) {
+  if (copyFrom) {
+    const start = new Date(copyFrom.startAt);
+    const end = new Date(copyFrom.endAt);
+    return {
+      title: `${copyFrom.title} (複製)`,
+      type: copyFrom.type || 'work',
+      color: copyFrom.color || 'blue',
+      startDate: formatDateInput(start),
+      startTime: formatTimeInput(copyFrom.startAt),
+      endDate: formatDateInput(end),
+      endTime: formatTimeInput(copyFrom.endAt),
+      isAllDay: copyFrom.isAllDay || false,
+      isPrivate: false,
+      tags: (copyFrom.tags || []).join(', '),
+      description: copyFrom.description || '',
+      reminder: copyFrom.reminder || '',
+      location: copyFrom.location || '',
+      url: copyFrom.url || '',
+      attendees: (copyFrom.attendees || []).join(', '),
+      recurrenceFreq: '',
+      recurrenceUntil: '',
+    };
+  }
   if (event) {
     const start = new Date(event.startAt);
     const end = new Date(event.endAt);
@@ -56,18 +79,18 @@ function buildForm(event, initialDate) {
   return { ...DEFAULT_FORM, startDate: dateStr, endDate: dateStr };
 }
 
-export default function EventModal({ isOpen, onClose, onSave, onDelete, event, initialDate }) {
-  const [form, setForm] = useState(() => buildForm(event, initialDate));
+export default function EventModal({ isOpen, onClose, onSave, onDelete, event, initialDate, copyFrom }) {
+  const [form, setForm] = useState(() => buildForm(event, initialDate, copyFrom));
   const [error, setError] = useState('');
   const isMobile = useIsMobile();
   const { events } = useCalendar();
 
   useEffect(() => {
     if (isOpen) {
-      setForm(buildForm(event, initialDate));
+      setForm(buildForm(event, initialDate, copyFrom));
       setError('');
     }
-  }, [isOpen, event, initialDate]);
+  }, [isOpen, event, initialDate, copyFrom]);
 
   function set(field, value) {
     setForm(f => {

@@ -90,6 +90,9 @@ export default function CalendarPage() {
   // Recurring edit scope dialog
   const [recurScopeDialog, setRecurScopeDialog] = useState(null); // { data, event }
 
+  // Copy template for duplicating an event
+  const [copyTemplate, setCopyTemplate] = useState(null);
+
   // ── Notifications ─────────────────────────────────────────────
   const { permission, requestPermission, upcomingReminders, toasts, addToast, dismissToast } = useNotifications(events);
 
@@ -190,6 +193,7 @@ export default function CalendarPage() {
     setEventModalOpen(false);
     setSelectedEvent(null);
     setSelectedDate(null);
+    setCopyTemplate(null);
   }
 
   function handleSave(data) {
@@ -356,6 +360,17 @@ export default function CalendarPage() {
     setDetailModalOpen(false);
     setSelectedEvent(detailEvent);
     setDetailEvent(null);
+    setEventModalOpen(true);
+  }
+
+  function handleCopyFromDetail() {
+    if (!detailEvent) return;
+    // eslint-disable-next-line no-unused-vars
+    const { id, creatorId, recurringBaseId, isRecurring, source, ...rest } = detailEvent;
+    setDetailModalOpen(false);
+    setDetailEvent(null);
+    setCopyTemplate(rest);
+    setSelectedEvent(null);
     setEventModalOpen(true);
   }
 
@@ -637,6 +652,7 @@ export default function CalendarPage() {
         onDelete={handleDelete}
         event={selectedEvent}
         initialDate={selectedDate}
+        copyFrom={copyTemplate}
       />
 
       <EventDetailModal
@@ -644,6 +660,7 @@ export default function CalendarPage() {
         onClose={() => setDetailModalOpen(false)}
         event={detailEvent}
         onEdit={detailEvent?.creatorId === currentUser.id && detailEvent?.source !== 'google' ? handleEditFromDetail : null}
+        onCopy={detailEvent?.source !== 'google' ? handleCopyFromDetail : null}
       />
 
       <CreateGroupModal

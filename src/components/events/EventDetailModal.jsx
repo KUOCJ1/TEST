@@ -1,4 +1,4 @@
-import { X, Clock, Tag, Lock, User, Users, ExternalLink, MapPin, Link, RefreshCw } from 'lucide-react';
+import { X, Clock, Tag, Lock, User, Users, ExternalLink, MapPin, Link, RefreshCw, Copy } from 'lucide-react';
 import { getColorHex } from '../../utils/colors';
 import { formatDisplayTime } from '../../utils/calendar';
 import { FREQ_OPTIONS } from '../../utils/recurrence';
@@ -9,7 +9,7 @@ function freqLabel(freq) {
   return FREQ_OPTIONS.find(o => o.value === freq)?.label || freq;
 }
 
-export default function EventDetailModal({ isOpen, onClose, event, onEdit }) {
+export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCopy }) {
   if (!isOpen || !event) return null;
 
   const color = getColorHex(event.color);
@@ -163,19 +163,31 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit }) {
         )}
 
         {/* Footer */}
-        {!isPrivate && (event?.htmlLink || (onEdit && event?.source !== 'google')) && (
-          <div className="border-t border-slate-100 px-5 py-3 flex justify-end gap-3">
-            {event?.htmlLink && (
-              <a
-                href={event.htmlLink}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-              >
-                <ExternalLink size={13} />
-                在 Google 開啟
-              </a>
-            )}
+        {!isPrivate && (event?.htmlLink || (onEdit && event?.source !== 'google') || onCopy) && (
+          <div className="border-t border-slate-100 px-5 py-3 flex justify-between items-center gap-3">
+            <div className="flex items-center gap-2">
+              {event?.htmlLink && (
+                <a
+                  href={event.htmlLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <ExternalLink size={13} />
+                  在 Google 開啟
+                </a>
+              )}
+              {onCopy && event?.source !== 'google' && (
+                <button
+                  onClick={onCopy}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                  title="複製事件"
+                >
+                  <Copy size={13} />
+                  複製
+                </button>
+              )}
+            </div>
             {onEdit && event?.source !== 'google' && (
               <button
                 onClick={onEdit}
