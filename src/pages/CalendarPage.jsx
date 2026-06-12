@@ -94,16 +94,33 @@ export default function CalendarPage() {
   const [showSettings, setShowSettings] = useState(false);
 
   // ── Keyboard shortcuts ────────────────────────────────────────
+  const [showHelp, setShowHelp] = useState(false);
+
   useEffect(() => {
     function handler(e) {
+      const tag = document.activeElement?.tagName;
+      const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setSearchOpen(o => !o);
+        return;
       }
+      if (typing) return;
+
+      if (e.key === '?') { setShowHelp(o => !o); return; }
+      if (e.key === 'Escape') { setShowHelp(false); return; }
+      if (e.key === 't') { goToday(); return; }
+      if (e.key === 'n') { handleSlotClick(new Date()); return; }
+      if (e.key === 'm') { setView('month'); return; }
+      if (e.key === 'w') { setView('week'); return; }
+      if (e.key === 'd') { setView('day'); return; }
+      if (e.key === 'ArrowLeft') { navigate(-1); return; }
+      if (e.key === 'ArrowRight') { navigate(1); return; }
     }
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, []);
+  }, [view]);
 
   // ── Navigation ───────────────────────────────────────────────
   function navigate(dir) {
@@ -352,6 +369,16 @@ export default function CalendarPage() {
             <span className="text-[10px] leading-none mt-0.5 sm:hidden">選取</span>
           </button>
 
+          {/* Keyboard help */}
+          <button
+            onClick={() => setShowHelp(true)}
+            className="hidden sm:flex flex-col items-center p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="鍵盤快捷鍵"
+            title="鍵盤快捷鍵 (?)"
+          >
+            <span className="text-sm font-medium leading-none">?</span>
+          </button>
+
           {/* Settings */}
           <button
             onClick={() => setShowSettings(true)}
@@ -582,6 +609,41 @@ export default function CalendarPage() {
         events={rawEvents}
         onSelectEvent={handleSearchSelect}
       />
+
+      {/* Keyboard shortcuts help */}
+      {showHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowHelp(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">鍵盤快捷鍵</h3>
+              <button onClick={() => setShowHelp(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-2.5 text-sm">
+              {[
+                ['Ctrl+K', '開啟搜尋'],
+                ['←  /  →', '上 / 下一個時段'],
+                ['T', '回到今天'],
+                ['N', '新增事件'],
+                ['M', '月視圖'],
+                ['W', '週視圖'],
+                ['D', '日視圖'],
+                ['?', '顯示 / 隱藏快捷鍵'],
+                ['Esc', '關閉浮層'],
+              ].map(([key, desc]) => (
+                <div key={key} className="flex items-center justify-between">
+                  <span className="text-slate-500">{desc}</span>
+                  <kbd className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 font-mono">
+                    {key}
+                  </kbd>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
