@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { findConflicts } from '../utils/conflicts';
 import { expandRecurringEvents } from '../utils/recurrence';
+import { exportToIcs, parseIcs } from '../utils/ics';
 
 // ── Conflict detection ────────────────────────────────────────────
 describe('findConflicts', () => {
@@ -167,5 +168,112 @@ describe('expandRecurringEvents', () => {
     };
     const result = expandRecurringEvents([noUntil], rangeStart, rangeEnd);
     expect(result.length).toBe(30); // all 30 days of June
+  });
+});
+
+// ── ICS import/export roundtrip ───────────────────────────────────
+describe('ICS roundtrip', () => {
+  const timed = {
+    id: 'evt1',
+    title: 'Team Meeting',
+    description: 'Q2 Review',
+    startAt: '2026-06-10T09:00:00.000Z',
+    endAt:   '2026-06-10T10:00:00.000Z',
+    isAllDay: false,
+    tags: ['work', 'meeting'],
+    reminder: '',
+    isPrivate: false,
+    type: 'work',
+    color: 'blue',
+  };
+
+  const allDay = {
+    id: 'evt2',
+    title: 'Company Holiday',
+    description: '',
+    startAt: '2026-06-15T00:00:00.000Z',
+    endAt:   '2026-06-15T23:59:59.000Z',
+    isAllDay: true,
+    tags: [],
+    reminder: '',
+    isPrivate: false,
+    type: 'personal',
+    color: 'green',
+  };
+
+  it('exports valid VCALENDAR with BEGIN/END wrappers', () => {
+    const ics = exportToIcs([timed]);
+    expect(ics).toContain('BEGIN:VCALENDAR');
+    expect(ics).toContain('END:VCALENDAR');
+    expect(ics).toContain('BEGIN:VEVENT');
+    expect(ics).toContain('END:VEVENT');
+  });
+
+  it('roundtrips timed event title and description', () => {
+    const ics = exportToIcs([timed]);
+    const parsed = parseIcs(ics);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].title).toBe('Team Meeting');
+    expect(parsed[0].description).toBe('Q2 Review');
+  });
+
+  it('roundtrips timed event start/end times', () => {
+    const ics = exportToIcs([timed]);
+    const parsed = parseIcs(ics);
+    expect(parsed[0].startAt).toBe(timed.startAt);
+    expect(parsed[0].endAt).toBe(timed.endAt);
+  });
+
+  it('roundtrips tags/categories', () => {
+    const ics = exportToIcs([timed]);
+    const parsed = parseIcs(ics);
+    expect(parsed[0].tags).toEqual(['work', 'meeting']);
+  });
+
+  it('roundtrips all-day event', () => {
+    const ics = exportToIcs([allDay]);
+    const parsed = parseIcs(ics);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].isAllDay).toBe(true);
+    expect(parsed[0].title).toBe('Company Holiday');
+  });
+
+  it('handles special characters in title (escaping)', () => {
+    const special = {
+      ...timed,
+      id: 'sp1',
+      title: 'Meeting: Cost, Budget; Review',
+      description: 'Line1\nLine2',
+    };
+    const ics = exportToIcs([special]);
+    const parsed = parseIcs(ics);
+    expect(parsed[0].title).toBe('Meeting: Cost, Budget; Review');
+    expect(parsed[0].description).toBe('Line1\nLine2');
+  });
+
+  it('exports multiple events and parses all back', () => {
+    const ics = exportToIcs([timed, allDay]);
+    const parsed = parseIcs(ics);
+    expect(parsed).toHaveLength(2);
+  });
+
+  it('parses CRLF line endings correctly', () => {
+    const ics = exportToIcs([timed]); // already uses CRLF
+    expect(ics).toContain('\r\n');
+    const parsed = parseIcs(ics);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].title).toBe('Team Meeting');
+  });
+
+  it('returns empty array for empty event list', () => {
+    const ics = exportToIcs([]);
+    const parsed = parseIcs(ics);
+    expect(parsed).toHaveLength(0);
+  });
+
+  it('skips VEVENT blocks missing required fields', () => {
+    const malformed = 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:bad@test\r\nEND:VEVENT\r\nEND:VCALENDAR';
+    const parsed = parseIcs(malformed);
+    expect(parsed).toHaveLength(0);
   });
 });
