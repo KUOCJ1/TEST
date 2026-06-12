@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { getWeekDays, getEventsForDay, isToday, layoutDayEvents, formatDisplayTime } from '../../utils/calendar';
 import { getColorHex } from '../../utils/colors';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -11,7 +11,7 @@ function getThreeDayWindow(date) {
   return [-1, 0, 1].map(offset => new Date(date.getTime() + offset * 86400000));
 }
 
-function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
+function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart }) {
   const start = new Date(event.startAt);
   const end = new Date(event.endAt);
   const startMin = start.getHours() * 60 + start.getMinutes();
@@ -20,11 +20,14 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
 
   const isOwn = event.creatorId === currentUserId;
   const isOtherPrivate = event.isPrivate && !isOwn;
+  const draggable = !event.isRecurring && event.source !== 'google';
   const color = getColorHex(event.color);
   const colW = 100 / totalCols;
 
   return (
     <button
+      draggable={draggable}
+      onDragStart={draggable ? e => { e.stopPropagation(); onDragStart(event, e); } : undefined}
       onClick={e => { e.stopPropagation(); onClick(event); }}
       style={{
         position: 'absolute',
@@ -35,6 +38,7 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
         backgroundColor: isOtherPrivate ? '#f1f5f9' : color,
         color: isOtherPrivate ? '#94a3b8' : 'white',
         zIndex: 1,
+        cursor: draggable ? 'grab' : 'pointer',
       }}
       className="rounded text-left overflow-hidden px-1.5 py-0.5 hover:opacity-90 transition-opacity"
     >
@@ -52,8 +56,9 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId }) {
   );
 }
 
-export default function WeekView({ currentDate, events, onEventClick, onSlotClick, currentUserId }) {
+export default function WeekView({ currentDate, events, onEventClick, onSlotClick, onMoveEvent, currentUserId }) {
   const scrollRef = useRef(null);
+  const dragRef = useRef(null);
   const isMobile = useIsMobile();
   const weekDays = isMobile ? getThreeDayWindow(currentDate) : getWeekDays(currentDate);
 
@@ -67,14 +72,36 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
 
   function handleColumnClick(e, day) {
     const rect = e.currentTarget.getBoundingClientRect();
-    const scrollTop = scrollRef.current?.scrollTop ?? 0;
-    const y = e.clientY - rect.top + scrollTop;
+    const y = e.clientY - rect.top;
     const totalMinutes = Math.floor(y);
     const hour = Math.floor(totalMinutes / 60);
     const min = Math.floor((totalMinutes % 60) / 30) * 30;
     const d = new Date(day);
     d.setHours(Math.min(hour, 23), min, 0, 0);
     onSlotClick(d);
+  }
+
+  const handleEventDragStart = useCallback((event, e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragRef.current = { event, offsetPx: e.clientY - rect.top };
+    e.dataTransfer.effectAllowed = 'move';
+  }, []);
+
+  function handleColumnDrop(e, day) {
+    if (!dragRef.current || !onMoveEvent) return;
+    e.preventDefault();
+    const { event, offsetPx } = dragRef.current;
+    dragRef.current = null;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const rawMin = Math.max(0, e.clientY - rect.top - offsetPx);
+    const snapped = Math.round(rawMin / 15) * 15;
+    const hour = Math.min(23, Math.floor(snapped / 60));
+    const min = snapped % 60;
+    const duration = new Date(event.endAt) - new Date(event.startAt);
+    const newStart = new Date(day);
+    newStart.setHours(hour, min, 0, 0);
+    const newEnd = new Date(newStart.getTime() + duration);
+    onMoveEvent(event.id, newStart.toISOString(), newEnd.toISOString());
   }
 
   return (
@@ -127,6 +154,8 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
                 className="flex-1 border-l border-slate-100 relative min-w-0 cursor-pointer hover:bg-slate-50/40"
                 style={{ height: 24 * HOUR_HEIGHT }}
                 onClick={e => handleColumnClick(e, day)}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => handleColumnDrop(e, day)}
               >
                 {/* Hour grid lines */}
                 {HOURS.map(h => (
@@ -156,6 +185,7 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
                     totalCols={totalCols}
                     onClick={onEventClick}
                     currentUserId={currentUserId}
+                    onDragStart={handleEventDragStart}
                   />
                 ))}
               </div>

@@ -181,7 +181,7 @@ export default function CalendarPage() {
     }
   }
 
-  // ── Drag-and-drop (MonthView) ─────────────────────────────────
+  // ── Drag-and-drop (MonthView: day-level) ─────────────────────
   const handleMoveEvent = useCallback((eventId, originalDate, targetDate) => {
     const evt = events.find(e => e.id === eventId);
     if (!evt || isSameDay(originalDate, targetDate)) return;
@@ -189,6 +189,13 @@ export default function CalendarPage() {
     const newStart = new Date(new Date(evt.startAt).getTime() + diff);
     const newEnd   = new Date(new Date(evt.endAt).getTime() + diff);
     updateEvent(eventId, { ...evt, startAt: newStart.toISOString(), endAt: newEnd.toISOString() });
+  }, [events, updateEvent]);
+
+  // ── Drag-and-drop (WeekView/DayView: time-level) ─────────────
+  const handleMoveEventToTime = useCallback((eventId, newStartAt, newEndAt) => {
+    const evt = events.find(e => e.id === eventId);
+    if (!evt) return;
+    updateEvent(eventId, { ...evt, startAt: newStartAt, endAt: newEndAt });
   }, [events, updateEvent]);
 
   // ── Bulk select ──────────────────────────────────────────────
@@ -487,6 +494,7 @@ export default function CalendarPage() {
               events={displayEvents}
               onEventClick={handleEventClick}
               onSlotClick={handleSlotClick}
+              onMoveEvent={handleMoveEventToTime}
               currentUserId={currentUser.id}
             />
           )}
@@ -496,6 +504,7 @@ export default function CalendarPage() {
               events={displayEvents}
               onEventClick={handleEventClick}
               onSlotClick={handleSlotClick}
+              onMoveEvent={handleMoveEventToTime}
               currentUserId={currentUser.id}
             />
           )}
