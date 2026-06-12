@@ -104,6 +104,17 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
       const next = { ...f, [field]: value };
       if (field === 'type') next.color = getTypeDefaultColor(value);
       if (field === 'startDate' && next.endDate < value) next.endDate = value;
+      if (field === 'startTime' && next.startDate && next.endDate && next.endTime) {
+        const newStart = new Date(combineDatetime(next.startDate, value));
+        const oldStart = new Date(combineDatetime(f.startDate, f.startTime));
+        const oldEnd   = new Date(combineDatetime(f.endDate, f.endTime));
+        const dur = oldEnd - oldStart;
+        if (dur > 0 && new Date(combineDatetime(next.endDate, next.endTime)) <= newStart) {
+          const newEnd = new Date(newStart.getTime() + dur);
+          next.endDate = newEnd.toISOString().slice(0, 10);
+          next.endTime = `${String(newEnd.getHours()).padStart(2,'0')}:${String(newEnd.getMinutes()).padStart(2,'0')}`;
+        }
+      }
       return next;
     });
     setError('');
