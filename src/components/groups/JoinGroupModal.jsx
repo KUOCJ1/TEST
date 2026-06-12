@@ -26,10 +26,10 @@ export default function JoinGroupModal({ isOpen, onClose, onJoined }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <div role="dialog" aria-modal="true" aria-labelledby="join-group-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-slate-800">加入群組行事曆</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <h2 id="join-group-title" className="text-lg font-semibold text-slate-800">加入群組行事曆</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="關閉">
             <X size={20} />
           </button>
         </div>

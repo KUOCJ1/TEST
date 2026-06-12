@@ -79,11 +79,11 @@ export default function GoogleSettingsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="text-base font-semibold text-slate-800">整合與設定</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors p-1">
+          <h2 id="settings-modal-title" className="text-base font-semibold text-slate-800">整合與設定</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors p-1" aria-label="關閉">
             <X size={18} />
           </button>
         </div>

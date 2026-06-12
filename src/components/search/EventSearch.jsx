@@ -99,7 +99,7 @@ export default function EventSearch({ isOpen, onClose, events, onSelectEvent }) 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div role="dialog" aria-modal="true" aria-label="搜尋事件" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
           <Search size={18} className="text-slate-400 shrink-0" />
@@ -110,9 +110,10 @@ export default function EventSearch({ isOpen, onClose, events, onSelectEvent }) 
             onChange={e => setQuery(e.target.value)}
             placeholder="搜尋關鍵字、地點、標籤..."
             className="flex-1 text-sm outline-none text-slate-800 placeholder-slate-400"
+            aria-label="搜尋關鍵字"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="text-slate-400 hover:text-slate-600">
+            <button onClick={() => setQuery('')} className="text-slate-400 hover:text-slate-600" aria-label="清除搜尋">
               <X size={16} />
             </button>
           )}

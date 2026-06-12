@@ -48,7 +48,7 @@ export default function MembersModal({ isOpen, onClose, groupId, currentUserId, 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[85vh] flex flex-col">
+      <div role="dialog" aria-modal="true" aria-labelledby="members-modal-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           {editingName ? (
@@ -62,6 +62,7 @@ export default function MembersModal({ isOpen, onClose, groupId, currentUserId, 
             />
           ) : (
             <h2
+              id="members-modal-title"
               className={`text-lg font-semibold text-slate-800 ${isOwner ? 'cursor-pointer hover:text-indigo-600' : ''}`}
               onClick={isOwner ? startRename : undefined}
               title={isOwner ? '點擊編輯群組名稱' : undefined}
@@ -69,7 +70,7 @@ export default function MembersModal({ isOpen, onClose, groupId, currentUserId, 
               {group.name}
             </h2>
           )}
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="關閉">
             <X size={20} />
           </button>
         </div>

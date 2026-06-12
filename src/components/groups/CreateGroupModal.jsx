@@ -22,10 +22,10 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <div role="dialog" aria-modal="true" aria-labelledby="create-group-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-slate-800">建立群組行事曆</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <h2 id="create-group-title" className="text-lg font-semibold text-slate-800">建立群組行事曆</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="關閉">
             <X size={20} />
           </button>
         </div>
