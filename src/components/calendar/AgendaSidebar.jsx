@@ -49,9 +49,15 @@ export default function AgendaSidebar({ events, onEventClick }) {
                 </div>
                 <div>
                   <span className="text-xs font-medium text-slate-700">{DAY_NAMES[date.getDay()]}</span>
-                  {isSameDay(date, new Date()) && (
-                    <span className="ml-1 text-xs text-indigo-500">今天</span>
-                  )}
+                  {(() => {
+                    const today = new Date();
+                    const tomorrow = new Date(today.getTime() + 86400000);
+                    const dayAfter = new Date(today.getTime() + 2 * 86400000);
+                    if (isSameDay(date, today)) return <span className="ml-1 text-xs text-indigo-500">今天</span>;
+                    if (isSameDay(date, tomorrow)) return <span className="ml-1 text-xs text-slate-400">明天</span>;
+                    if (isSameDay(date, dayAfter)) return <span className="ml-1 text-xs text-slate-400">後天</span>;
+                    return null;
+                  })()}
                 </div>
               </div>
 

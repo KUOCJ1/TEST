@@ -58,6 +58,7 @@ export default function CalendarPage() {
   // Filters
   const [tagFilters, setTagFilters] = useState([]);
   const [colorFilters, setColorFilters] = useState([]);
+  const [typeFilters, setTypeFilters] = useState([]);
 
   // Event modal
   const [eventModalOpen, setEventModalOpen] = useState(false);
@@ -142,6 +143,7 @@ export default function CalendarPage() {
     let result = rawEvents;
     if (colorFilters.length > 0) result = result.filter(e => colorFilters.includes(e.color));
     if (tagFilters.length > 0)   result = result.filter(e => tagFilters.some(t => e.tags?.includes(t)));
+    if (typeFilters.length > 0)  result = result.filter(e => typeFilters.includes(e.type));
 
     // Expand recurring events within the current view window
     const { start, end } = getViewWindow(view, currentDate);
@@ -150,7 +152,7 @@ export default function CalendarPage() {
     // Merge Google Calendar events
     const googleVisible = googleCalendar.isConnected ? googleCalendar.googleEvents : [];
     return [...result, ...googleVisible];
-  }, [rawEvents, colorFilters, tagFilters, view, currentDate, googleCalendar.isConnected, googleCalendar.googleEvents]);
+  }, [rawEvents, colorFilters, tagFilters, typeFilters, view, currentDate, googleCalendar.isConnected, googleCalendar.googleEvents]);
 
   const activeGroupName = activeGroupId ? groups.find(g => g.id === activeGroupId)?.name : null;
 
@@ -270,9 +272,14 @@ export default function CalendarPage() {
     setColorFilters(f => f.includes(color) ? f.filter(c => c !== color) : [...f, color]);
   }
 
+  function toggleType(type) {
+    setTypeFilters(f => f.includes(type) ? f.filter(t => t !== type) : [...f, type]);
+  }
+
   function clearFilters() {
     setTagFilters([]);
     setColorFilters([]);
+    setTypeFilters([]);
   }
 
   // ── Group handlers ────────────────────────────────────────────
@@ -507,8 +514,10 @@ export default function CalendarPage() {
             events={rawEvents}
             tagFilters={tagFilters}
             colorFilters={colorFilters}
+            typeFilters={typeFilters}
             onTagToggle={toggleTag}
             onColorToggle={toggleColor}
+            onTypeToggle={toggleType}
             onClear={clearFilters}
           />
 
