@@ -4,8 +4,24 @@ import { formatDisplayTime } from '../utils/calendar';
 const SENT_KEY = 'cal_sent_reminders';
 const WINDOW_MS = 35_000; // 35-second fire window per check interval
 
+function pruneOldSent(sent) {
+  // Key format: eventId_reminderMinutes_isoStartAt — prune if event start > 2 days ago
+  const cutoff = new Date(Date.now() - 2 * 24 * 3600 * 1000);
+  const pruned = new Set();
+  for (const key of sent) {
+    const lastUs = key.lastIndexOf('_');
+    if (lastUs === -1) continue;
+    const startAt = new Date(key.slice(lastUs + 1));
+    if (!isNaN(startAt) && startAt > cutoff) pruned.add(key);
+  }
+  return pruned;
+}
+
 function loadSent() {
-  try { return new Set(JSON.parse(localStorage.getItem(SENT_KEY) || '[]')); }
+  try {
+    const sent = new Set(JSON.parse(localStorage.getItem(SENT_KEY) || '[]'));
+    return pruneOldSent(sent);
+  }
   catch { return new Set(); }
 }
 
