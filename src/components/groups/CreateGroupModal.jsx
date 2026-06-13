@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useGroups } from '../../context/GroupContext';
 
@@ -6,6 +6,13 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
   const { createGroup } = useGroups();
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
 
   function handleSubmit(e) {
     e.preventDefault();

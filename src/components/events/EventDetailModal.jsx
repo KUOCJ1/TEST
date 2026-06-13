@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X, Clock, Tag, Lock, User, Users, ExternalLink, MapPin, Link, RefreshCw, Copy, Download } from 'lucide-react';
 import { exportToIcs } from '../../utils/ics';
 import { getColorHex } from '../../utils/colors';
@@ -22,6 +23,13 @@ function exportSingleEvent(event) {
 }
 
 export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCopy }) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !event) return null;
 
   const color = getColorHex(event.color);

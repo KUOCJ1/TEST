@@ -99,6 +99,13 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
     }
   }, [isOpen, event, initialDate, copyFrom]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
+
   function set(field, value) {
     setForm(f => {
       const next = { ...f, [field]: value };
