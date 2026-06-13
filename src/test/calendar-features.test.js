@@ -352,11 +352,28 @@ describe('ICS roundtrip', () => {
     expect(parsed[0].reminder).toBe('15');
   });
 
-  it('roundtrips 1-hour reminder (60 min)', () => {
+  it('roundtrips 1-hour reminder (60 min) using PTxH format', () => {
     const withReminder = { ...timed, id: 'rem2', reminder: '60' };
     const ics = exportToIcs([withReminder]);
+    expect(ics).toContain('TRIGGER:-PT1H');
     const parsed = parseIcs(ics);
     expect(parsed[0].reminder).toBe('60');
+  });
+
+  it('roundtrips 1-day reminder (1440 min) using PxD format', () => {
+    const withReminder = { ...timed, id: 'rem3', reminder: '1440' };
+    const ics = exportToIcs([withReminder]);
+    expect(ics).toContain('TRIGGER:-P1D');
+    const parsed = parseIcs(ics);
+    expect(parsed[0].reminder).toBe('1440');
+  });
+
+  it('roundtrips 1-week reminder (10080 min) using PxD format', () => {
+    const withReminder = { ...timed, id: 'rem4', reminder: '10080' };
+    const ics = exportToIcs([withReminder]);
+    expect(ics).toContain('TRIGGER:-P7D');
+    const parsed = parseIcs(ics);
+    expect(parsed[0].reminder).toBe('10080');
   });
 
   it('exports CLASS:PRIVATE for private events', () => {

@@ -135,7 +135,7 @@ export default function CalendarPage() {
     }
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [view]);
+  }, [view, selectMode]);
 
   // ── Navigation ───────────────────────────────────────────────
   function navigate(dir) {

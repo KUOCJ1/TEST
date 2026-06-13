@@ -45,7 +45,11 @@ export function exportToIcs(events) {
         : '';
       lines.push(`RRULE:FREQ=${freq}${until}`);
     }
-    if (e.reminder) lines.push(`BEGIN:VALARM\r\nTRIGGER:-PT${e.reminder}M\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder\r\nEND:VALARM`);
+    if (e.reminder) {
+      const mins = parseInt(e.reminder, 10);
+      const trigger = mins % 1440 === 0 ? `-P${mins / 1440}D` : mins % 60 === 0 ? `-PT${mins / 60}H` : `-PT${mins}M`;
+      lines.push(`BEGIN:VALARM\r\nTRIGGER:${trigger}\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder\r\nEND:VALARM`);
+    }
     lines.push('END:VEVENT');
   }
   lines.push('END:VCALENDAR');
