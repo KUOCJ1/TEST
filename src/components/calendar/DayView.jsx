@@ -1,5 +1,5 @@
-import { useRef, useEffect, useCallback } from 'react';
-import { getEventsForDay, isToday, layoutDayEvents, formatDisplayTime, formatDateInput } from '../../utils/calendar';
+import { useRef, useEffect, useCallback, useState, memo } from 'react';
+import { getEventsForDay, isToday, layoutDayEvents, formatDisplayTime } from '../../utils/calendar';
 import { getColorHex } from '../../utils/colors';
 import { useCurrentMinute } from '../../hooks/useCurrentMinute';
 
@@ -8,7 +8,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 const TYPE_LABELS = { work: '工作', meeting: '會議', personal: '私人', reminder: '提醒' };
 
-function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart }) {
+const EventBlock = memo(function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart, selectMode, isSelected, onToggleSelect }) {
   const start = new Date(event.startAt);
   const end = new Date(event.endAt);
   const startMin = start.getHours() * 60 + start.getMinutes();
@@ -17,16 +17,24 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart
 
   const isOwn = event.creatorId === currentUserId;
   const isOtherPrivate = event.isPrivate && !isOwn;
-  const draggable = !event.isRecurring && event.source !== 'google';
+  const canSelect = !event.isRecurring && event.source !== 'google';
+  const draggable = canSelect && !selectMode;
   const color = getColorHex(event.color);
   const colW = 100 / totalCols;
+
+  function handleClick(e) {
+    e.stopPropagation();
+    if (selectMode && canSelect) { onToggleSelect(event.id); return; }
+    onClick(event);
+  }
 
   return (
     <button
       draggable={draggable}
       onDragStart={draggable ? e => { e.stopPropagation(); onDragStart(event, e); } : undefined}
-      onClick={e => { e.stopPropagation(); onClick(event); }}
-      aria-label={isOtherPrivate ? '私人事項' : `${event.title}，${formatDisplayTime(event.startAt)} – ${formatDisplayTime(event.endAt)}`}
+      onClick={handleClick}
+      aria-label={isOtherPrivate ? '私人事項' : `${selectMode && canSelect ? (isSelected ? '取消選取 ' : '選取 ') : ''}${event.title}，${formatDisplayTime(event.startAt)} – ${formatDisplayTime(event.endAt)}`}
+      aria-pressed={selectMode && canSelect ? isSelected : undefined}
       style={{
         position: 'absolute',
         top: startMin,
@@ -36,14 +44,22 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart
         backgroundColor: isOtherPrivate ? '#f1f5f9' : color,
         color: isOtherPrivate ? '#94a3b8' : 'white',
         zIndex: 1,
-        cursor: draggable ? 'grab' : 'pointer',
+        cursor: selectMode && canSelect ? 'pointer' : draggable ? 'grab' : 'pointer',
+        outline: isSelected ? '2px solid #6366f1' : undefined,
+        outlineOffset: isSelected ? '1px' : undefined,
+        opacity: selectMode && !canSelect ? 0.5 : 1,
       }}
       className="rounded-lg text-left overflow-hidden px-2 py-1 hover:opacity-90 transition-opacity shadow-sm"
     >
+      {selectMode && canSelect && (
+        <span className={`inline-flex items-center justify-center w-4 h-4 rounded border mr-1.5 shrink-0 align-middle ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-white/70 bg-white/20'}`}>
+          {isSelected && <span className="text-[9px] text-white leading-none">✓</span>}
+        </span>
+      )}
       {isOtherPrivate ? (
-        <div className="text-sm">🔒 私人事項</div>
+        <div className="text-sm inline-block align-middle">🔒 私人事項</div>
       ) : (
-        <div>
+        <div className="inline-block align-middle max-w-full overflow-hidden">
           <div className="text-sm font-semibold leading-tight truncate">{event.title}{event.source === 'google' && <span className="text-[9px] bg-white/30 rounded px-1">G</span>}</div>
           {duration >= 40 && (
             <div className="text-xs opacity-90 mt-0.5">
@@ -63,11 +79,12 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart
       )}
     </button>
   );
-}
+});
 
-export default function DayView({ currentDate, events, onEventClick, onSlotClick, onMoveEvent, currentUserId }) {
+export default function DayView({ currentDate, events, onEventClick, onSlotClick, onMoveEvent, currentUserId, selectMode, selectedIds, onToggleSelect }) {
   const scrollRef = useRef(null);
   const dragRef = useRef(null);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 8 * HOUR_HEIGHT;
@@ -82,7 +99,7 @@ export default function DayView({ currentDate, events, onEventClick, onSlotClick
   const currentMinute = useCurrentMinute();
 
   function handleGridClick(e) {
-    if (dragRef.current) return;
+    if (dragRef.current || selectMode) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - rect.top;
     const totalMinutes = Math.floor(y);
@@ -102,6 +119,7 @@ export default function DayView({ currentDate, events, onEventClick, onSlotClick
   function handleGridDrop(e) {
     if (!dragRef.current || !onMoveEvent) return;
     e.preventDefault();
+    setDragOver(false);
     const { event, offsetPx } = dragRef.current;
     dragRef.current = null;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -125,14 +143,21 @@ export default function DayView({ currentDate, events, onEventClick, onSlotClick
           {allDayEvents.map(event => {
             const isOwn = event.creatorId === currentUserId;
             const isOtherPrivate = event.isPrivate && !isOwn;
+            const canSel = !event.isRecurring && event.source !== 'google';
+            const isSel = selectedIds?.has(event.id);
             return (
               <button
                 key={event.id}
-                onClick={() => onEventClick(event)}
+                onClick={() => selectMode && canSel ? onToggleSelect(event.id) : onEventClick(event)}
                 aria-label={`${isOtherPrivate ? '私人事項' : event.title}，全天`}
-                style={{ backgroundColor: isOtherPrivate ? '#f1f5f9' : getColorHex(event.color) }}
+                style={{
+                  backgroundColor: isOtherPrivate ? '#f1f5f9' : getColorHex(event.color),
+                  outline: isSel ? '2px solid #6366f1' : undefined,
+                  outlineOffset: isSel ? '1px' : undefined,
+                }}
                 className="text-xs px-2 py-0.5 rounded text-white font-medium hover:opacity-90 truncate max-w-xs"
               >
+                {selectMode && canSel && <span className="mr-1">{isSel ? '✓' : '○'}</span>}
                 {isOtherPrivate ? '🔒 私人' : event.title}
               </button>
             );
@@ -158,10 +183,12 @@ export default function DayView({ currentDate, events, onEventClick, onSlotClick
 
           {/* Event column */}
           <div
-            className="flex-1 relative cursor-pointer"
+            className={`flex-1 relative cursor-pointer transition-colors ${dragOver ? 'bg-indigo-50/60' : ''}`}
             style={{ height: 24 * HOUR_HEIGHT }}
             onClick={handleGridClick}
-            onDragOver={e => e.preventDefault()}
+            onDragOver={e => { e.preventDefault(); if (!dragOver) setDragOver(true); }}
+            onDragEnter={() => setDragOver(true)}
+            onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false); }}
             onDrop={handleGridDrop}
           >
             {HOURS.map(h => (
@@ -190,6 +217,9 @@ export default function DayView({ currentDate, events, onEventClick, onSlotClick
                 onClick={onEventClick}
                 currentUserId={currentUserId}
                 onDragStart={handleEventDragStart}
+                selectMode={selectMode}
+                isSelected={selectedIds?.has(event.id)}
+                onToggleSelect={onToggleSelect}
               />
             ))}
 

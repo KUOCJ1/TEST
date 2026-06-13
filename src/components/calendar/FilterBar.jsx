@@ -1,15 +1,16 @@
+import { useMemo } from 'react';
 import { X } from 'lucide-react';
 import { EVENT_COLORS, EVENT_TYPES } from '../../utils/colors';
 
 export default function FilterBar({ events, tagFilters, colorFilters, typeFilters = [], onTagToggle, onColorToggle, onTypeToggle, onClear }) {
-  const allTags = [...new Set(events.flatMap(e => e.tags || []))].sort();
-  const usedTypes = [...new Set(events.map(e => e.type).filter(Boolean))];
+  const allTags = useMemo(() => [...new Set(events.flatMap(e => e.tags || []))].sort(), [events]);
+  const usedTypes = useMemo(() => [...new Set(events.map(e => e.type).filter(Boolean))], [events]);
   const hasFilters = tagFilters.length > 0 || colorFilters.length > 0 || typeFilters.length > 0;
 
   if (allTags.length === 0 && usedTypes.length === 0 && !hasFilters) return null;
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2 bg-white border-b border-slate-100 flex-wrap shrink-0">
+    <div role="group" aria-label="事件篩選" className="flex items-center gap-2 px-4 py-2 bg-white border-b border-slate-100 flex-wrap shrink-0">
       <span className="text-xs text-slate-400 font-medium shrink-0">篩選</span>
 
       {/* Event type pills */}

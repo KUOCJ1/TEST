@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { DAY_NAMES, getMonthCalendarDays, getEventsForDay, isToday, formatDisplayTime } from '../../utils/calendar';
 import { getColorHex } from '../../utils/colors';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -155,20 +155,20 @@ export default function MonthView({
   const isMobile = useIsMobile();
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const days = getMonthCalendarDays(year, month);
+  const days = useMemo(() => getMonthCalendarDays(year, month), [year, month]);
   const hasAnyEvent = days.some(day => day.isCurrentMonth && getEventsForDay(events, day.date).length > 0);
 
-  function handleDragStart(e, event) {
+  const handleDragStart = useCallback((e, event) => {
     e.dataTransfer.setData('eventId', event.recurringBaseId || event.id);
     e.dataTransfer.setData('originalDate', event.startAt);
-  }
+  }, []);
 
-  function handleDrop(e, targetDate) {
+  const handleDrop = useCallback((e, targetDate) => {
     const eventId = e.dataTransfer.getData('eventId');
     const originalDate = e.dataTransfer.getData('originalDate');
     if (!eventId || !originalDate) return;
     onMoveEvent?.(eventId, new Date(originalDate), targetDate);
-  }
+  }, [onMoveEvent]);
 
   return (
     <div className="flex-1 overflow-auto min-h-0">

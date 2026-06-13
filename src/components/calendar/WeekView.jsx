@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState, memo } from 'react';
 import { getWeekDays, getEventsForDay, isToday, layoutDayEvents, formatDisplayTime } from '../../utils/calendar';
 import { getColorHex } from '../../utils/colors';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -12,7 +12,7 @@ function getThreeDayWindow(date) {
   return [-1, 0, 1].map(offset => new Date(date.getTime() + offset * 86400000));
 }
 
-function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart }) {
+const EventBlock = memo(function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart, selectMode, isSelected, onToggleSelect }) {
   const start = new Date(event.startAt);
   const end = new Date(event.endAt);
   const startMin = start.getHours() * 60 + start.getMinutes();
@@ -21,16 +21,24 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart
 
   const isOwn = event.creatorId === currentUserId;
   const isOtherPrivate = event.isPrivate && !isOwn;
-  const draggable = !event.isRecurring && event.source !== 'google';
+  const canSelect = !event.isRecurring && event.source !== 'google';
+  const draggable = canSelect && !selectMode;
   const color = getColorHex(event.color);
   const colW = 100 / totalCols;
+
+  function handleClick(e) {
+    e.stopPropagation();
+    if (selectMode && canSelect) { onToggleSelect(event.id); return; }
+    onClick(event);
+  }
 
   return (
     <button
       draggable={draggable}
       onDragStart={draggable ? e => { e.stopPropagation(); onDragStart(event, e); } : undefined}
-      onClick={e => { e.stopPropagation(); onClick(event); }}
-      aria-label={isOtherPrivate ? '私人事項' : `${event.title}，${formatDisplayTime(event.startAt)} – ${formatDisplayTime(event.endAt)}`}
+      onClick={handleClick}
+      aria-label={isOtherPrivate ? '私人事項' : `${selectMode && canSelect ? (isSelected ? '取消選取 ' : '選取 ') : ''}${event.title}，${formatDisplayTime(event.startAt)} – ${formatDisplayTime(event.endAt)}`}
+      aria-pressed={selectMode && canSelect ? isSelected : undefined}
       style={{
         position: 'absolute',
         top: startMin,
@@ -40,14 +48,22 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart
         backgroundColor: isOtherPrivate ? '#f1f5f9' : color,
         color: isOtherPrivate ? '#94a3b8' : 'white',
         zIndex: 1,
-        cursor: draggable ? 'grab' : 'pointer',
+        cursor: selectMode && canSelect ? 'pointer' : draggable ? 'grab' : 'pointer',
+        outline: isSelected ? '2px solid #6366f1' : undefined,
+        outlineOffset: isSelected ? '1px' : undefined,
+        opacity: selectMode && !canSelect ? 0.5 : 1,
       }}
       className="rounded text-left overflow-hidden px-1.5 py-0.5 hover:opacity-90 transition-opacity"
     >
+      {selectMode && canSelect && (
+        <span className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded border mr-1 shrink-0 align-middle ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-white/70 bg-white/20'}`}>
+          {isSelected && <span className="text-[8px] text-white leading-none">✓</span>}
+        </span>
+      )}
       {isOtherPrivate ? (
         <span className="text-xs">🔒</span>
       ) : (
-        <div className="text-xs">
+        <div className="text-xs inline-block align-middle max-w-full overflow-hidden">
           <div className="font-medium leading-tight truncate">{event.title}{event.source === 'google' && <span className="text-[9px] bg-white/30 rounded px-1 ml-0.5">G</span>}</div>
           {duration >= 35 && (
             <div className="opacity-80 text-[10px]">{formatDisplayTime(event.startAt)}</div>
@@ -59,13 +75,14 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart
       )}
     </button>
   );
-}
+});
 
-export default function WeekView({ currentDate, events, onEventClick, onSlotClick, onMoveEvent, currentUserId }) {
+export default function WeekView({ currentDate, events, onEventClick, onSlotClick, onMoveEvent, currentUserId, selectMode, selectedIds, onToggleSelect }) {
   const scrollRef = useRef(null);
   const dragRef = useRef(null);
   const isMobile = useIsMobile();
   const weekDays = isMobile ? getThreeDayWindow(currentDate) : getWeekDays(currentDate);
+  const [dragOverKey, setDragOverKey] = useState(null);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 8 * HOUR_HEIGHT;
@@ -75,6 +92,7 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
   const allEmpty = weekDays.every(day => getEventsForDay(events, day).length === 0);
 
   function handleColumnClick(e, day) {
+    if (selectMode) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - rect.top;
     const totalMinutes = Math.floor(y);
@@ -94,6 +112,7 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
   function handleColumnDrop(e, day) {
     if (!dragRef.current || !onMoveEvent) return;
     e.preventDefault();
+    setDragOverKey(null);
     const { event, offsetPx } = dragRef.current;
     dragRef.current = null;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -140,17 +159,26 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
             const allDayEvts = getEventsForDay(events, day).filter(e => e.isAllDay);
             return (
               <div key={day.toISOString()} className="flex-1 border-l border-slate-100 px-1 py-1 min-w-0 space-y-0.5">
-                {allDayEvts.map(e => (
-                  <button
-                    key={e.id}
-                    onClick={() => onEventClick(e)}
-                    aria-label={`${e.title}，全天`}
-                    style={{ backgroundColor: getColorHex(e.color) }}
-                    className="w-full text-left text-[10px] text-white font-medium px-1.5 py-0.5 rounded truncate hover:opacity-80 transition-opacity block"
-                  >
-                    {e.title}
-                  </button>
-                ))}
+                {allDayEvts.map(e => {
+                  const canSel = !e.isRecurring && e.source !== 'google';
+                  const isSel = selectedIds?.has(e.id);
+                  return (
+                    <button
+                      key={e.id}
+                      onClick={() => selectMode && canSel ? onToggleSelect(e.id) : onEventClick(e)}
+                      aria-label={`${e.title}，全天`}
+                      style={{
+                        backgroundColor: getColorHex(e.color),
+                        outline: isSel ? '2px solid #6366f1' : undefined,
+                        outlineOffset: isSel ? '1px' : undefined,
+                      }}
+                      className="w-full text-left text-[10px] text-white font-medium px-1.5 py-0.5 rounded truncate hover:opacity-80 transition-opacity block"
+                    >
+                      {selectMode && canSel && <span className="mr-1">{isSel ? '✓' : '○'}</span>}
+                      {e.title}
+                    </button>
+                  );
+                })}
               </div>
             );
           })}
@@ -175,17 +203,21 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
 
           {/* Day columns */}
           {weekDays.map(day => {
+            const dayKey = day.toISOString();
             const dayEvents = getEventsForDay(events, day).filter(e => !e.isAllDay);
             const layouts = layoutDayEvents(dayEvents);
             const todayLine = isToday(day);
+            const isDragOver = dragOverKey === dayKey;
 
             return (
               <div
-                key={day.toISOString()}
-                className="flex-1 border-l border-slate-100 relative min-w-0 cursor-pointer hover:bg-slate-50/40"
+                key={dayKey}
+                className={`flex-1 border-l border-slate-100 relative min-w-0 cursor-pointer transition-colors ${isDragOver ? 'bg-indigo-50/60' : 'hover:bg-slate-50/40'}`}
                 style={{ height: 24 * HOUR_HEIGHT }}
                 onClick={e => handleColumnClick(e, day)}
-                onDragOver={e => e.preventDefault()}
+                onDragOver={e => { e.preventDefault(); if (dragOverKey !== dayKey) setDragOverKey(dayKey); }}
+                onDragEnter={() => setDragOverKey(dayKey)}
+                onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverKey(null); }}
                 onDrop={e => handleColumnDrop(e, day)}
               >
                 {/* Hour grid lines */}
@@ -196,6 +228,17 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
                 {HOURS.map(h => (
                   <div key={`${h}h`} className="absolute w-full border-t border-slate-50" style={{ top: h * HOUR_HEIGHT + 30 }} />
                 ))}
+
+                {/* Drag-over drop indicator */}
+                {isDragOver && dragRef.current && (
+                  <div
+                    className="absolute left-0 right-0 h-0.5 bg-indigo-500 pointer-events-none z-20"
+                    style={{ top: (() => {
+                      const snapped = Math.round(Math.max(0, (dragRef.current.offsetPx || 0)) / 15) * 15;
+                      return Math.min(snapped, 24 * 60 - 1);
+                    })() }}
+                  />
+                )}
 
                 {/* Current time indicator */}
                 {todayLine && (
@@ -217,6 +260,9 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
                     onClick={onEventClick}
                     currentUserId={currentUserId}
                     onDragStart={handleEventDragStart}
+                    selectMode={selectMode}
+                    isSelected={selectedIds?.has(event.id)}
+                    onToggleSelect={onToggleSelect}
                   />
                 ))}
               </div>

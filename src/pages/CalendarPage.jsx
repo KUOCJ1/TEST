@@ -210,12 +210,12 @@ export default function CalendarPage() {
     setEventModalOpen(true);
   }, [selectMode]);
 
-  function closeEventModal() {
+  const closeEventModal = useCallback(() => {
     setEventModalOpen(false);
     setSelectedEvent(null);
     setSelectedDate(null);
     setCopyTemplate(null);
-  }
+  }, []);
 
   function handleSave(data) {
     if (selectedEvent) {
@@ -410,6 +410,11 @@ export default function CalendarPage() {
     setColorFilters([]);
     setTypeFilters([]);
   }
+
+  const handleNavigateDay = useCallback((date) => {
+    setCurrentDate(date);
+    setView('day');
+  }, []);
 
   // ── Group handlers ────────────────────────────────────────────
   function handleGroupLeft() {
@@ -714,7 +719,7 @@ export default function CalendarPage() {
               selectedIds={selectedIds}
               onToggleSelect={toggleSelectId}
               onMoveEvent={handleMoveEvent}
-              onNavigateDay={date => { setCurrentDate(date); setView('day'); }}
+              onNavigateDay={handleNavigateDay}
             />
           )}
           {view === 'week' && (
@@ -725,6 +730,9 @@ export default function CalendarPage() {
               onSlotClick={handleSlotClick}
               onMoveEvent={handleMoveEventToTime}
               currentUserId={currentUser.id}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelectId}
             />
           )}
           {view === 'day' && (
@@ -735,6 +743,9 @@ export default function CalendarPage() {
               onSlotClick={handleSlotClick}
               onMoveEvent={handleMoveEventToTime}
               currentUserId={currentUser.id}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelectId}
             />
           )}
         </div>
@@ -744,7 +755,7 @@ export default function CalendarPage() {
           <AgendaSidebar
             events={displayEvents}
             onEventClick={handleEventClick}
-            onNavigateDay={date => { setCurrentDate(date); setView('day'); }}
+            onNavigateDay={handleNavigateDay}
           />
         )}
       </div>
@@ -827,10 +838,16 @@ export default function CalendarPage() {
       {showHelp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowHelp(false)} />
-          <div role="dialog" aria-modal="true" aria-labelledby="help-dialog-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="help-dialog-title"
+            onKeyDown={e => e.key === 'Escape' && setShowHelp(false)}
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+          >
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <h3 id="help-dialog-title" className="text-base font-semibold text-slate-800">鍵盤快捷鍵</h3>
-              <button onClick={() => setShowHelp(false)} className="text-slate-400 hover:text-slate-600" aria-label="關閉">
+              <button autoFocus onClick={() => setShowHelp(false)} className="text-slate-400 hover:text-slate-600" aria-label="關閉">
                 <X size={18} />
               </button>
             </div>
