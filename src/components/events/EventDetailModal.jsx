@@ -50,7 +50,7 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
         {/* Header */}
         <div className="flex items-start justify-between px-5 pt-4 pb-2">
           <div className="flex-1">
-            {isPrivate ? (
+            {isPrivate && !onEdit ? (
               <div className="flex items-center gap-2">
                 <Lock size={16} className="text-slate-400 shrink-0" />
                 <h2 className="text-lg font-semibold text-slate-500">私人事項</h2>
@@ -85,7 +85,7 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
         </div>
 
         {/* Body */}
-        {!isPrivate && (
+        {(!isPrivate || onEdit) && (
           <div className="px-5 pb-4 space-y-3">
             {/* Time */}
             <div className="flex items-start gap-2.5">
@@ -183,8 +183,23 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
           </div>
         )}
 
-        {isPrivate && (
-          <p className="px-5 pb-4 text-sm text-slate-400">此事項已設為私人，內容不對外顯示。</p>
+        {isPrivate && !onEdit && (
+          <div className="px-5 pb-4 space-y-2">
+            <div className="flex items-start gap-2.5">
+              <Clock size={15} className="text-slate-400 mt-0.5 shrink-0" />
+              <div className="text-sm text-slate-500">
+                {event.isAllDay ? (
+                  <span>全天</span>
+                ) : (
+                  <span>{formatDisplayTime(event.startAt)} – {formatDisplayTime(event.endAt)}</span>
+                )}
+                <span className="text-slate-400 ml-1">
+                  {new Date(event.startAt).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}
+                </span>
+              </div>
+            </div>
+            <p className="text-sm text-slate-400 pl-[22px]">內容不對外顯示。</p>
+          </div>
         )}
 
         {/* Footer */}
