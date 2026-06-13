@@ -72,10 +72,12 @@ export default function AuthPage() {
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Tabs */}
-          <div className="flex rounded-xl bg-slate-100 p-1 mb-6">
+          <div role="tablist" aria-label="登入或註冊" className="flex rounded-xl bg-slate-100 p-1 mb-6">
             {['login', 'register'].map(m => (
               <button
                 key={m}
+                role="tab"
+                aria-selected={mode === m}
                 onClick={() => switchMode(m)}
                 className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                   mode === m
@@ -91,14 +93,16 @@ export default function AuthPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">姓名</label>
+                <label htmlFor="auth-name" className="block text-sm font-medium text-slate-700 mb-1.5">姓名</label>
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
+                    id="auth-name"
                     type="text"
                     value={form.name}
                     onChange={e => update('name', e.target.value)}
                     placeholder="你的名字"
+                    autoComplete="name"
                     className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     required
                   />
@@ -107,14 +111,16 @@ export default function AuthPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+              <label htmlFor="auth-email" className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="auth-email"
                   type="email"
                   value={form.email}
                   onChange={e => update('email', e.target.value)}
                   placeholder="your@email.com"
+                  autoComplete="email"
                   className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   required
                 />
@@ -122,14 +128,16 @@ export default function AuthPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">密碼</label>
+              <label htmlFor="auth-password" className="block text-sm font-medium text-slate-700 mb-1.5">密碼</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="auth-password"
                   type="password"
                   value={form.password}
                   onChange={e => update('password', e.target.value)}
                   placeholder={mode === 'register' ? '至少 6 個字元' : '••••••••'}
+                  autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                   className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   required
                 />
@@ -153,18 +161,28 @@ export default function AuthPage() {
 
             {mode === 'register' && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">確認密碼</label>
+                <label htmlFor="auth-confirm" className="block text-sm font-medium text-slate-700 mb-1.5">確認密碼</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
+                    id="auth-confirm"
                     type="password"
                     value={form.confirm}
                     onChange={e => update('confirm', e.target.value)}
                     placeholder="再次輸入密碼"
-                    className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    autoComplete="new-password"
+                    aria-describedby={form.confirm && form.password !== form.confirm ? 'confirm-mismatch' : undefined}
+                    className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent ${
+                      form.confirm && form.password !== form.confirm
+                        ? 'border-red-300 focus:ring-red-400'
+                        : 'border-slate-200 focus:ring-indigo-500'
+                    }`}
                     required
                   />
                 </div>
+                {form.confirm && form.password !== form.confirm && (
+                  <p id="confirm-mismatch" role="alert" className="text-xs text-red-500 mt-1">密碼不一致</p>
+                )}
               </div>
             )}
 

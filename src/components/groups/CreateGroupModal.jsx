@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useGroups } from '../../context/GroupContext';
 
@@ -6,6 +6,13 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
   const { createGroup } = useGroups();
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -22,17 +29,18 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <div role="dialog" aria-modal="true" aria-labelledby="create-group-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-slate-800">建立群組行事曆</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <h2 id="create-group-title" className="text-lg font-semibold text-slate-800">建立群組行事曆</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="關閉">
             <X size={20} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">群組名稱</label>
+            <label htmlFor="create-group-name" className="block text-sm font-medium text-slate-700 mb-1.5">群組名稱</label>
             <input
+              id="create-group-name"
               type="text"
               value={name}
               onChange={e => { setName(e.target.value); setError(''); }}

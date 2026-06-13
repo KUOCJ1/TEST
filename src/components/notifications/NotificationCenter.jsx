@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, BellOff, X } from 'lucide-react';
 import { formatDisplayTime } from '../../utils/calendar';
 
@@ -6,13 +6,15 @@ function countdown(reminderTime) {
   const ms = reminderTime - new Date();
   if (ms <= 0) return '即將提醒';
   const h = Math.floor(ms / 3600000);
+  if (h >= 24) return `${Math.ceil(h / 24)} 天後提醒`;
   const m = Math.floor((ms % 3600000) / 60000);
   if (h > 0) return `${h} 小時後提醒`;
   return `${m || 1} 分鐘後提醒`;
 }
 
 function ReminderLabel({ minutes }) {
-  const label = minutes >= 1440 ? '1 天前' : minutes >= 60 ? `${minutes / 60} 小時前` : `${minutes} 分鐘前`;
+  const m = Number(minutes);
+  const label = m >= 10080 ? '1 週前' : m >= 2880 ? '2 天前' : m >= 1440 ? '1 天前' : m >= 60 ? `${m / 60} 小時前` : `${m} 分鐘前`;
   return (
     <span className="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-full mt-1 inline-block">
       {label}
@@ -24,11 +26,20 @@ export default function NotificationCenter({ permission, requestPermission, upco
   const [open, setOpen] = useState(false);
   const count = upcomingReminders.length;
 
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open]);
+
   return (
     <div className="relative">
       <button
         onClick={() => setOpen(o => !o)}
-        aria-label="通知"
+        aria-label={`通知${count > 0 ? `（${count} 個即將到來）` : ''}`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         className="relative p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
       >
         {permission === 'denied' ? <BellOff size={18} /> : <Bell size={18} />}
@@ -46,7 +57,7 @@ export default function NotificationCenter({ permission, requestPermission, upco
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
               <span className="text-sm font-semibold text-slate-800">提醒通知</span>
-              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <button onClick={() => setOpen(false)} aria-label="關閉通知" className="text-slate-400 hover:text-slate-600 transition-colors">
                 <X size={16} />
               </button>
             </div>
@@ -79,7 +90,7 @@ export default function NotificationCenter({ permission, requestPermission, upco
               {upcomingReminders.length === 0 ? (
                 <div className="px-4 py-6 text-center">
                   <Bell size={22} className="text-slate-200 mx-auto mb-2" />
-                  <p className="text-xs text-slate-400">24 小時內沒有待提醒事件</p>
+                  <p className="text-xs text-slate-400">48 小時內沒有待提醒事件</p>
                 </div>
               ) : (
                 upcomingReminders.map(({ event, reminderTime, minutes }) => (

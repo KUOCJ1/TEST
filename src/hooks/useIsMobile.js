@@ -1,16 +1,24 @@
 import { useState, useEffect } from 'react';
 
-export function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() => {
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return false;
-    return window.matchMedia('(max-width: 639px)').matches;
+    return window.matchMedia(query).matches;
   });
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mq = window.matchMedia('(max-width: 639px)');
-    const handler = e => setIsMobile(e.matches);
+    const mq = window.matchMedia(query);
+    const handler = e => setMatches(e.matches);
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
-  }, []);
-  return isMobile;
+  }, [query]);
+  return matches;
+}
+
+export function useIsMobile() {
+  return useMediaQuery('(max-width: 639px)');
+}
+
+export function useIsDesktop() {
+  return useMediaQuery('(min-width: 1024px)');
 }

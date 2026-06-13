@@ -8,7 +8,10 @@ function toICSDate(iso) {
 }
 
 function toICSDateOnly(iso) {
-  return iso.slice(0,10).replace(/-/g,'');
+  // Use local date components so all-day events export on the correct local date
+  // (slicing UTC ISO would give wrong day for UTC+ timezones)
+  const d = new Date(iso);
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
 }
 
 function escICS(s) {
@@ -27,15 +30,32 @@ export function exportToIcs(events) {
     lines.push(`DTSTAMP:${toICSDate(new Date().toISOString())}`);
     if (e.isAllDay) {
       lines.push(`DTSTART;VALUE=DATE:${toICSDateOnly(e.startAt)}`);
-      lines.push(`DTEND;VALUE=DATE:${toICSDateOnly(e.endAt)}`);
+      // RFC 5545 §3.6.1: DTEND for DATE-valued events is exclusive; add 1 day
+      const excEnd = new Date(e.startAt);
+      excEnd.setDate(excEnd.getDate() + 1);
+      lines.push(`DTEND;VALUE=DATE:${toICSDateOnly(excEnd.toISOString())}`);
     } else {
       lines.push(`DTSTART:${toICSDate(e.startAt)}`);
       lines.push(`DTEND:${toICSDate(e.endAt)}`);
     }
-    lines.push(`SUMMARY:${escICS(e.title)}`);
+    lines.push(`SUMMARY:${escICS(e.title || '(無標題)' )}`);
     if (e.description) lines.push(`DESCRIPTION:${escICS(e.description)}`);
+    if (e.location)    lines.push(`LOCATION:${escICS(e.location)}`);
+    if (e.url)         lines.push(`URL:${e.url}`);
     if (e.tags?.length) lines.push(`CATEGORIES:${e.tags.join(',')}`);
-    if (e.reminder) lines.push(`BEGIN:VALARM\r\nTRIGGER:-PT${e.reminder}M\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder\r\nEND:VALARM`);
+    if (e.isPrivate)   lines.push('CLASS:PRIVATE');
+    if (e.recurrence?.freq) {
+      const freq = e.recurrence.freq.toUpperCase();
+      const until = e.recurrence.until
+        ? `;UNTIL=${e.recurrence.until.replace(/-/g,'')}T000000Z`
+        : '';
+      lines.push(`RRULE:FREQ=${freq}${until}`);
+    }
+    if (e.reminder) {
+      const mins = parseInt(e.reminder, 10);
+      const trigger = mins % 1440 === 0 ? `-P${mins / 1440}D` : mins % 60 === 0 ? `-PT${mins / 60}H` : `-PT${mins}M`;
+      lines.push(`BEGIN:VALARM\r\nTRIGGER:${trigger}\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder\r\nEND:VALARM`);
+    }
     lines.push('END:VEVENT');
   }
   lines.push('END:VCALENDAR');
@@ -58,15 +78,30 @@ export function parseIcs(text) {
     if (line === 'END:VEVENT') { if (cur?.title && cur?.startAt) events.push(cur); cur = null; continue; }
     if (line === 'BEGIN:VALARM') { inAlarm = true; continue; }
     if (line === 'END:VALARM') { inAlarm = false; continue; }
-    if (!cur || inAlarm) continue;
+    if (!cur) continue;
 
     const colon = line.indexOf(':');
     if (colon < 0) continue;
     const prop = line.slice(0, colon).toUpperCase();
     const val  = line.slice(colon + 1);
 
+    if (inAlarm) {
+      // Parse TRIGGER to restore reminder duration
+      if (prop === 'TRIGGER') {
+        const m = val.match(/-PT(\d+)M/);
+        const h = val.match(/-PT(\d+)H/);
+        const d = val.match(/-P(\d+)D/);
+        if (m) cur.reminder = m[1];
+        else if (h) cur.reminder = String(parseInt(h[1], 10) * 60);
+        else if (d) cur.reminder = String(parseInt(d[1], 10) * 1440);
+      }
+      continue;
+    }
+
     if (prop === 'SUMMARY') { cur.title = unescICS(val); }
     else if (prop === 'DESCRIPTION') { cur.description = unescICS(val); }
+    else if (prop === 'LOCATION') { cur.location = unescICS(val); }
+    else if (prop === 'URL') { cur.url = val.trim(); }
     else if (prop.startsWith('DTSTART')) {
       if (prop.includes('VALUE=DATE') || val.length === 8) {
         cur.isAllDay = true;
@@ -92,6 +127,20 @@ export function parseIcs(text) {
     }
     else if (prop === 'CATEGORIES') {
       cur.tags = val.split(',').map(t=>t.trim()).filter(Boolean);
+    }
+    else if (prop === 'CLASS') {
+      cur.isPrivate = val.trim().toUpperCase() === 'PRIVATE';
+    }
+    else if (prop === 'RRULE') {
+      const freqMatch  = val.match(/FREQ=(\w+)/i);
+      const untilMatch = val.match(/UNTIL=(\d{8})/i);
+      if (freqMatch) {
+        const freq = freqMatch[1].toLowerCase();
+        const until = untilMatch
+          ? `${untilMatch[1].slice(0,4)}-${untilMatch[1].slice(4,6)}-${untilMatch[1].slice(6,8)}`
+          : null;
+        cur.recurrence = { freq, until };
+      }
     }
     else if (prop === 'UID') {
       cur.externalId = val;

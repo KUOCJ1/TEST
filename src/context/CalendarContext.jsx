@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { generateId } from '../utils/calendar';
 
 const CalendarContext = createContext(null);
@@ -11,11 +11,29 @@ function loadEvents(userId) {
 }
 
 function persist(userId, events) {
-  localStorage.setItem(storageKey(userId), JSON.stringify(events));
+  try {
+    localStorage.setItem(storageKey(userId), JSON.stringify(events));
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+      console.warn('localStorage quota exceeded — events not saved');
+    }
+  }
 }
 
 export function CalendarProvider({ children, userId }) {
   const [events, setEvents] = useState(() => loadEvents(userId));
+
+  // Sync across tabs: when another tab writes to localStorage, reload events
+  useEffect(() => {
+    const key = storageKey(userId);
+    const handler = (e) => {
+      if (e.key === key && e.newValue) {
+        try { setEvents(JSON.parse(e.newValue)); } catch {}
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, [userId]);
 
   const addEvent = useCallback((data) => {
     const event = { ...data, id: generateId(), creatorId: userId };
@@ -29,7 +47,7 @@ export function CalendarProvider({ children, userId }) {
 
   const updateEvent = useCallback((id, data) => {
     setEvents(prev => {
-      const next = prev.map(e => e.id === id ? { ...e, ...data } : e);
+      const next = prev.map(e => e.id === id ? { ...e, ...data, id: e.id, creatorId: e.creatorId } : e);
       persist(userId, next);
       return next;
     });

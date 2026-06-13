@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useGroups } from '../../context/GroupContext';
 
@@ -6,6 +6,13 @@ export default function JoinGroupModal({ isOpen, onClose, onJoined }) {
   const { joinGroup } = useGroups();
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -26,17 +33,18 @@ export default function JoinGroupModal({ isOpen, onClose, onJoined }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <div role="dialog" aria-modal="true" aria-labelledby="join-group-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-slate-800">加入群組行事曆</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <h2 id="join-group-title" className="text-lg font-semibold text-slate-800">加入群組行事曆</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="關閉">
             <X size={20} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">邀請碼</label>
+            <label htmlFor="join-group-code" className="block text-sm font-medium text-slate-700 mb-1.5">邀請碼</label>
             <input
+              id="join-group-code"
               type="text"
               value={code}
               onChange={e => { setCode(e.target.value.toUpperCase()); setError(''); }}

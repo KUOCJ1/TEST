@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { DAY_NAMES, getMonthCalendarDays, getEventsForDay, isToday } from '../../utils/calendar';
+import { DAY_NAMES, getMonthCalendarDays, getEventsForDay, isToday, formatDisplayTime } from '../../utils/calendar';
 import { getColorHex } from '../../utils/colors';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
@@ -28,10 +28,11 @@ const EventPill = memo(function EventPill({
       <button
         onClick={handleClick}
         draggable={false}
+        aria-label={selectMode ? `選取私人事項` : '私人事項'}
         className="w-full text-left text-xs px-1.5 py-0.5 rounded truncate flex items-center gap-1 bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors"
       >
         {selectMode && (
-          <input type="checkbox" checked={selected} readOnly className="mr-1 shrink-0" />
+          <input type="checkbox" checked={selected} readOnly aria-label={`選取私人事項`} className="mr-1 shrink-0" />
         )}
         <span className="shrink-0">🔒</span>
         <span className="truncate">私人事項</span>
@@ -39,9 +40,21 @@ const EventPill = memo(function EventPill({
     );
   }
 
+  const tooltip = event.isAllDay
+    ? event.title
+    : `${event.title}\n${formatDisplayTime(event.startAt)} – ${formatDisplayTime(event.endAt)}${event.description ? '\n' + event.description.slice(0, 80) : ''}`;
+
+  const ariaLabel = selectMode
+    ? `選取 ${event.title}`
+    : event.isAllDay
+      ? event.title
+      : `${event.title}，${formatDisplayTime(event.startAt)} – ${formatDisplayTime(event.endAt)}`;
+
   return (
     <button
       onClick={handleClick}
+      title={tooltip}
+      aria-label={ariaLabel}
       draggable={!selectMode && !event.isRecurring}
       onDragStart={e => {
         e.stopPropagation();
@@ -53,7 +66,7 @@ const EventPill = memo(function EventPill({
       style={{ backgroundColor: selected ? '#4f46e5' : color }}
     >
       {selectMode && (
-        <input type="checkbox" checked={selected} readOnly className="mr-0.5 shrink-0" onClick={e => e.stopPropagation()} />
+        <input type="checkbox" checked={selected} readOnly aria-label={`選取 ${event.title}`} className="mr-0.5 shrink-0" onClick={e => e.stopPropagation()} />
       )}
       {!isOwn && event.creatorName && (
         <span className="opacity-75 shrink-0">{event.creatorName.charAt(0)}·</span>
@@ -70,7 +83,7 @@ const EventPill = memo(function EventPill({
 const DayCell = memo(function DayCell({
   day, events, onDayClick, onEventClick, currentUserId, compact,
   selectMode, selectedIds, onToggleSelect,
-  onDragStart, onDrop,
+  onDragStart, onDrop, onNavigateDay,
 }) {
   const today = isToday(day.date);
   const visible = events.slice(0, MAX_VISIBLE);
@@ -121,7 +134,8 @@ const DayCell = memo(function DayCell({
           ))}
           {overflow > 0 && (
             <button
-              onClick={e => { e.stopPropagation(); onDayClick(day.date); }}
+              onClick={e => { e.stopPropagation(); (onNavigateDay || onDayClick)(day.date); }}
+              aria-label={`查看 ${overflow} 個更多事件`}
               className="w-full text-left text-xs text-indigo-500 px-1.5 hover:underline"
             >
               + {overflow} 更多
@@ -136,12 +150,13 @@ const DayCell = memo(function DayCell({
 export default function MonthView({
   currentDate, events, onDayClick, onEventClick, currentUserId,
   selectMode, selectedIds, onToggleSelect,
-  onMoveEvent,
+  onMoveEvent, onNavigateDay,
 }) {
   const isMobile = useIsMobile();
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const days = getMonthCalendarDays(year, month);
+  const hasAnyEvent = days.some(day => day.isCurrentMonth && getEventsForDay(events, day.date).length > 0);
 
   function handleDragStart(e, event) {
     e.dataTransfer.setData('eventId', event.recurringBaseId || event.id);
@@ -172,7 +187,7 @@ export default function MonthView({
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7 relative">
         {days.map(day => {
           const dayEvents = getEventsForDay(events, day.date);
           return (
@@ -189,9 +204,17 @@ export default function MonthView({
               onToggleSelect={onToggleSelect}
               onDragStart={handleDragStart}
               onDrop={handleDrop}
+              onNavigateDay={onNavigateDay}
             />
           );
         })}
+        {!hasAnyEvent && !isMobile && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none col-span-7" style={{ top: '30%' }}>
+            <span className="text-5xl mb-3 opacity-40">📅</span>
+            <p className="text-sm text-slate-400 font-medium">這個月還沒有行程</p>
+            <p className="text-xs text-slate-300 mt-1">點擊任意日期新增事件</p>
+          </div>
+        )}
       </div>
     </div>
   );

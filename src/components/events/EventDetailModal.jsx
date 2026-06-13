@@ -1,4 +1,6 @@
-import { X, Clock, Tag, Lock, User, ExternalLink, MapPin, Link, RefreshCw } from 'lucide-react';
+import { useEffect } from 'react';
+import { X, Clock, Tag, Lock, User, Users, ExternalLink, MapPin, Link, RefreshCw, Copy, Download } from 'lucide-react';
+import { exportToIcs } from '../../utils/ics';
 import { getColorHex } from '../../utils/colors';
 import { formatDisplayTime } from '../../utils/calendar';
 import { FREQ_OPTIONS } from '../../utils/recurrence';
@@ -9,7 +11,25 @@ function freqLabel(freq) {
   return FREQ_OPTIONS.find(o => o.value === freq)?.label || freq;
 }
 
-export default function EventDetailModal({ isOpen, onClose, event, onEdit }) {
+function exportSingleEvent(event) {
+  const content = exportToIcs([event]);
+  const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${event.title.replace(/[^\w一-鿿]/g, '_')}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCopy, isGoogleConnected, onPushToGoogle }) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !event) return null;
 
   const color = getColorHex(event.color);
@@ -18,20 +38,25 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detail-modal-title"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+      >
         {/* Color bar */}
         <div className="h-1.5 w-full" style={{ backgroundColor: color }} />
 
         {/* Header */}
         <div className="flex items-start justify-between px-5 pt-4 pb-2">
           <div className="flex-1">
-            {isPrivate ? (
+            {isPrivate && !onEdit ? (
               <div className="flex items-center gap-2">
                 <Lock size={16} className="text-slate-400 shrink-0" />
-                <h2 className="text-lg font-semibold text-slate-500">私人事項</h2>
+                <h2 id="detail-modal-title" className="text-lg font-semibold text-slate-500">私人事項</h2>
               </div>
             ) : (
-              <h2 className="text-lg font-semibold text-slate-800">{event.title}</h2>
+              <h2 id="detail-modal-title" className="text-lg font-semibold text-slate-800">{event.title}</h2>
             )}
 
             <div className="flex flex-wrap gap-1.5 mt-1">
@@ -54,13 +79,13 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit }) {
               )}
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 ml-3 shrink-0">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 ml-3 shrink-0" aria-label="關閉">
             <X size={20} />
           </button>
         </div>
 
         {/* Body */}
-        {!isPrivate && (
+        {(!isPrivate || onEdit) && (
           <div className="px-5 pb-4 space-y-3">
             {/* Time */}
             <div className="flex items-start gap-2.5">
@@ -115,6 +140,30 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit }) {
               </div>
             )}
 
+            {/* Attendees */}
+            {event.attendees?.length > 0 && (
+              <div className="flex items-start gap-2.5">
+                <Users size={15} className="text-slate-400 mt-0.5 shrink-0" />
+                <div className="flex flex-wrap gap-1.5">
+                  {event.attendees.map(email => {
+                    const initials = email.split('@')[0].slice(0, 2).toUpperCase();
+                    return (
+                      <span
+                        key={email}
+                        title={email}
+                        className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full"
+                      >
+                        <span className="w-4 h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                          {initials}
+                        </span>
+                        {email}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Tags */}
             {event.tags?.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
@@ -134,24 +183,74 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit }) {
           </div>
         )}
 
-        {isPrivate && (
-          <p className="px-5 pb-4 text-sm text-slate-400">此事項已設為私人，內容不對外顯示。</p>
+        {isPrivate && !onEdit && (
+          <div className="px-5 pb-4 space-y-2">
+            <div className="flex items-start gap-2.5">
+              <Clock size={15} className="text-slate-400 mt-0.5 shrink-0" />
+              <div className="text-sm text-slate-500">
+                {event.isAllDay ? (
+                  <span>全天</span>
+                ) : (
+                  <span>{formatDisplayTime(event.startAt)} – {formatDisplayTime(event.endAt)}</span>
+                )}
+                <span className="text-slate-400 ml-1">
+                  {new Date(event.startAt).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}
+                </span>
+              </div>
+            </div>
+            <p className="text-sm text-slate-400 pl-[22px]">內容不對外顯示。</p>
+          </div>
         )}
 
         {/* Footer */}
-        {!isPrivate && (event?.htmlLink || (onEdit && event?.source !== 'google')) && (
-          <div className="border-t border-slate-100 px-5 py-3 flex justify-end gap-3">
-            {event?.htmlLink && (
-              <a
-                href={event.htmlLink}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-              >
-                <ExternalLink size={13} />
-                在 Google 開啟
-              </a>
-            )}
+        {(!isPrivate || onEdit) && (
+          <div className="border-t border-slate-100 px-5 py-3 flex justify-between items-center gap-3">
+            <div className="flex items-center gap-2">
+              {event?.htmlLink && (
+                <a
+                  href={event.htmlLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <ExternalLink size={13} />
+                  在 Google 開啟
+                </a>
+              )}
+              {isGoogleConnected && onPushToGoogle && !event?.htmlLink && (
+                <button
+                  onClick={onPushToGoogle}
+                  aria-label="推送到 Google Calendar"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="推送到 Google Calendar"
+                >
+                  <span className="w-3.5 h-3.5 rounded bg-red-500 text-white text-[8px] flex items-center justify-center font-bold shrink-0">G</span>
+                  推送
+                </button>
+              )}
+              {event?.source !== 'google' && (
+                <>
+                  <button
+                    onClick={() => exportSingleEvent(event)}
+                    aria-label="匯出為 .ics"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                    title="匯出為 .ics"
+                  >
+                    <Download size={13} />
+                  </button>
+                  {onCopy && (
+                    <button
+                      onClick={onCopy}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                      title="複製事件"
+                    >
+                      <Copy size={13} />
+                      複製
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
             {onEdit && event?.source !== 'google' && (
               <button
                 onClick={onEdit}

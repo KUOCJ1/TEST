@@ -30,7 +30,13 @@ export function getTypeDefaultColor(typeId) {
 
 export const REMINDER_OPTIONS = [
   { value: '',      label: '不提醒' },
+  { value: '5',     label: '5 分鐘前' },
+  { value: '10',    label: '10 分鐘前' },
   { value: '15',    label: '15 分鐘前' },
+  { value: '30',    label: '30 分鐘前' },
   { value: '60',    label: '1 小時前' },
+  { value: '120',   label: '2 小時前' },
   { value: '1440',  label: '1 天前' },
+  { value: '2880',  label: '2 天前' },
+  { value: '10080', label: '1 週前' },
 ];

@@ -6,12 +6,25 @@ export const FREQ_OPTIONS = [
   { value: 'yearly', label: '每年' },
 ];
 
-function step(date, freq) {
+function step(date, freq, originDay) {
   const d = new Date(date);
-  if (freq === 'daily')   d.setDate(d.getDate() + 1);
-  if (freq === 'weekly')  d.setDate(d.getDate() + 7);
-  if (freq === 'monthly') d.setMonth(d.getMonth() + 1);
-  if (freq === 'yearly')  d.setFullYear(d.getFullYear() + 1);
+  if (freq === 'daily')   { d.setDate(d.getDate() + 1); return d; }
+  if (freq === 'weekly')  { d.setDate(d.getDate() + 7); return d; }
+  if (freq === 'monthly') {
+    const targetMonth = d.getMonth() + 1;
+    const targetYear = targetMonth > 11 ? d.getFullYear() + 1 : d.getFullYear();
+    const normalizedMonth = targetMonth % 12;
+    const daysInTarget = new Date(targetYear, normalizedMonth + 1, 0).getDate();
+    d.setFullYear(targetYear, normalizedMonth, Math.min(originDay, daysInTarget));
+    return d;
+  }
+  if (freq === 'yearly') {
+    const targetYear = d.getFullYear() + 1;
+    const month = d.getMonth();
+    const daysInTarget = new Date(targetYear, month + 1, 0).getDate();
+    d.setFullYear(targetYear, month, Math.min(originDay, daysInTarget));
+    return d;
+  }
   return d;
 }
 
@@ -29,8 +42,9 @@ export function expandRecurringEvents(events, rangeStart, rangeEnd) {
 
     const duration = new Date(event.endAt).getTime() - new Date(event.startAt).getTime();
     let cur = new Date(event.startAt);
+    const originDay = cur.getDate();
 
-    for (let i = 0; cur <= ceiling && i < 500; i++, cur = step(cur, freq)) {
+    for (let i = 0; cur <= ceiling && i < 500; i++, cur = step(cur, freq, originDay)) {
       const instanceEnd = new Date(cur.getTime() + duration);
       if (instanceEnd >= rangeStart) {
         result.push({
