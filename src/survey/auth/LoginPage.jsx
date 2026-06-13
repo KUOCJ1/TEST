@@ -106,9 +106,9 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-5 rounded-lg bg-slate-50 px-3 py-2.5 text-center text-xs leading-relaxed text-slate-400">
-            管理員帳號預設為 <span className="font-mono text-slate-500">admin@demo.tw</span>
+            第一次使用請先「註冊」建立帳號。
             <br />
-            （密碼由後端部署時的 ADMIN_PASSWORD 環境變數設定）
+            管理員請使用部署時設定的帳號密碼登入。
           </p>
         </div>
       </div>

@@ -9,16 +9,17 @@
 
 資料以單一 JSON 檔保存（`/var/lib/ai-assessment/db.json`），備份只要複製這個檔即可。
 
-> 以下指令把你的網域設成變數，先執行一次再往下貼即可：
+> 本指南已套用你的網域。以下指令把網域設成變數，先執行一次再往下貼即可：
 > ```bash
-> export DOMAIN=your-domain.com
+> export DOMAIN=assess.rong-rise.com
 > ```
 
 ---
 
 ## 0. 前置作業
 - 已有一台 Ubuntu 22.04/24.04（或 Debian）的 VPS，能用 `sudo`。
-- 將網域的 **A 記錄**（以及 `AAAA`，若有 IPv6）指到 VPS 的公開 IP。
+- 將 `assess.rong-rise.com` 的 **A 記錄**（以及 `AAAA`，若有 IPv6）指到 VPS 的公開 IP。
+  用 `dig +short assess.rong-rise.com` 確認解析到正確 IP 後再往下做。
 - 開放防火牆 80／443：
   ```bash
   sudo ufw allow OpenSSH && sudo ufw allow 'Nginx Full' && sudo ufw enable
@@ -81,14 +82,14 @@ sudo rsync -a --delete dist/ /var/www/ai-assessment/
 ```
 
 ## 6. 設定 Nginx
+設定檔已內含 `server_name assess.rong-rise.com`，直接安裝即可：
 ```bash
 sudo cp deploy/nginx/ai-assessment.conf /etc/nginx/sites-available/ai-assessment.conf
-sudo sed -i "s/your-domain.com/$DOMAIN/" /etc/nginx/sites-available/ai-assessment.conf
 sudo ln -sf /etc/nginx/sites-available/ai-assessment.conf /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default   # 視需要移除預設站台
 sudo nginx -t && sudo systemctl reload nginx
 ```
-此時用 `http://$DOMAIN` 應已能開啟網站。
+此時用 `http://assess.rong-rise.com` 應已能開啟網站。
 
 ## 7. 啟用 HTTPS（Let's Encrypt）
 ```bash
