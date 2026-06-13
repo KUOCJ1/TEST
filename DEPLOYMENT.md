@@ -105,10 +105,11 @@ sudo certbot renew --dry-run    # 驗證自動續期
 ## 附錄 A：VPS 已有 Traefik 佔用 80/443 時（本站採用此方案）
 
 若伺服器上已有 **Traefik** 當反向代理（佔用 80/443），Nginx 無法再搶 80 埠。
-此時改用「Traefik → Nginx(本機 8080) → 後端(3101)」的串接，TLS 交給 Traefik 自動處理，
-**不需要 certbot**。後端埠在本站為 `3101`（3001 已被其他專案佔用）。
+此時改用「Traefik → Nginx(本機 8090) → 後端(3101)」的串接，TLS 交給 Traefik 自動處理，
+**不需要 certbot**。本站實況：後端埠 `3101`（3001 已被佔用）、Nginx 用 `8090`
+（8080 已被 bot 佔用）、Traefik 為 **host 網路模式**（故可用 `localhost` 直連）。
 
-### A-1 後端（同前，但 PORT=3101）
+### A-1 後端（PORT=3101）
 確認 `.env` 內 `PORT=3101`，並重啟服務：
 ```bash
 sudo sed -i 's/^PORT=.*/PORT=3101/' /opt/ai-assessment/server/.env
@@ -116,36 +117,31 @@ sudo systemctl restart ai-assessment-api
 curl -s localhost:3101/api/health      # 應回 {"ok":true}
 ```
 
-### A-2 Nginx 只聽本機 8080（不對外、不處理 TLS）
+### A-2 Nginx 只聽本機 8090（不對外、不處理 TLS）
 ```bash
 sudo cp deploy/nginx/ai-assessment-behind-traefik.conf \
         /etc/nginx/sites-available/ai-assessment.conf
 sudo ln -sf /etc/nginx/sites-available/ai-assessment.conf /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default      # 移除會搶 80 埠的預設站台
 sudo nginx -t && sudo systemctl restart nginx
-curl -s -H 'Host: assess.rong-rise.com' http://127.0.0.1:8080/api/health   # {"ok":true}
+curl -s -H 'Host: assess.rong-rise.com' http://127.0.0.1:8090/api/health   # {"ok":true}
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8090/            # 200
 ```
+> 選埠前先用 `sudo ss -ltnp` 確認沒被佔用；本站 8080 已被既有 bot 使用，故改 8090。
 
-### A-3 設定 Traefik 路由
-先確認 Traefik 怎麼跑、用哪種 provider：
+### A-3 設定 Traefik 路由（file provider＝單一檔案，需「併入」）
+本站 Traefik 的 file provider 指向單一檔 `/config/dynamic.yml`
+（主機路徑 `/docker/traefik/config/dynamic.yml`），所以**不能丟新檔**，要把
+`deploy/traefik/ai-assessment.yml` 內的 `routers.assess` 與 `services.assess-site`
+兩個區塊併入既有檔案對應的 `http.routers` / `http.services` 之下：
 ```bash
-docker ps --format '{{.Names}}\t{{.Image}}' | grep -i traefik   # 是否在 Docker 中
-ps aux | grep -i '[t]raefik'                                     # 或為系統服務
+sudo cp /docker/traefik/config/dynamic.yml /docker/traefik/config/dynamic.yml.bak
+sudoedit /docker/traefik/config/dynamic.yml   # 貼入 assess 路由與 assess-site 服務
 ```
-
-**若 Traefik 使用 file provider（靜態設定有 `providers.file.directory`）：**
-把附帶的動態設定放進 Traefik 的 dynamic 目錄（常見為 `/etc/traefik/dynamic/`）：
-```bash
-sudo mkdir -p /etc/traefik/dynamic
-sudo cp deploy/traefik/ai-assessment.yml /etc/traefik/dynamic/
-# Traefik 若開了 watch:true 會自動載入；否則重啟 Traefik
-```
-> 檔內 `certResolver: letsencrypt` 須與你 Traefik 既有的 ACME resolver 名稱一致；
-> 若名稱不同，改成既有的即可（沒有 resolver 時，依檔內註解在 `traefik.yml` 補上）。
-
-**若 Traefik 用 Docker provider（靠 labels），但本站 Nginx 不在 Docker：**
-仍建議改用 file provider（在 `traefik.yml` 加上 `providers.file`），再放入上面的動態檔，
-這樣不必把 Nginx 容器化。
+- `rule: Host("assess.rong-rise.com")`、`service: assess-site`、`tls.certResolver: letsencrypt`
+- `assess-site` 的 `servers.url` 指向 `http://localhost:8090`
+- Traefik 已開 `providers.file.watch=true`，存檔後自動重新載入並透過 Cloudflare
+  DNS challenge 簽發憑證（resolver 名稱沿用既有的 `letsencrypt`）。
 
 完成後以 `https://assess.rong-rise.com` 開啟即可，TLS 由 Traefik 自動簽發與續期。
 （此情況請略過下方第 7 節的 certbot 步驟。）
