@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { DAY_NAMES, getMonthCalendarDays, getEventsForDay, isToday } from '../../utils/calendar';
+import { DAY_NAMES, getMonthCalendarDays, getEventsForDay, isToday, formatDisplayTime } from '../../utils/calendar';
 import { getColorHex } from '../../utils/colors';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
@@ -39,9 +39,14 @@ const EventPill = memo(function EventPill({
     );
   }
 
+  const tooltip = event.isAllDay
+    ? event.title
+    : `${event.title}\n${formatDisplayTime(event.startAt)} – ${formatDisplayTime(event.endAt)}${event.description ? '\n' + event.description.slice(0, 80) : ''}`;
+
   return (
     <button
       onClick={handleClick}
+      title={tooltip}
       draggable={!selectMode && !event.isRecurring}
       onDragStart={e => {
         e.stopPropagation();
