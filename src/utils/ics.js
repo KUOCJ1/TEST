@@ -37,6 +37,7 @@ export function exportToIcs(events) {
     if (e.location)    lines.push(`LOCATION:${escICS(e.location)}`);
     if (e.url)         lines.push(`URL:${e.url}`);
     if (e.tags?.length) lines.push(`CATEGORIES:${e.tags.join(',')}`);
+    if (e.isPrivate)   lines.push('CLASS:PRIVATE');
     if (e.reminder) lines.push(`BEGIN:VALARM\r\nTRIGGER:-PT${e.reminder}M\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder\r\nEND:VALARM`);
     lines.push('END:VEVENT');
   }
@@ -109,6 +110,9 @@ export function parseIcs(text) {
     }
     else if (prop === 'CATEGORIES') {
       cur.tags = val.split(',').map(t=>t.trim()).filter(Boolean);
+    }
+    else if (prop === 'CLASS') {
+      cur.isPrivate = val.trim().toUpperCase() === 'PRIVATE';
     }
     else if (prop === 'UID') {
       cur.externalId = val;

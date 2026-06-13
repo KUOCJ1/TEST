@@ -341,4 +341,24 @@ describe('ICS roundtrip', () => {
     const parsed = parseIcs(ics);
     expect(parsed[0].reminder).toBe('60');
   });
+
+  it('exports CLASS:PRIVATE for private events', () => {
+    const priv = { ...timed, id: 'p1', isPrivate: true };
+    const ics = exportToIcs([priv]);
+    expect(ics).toContain('CLASS:PRIVATE');
+  });
+
+  it('roundtrips isPrivate field', () => {
+    const priv = { ...timed, id: 'p2', isPrivate: true };
+    const ics = exportToIcs([priv]);
+    const parsed = parseIcs(ics);
+    expect(parsed[0].isPrivate).toBe(true);
+  });
+
+  it('non-private events do not include CLASS:PRIVATE', () => {
+    const ics = exportToIcs([timed]);
+    expect(ics).not.toContain('CLASS:PRIVATE');
+    const parsed = parseIcs(ics);
+    expect(parsed[0].isPrivate).toBe(false);
+  });
 });
