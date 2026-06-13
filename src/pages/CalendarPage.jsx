@@ -419,14 +419,26 @@ export default function CalendarPage() {
   }
 
   function handleImportIcs(text) {
-    const parsed = parseIcs(text);
+    let parsed;
+    try {
+      parsed = parseIcs(text);
+    } catch {
+      addToast({ type: 'info', title: '匯入失敗', body: '檔案格式不正確，請確認為有效的 .ics 檔案' });
+      return;
+    }
     let count = 0;
+    let skipped = 0;
     for (const e of parsed) {
-      if (e.externalId && events.some(ev => ev.externalId === e.externalId)) continue;
+      if (e.externalId && events.some(ev => ev.externalId === e.externalId)) { skipped++; continue; }
       addEvent({ ...e, title: e.title || '匯入事件' });
       count++;
     }
-    addToast({ type: 'success', title: '匯入完成', body: `成功匯入 ${count} 個事件` });
+    if (count === 0 && skipped === 0) {
+      addToast({ type: 'info', title: '沒有可匯入的事件', body: '檔案中未找到有效的事件資料' });
+    } else {
+      const body = skipped > 0 ? `匯入 ${count} 個，略過 ${skipped} 個重複` : `成功匯入 ${count} 個事件`;
+      addToast({ type: 'success', title: '匯入完成', body });
+    }
   }
 
   return (

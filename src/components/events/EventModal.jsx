@@ -328,7 +328,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
               <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
               <p className="text-xs text-amber-700">
-                與「{conflicts[0].title}」時間重疊
+                與「{conflicts[0].isPrivate ? '私人事項' : conflicts[0].title}」時間重疊
                 {conflicts.length > 1 && `，及另外 ${conflicts.length - 1} 個事件`}
               </p>
             </div>
