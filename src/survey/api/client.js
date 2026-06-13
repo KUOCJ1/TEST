@@ -1,6 +1,3 @@
-// 後端 API 用戶端。同源部署時走相對路徑 /api（由 Nginx 反向代理到 Node 服務）；
-// 本機開發可透過 VITE_API_BASE 覆寫，或由 Vite dev proxy 轉發。
-
 const BASE = import.meta.env.VITE_API_BASE || '/api';
 
 async function request(path, { method = 'GET', body } = {}) {
@@ -8,7 +5,7 @@ async function request(path, { method = 'GET', body } = {}) {
   try {
     res = await fetch(`${BASE}${path}`, {
       method,
-      credentials: 'include', // 攜帶 httpOnly 認證 cookie
+      credentials: 'include',
       headers: body ? { 'Content-Type': 'application/json' } : undefined,
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -17,11 +14,7 @@ async function request(path, { method = 'GET', body } = {}) {
   }
 
   let data = null;
-  try {
-    data = await res.json();
-  } catch {
-    /* 無 JSON 內容 */
-  }
+  try { data = await res.json(); } catch { /* no json */ }
 
   if (!res.ok) {
     const err = new Error(data?.error || `請求失敗（${res.status}）`);
@@ -36,8 +29,15 @@ export const api = {
   login: (payload) => request('/auth/login', { method: 'POST', body: payload }).then((d) => d.user),
   logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me').then((d) => d.user),
+
+  assessments: () => request('/assessments').then((d) => d.assessments),
+  adminAssessments: () => request('/admin/assessments').then((d) => d.assessments),
+  toggleAssessment: (id, enabled) =>
+    request(`/admin/assessments/${id}`, { method: 'PATCH', body: { enabled } }).then((d) => d.assessment),
+
   createSubmission: (payload) =>
     request('/submissions', { method: 'POST', body: payload }).then((d) => d.submission),
   mySubmissions: () => request('/submissions/me').then((d) => d.submissions),
+
   adminOverview: () => request('/admin/overview'),
 };

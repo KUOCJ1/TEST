@@ -21,7 +21,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   if (!jwtSecret) throw new Error('createApp 需要 jwtSecret');
 
   const app = express();
-  app.use(express.json({ limit: '256kb' }));
+  app.use(express.json({ limit: '512kb' }));
   app.use(cookieParser());
 
   function setAuthCookie(res, user) {
@@ -53,7 +53,18 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     next();
   }
 
+  // Normalize legacy submissions that lack assessmentId.
+  function normalizeSubmission(s) {
+    return { ...s, assessmentId: s.assessmentId ?? 'ai-competency' };
+  }
+
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+  // ── 評量清單 ─────────────────────────────────────────────
+  app.get('/api/assessments', requireAuth, (_req, res) => {
+    const list = (db.data.assessments ?? []).filter((a) => a.enabled);
+    res.json({ assessments: list });
+  });
 
   // ── 認證 ────────────────────────────────────────────────
   app.post('/api/auth/register', async (req, res) => {
@@ -102,7 +113,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
 
   // ── 作答 ────────────────────────────────────────────────
   app.post('/api/submissions', requireAuth, (req, res) => {
-    const { answers, result } = req.body || {};
+    const { answers, result, assessmentId } = req.body || {};
     if (!result || typeof result.total !== 'number' || !Array.isArray(result.dimensions)) {
       return res.status(400).json({ error: '作答結果格式不正確' });
     }
@@ -110,6 +121,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       id: randomUUID(),
       userId: req.user.id,
       userName: req.user.name,
+      assessmentId: typeof assessmentId === 'string' ? assessmentId : 'ai-competency',
       createdAt: new Date().toISOString(),
       answers: answers && typeof answers === 'object' ? answers : {},
       result,
@@ -122,20 +134,32 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   app.get('/api/submissions/me', requireAuth, (req, res) => {
     const mine = db.data.submissions
       .filter((s) => s.userId === req.user.id)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map(normalizeSubmission);
     res.json({ submissions: mine });
   });
 
   // ── 管理後台 ────────────────────────────────────────────
+  app.get('/api/admin/assessments', requireAuth, requireAdmin, (_req, res) => {
+    res.json({ assessments: db.data.assessments ?? [] });
+  });
+
+  app.patch('/api/admin/assessments/:id', requireAuth, requireAdmin, (req, res) => {
+    const { enabled } = req.body ?? {};
+    const list = db.data.assessments ?? [];
+    const idx = list.findIndex((a) => a.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: '評量不存在' });
+    list[idx] = { ...list[idx], enabled: Boolean(enabled) };
+    db.persist();
+    res.json({ assessment: list[idx] });
+  });
+
   app.get('/api/admin/overview', requireAuth, requireAdmin, (_req, res) => {
     res.json({
       users: db.data.users.map(publicUser),
       submissions: db.data.submissions.map((s) => ({
-        id: s.id,
-        userId: s.userId,
-        userName: s.userName,
-        createdAt: s.createdAt,
-        result: s.result,
+        ...normalizeSubmission(s),
+        answers: undefined, // strip raw answers from overview
       })),
     });
   });

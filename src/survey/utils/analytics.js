@@ -18,12 +18,14 @@ function avg(nums) {
   return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
 }
 
-/** 後台彙整統計：以「每人最新一筆」為母體計算。 */
-export function aggregateStats(submissions) {
+/** 後台彙整統計：以「每人最新一筆」為母體計算。可選傳入題庫 config 以使用對應的構面和落點定義。 */
+export function aggregateStats(submissions, config) {
+  const dimensions = config?.DIMENSIONS ?? DIMENSIONS;
+  const levels = config?.LEVELS ?? LEVELS;
   const latest = latestPerUser(submissions);
   const respondents = latest.length;
 
-  const dimensionAverages = DIMENSIONS.map((d) => {
+  const dimensionAverages = dimensions.map((d) => {
     const percents = latest.map((s) => s.result.dimensions.find((x) => x.id === d.id)?.percent ?? 0);
     return {
       id: d.id,
@@ -34,7 +36,7 @@ export function aggregateStats(submissions) {
     };
   });
 
-  const levelDistribution = LEVELS.map((l) => ({
+  const levelDistribution = levels.map((l) => ({
     id: l.id,
     badge: l.badge,
     color: l.color,

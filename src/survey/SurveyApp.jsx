@@ -1,11 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { DIMENSIONS, TOTAL_QUESTIONS } from './data/questions';
-import {
-  answeredCount,
-  buildResult,
-  isComplete,
-  unansweredQuestionIds,
-} from './utils/scoring';
+import { getAssessment } from './data/assessments/index.js';
+import { answeredCount, buildResult, isComplete, unansweredQuestionIds } from './utils/scoring';
 import { readJSON, writeJSON } from './utils/storage';
 import { resultSummaryText, copyToClipboard } from './utils/format';
 import { api } from './api/client';
@@ -13,19 +8,13 @@ import ProgressBar from './components/ProgressBar';
 import QuestionCard from './components/QuestionCard';
 import ResultPanel from './components/ResultPanel';
 
-// 作答草稿依使用者分開儲存，避免共用瀏覽器時互相覆蓋。
-const draftKey = (userId) => `aiassess_draft_${userId}`;
+const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmentId}`;
 
-let questionCounter = 0;
-const QUESTION_NUMBER = {};
-DIMENSIONS.forEach((d) =>
-  d.questions.forEach((q) => {
-    QUESTION_NUMBER[q.id] = ++questionCounter;
-  }),
-);
+export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, assessmentId = 'ai-competency', onSubmitted }) {
+  const config = useMemo(() => getAssessment(assessmentId), [assessmentId]);
 
-export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, onSubmitted }) {
-  const storageKey = useMemo(() => draftKey(user.id), [user.id]);
+  const storageKey = useMemo(() => draftKey(user.id, assessmentId), [user.id, assessmentId]);
   const [answers, setAnswers] = useState(() => readJSON(storageKey, {}));
   const [result, setResult] = useState(null);
   const [invalidIds, setInvalidIds] = useState([]);
@@ -36,7 +25,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, onSu
   const questionRefs = useRef({});
   const resultRef = useRef(null);
 
-  const answered = useMemo(() => answeredCount(answers), [answers]);
+  const answered = useMemo(() => (config ? answeredCount(answers, config) : 0), [answers, config]);
 
   const handleChange = useCallback(
     (qid, value) => {
@@ -51,32 +40,29 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, onSu
   );
 
   const handleSubmit = useCallback(async () => {
-    if (!isComplete(answers)) {
-      const missing = unansweredQuestionIds(answers);
+    if (!config) return;
+    if (!isComplete(answers, config)) {
+      const missing = unansweredQuestionIds(answers, config);
       setInvalidIds(missing);
       const first = questionRefs.current[missing[0]];
-      if (first?.scrollIntoView) {
-        first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      if (first?.scrollIntoView) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     setInvalidIds([]);
     setSubmitError('');
     setSubmitting(true);
-    const r = buildResult(answers);
+    const r = buildResult(answers, config);
     try {
-      await api.createSubmission({ answers, result: r });
+      await api.createSubmission({ answers, result: r, assessmentId });
       setResult(r);
       onSubmitted?.(r);
-      requestAnimationFrame(() => {
-        resultRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-      });
+      requestAnimationFrame(() => resultRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
     } catch (e) {
       setSubmitError(e.message || '送出失敗，請稍後再試');
     } finally {
       setSubmitting(false);
     }
-  }, [answers, onSubmitted]);
+  }, [answers, config, assessmentId, onSubmitted]);
 
   const handleRetake = useCallback(() => {
     setAnswers({});
@@ -94,47 +80,48 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, onSu
     if (ok) setTimeout(() => setCopied(false), 2500);
   }, [result]);
 
+  if (!config) {
+    return <p className="py-20 text-center text-red-500">找不到評量設定（id: {assessmentId}）</p>;
+  }
+
+  const { DIMENSIONS, TOTAL_QUESTIONS } = config;
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="rounded-2xl bg-white px-5 py-7 shadow-lg shadow-slate-200/60 sm:px-8">
         <header className="text-center">
-          <h1 className="text-2xl font-extrabold text-slate-800 sm:text-3xl">
-            AI 全方位職能實戰課前評測
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">AI Competency Pre-course Assessment</p>
+          <h1 className="text-2xl font-extrabold text-slate-800 sm:text-3xl">{config.NAME}</h1>
+          <p className="mt-2 text-sm text-slate-400">{config.DESCRIPTION}</p>
         </header>
 
         <div className="mt-5 rounded-xl bg-slate-50 p-4 text-[15px] leading-relaxed text-slate-600">
-          歡迎填寫本評測系統。本問卷旨在評估您目前的 AI 工具應用現況與數位思維落點，共
-          <strong className="text-slate-700"> {TOTAL_QUESTIONS} 題</strong>，請依真實狀況勾選。
+          歡迎填寫本評測系統。共 <strong className="text-slate-700">{TOTAL_QUESTIONS} 題</strong>，請依真實狀況勾選。
           <br />
           <span className="mt-1 inline-block font-medium text-slate-700">
-            評分標準：1 分（從未如此／極度不熟）～ 5 分（總是如此／精通應用）
+            評分標準：1 分（非常不同意）～ 5 分（非常同意）
+            {DIMENSIONS.some((d) => d.questions.some((q) => q.reversed)) && (
+              <span className="ml-2 text-amber-600">· 🔄 標示題目為反向計分</span>
+            )}
           </span>
         </div>
 
         <ProgressBar answered={answered} total={TOTAL_QUESTIONS} />
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSubmit();
-          }}
-        >
-          {DIMENSIONS.map((dim) => (
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+          {DIMENSIONS.map((dim, di) => (
             <section key={dim.id} className="mt-7 first:mt-2">
               <h2
                 className="rounded-lg px-4 py-2.5 text-[15px] font-bold text-white"
                 style={{ background: dim.color }}
               >
-                {['一', '二', '三', '四', '五', '六'][dim.index - 1]}、{dim.name}
+                {ORDINALS[di] || di + 1}、{dim.name}
                 <span className="ml-1 font-normal opacity-90">（{dim.subtitle}）</span>
               </h2>
               <div className="mt-3 space-y-3">
-                {dim.questions.map((q) => (
+                {dim.questions.map((q, qi) => (
                   <QuestionCard
                     key={q.id}
-                    number={QUESTION_NUMBER[q.id]}
+                    number={DIMENSIONS.slice(0, di).reduce((s, d) => s + d.questions.length, 0) + qi + 1}
                     question={q}
                     value={answers[q.id]}
                     onChange={handleChange}
@@ -151,7 +138,6 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, onSu
               還有 {invalidIds.length} 題尚未作答，已為您標示並捲動至第一題，請補齊後再送出。
             </p>
           )}
-
           {submitError && (
             <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
               {submitError}
@@ -178,9 +164,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, onSu
         )}
       </div>
 
-      <footer className="mt-6 text-center text-xs text-slate-400">
-        本評測結果僅供課前自我檢視與學習路徑參考。
-      </footer>
+      <footer className="mt-6 text-center text-xs text-slate-400">本評測結果僅供自我檢視與學習路徑參考。</footer>
     </main>
   );
 }

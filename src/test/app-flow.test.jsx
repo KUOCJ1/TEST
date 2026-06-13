@@ -36,12 +36,23 @@ vi.mock('../survey/api/client', () => {
         if (!state.user) throw new Error('尚未登入');
         return pub(state.user);
       },
-      async createSubmission({ result }) {
+      async assessments() {
+        return [
+          { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、31 題李克特量表', enabled: true },
+        ];
+      },
+      async adminAssessments() {
+        return [
+          { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、31 題李克特量表', enabled: true },
+        ];
+      },
+      async createSubmission({ result, assessmentId }) {
         const s = {
           id: `s${state.submissions.length + 1}`,
           userId: state.user.id,
           userName: state.user.name,
           createdAt: new Date(Date.now() + state.submissions.length).toISOString(),
+          assessmentId: assessmentId ?? 'ai-competency',
           result,
         };
         state.submissions.push(s);
@@ -60,6 +71,7 @@ vi.mock('../survey/api/client', () => {
             userId: s.userId,
             userName: s.userName,
             createdAt: s.createdAt,
+            assessmentId: s.assessmentId ?? 'ai-competency',
             result: s.result,
           })),
         };
@@ -98,10 +110,15 @@ describe('App 流程', () => {
     await screen.findByRole('button', { name: '登入帳號' });
     await registerUser('小明', 'ming@example.com', 'abcdef');
 
+    // After registration, AssessmentHome loads — click to start the survey.
+    fireEvent.click(await screen.findByRole('button', { name: '開始作答' }));
+
     expect(await screen.findByRole('button', { name: /送出評測/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '管理後台' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '我的分析' }));
+    // 返回首頁後點「我的分析」確認無紀錄訊息。
+    fireEvent.click(screen.getByRole('button', { name: '← 返回評量列表' }));
+    fireEvent.click(await screen.findByRole('button', { name: '我的分析' }));
     expect(await screen.findByText('尚無評測紀錄')).toBeInTheDocument();
   });
 
@@ -121,6 +138,9 @@ describe('App 流程', () => {
     render(<App />);
     await screen.findByRole('button', { name: '登入帳號' });
     await registerUser('小美', 'mei@example.com', 'abcdef');
+
+    // Start survey from AssessmentHome.
+    fireEvent.click(await screen.findByRole('button', { name: '開始作答' }));
     await screen.findByRole('button', { name: /送出評測/ });
 
     document.querySelectorAll('fieldset[data-question-id]').forEach((fs) => {
@@ -129,9 +149,12 @@ describe('App 流程', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /送出評測/ }));
 
+    // After submission, app returns to home; navigate to analysis tab.
+    fireEvent.click(await screen.findByRole('button', { name: '我的分析' }));
+
     expect(await screen.findByText('我的能力分析')).toBeInTheDocument();
-    const region = (await screen.findByText(/您的 AI 職能總得分/)).closest('section');
+    const region = (await screen.findByText(/您的總得分/)).closest('section');
     expect(within(region).getByText('155')).toBeInTheDocument();
-    expect(within(region).getByLabelText('六大構面能力雷達圖')).toBeInTheDocument();
+    expect(within(region).getByLabelText('6 大構面能力雷達圖')).toBeInTheDocument();
   });
 });

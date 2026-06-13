@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { aggregateStats, latestPerUser } from '../survey/utils/analytics';
 import { buildResult } from '../survey/utils/scoring';
-import { ALL_QUESTIONS } from '../survey/data/questions';
+import { getAssessment } from '../survey/data/assessments/index.js';
+
+const config = getAssessment('ai-competency');
+const { ALL_QUESTIONS } = config;
 
 function resultFor(value) {
-  return buildResult(Object.fromEntries(ALL_QUESTIONS.map((q) => [q.id, value])));
+  return buildResult(Object.fromEntries(ALL_QUESTIONS.map((q) => [q.id, value])), config);
 }
 
 // 以遞增的 createdAt 建構作答陣列（後者較新）。

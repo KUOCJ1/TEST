@@ -1,68 +1,68 @@
-import {
-  DIMENSIONS,
-  ALL_QUESTIONS,
-  TOTAL_QUESTIONS,
-  MIN_TOTAL_SCORE,
-  MAX_TOTAL_SCORE,
-  SCALE_MIN,
-  SCALE_MAX,
-} from '../data/questions';
-import { LEVELS, dimensionRating } from '../data/levels';
-
 /**
- * answers 形如 { q1: 4, q2: 3, ... }，值為 1~5 的數字（或字串）。
- * 以下函式皆對「未作答 / 無效值」採容錯處理，視為未作答。
+ * Generic scoring utilities — work with any assessment config.
+ * Config shape: { SCALE_MIN, SCALE_MAX, DIMENSIONS, ALL_QUESTIONS, TOTAL_QUESTIONS,
+ *                 MIN_SCORE, MAX_SCORE, LEVELS, dimensionRating }
+ * Questions may have `reversed: true` → score is inverted: (SCALE_MAX + SCALE_MIN - raw).
  */
 
-function toValidScore(raw) {
+function toValidScore(raw, min, max) {
   const n = Number(raw);
   if (!Number.isFinite(n)) return null;
-  if (n < SCALE_MIN || n > SCALE_MAX) return null;
+  if (n < min || n > max) return null;
   return n;
 }
 
-/** 已作答的題數。 */
-export function answeredCount(answers = {}) {
+function effectiveScore(raw, question, scaleMin, scaleMax) {
+  const v = toValidScore(raw, scaleMin, scaleMax);
+  if (v === null) return null;
+  return question.reversed ? scaleMax + scaleMin - v : v;
+}
+
+export function answeredCount(answers = {}, config) {
+  const { ALL_QUESTIONS, SCALE_MIN, SCALE_MAX } = config;
   return ALL_QUESTIONS.reduce(
-    (count, q) => (toValidScore(answers[q.id]) !== null ? count + 1 : count),
+    (n, q) => (effectiveScore(answers[q.id], q, SCALE_MIN, SCALE_MAX) !== null ? n + 1 : n),
     0,
   );
 }
 
-/** 是否所有題目皆已作答。 */
-export function isComplete(answers = {}) {
-  return answeredCount(answers) === TOTAL_QUESTIONS;
+export function isComplete(answers = {}, config) {
+  return answeredCount(answers, config) === config.TOTAL_QUESTIONS;
 }
 
-/** 回傳尚未作答的題目 id 陣列（依題序）。 */
-export function unansweredQuestionIds(answers = {}) {
-  return ALL_QUESTIONS.filter((q) => toValidScore(answers[q.id]) === null).map((q) => q.id);
+export function unansweredQuestionIds(answers = {}, config) {
+  const { ALL_QUESTIONS, SCALE_MIN, SCALE_MAX } = config;
+  return ALL_QUESTIONS
+    .filter((q) => effectiveScore(answers[q.id], q, SCALE_MIN, SCALE_MAX) === null)
+    .map((q) => q.id);
 }
 
-/** 計算總分（僅加總有效作答）。 */
-export function computeTotalScore(answers = {}) {
+export function computeTotalScore(answers = {}, config) {
+  const { ALL_QUESTIONS, SCALE_MIN, SCALE_MAX } = config;
   return ALL_QUESTIONS.reduce((sum, q) => {
-    const v = toValidScore(answers[q.id]);
+    const v = effectiveScore(answers[q.id], q, SCALE_MIN, SCALE_MAX);
     return v === null ? sum : sum + v;
   }, 0);
 }
 
-/** 依總分取得落點等級。低於下限回傳第一級，高於上限回傳最後一級。 */
-export function getLevel(total) {
+export function getLevel(total, config) {
+  const { LEVELS } = config;
   if (total <= LEVELS[0].max) return LEVELS[0];
   if (total >= LEVELS[LEVELS.length - 1].min) return LEVELS[LEVELS.length - 1];
   return LEVELS.find((l) => total >= l.min && total <= l.max) ?? LEVELS[0];
 }
 
-/** 每個構面的得分、滿分、平均、百分比與評語。 */
-export function computeDimensionScores(answers = {}) {
+export function computeDimensionScores(answers = {}, config) {
+  const { DIMENSIONS, SCALE_MIN, SCALE_MAX, dimensionRating } = config;
   return DIMENSIONS.map((dim) => {
     const max = dim.questions.length * SCALE_MAX;
     const score = dim.questions.reduce((sum, q) => {
-      const v = toValidScore(answers[q.id]);
+      const v = effectiveScore(answers[q.id], q, SCALE_MIN, SCALE_MAX);
       return v === null ? sum : sum + v;
     }, 0);
-    const answered = dim.questions.filter((q) => toValidScore(answers[q.id]) !== null).length;
+    const answered = dim.questions.filter(
+      (q) => effectiveScore(answers[q.id], q, SCALE_MIN, SCALE_MAX) !== null,
+    ).length;
     const average = answered > 0 ? score / answered : 0;
     const percent = max > 0 ? Math.round((score / max) * 100) : 0;
     return {
@@ -80,21 +80,22 @@ export function computeDimensionScores(answers = {}) {
   });
 }
 
-/** 一次計算完整結果，供結果頁使用。 */
-export function buildResult(answers = {}) {
-  const total = computeTotalScore(answers);
-  const dimensions = computeDimensionScores(answers);
+export function buildResult(answers = {}, config) {
+  const total = computeTotalScore(answers, config);
+  const dimensions = computeDimensionScores(answers, config);
   const strongest = dimensions.reduce((a, b) => (b.average > a.average ? b : a), dimensions[0]);
   const weakest = dimensions.reduce((a, b) => (b.average < a.average ? b : a), dimensions[0]);
   return {
     total,
-    minScore: MIN_TOTAL_SCORE,
-    maxScore: MAX_TOTAL_SCORE,
-    percent: Math.round((total / MAX_TOTAL_SCORE) * 100),
-    level: getLevel(total),
+    minScore: config.MIN_SCORE,
+    maxScore: config.MAX_SCORE,
+    percent: Math.round((total / config.MAX_SCORE) * 100),
+    level: getLevel(total, config),
     dimensions,
     strongest,
     weakest,
-    complete: isComplete(answers),
+    complete: isComplete(answers, config),
+    assessmentId: config.ID,
+    assessmentName: config.NAME,
   };
 }

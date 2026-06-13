@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
+import { getAssessment } from '../data/assessments/index.js';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
 import RadarChart from '../components/RadarChart';
 import BarList from '../components/charts/BarList';
@@ -19,27 +20,59 @@ function Kpi({ label, value, suffix }) {
 }
 
 export default function AdminDashboard() {
-  const [overview, setOverview] = useState(null); // { users, submissions }
+  const [overview, setOverview] = useState(null);
+  const [adminAssessments, setAdminAssessments] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [toggling, setToggling] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
-    api
-      .adminOverview()
-      .then((d) => active && setOverview(d))
+    Promise.all([api.adminOverview(), api.adminAssessments()])
+      .then(([ov, al]) => {
+        if (!active) return;
+        setOverview(ov);
+        setAdminAssessments(al);
+        if (al.length > 0) setSelectedId((prev) => prev ?? al[0].id);
+      })
       .catch((e) => active && setError(e.message || '載入失敗'));
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, []);
+
+  const handleToggle = async (assessment) => {
+    setToggling(true);
+    try {
+      const updated = await api.toggleAssessment(assessment.id, !assessment.enabled);
+      setAdminAssessments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+    } catch (e) {
+      alert(e.message || '操作失敗');
+    } finally {
+      setToggling(false);
+    }
+  };
 
   const submissions = useMemo(() => overview?.submissions ?? [], [overview]);
   const users = useMemo(() => overview?.users ?? [], [overview]);
-  const stats = useMemo(() => aggregateStats(submissions), [submissions]);
+
+  const activeConfig = useMemo(
+    () => (selectedId ? getAssessment(selectedId) : null),
+    [selectedId],
+  );
+
+  const filteredSubs = useMemo(
+    () => submissions.filter((s) => (s.assessmentId ?? 'ai-competency') === selectedId),
+    [submissions, selectedId],
+  );
+
+  const stats = useMemo(
+    () => (activeConfig ? aggregateStats(filteredSubs, activeConfig) : null),
+    [filteredSubs, activeConfig],
+  );
 
   const rows = useMemo(() => {
-    const latest = latestPerUser(submissions);
-    const countByUser = submissions.reduce((m, s) => {
+    if (!stats || !filteredSubs.length) return [];
+    const latest = latestPerUser(filteredSubs);
+    const countByUser = filteredSubs.reduce((m, s) => {
       m[s.userId] = (m[s.userId] || 0) + 1;
       return m;
     }, {});
@@ -58,9 +91,10 @@ export default function AdminDashboard() {
         };
       })
       .sort((a, b) => b.total - a.total);
-  }, [submissions, users]);
+  }, [filteredSubs, users, stats]);
 
   const memberCount = users.filter((u) => u.role !== 'admin').length;
+  const dimCount = activeConfig?.DIMENSIONS?.length ?? 0;
 
   if (!overview && !error) {
     return <p className="py-20 text-center text-slate-400">載入中…</p>;
@@ -75,27 +109,63 @@ export default function AdminDashboard() {
       <header className="mb-5">
         <h2 className="text-2xl font-extrabold text-slate-800">管理後台 · 資料分析儀表板</h2>
         <p className="mt-1 text-sm text-slate-500">
-          以每位填答者「最新一筆」作答為母體，彙整整體 AI 職能落點。
+          以每位填答者「最新一筆」作答為母體，依題庫分別彙整能力落點。
         </p>
       </header>
 
+      {adminAssessments.length > 0 && (
+        <section className="mb-5 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-100">
+          <h3 className="mb-3 text-sm font-semibold text-slate-500">題庫管理</h3>
+          <div className="flex flex-wrap gap-3">
+            {adminAssessments.map((a) => (
+              <div key={a.id} className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(a.id)}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                    selectedId === a.id
+                      ? 'bg-teal-600 text-white'
+                      : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {a.name}
+                </button>
+                <button
+                  type="button"
+                  disabled={toggling}
+                  onClick={() => handleToggle(a)}
+                  title={a.enabled ? '點擊停用此題庫' : '點擊啟用此題庫'}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                    a.enabled
+                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  {a.enabled ? '啟用中' : '已停用'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Kpi label="註冊人數" value={memberCount} suffix="人" />
-        <Kpi label="已填答人數" value={stats.respondents} suffix="人" />
-        <Kpi label="總作答次數" value={stats.totalSubmissions} suffix="次" />
-        <Kpi label="平均達成率" value={stats.avgPercent} suffix="%" />
+        <Kpi label="已填答人數" value={stats?.respondents ?? 0} suffix="人" />
+        <Kpi label="總作答次數" value={stats?.totalSubmissions ?? 0} suffix="次" />
+        <Kpi label="平均達成率" value={stats?.avgPercent ?? 0} suffix="%" />
       </section>
 
-      {stats.respondents === 0 ? (
+      {!stats || stats.respondents === 0 ? (
         <div className="mt-6 rounded-2xl bg-white px-6 py-12 text-center text-slate-500 shadow-lg shadow-slate-200/60">
-          目前尚無任何填答資料。待使用者完成評測後，這裡會即時顯示整體分析。
+          {selectedId ? '此題庫尚無任何填答資料。待使用者完成評測後，這裡會即時顯示整體分析。' : '請選擇一個題庫以查看分析。'}
         </div>
       ) : (
         <>
           <div className="mt-6 grid gap-5 lg:grid-cols-2">
             <section className="rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60">
               <h3 className="mb-2 text-center text-base font-bold text-slate-700">
-                整體六大構面平均落點
+                整體 {dimCount} 大構面平均落點
               </h3>
               <div className="flex justify-center">
                 <RadarChart dimensions={stats.dimensionAverages} />

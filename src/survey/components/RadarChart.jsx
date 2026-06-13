@@ -38,7 +38,7 @@ export default function RadarChart({ dimensions, size = 340 }) {
       width="100%"
       style={{ maxWidth: size, height: 'auto' }}
       role="img"
-      aria-label="六大構面能力雷達圖"
+      aria-label={`${dimensions.length} 大構面能力雷達圖`}
     >
       <defs>
         <radialGradient id={gradientId} cx="50%" cy="50%" r="50%">
