@@ -1,34 +1,47 @@
-import { useCallback, useMemo, useState } from 'react';
-import * as authStore from './authStore';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { api } from '../api/client';
 import { AuthContext } from './useAuth';
 
 export function AuthProvider({ children }) {
-  // 惰性初始化：載入時確保管理員種子帳號存在，並還原既有登入狀態。
-  const [user, setUser] = useState(() => {
-    authStore.ensureSeed();
-    return authStore.getSessionUser();
-  });
+  const [user, setUser] = useState(null);
+  const [ready, setReady] = useState(false);
 
-  const register = useCallback((payload) => {
-    const u = authStore.register(payload);
+  // 初次載入時嘗試以既有 cookie 還原登入狀態。
+  useEffect(() => {
+    let active = true;
+    api
+      .me()
+      .then((u) => active && setUser(u))
+      .catch(() => active && setUser(null))
+      .finally(() => active && setReady(true));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const register = useCallback(async (payload) => {
+    const u = await api.register(payload);
     setUser(u);
     return u;
   }, []);
 
-  const login = useCallback((payload) => {
-    const u = authStore.login(payload);
+  const login = useCallback(async (payload) => {
+    const u = await api.login(payload);
     setUser(u);
     return u;
   }, []);
 
-  const logout = useCallback(() => {
-    authStore.logout();
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await api.logout();
+    } finally {
+      setUser(null);
+    }
   }, []);
 
   const value = useMemo(
-    () => ({ user, ready: true, isAdmin: user?.role === 'admin', register, login, logout }),
-    [user, register, login, logout],
+    () => ({ user, ready, isAdmin: user?.role === 'admin', register, login, logout }),
+    [user, ready, register, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

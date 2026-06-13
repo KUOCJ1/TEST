@@ -1,23 +1,26 @@
 import { useState } from 'react';
 import { useAuth } from './useAuth';
-import { DEMO_ADMIN_PASSWORD } from './authStore';
 
 export default function LoginPage() {
   const { login, register } = useAuth();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setError('');
+    setBusy(true);
     try {
-      if (mode === 'register') register(form);
-      else login({ email: form.email, password: form.password });
+      if (mode === 'register') await register(form);
+      else await login({ email: form.email, password: form.password });
     } catch (err) {
       setError(err.message || '發生錯誤，請稍後再試');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -95,17 +98,17 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-gradient-to-r from-teal-500 to-teal-600 px-4 py-2.5 font-bold text-white shadow-md transition-all hover:from-teal-600 hover:to-teal-700 active:scale-[0.99]"
+              disabled={busy}
+              className="w-full rounded-lg bg-gradient-to-r from-teal-500 to-teal-600 px-4 py-2.5 font-bold text-white shadow-md transition-all hover:from-teal-600 hover:to-teal-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {mode === 'register' ? '建立帳號並開始' : '登入帳號'}
+              {busy ? '處理中…' : mode === 'register' ? '建立帳號並開始' : '登入帳號'}
             </button>
           </form>
 
           <p className="mt-5 rounded-lg bg-slate-50 px-3 py-2.5 text-center text-xs leading-relaxed text-slate-400">
-            管理後台示範帳號：<span className="font-mono text-slate-500">admin@demo.tw</span> /{' '}
-            <span className="font-mono text-slate-500">{DEMO_ADMIN_PASSWORD}</span>
+            管理員帳號預設為 <span className="font-mono text-slate-500">admin@demo.tw</span>
             <br />
-            （資料僅儲存在本機瀏覽器，為前端展示用途）
+            （密碼由後端部署時的 ADMIN_PASSWORD 環境變數設定）
           </p>
         </div>
       </div>

@@ -1,18 +1,23 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import SurveyApp from '../survey/SurveyApp';
 import { ALL_QUESTIONS } from '../survey/data/questions';
 
+// 模擬後端 API：送出評測只需驗證有正確呼叫。
+const { createSubmission } = vi.hoisted(() => ({ createSubmission: vi.fn() }));
+vi.mock('../survey/api/client', () => ({ api: { createSubmission } }));
+
 beforeEach(() => {
   localStorage.clear();
+  createSubmission.mockReset();
+  createSubmission.mockResolvedValue({ id: 's1' });
 });
 
 // 為每一題選取指定分數。
 function answerAll(value) {
   ALL_QUESTIONS.forEach((q) => {
     const radios = document.querySelectorAll(`input[name="${q.id}"]`);
-    const target = radios[value - 1];
-    fireEvent.click(target);
+    fireEvent.click(radios[value - 1]);
   });
 }
 
@@ -20,7 +25,6 @@ describe('SurveyApp', () => {
   it('渲染標題與全部 31 題', () => {
     render(<SurveyApp />);
     expect(screen.getByText('AI 全方位職能實戰課前評測')).toBeInTheDocument();
-    // 每題 5 個選項 → 31 × 5 個 radio。
     expect(document.querySelectorAll('input[type="radio"]')).toHaveLength(31 * 5);
   });
 
@@ -29,16 +33,16 @@ describe('SurveyApp', () => {
     fireEvent.click(screen.getByRole('button', { name: /送出評測/ }));
     expect(screen.getByText(/尚未作答，已為您標示/)).toBeInTheDocument();
     expect(screen.queryByText(/您的 AI 職能總得分/)).not.toBeInTheDocument();
+    expect(createSubmission).not.toHaveBeenCalled();
   });
 
-  it('全部填滿後送出，顯示總分與落點等級', () => {
+  it('全部填滿後送出，顯示總分與落點等級', async () => {
     render(<SurveyApp />);
     answerAll(5);
     fireEvent.click(screen.getByRole('button', { name: /送出評測/ }));
 
-    const result = screen.getByText(/您的 AI 職能總得分/).closest('section');
-    expect(result).toBeInTheDocument();
-    // 全 5 分 → 155 分、AI 領航核心領袖。
+    const heading = await screen.findByText(/您的 AI 職能總得分/);
+    const result = heading.closest('section');
     expect(within(result).getByText('155')).toBeInTheDocument();
     expect(within(result).getByText(/AI 領航核心領袖/)).toBeInTheDocument();
     expect(within(result).getByLabelText('六大構面能力雷達圖')).toBeInTheDocument();
@@ -47,36 +51,34 @@ describe('SurveyApp', () => {
   it('進度條隨作答更新', () => {
     render(<SurveyApp />);
     expect(screen.getByText(/0 \/ 31 題/)).toBeInTheDocument();
-    const radios = document.querySelectorAll(`input[name="q1"]`);
-    fireEvent.click(radios[2]);
+    fireEvent.click(document.querySelectorAll('input[name="q1"]')[2]);
     expect(screen.getByText(/1 \/ 31 題/)).toBeInTheDocument();
   });
 
   it('作答內容會持久化到 localStorage（依使用者分開）', () => {
     render(<SurveyApp />);
-    const radios = document.querySelectorAll(`input[name="q1"]`);
-    fireEvent.click(radios[3]); // 4 分
-    const stored = JSON.parse(localStorage.getItem('aiassess_draft_guest'));
-    expect(stored.q1).toBe(4);
+    fireEvent.click(document.querySelectorAll('input[name="q1"]')[3]); // 4 分
+    expect(JSON.parse(localStorage.getItem('aiassess_draft_guest')).q1).toBe(4);
   });
 
-  it('送出後會建立一筆作答紀錄並回呼 onSubmitted', () => {
-    let submitted = null;
-    render(<SurveyApp user={{ id: 'u1', name: '小明' }} onSubmitted={(r) => (submitted = r)} />);
+  it('送出後會呼叫 API 建立紀錄並回呼 onSubmitted', async () => {
+    const onSubmitted = vi.fn();
+    render(<SurveyApp user={{ id: 'u1', name: '小明' }} onSubmitted={onSubmitted} />);
     answerAll(4);
     fireEvent.click(screen.getByRole('button', { name: /送出評測/ }));
-    expect(submitted?.total).toBe(124);
-    const subs = JSON.parse(localStorage.getItem('aiassess_submissions_v1'));
-    expect(subs).toHaveLength(1);
-    expect(subs[0].userId).toBe('u1');
-    expect(subs[0].result.total).toBe(124);
+
+    await screen.findByText(/您的 AI 職能總得分/);
+    expect(createSubmission).toHaveBeenCalledTimes(1);
+    const payload = createSubmission.mock.calls[0][0];
+    expect(payload.result.total).toBe(124);
+    expect(onSubmitted).toHaveBeenCalledWith(expect.objectContaining({ total: 124 }));
   });
 
-  it('低分情境落到 AI 新手村', () => {
+  it('低分情境落到 AI 新手村', async () => {
     render(<SurveyApp />);
     answerAll(1);
     fireEvent.click(screen.getByRole('button', { name: /送出評測/ }));
-    const result = screen.getByText(/您的 AI 職能總得分/).closest('section');
+    const result = (await screen.findByText(/您的 AI 職能總得分/)).closest('section');
     expect(within(result).getByText('31')).toBeInTheDocument();
     expect(within(result).getByText(/AI 新手村/)).toBeInTheDocument();
   });

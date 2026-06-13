@@ -1,10 +1,77 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import App from '../App';
-import { DEMO_ADMIN_PASSWORD } from '../survey/auth/authStore';
+
+// 以記憶體假後端取代真實 API client，模擬註冊/登入/作答/後台流程。
+const h = vi.hoisted(() => ({
+  state: { user: null, users: [], submissions: [] },
+}));
+
+vi.mock('../survey/api/client', () => {
+  const { state } = h;
+  const pub = (u) => u && { id: u.id, name: u.name, email: u.email, role: u.role };
+  return {
+    api: {
+      async register({ name, email, password }) {
+        if (!name?.trim()) throw new Error('請輸入姓名');
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((email || '').toLowerCase())) throw new Error('Email 格式不正確');
+        if ((password || '').length < 6) throw new Error('密碼至少需 6 碼');
+        const e = email.toLowerCase();
+        if (state.users.some((u) => u.email === e)) throw new Error('此 Email 已被註冊');
+        const u = { id: `u${state.users.length + 1}`, name: name.trim(), email: e, role: 'user' };
+        state.users.push(u);
+        state.user = u;
+        return pub(u);
+      },
+      async login({ email }) {
+        const u = state.users.find((x) => x.email === (email || '').toLowerCase());
+        if (!u) throw new Error('Email 或密碼錯誤');
+        state.user = u;
+        return pub(u);
+      },
+      async logout() {
+        state.user = null;
+      },
+      async me() {
+        if (!state.user) throw new Error('尚未登入');
+        return pub(state.user);
+      },
+      async createSubmission({ result }) {
+        const s = {
+          id: `s${state.submissions.length + 1}`,
+          userId: state.user.id,
+          userName: state.user.name,
+          createdAt: new Date(Date.now() + state.submissions.length).toISOString(),
+          result,
+        };
+        state.submissions.push(s);
+        return s;
+      },
+      async mySubmissions() {
+        return state.submissions
+          .filter((s) => s.userId === state.user.id)
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      },
+      async adminOverview() {
+        return {
+          users: state.users.map(pub),
+          submissions: state.submissions.map((s) => ({
+            id: s.id,
+            userId: s.userId,
+            userName: s.userName,
+            createdAt: s.createdAt,
+            result: s.result,
+          })),
+        };
+      },
+    },
+  };
+});
 
 beforeEach(() => {
-  localStorage.clear();
+  h.state.user = null;
+  h.state.users = [{ id: 'admin', name: '系統管理員', email: 'admin@demo.tw', role: 'admin' }];
+  h.state.submissions = [];
 });
 
 function fillLogin(email, password) {
@@ -12,58 +79,58 @@ function fillLogin(email, password) {
   fireEvent.change(screen.getByPlaceholderText('至少 6 碼'), { target: { value: password } });
 }
 
+async function registerUser(name, email, password) {
+  fireEvent.click(screen.getByRole('button', { name: '註冊' }));
+  fireEvent.change(screen.getByPlaceholderText('您的姓名'), { target: { value: name } });
+  fillLogin(email, password);
+  fireEvent.click(screen.getByRole('button', { name: /建立帳號/ }));
+}
+
 describe('App 流程', () => {
-  it('未登入時顯示登入頁', () => {
+  it('未登入時顯示登入頁', async () => {
     render(<App />);
-    expect(screen.getByRole('button', { name: '登入帳號' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '登入帳號' })).toBeInTheDocument();
     expect(screen.getByPlaceholderText('you@example.com')).toBeInTheDocument();
   });
 
-  it('註冊後進入評測，且一般使用者看不到管理後台', () => {
+  it('註冊後進入評測，且一般使用者看不到管理後台', async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: '註冊' }));
-    fireEvent.change(screen.getByPlaceholderText('您的姓名'), { target: { value: '小明' } });
-    fillLogin('ming@example.com', 'abcdef');
-    fireEvent.click(screen.getByRole('button', { name: /建立帳號/ }));
+    await screen.findByRole('button', { name: '登入帳號' });
+    await registerUser('小明', 'ming@example.com', 'abcdef');
 
-    // 進入主畫面，顯示評測表單。
-    expect(screen.getByRole('button', { name: /送出評測/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /送出評測/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '管理後台' })).not.toBeInTheDocument();
 
-    // 我的分析在尚未作答時顯示空狀態。
     fireEvent.click(screen.getByRole('button', { name: '我的分析' }));
-    expect(screen.getByText('尚無評測紀錄')).toBeInTheDocument();
+    expect(await screen.findByText('尚無評測紀錄')).toBeInTheDocument();
   });
 
-  it('管理員登入後可見管理後台儀表板', () => {
+  it('管理員登入後可見管理後台儀表板', async () => {
     render(<App />);
-    fillLogin('admin@demo.tw', DEMO_ADMIN_PASSWORD);
+    await screen.findByRole('button', { name: '登入帳號' });
+    fillLogin('admin@demo.tw', 'admin1234');
     fireEvent.click(screen.getByRole('button', { name: '登入帳號' }));
 
-    const adminTab = screen.getByRole('button', { name: '管理後台' });
-    expect(adminTab).toBeInTheDocument();
+    const adminTab = await screen.findByRole('button', { name: '管理後台' });
     fireEvent.click(adminTab);
-    expect(screen.getByText(/資料分析儀表板/)).toBeInTheDocument();
+    expect(await screen.findByText(/資料分析儀表板/)).toBeInTheDocument();
     expect(screen.getByText('註冊人數')).toBeInTheDocument();
   });
 
-  it('完成評測後我的分析顯示總分與雷達圖', () => {
+  it('完成評測後我的分析顯示總分與雷達圖', async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: '註冊' }));
-    fireEvent.change(screen.getByPlaceholderText('您的姓名'), { target: { value: '小美' } });
-    fillLogin('mei@example.com', 'abcdef');
-    fireEvent.click(screen.getByRole('button', { name: /建立帳號/ }));
+    await screen.findByRole('button', { name: '登入帳號' });
+    await registerUser('小美', 'mei@example.com', 'abcdef');
+    await screen.findByRole('button', { name: /送出評測/ });
 
-    // 全部選 5 分。
     document.querySelectorAll('fieldset[data-question-id]').forEach((fs) => {
       const radios = fs.querySelectorAll('input[type="radio"]');
-      fireEvent.click(radios[radios.length - 1]);
+      fireEvent.click(radios[radios.length - 1]); // 5 分
     });
     fireEvent.click(screen.getByRole('button', { name: /送出評測/ }));
 
-    // 送出後自動切換到「我的能力分析」。
-    expect(screen.getByText('我的能力分析')).toBeInTheDocument();
-    const region = screen.getByText(/您的 AI 職能總得分/).closest('section');
+    expect(await screen.findByText('我的能力分析')).toBeInTheDocument();
+    const region = (await screen.findByText(/您的 AI 職能總得分/)).closest('section');
     expect(within(region).getByText('155')).toBeInTheDocument();
     expect(within(region).getByLabelText('六大構面能力雷達圖')).toBeInTheDocument();
   });

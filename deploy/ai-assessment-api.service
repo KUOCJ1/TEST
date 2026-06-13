@@ -1,0 +1,27 @@
+# systemd 服務單元：常駐執行 AI 評測 API。
+#   安裝：sudo cp deploy/ai-assessment-api.service /etc/systemd/system/
+#   啟用：sudo systemctl enable --now ai-assessment-api
+
+[Unit]
+Description=AI Assessment API (Node/Express)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/ai-assessment/server
+EnvironmentFile=/opt/ai-assessment/server/.env
+ExecStart=/usr/bin/node src/server.js
+Restart=on-failure
+RestartSec=3
+
+# 安全強化
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+# 允許寫入資料檔所在目錄
+ReadWritePaths=/var/lib/ai-assessment
+
+[Install]
+WantedBy=multi-user.target

@@ -1,20 +1,37 @@
-import { useMemo, useState } from 'react';
-import { submissionsByUser } from '../data/submissionStore';
+import { useEffect, useState } from 'react';
+import { api } from '../api/client';
 import ResultPanel from '../components/ResultPanel';
 import TrendChart from '../components/charts/TrendChart';
 import { resultSummaryText, copyToClipboard, formatDate, formatDateShort } from '../utils/format';
 
 export default function UserDashboard({ user, onTakeSurvey }) {
+  const [subs, setSubs] = useState(null); // null = 載入中
+  const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-  const subs = useMemo(() => submissionsByUser(user.id), [user.id]);
 
-  if (subs.length === 0) {
+  useEffect(() => {
+    let active = true;
+    api
+      .mySubmissions()
+      .then((list) => active && setSubs(list))
+      .catch((e) => active && (setError(e.message || '載入失敗'), setSubs([])));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (subs === null && !error) {
+    return <p className="py-20 text-center text-slate-400">載入中…</p>;
+  }
+
+  if (subs && subs.length === 0) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <div className="rounded-2xl bg-white px-6 py-12 shadow-lg shadow-slate-200/60">
           <p className="text-5xl">📊</p>
           <h2 className="mt-4 text-xl font-bold text-slate-800">尚無評測紀錄</h2>
           <p className="mt-2 text-slate-500">完成一次評測後，這裡就會顯示您的能力落點與構面分析。</p>
+          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
           <button
             type="button"
             onClick={onTakeSurvey}

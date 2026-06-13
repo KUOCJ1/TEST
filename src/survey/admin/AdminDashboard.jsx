@@ -1,6 +1,5 @@
-import { useMemo } from 'react';
-import { listSubmissions } from '../data/submissionStore';
-import { listUsers } from '../auth/authStore';
+import { useEffect, useMemo, useState } from 'react';
+import { api } from '../api/client';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
 import RadarChart from '../components/RadarChart';
 import BarList from '../components/charts/BarList';
@@ -20,13 +19,24 @@ function Kpi({ label, value, suffix }) {
 }
 
 export default function AdminDashboard() {
-  const { submissions, users } = useMemo(
-    () => ({ submissions: listSubmissions(), users: listUsers() }),
-    [],
-  );
+  const [overview, setOverview] = useState(null); // { users, submissions }
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    api
+      .adminOverview()
+      .then((d) => active && setOverview(d))
+      .catch((e) => active && setError(e.message || '載入失敗'));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const submissions = useMemo(() => overview?.submissions ?? [], [overview]);
+  const users = useMemo(() => overview?.users ?? [], [overview]);
   const stats = useMemo(() => aggregateStats(submissions), [submissions]);
 
-  // 每位填答者最新一筆，併入帳號資訊供表格使用。
   const rows = useMemo(() => {
     const latest = latestPerUser(submissions);
     const countByUser = submissions.reduce((m, s) => {
@@ -51,6 +61,14 @@ export default function AdminDashboard() {
   }, [submissions, users]);
 
   const memberCount = users.filter((u) => u.role !== 'admin').length;
+
+  if (!overview && !error) {
+    return <p className="py-20 text-center text-slate-400">載入中…</p>;
+  }
+
+  if (error) {
+    return <p className="py-20 text-center text-red-500">{error}</p>;
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">

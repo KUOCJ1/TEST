@@ -5,7 +5,9 @@ import AppShell from './survey/AppShell';
 
 function Routes() {
   const { user, ready } = useAuth();
-  if (!ready) return null;
+  if (!ready) {
+    return <div className="flex min-h-screen items-center justify-center text-slate-400">載入中…</div>;
+  }
   return user ? <AppShell /> : <LoginPage />;
 }
 

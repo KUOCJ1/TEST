@@ -8,7 +8,7 @@ import {
 } from './utils/scoring';
 import { readJSON, writeJSON } from './utils/storage';
 import { resultSummaryText, copyToClipboard } from './utils/format';
-import { addSubmission } from './data/submissionStore';
+import { api } from './api/client';
 import ProgressBar from './components/ProgressBar';
 import QuestionCard from './components/QuestionCard';
 import ResultPanel from './components/ResultPanel';
@@ -30,6 +30,8 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, onSu
   const [result, setResult] = useState(null);
   const [invalidIds, setInvalidIds] = useState([]);
   const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const questionRefs = useRef({});
   const resultRef = useRef(null);
@@ -48,7 +50,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, onSu
     [storageKey],
   );
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (!isComplete(answers)) {
       const missing = unansweredQuestionIds(answers);
       setInvalidIds(missing);
@@ -59,14 +61,22 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, onSu
       return;
     }
     setInvalidIds([]);
+    setSubmitError('');
+    setSubmitting(true);
     const r = buildResult(answers);
-    setResult(r);
-    addSubmission({ userId: user.id, userName: user.name, answers, result: r });
-    onSubmitted?.(r);
-    requestAnimationFrame(() => {
-      resultRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    });
-  }, [answers, user.id, user.name, onSubmitted]);
+    try {
+      await api.createSubmission({ answers, result: r });
+      setResult(r);
+      onSubmitted?.(r);
+      requestAnimationFrame(() => {
+        resultRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+      });
+    } catch (e) {
+      setSubmitError(e.message || '送出失敗，請稍後再試');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [answers, onSubmitted]);
 
   const handleRetake = useCallback(() => {
     setAnswers({});
@@ -142,11 +152,18 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, onSu
             </p>
           )}
 
+          {submitError && (
+            <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+              {submitError}
+            </p>
+          )}
+
           <button
             type="submit"
-            className="mt-6 w-full rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-3.5 text-lg font-bold text-white shadow-md transition-all hover:from-teal-600 hover:to-teal-700 active:scale-[0.99]"
+            disabled={submitting}
+            className="mt-6 w-full rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-3.5 text-lg font-bold text-white shadow-md transition-all hover:from-teal-600 hover:to-teal-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            送出評測，立即查看落點分析
+            {submitting ? '送出中…' : '送出評測，立即查看落點分析'}
           </button>
         </form>
 
