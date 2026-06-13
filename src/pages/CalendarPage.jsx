@@ -172,8 +172,13 @@ export default function CalendarPage() {
     const { start, end } = getViewWindow(view, currentDate);
     result = expandRecurringEvents(result, start, end);
 
-    // Merge Google Calendar events
-    const googleVisible = googleCalendar.isConnected ? googleCalendar.googleEvents : [];
+    // Merge Google Calendar events, excluding ones already pushed from local events
+    const pushedGoogleIds = new Set(
+      rawEvents.filter(e => e.googleEventId).map(e => `gcal_${e.googleEventId}`)
+    );
+    const googleVisible = googleCalendar.isConnected
+      ? googleCalendar.googleEvents.filter(e => !pushedGoogleIds.has(e.id))
+      : [];
     return [...result, ...googleVisible];
   }, [rawEvents, colorFilters, tagFilters, typeFilters, view, currentDate, googleCalendar.isConnected, googleCalendar.googleEvents]);
 
