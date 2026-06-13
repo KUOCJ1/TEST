@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, BellOff, X } from 'lucide-react';
 import { formatDisplayTime } from '../../utils/calendar';
 
@@ -23,6 +23,13 @@ function ReminderLabel({ minutes }) {
 export default function NotificationCenter({ permission, requestPermission, upcomingReminders }) {
   const [open, setOpen] = useState(false);
   const count = upcomingReminders.length;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open]);
 
   return (
     <div className="relative">

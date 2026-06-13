@@ -4,7 +4,7 @@ import { formatDisplayTime, isSameDay } from '../../utils/calendar';
 
 const DAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
 
-export default function AgendaSidebar({ events, onEventClick }) {
+export default function AgendaSidebar({ events, onEventClick, onNavigateDay }) {
   const days = useMemo(() => {
     const result = [];
     const today = new Date();
@@ -37,10 +37,13 @@ export default function AgendaSidebar({ events, onEventClick }) {
 
           return (
             <div key={date.toISOString()} className="border-b border-slate-50 last:border-0">
-              <div className={`px-4 py-2 flex items-center gap-2 ${
-                isSameDay(date, new Date()) ? 'bg-indigo-50' : ''
-              }`}>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
+              <button
+                onClick={() => onNavigateDay?.(date)}
+                className={`w-full px-4 py-2 flex items-center gap-2 text-left transition-colors ${
+                  isSameDay(date, new Date()) ? 'bg-indigo-50 hover:bg-indigo-100' : 'hover:bg-slate-50'
+                }`}
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${
                   isSameDay(date, new Date())
                     ? 'bg-indigo-600 text-white'
                     : 'text-slate-500'
@@ -59,7 +62,7 @@ export default function AgendaSidebar({ events, onEventClick }) {
                     return null;
                   })()}
                 </div>
-              </div>
+              </button>
 
               {dayEvts.length === 0 ? (
                 <p className="px-4 pb-2 text-xs text-slate-300">無行程</p>

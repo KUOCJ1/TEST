@@ -120,6 +120,7 @@ export default function CalendarPage() {
       if (e.key === '?') { setShowHelp(o => !o); return; }
       if (e.key === 'Escape') {
         setShowHelp(false);
+        setShowUserMenu(false);
         if (selectMode) { setSelectMode(false); setSelectedIds(new Set()); }
         return;
       }
@@ -671,6 +672,7 @@ export default function CalendarPage() {
           <AgendaSidebar
             events={displayEvents}
             onEventClick={handleEventClick}
+            onNavigateDay={date => { setCurrentDate(date); setView('day'); }}
           />
         )}
       </div>

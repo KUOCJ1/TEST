@@ -173,7 +173,9 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
       description: form.description.trim(),
       reminder: form.reminder,
       location: form.location.trim(),
-      url: form.url.trim(),
+      url: form.url.trim() && !/^https?:\/\//i.test(form.url.trim())
+        ? `https://${form.url.trim()}`
+        : form.url.trim(),
       attendees,
       recurrence,
     });
@@ -352,8 +354,12 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
                   value={form.recurrenceUntil}
                   min={form.startDate}
                   onChange={e => set('recurrenceUntil', e.target.value)}
+                  placeholder="無限期"
                   className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
+                {!form.recurrenceUntil && (
+                  <span className="text-xs text-slate-400 shrink-0">（無限期）</span>
+                )}
               </>
             )}
           </div>
