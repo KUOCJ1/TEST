@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { generateId } from '../utils/calendar';
 
 const CalendarContext = createContext(null);
@@ -16,6 +16,18 @@ function persist(userId, events) {
 
 export function CalendarProvider({ children, userId }) {
   const [events, setEvents] = useState(() => loadEvents(userId));
+
+  // Sync across tabs: when another tab writes to localStorage, reload events
+  useEffect(() => {
+    const key = storageKey(userId);
+    const handler = (e) => {
+      if (e.key === key && e.newValue) {
+        try { setEvents(JSON.parse(e.newValue)); } catch {}
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, [userId]);
 
   const addEvent = useCallback((data) => {
     const event = { ...data, id: generateId(), creatorId: userId };
