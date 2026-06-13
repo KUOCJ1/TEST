@@ -102,6 +102,56 @@ sudo certbot renew --dry-run    # 驗證自動續期
 
 ---
 
+## 附錄 A：VPS 已有 Traefik 佔用 80/443 時（本站採用此方案）
+
+若伺服器上已有 **Traefik** 當反向代理（佔用 80/443），Nginx 無法再搶 80 埠。
+此時改用「Traefik → Nginx(本機 8080) → 後端(3101)」的串接，TLS 交給 Traefik 自動處理，
+**不需要 certbot**。後端埠在本站為 `3101`（3001 已被其他專案佔用）。
+
+### A-1 後端（同前，但 PORT=3101）
+確認 `.env` 內 `PORT=3101`，並重啟服務：
+```bash
+sudo sed -i 's/^PORT=.*/PORT=3101/' /opt/ai-assessment/server/.env
+sudo systemctl restart ai-assessment-api
+curl -s localhost:3101/api/health      # 應回 {"ok":true}
+```
+
+### A-2 Nginx 只聽本機 8080（不對外、不處理 TLS）
+```bash
+sudo cp deploy/nginx/ai-assessment-behind-traefik.conf \
+        /etc/nginx/sites-available/ai-assessment.conf
+sudo ln -sf /etc/nginx/sites-available/ai-assessment.conf /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default      # 移除會搶 80 埠的預設站台
+sudo nginx -t && sudo systemctl restart nginx
+curl -s -H 'Host: assess.rong-rise.com' http://127.0.0.1:8080/api/health   # {"ok":true}
+```
+
+### A-3 設定 Traefik 路由
+先確認 Traefik 怎麼跑、用哪種 provider：
+```bash
+docker ps --format '{{.Names}}\t{{.Image}}' | grep -i traefik   # 是否在 Docker 中
+ps aux | grep -i '[t]raefik'                                     # 或為系統服務
+```
+
+**若 Traefik 使用 file provider（靜態設定有 `providers.file.directory`）：**
+把附帶的動態設定放進 Traefik 的 dynamic 目錄（常見為 `/etc/traefik/dynamic/`）：
+```bash
+sudo mkdir -p /etc/traefik/dynamic
+sudo cp deploy/traefik/ai-assessment.yml /etc/traefik/dynamic/
+# Traefik 若開了 watch:true 會自動載入；否則重啟 Traefik
+```
+> 檔內 `certResolver: letsencrypt` 須與你 Traefik 既有的 ACME resolver 名稱一致；
+> 若名稱不同，改成既有的即可（沒有 resolver 時，依檔內註解在 `traefik.yml` 補上）。
+
+**若 Traefik 用 Docker provider（靠 labels），但本站 Nginx 不在 Docker：**
+仍建議改用 file provider（在 `traefik.yml` 加上 `providers.file`），再放入上面的動態檔，
+這樣不必把 Nginx 容器化。
+
+完成後以 `https://assess.rong-rise.com` 開啟即可，TLS 由 Traefik 自動簽發與續期。
+（此情況請略過下方第 7 節的 certbot 步驟。）
+
+---
+
 ## 之後要更新版本
 把新 commit 拉下來後，一鍵重新部署：
 ```bash

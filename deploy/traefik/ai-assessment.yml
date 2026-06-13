@@ -1,0 +1,54 @@
+# Traefik 動態設定（file provider）：把 assess.rong-rise.com 轉送到本機 Nginx(8080)
+# 並由 Traefik 以 Let's Encrypt 自動發 / 續 TLS 憑證。
+#
+# 適用情境：VPS 上 Traefik 已佔用 80/443，且使用「file provider」載入動態設定。
+#
+# 安裝：把本檔放到 Traefik 動態設定目錄（常見為 /etc/traefik/dynamic/）。
+#   先確認 traefik.yml(靜態設定) 內有：
+#     providers:
+#       file:
+#         directory: /etc/traefik/dynamic
+#         watch: true
+#     entryPoints:
+#       web:        { address: ":80" }
+#       websecure:  { address: ":443" }
+#     certificatesResolvers:
+#       letsencrypt:
+#         acme:
+#           email: c.j.kuo@learn-champ.com
+#           storage: /etc/traefik/acme.json
+#           httpChallenge:
+#             entryPoint: web
+#   ↑ certresolver 名稱（此處為 letsencrypt）需與下方 tls.certResolver 一致；
+#     若你的 Traefik 已有別的 resolver 名稱，改成既有的即可。
+
+http:
+  routers:
+    ai-assessment:
+      rule: "Host(`assess.rong-rise.com`)"
+      entryPoints:
+        - websecure
+      service: ai-assessment
+      tls:
+        certResolver: letsencrypt
+
+    # 將 HTTP 轉址到 HTTPS
+    ai-assessment-http:
+      rule: "Host(`assess.rong-rise.com`)"
+      entryPoints:
+        - web
+      service: ai-assessment
+      middlewares:
+        - ai-assessment-https-redirect
+
+  middlewares:
+    ai-assessment-https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+  services:
+    ai-assessment:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:8080"
