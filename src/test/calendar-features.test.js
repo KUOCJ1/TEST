@@ -203,6 +203,23 @@ describe('expandRecurringEvents', () => {
     const years = result.map(e => new Date(e.startAt).getUTCFullYear());
     expect(years).toEqual([2024, 2025, 2026, 2027]);
   });
+
+  it('event starting before range shows instances in range', () => {
+    const pastStart = {
+      ...baseEvent,
+      id: 'ps1',
+      startAt: '2026-05-28T09:00:00.000Z',
+      endAt:   '2026-05-28T09:30:00.000Z',
+      recurrence: { freq: 'daily', until: '2026-06-03' },
+    };
+    const result = expandRecurringEvents([pastStart], rangeStart, rangeEnd);
+    // May 28, 29, 30, 31 are before range; June 1–3 are in range = 3 instances
+    expect(result).toHaveLength(3);
+    result.forEach(e => {
+      const d = new Date(e.startAt);
+      expect(d.getUTCMonth()).toBe(5); // June (0-indexed)
+    });
+  });
 });
 
 // ── ICS import/export roundtrip ───────────────────────────────────
