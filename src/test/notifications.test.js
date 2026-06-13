@@ -49,16 +49,22 @@ describe('computeUpcomingReminders', () => {
     expect(result).toHaveLength(0);
   });
 
-  it('excludes reminder more than 24 hours away', () => {
-    // Event in 48 hours with 15-min reminder → reminder fires in ~47h45m
-    const result = computeUpcomingReminders([makeEvent('a', 48 * 60, 15)]);
+  it('excludes reminder more than 48 hours away', () => {
+    // Event in 72 hours with 15-min reminder → reminder fires in ~71h45m > 48h
+    const result = computeUpcomingReminders([makeEvent('a', 72 * 60, 15)]);
     expect(result).toHaveLength(0);
   });
 
-  it('event whose reminder fires beyond 24h is excluded', () => {
-    // Event in 26h with 30-min reminder → reminder fires in 25.5h > 24h
-    const result = computeUpcomingReminders([makeEvent('a', 26 * 60, 30)]);
+  it('event whose reminder fires beyond 48h is excluded', () => {
+    // Event in 50h with 30-min reminder → reminder fires in 49.5h > 48h
+    const result = computeUpcomingReminders([makeEvent('a', 50 * 60, 30)]);
     expect(result).toHaveLength(0);
+  });
+
+  it('includes event whose reminder fires within 48h window', () => {
+    // Event in 48h with 15-min reminder → reminder fires in ~47h45m < 48h
+    const result = computeUpcomingReminders([makeEvent('a', 48 * 60, 15)]);
+    expect(result).toHaveLength(1);
   });
 
   it('sorts reminders by reminderTime ascending', () => {
@@ -72,7 +78,7 @@ describe('computeUpcomingReminders', () => {
     const events = [
       makeEvent('a', 30, 15),    // reminder in 15 min ✓
       makeEvent('b', 60, 15),    // reminder in 45 min ✓
-      makeEvent('c', 48 * 60, 15), // reminder too far ✗
+      makeEvent('c', 72 * 60, 15), // reminder fires in ~71h45m > 48h ✗
     ];
     expect(computeUpcomingReminders(events)).toHaveLength(2);
   });

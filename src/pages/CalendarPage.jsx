@@ -25,6 +25,7 @@ import JoinGroupModal from '../components/groups/JoinGroupModal';
 import MembersModal from '../components/groups/MembersModal';
 import { getWeekStart, isSameDay } from '../utils/calendar';
 import { useIsDesktop } from '../hooks/useIsMobile';
+import { useSwipe } from '../hooks/useSwipe';
 
 function getViewWindow(view, currentDate) {
   if (view === 'month') {
@@ -146,6 +147,11 @@ export default function CalendarPage() {
   }
 
   function goToday() { setCurrentDate(new Date()); }
+
+  const swipeHandlers = useSwipe({
+    onSwipeLeft:  () => navigate(1),
+    onSwipeRight: () => navigate(-1),
+  });
 
   // ── Events ───────────────────────────────────────────────────
   const rawEvents = activeGroupId ? getGroupEvents(activeGroupId) : events;
@@ -655,7 +661,7 @@ export default function CalendarPage() {
         />
 
         {/* Calendar column */}
-        <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+        <div className="flex flex-col flex-1 overflow-hidden min-w-0" {...swipeHandlers}>
           <CalendarHeader
             currentDate={currentDate}
             view={view}

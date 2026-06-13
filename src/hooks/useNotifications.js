@@ -16,21 +16,24 @@ function markSent(key) {
 }
 
 function reminderLabel(minutes) {
-  if (minutes >= 1440) return '1 天前';
-  if (minutes >= 60)   return `${minutes / 60} 小時前`;
-  return `${minutes} 分鐘前`;
+  const m = Number(minutes);
+  if (m >= 10080) return '1 週前';
+  if (m >= 2880)  return '2 天前';
+  if (m >= 1440)  return '1 天前';
+  if (m >= 60)    return `${m / 60} 小時前`;
+  return `${m} 分鐘前`;
 }
 
 export function computeUpcomingReminders(events) {
   const now = new Date();
-  const in24h = new Date(now.getTime() + 24 * 3600 * 1000);
+  const in48h = new Date(now.getTime() + 48 * 3600 * 1000);
   return events
     .filter(e => e.reminder && e.reminder !== '')
     .flatMap(e => {
       const minutes = parseInt(e.reminder, 10);
       const eventStart = new Date(e.startAt);
       const reminderTime = new Date(eventStart.getTime() - minutes * 60_000);
-      if (reminderTime <= now || reminderTime > in24h) return [];
+      if (reminderTime <= now || reminderTime > in48h) return [];
       return [{ event: e, reminderTime, eventStart, minutes }];
     })
     .sort((a, b) => a.reminderTime - b.reminderTime);

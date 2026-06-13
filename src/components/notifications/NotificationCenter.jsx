@@ -6,13 +6,15 @@ function countdown(reminderTime) {
   const ms = reminderTime - new Date();
   if (ms <= 0) return '即將提醒';
   const h = Math.floor(ms / 3600000);
+  if (h >= 24) return `${Math.ceil(h / 24)} 天後提醒`;
   const m = Math.floor((ms % 3600000) / 60000);
   if (h > 0) return `${h} 小時後提醒`;
   return `${m || 1} 分鐘後提醒`;
 }
 
 function ReminderLabel({ minutes }) {
-  const label = minutes >= 1440 ? '1 天前' : minutes >= 60 ? `${minutes / 60} 小時前` : `${minutes} 分鐘前`;
+  const m = Number(minutes);
+  const label = m >= 10080 ? '1 週前' : m >= 2880 ? '2 天前' : m >= 1440 ? '1 天前' : m >= 60 ? `${m / 60} 小時前` : `${m} 分鐘前`;
   return (
     <span className="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-full mt-1 inline-block">
       {label}
@@ -86,7 +88,7 @@ export default function NotificationCenter({ permission, requestPermission, upco
               {upcomingReminders.length === 0 ? (
                 <div className="px-4 py-6 text-center">
                   <Bell size={22} className="text-slate-200 mx-auto mb-2" />
-                  <p className="text-xs text-slate-400">24 小時內沒有待提醒事件</p>
+                  <p className="text-xs text-slate-400">48 小時內沒有待提醒事件</p>
                 </div>
               ) : (
                 upcomingReminders.map(({ event, reminderTime, minutes }) => (
