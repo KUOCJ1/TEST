@@ -39,6 +39,8 @@ export default function AgendaSidebar({ events, onEventClick, onNavigateDay }) {
             <div key={date.toISOString()} className="border-b border-slate-50 last:border-0">
               <button
                 onClick={() => onNavigateDay?.(date)}
+                aria-current={isSameDay(date, new Date()) ? 'date' : undefined}
+                aria-label={`跳轉到 ${label}`}
                 className={`w-full px-4 py-2 flex items-center gap-2 text-left transition-colors ${
                   isSameDay(date, new Date()) ? 'bg-indigo-50 hover:bg-indigo-100' : 'hover:bg-slate-50'
                 }`}

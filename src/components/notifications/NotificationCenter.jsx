@@ -55,7 +55,7 @@ export default function NotificationCenter({ permission, requestPermission, upco
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
               <span className="text-sm font-semibold text-slate-800">提醒通知</span>
-              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <button onClick={() => setOpen(false)} aria-label="關閉通知" className="text-slate-400 hover:text-slate-600 transition-colors">
                 <X size={16} />
               </button>
             </div>

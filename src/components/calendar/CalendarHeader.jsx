@@ -71,6 +71,9 @@ export default function CalendarHeader({ currentDate, view, onPrev, onNext, onTo
             value={pickerValue}
             onChange={handlePickerChange}
             onBlur={() => setShowPicker(false)}
+            aria-label="跳轉到指定日期"
+            aria-hidden="true"
+            tabIndex={-1}
             className="absolute opacity-0 pointer-events-none top-0 left-0"
             style={{ width: 1, height: 1 }}
           />

@@ -31,7 +31,7 @@ const EventPill = memo(function EventPill({
         className="w-full text-left text-xs px-1.5 py-0.5 rounded truncate flex items-center gap-1 bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors"
       >
         {selectMode && (
-          <input type="checkbox" checked={selected} readOnly className="mr-1 shrink-0" />
+          <input type="checkbox" checked={selected} readOnly aria-label={`選取私人事項`} className="mr-1 shrink-0" />
         )}
         <span className="shrink-0">🔒</span>
         <span className="truncate">私人事項</span>
@@ -58,7 +58,7 @@ const EventPill = memo(function EventPill({
       style={{ backgroundColor: selected ? '#4f46e5' : color }}
     >
       {selectMode && (
-        <input type="checkbox" checked={selected} readOnly className="mr-0.5 shrink-0" onClick={e => e.stopPropagation()} />
+        <input type="checkbox" checked={selected} readOnly aria-label={`選取 ${event.title}`} className="mr-0.5 shrink-0" onClick={e => e.stopPropagation()} />
       )}
       {!isOwn && event.creatorName && (
         <span className="opacity-75 shrink-0">{event.creatorName.charAt(0)}·</span>
@@ -147,6 +147,7 @@ export default function MonthView({
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const days = getMonthCalendarDays(year, month);
+  const hasAnyEvent = days.some(day => day.isCurrentMonth && getEventsForDay(events, day.date).length > 0);
 
   function handleDragStart(e, event) {
     e.dataTransfer.setData('eventId', event.recurringBaseId || event.id);
@@ -177,7 +178,7 @@ export default function MonthView({
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7 relative">
         {days.map(day => {
           const dayEvents = getEventsForDay(events, day.date);
           return (
@@ -198,6 +199,13 @@ export default function MonthView({
             />
           );
         })}
+        {!hasAnyEvent && !isMobile && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none col-span-7" style={{ top: '30%' }}>
+            <span className="text-5xl mb-3 opacity-40">📅</span>
+            <p className="text-sm text-slate-400 font-medium">這個月還沒有行程</p>
+            <p className="text-xs text-slate-300 mt-1">點擊任意日期新增事件</p>
+          </div>
+        )}
       </div>
     </div>
   );

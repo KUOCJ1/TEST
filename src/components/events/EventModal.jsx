@@ -250,6 +250,8 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
                     type="button"
                     onClick={() => set('color', c.id)}
                     title={c.label}
+                    aria-label={c.label}
+                    aria-pressed={form.color === c.id}
                     style={{ backgroundColor: c.hex }}
                     className={`w-7 h-7 rounded-lg transition-all ${
                       form.color === c.id
@@ -266,6 +268,9 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
           <div className="flex items-center gap-3">
             <button
               type="button"
+              role="switch"
+              aria-checked={form.isAllDay}
+              aria-label="全天事件"
               onClick={() => set('isAllDay', !form.isAllDay)}
               className={`w-10 h-5 rounded-full transition-colors relative ${
                 form.isAllDay ? 'bg-indigo-600' : 'bg-slate-200'
@@ -281,8 +286,9 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
           {/* Date / Time */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">開始</label>
+              <label htmlFor="evt-start-date" className="block text-xs font-medium text-slate-500 mb-1.5">開始</label>
               <input
+                id="evt-start-date"
                 type="date"
                 value={form.startDate}
                 onChange={e => set('startDate', e.target.value)}
@@ -294,13 +300,15 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
                   type="time"
                   value={form.startTime}
                   onChange={e => set('startTime', e.target.value)}
+                  aria-label="開始時間"
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mt-2"
                 />
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">結束</label>
+              <label htmlFor="evt-end-date" className="block text-xs font-medium text-slate-500 mb-1.5">結束</label>
               <input
+                id="evt-end-date"
                 type="date"
                 value={form.endDate}
                 onChange={e => set('endDate', e.target.value)}
@@ -313,6 +321,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
                   type="time"
                   value={form.endTime}
                   onChange={e => set('endTime', e.target.value)}
+                  aria-label="結束時間"
                   className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 mt-2 ${
                     endBeforeStart
                       ? 'border-red-400 bg-red-50 focus:ring-red-400'
@@ -340,6 +349,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
             <select
               value={form.recurrenceFreq}
               onChange={e => set('recurrenceFreq', e.target.value)}
+              aria-label="重複頻率"
               className="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
             >
               {FREQ_OPTIONS.map(o => (
@@ -372,6 +382,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
               value={form.location}
               onChange={e => set('location', e.target.value)}
               placeholder="新增地點"
+              aria-label="地點"
               className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
@@ -384,6 +395,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
               value={form.url}
               onChange={e => set('url', e.target.value)}
               placeholder="相關連結 https://..."
+              aria-label="相關連結"
               className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
@@ -396,6 +408,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
               value={form.attendees}
               onChange={e => set('attendees', e.target.value)}
               placeholder="參與者 Email（以逗號分隔）"
+              aria-label="參與者"
               className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>

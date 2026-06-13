@@ -64,7 +64,7 @@ export default function Sidebar({ groups, activeGroupId, onSelectPersonal, onSel
                 </button>
                 <button
                   onClick={() => onManageGroup(group.id)}
-                  className="p-1.5 mr-1 text-slate-300 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-1.5 mr-1 text-slate-300 hover:text-slate-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
                   aria-label={`管理 ${group.name} 成員`}
                   title="管理成員"
                 >

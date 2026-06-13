@@ -500,6 +500,7 @@ export default function CalendarPage() {
         <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={() => setSidebarOpen(o => !o)}
+            aria-label="開啟側邊欄"
             className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors lg:hidden"
           >
             <Menu size={18} />
@@ -582,6 +583,9 @@ export default function CalendarPage() {
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(m => !m)}
+              aria-label={`帳號選單：${currentUser.name}`}
+              aria-haspopup="menu"
+              aria-expanded={showUserMenu}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 transition-colors"
             >
               <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-semibold">
@@ -593,12 +597,13 @@ export default function CalendarPage() {
             {showUserMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowUserMenu(false)} />
-                <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 w-44 z-20">
+                <div role="menu" className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 w-44 z-20">
                   <div className="px-4 py-2 border-b border-slate-100">
                     <p className="text-sm font-medium text-slate-800">{currentUser.name}</p>
                     <p className="text-xs text-slate-400 truncate">{currentUser.email}</p>
                   </div>
                   <button
+                    role="menuitem"
                     onClick={() => { setShowUserMenu(false); logout(); }}
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                   >
