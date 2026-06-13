@@ -38,6 +38,13 @@ export function exportToIcs(events) {
     if (e.url)         lines.push(`URL:${e.url}`);
     if (e.tags?.length) lines.push(`CATEGORIES:${e.tags.join(',')}`);
     if (e.isPrivate)   lines.push('CLASS:PRIVATE');
+    if (e.recurrence?.freq) {
+      const freq = e.recurrence.freq.toUpperCase();
+      const until = e.recurrence.until
+        ? `;UNTIL=${e.recurrence.until.replace(/-/g,'')}T000000Z`
+        : '';
+      lines.push(`RRULE:FREQ=${freq}${until}`);
+    }
     if (e.reminder) lines.push(`BEGIN:VALARM\r\nTRIGGER:-PT${e.reminder}M\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder\r\nEND:VALARM`);
     lines.push('END:VEVENT');
   }
@@ -113,6 +120,17 @@ export function parseIcs(text) {
     }
     else if (prop === 'CLASS') {
       cur.isPrivate = val.trim().toUpperCase() === 'PRIVATE';
+    }
+    else if (prop === 'RRULE') {
+      const freqMatch  = val.match(/FREQ=(\w+)/i);
+      const untilMatch = val.match(/UNTIL=(\d{8})/i);
+      if (freqMatch) {
+        const freq = freqMatch[1].toLowerCase();
+        const until = untilMatch
+          ? `${untilMatch[1].slice(0,4)}-${untilMatch[1].slice(4,6)}-${untilMatch[1].slice(6,8)}`
+          : null;
+        cur.recurrence = { freq, until };
+      }
     }
     else if (prop === 'UID') {
       cur.externalId = val;

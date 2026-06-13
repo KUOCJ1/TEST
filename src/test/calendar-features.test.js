@@ -378,4 +378,26 @@ describe('ICS roundtrip', () => {
     const parsed = parseIcs(ics);
     expect(parsed[0].isPrivate).toBe(false);
   });
+
+  it('exports RRULE for recurring event', () => {
+    const recurring = { ...timed, id: 'rr1', recurrence: { freq: 'weekly', until: '2026-12-31' } };
+    const ics = exportToIcs([recurring]);
+    expect(ics).toContain('RRULE:FREQ=WEEKLY;UNTIL=20261231T000000Z');
+  });
+
+  it('roundtrips recurring event with RRULE', () => {
+    const recurring = { ...timed, id: 'rr2', recurrence: { freq: 'daily', until: '2026-07-10' } };
+    const ics = exportToIcs([recurring]);
+    const parsed = parseIcs(ics);
+    expect(parsed[0].recurrence).toEqual({ freq: 'daily', until: '2026-07-10' });
+  });
+
+  it('roundtrips recurring event without until date', () => {
+    const recurring = { ...timed, id: 'rr3', recurrence: { freq: 'monthly', until: null } };
+    const ics = exportToIcs([recurring]);
+    expect(ics).toContain('RRULE:FREQ=MONTHLY');
+    const parsed = parseIcs(ics);
+    expect(parsed[0].recurrence?.freq).toBe('monthly');
+    expect(parsed[0].recurrence?.until).toBeNull();
+  });
 });
