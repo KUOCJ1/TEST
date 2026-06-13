@@ -29,7 +29,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <header className="mb-6 text-center">
           <h1 className="text-2xl font-extrabold text-slate-800 sm:text-3xl">
-            AI 全方位職能實戰課前評測
+            全方位職能評測
           </h1>
           <p className="mt-2 text-sm text-slate-400">登入後即可作答並查看您的專屬能力分析</p>
         </header>

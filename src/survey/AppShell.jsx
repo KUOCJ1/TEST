@@ -77,7 +77,7 @@ export default function AppShell() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
-          <span className="text-base font-extrabold text-teal-700">AI 職能評測平臺</span>
+          <span className="text-base font-extrabold text-teal-700">全方位職能評測</span>
 
           {view === 'survey' ? (
             <button
