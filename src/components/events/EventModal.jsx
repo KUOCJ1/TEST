@@ -214,6 +214,8 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
               value={form.title}
               onChange={e => set('title', e.target.value)}
               placeholder="事件標題"
+              aria-label="事件標題"
+              aria-required="true"
               className="w-full text-lg font-medium border-0 border-b-2 border-slate-200 focus:border-indigo-500 focus:outline-none pb-1 bg-transparent"
               autoFocus
             />
@@ -229,6 +231,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
                     key={t.id}
                     type="button"
                     onClick={() => set('type', t.id)}
+                    aria-pressed={form.type === t.id}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                       form.type === t.id
                         ? 'bg-indigo-600 text-white'
@@ -365,6 +368,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
                   min={form.startDate}
                   onChange={e => set('recurrenceUntil', e.target.value)}
                   placeholder="無限期"
+                  aria-label="重複結束日期"
                   className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 {!form.recurrenceUntil && (
@@ -415,10 +419,11 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
 
           {/* Tags */}
           <div className="relative">
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">
+            <label htmlFor="evt-tags" className="block text-xs font-medium text-slate-500 mb-1.5">
               標籤 <span className="font-normal text-slate-400">（以逗號分隔）</span>
             </label>
             <input
+              id="evt-tags"
               ref={tagsRef}
               type="text"
               value={form.tags}
@@ -463,8 +468,9 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
 
           {/* Reminder */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">提前提醒</label>
+            <label htmlFor="evt-reminder" className="block text-xs font-medium text-slate-500 mb-1.5">提前提醒</label>
             <select
+              id="evt-reminder"
               value={form.reminder}
               onChange={e => set('reminder', e.target.value)}
               className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
@@ -477,8 +483,9 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">說明</label>
+            <label htmlFor="evt-description" className="block text-xs font-medium text-slate-500 mb-1.5">說明</label>
             <textarea
+              id="evt-description"
               value={form.description}
               onChange={e => set('description', e.target.value)}
               placeholder="新增說明..."
@@ -511,7 +518,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
           </div>
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{error}</p>
+            <p role="alert" className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{error}</p>
           )}
 
           {/* Actions */}
