@@ -180,18 +180,17 @@ export default function CalendarPage() {
   }, [rawEvents]);
 
   // ── Event click handlers ─────────────────────────────────────
-  function handleEventClick(event) {
-    // All events show detail modal first; Edit button opens EventModal
+  const handleEventClick = useCallback((event) => {
     setDetailEvent(event);
     setDetailModalOpen(true);
-  }
+  }, []);
 
-  function handleSlotClick(date) {
+  const handleSlotClick = useCallback((date) => {
     if (selectMode) return;
     setSelectedEvent(null);
     setSelectedDate(date);
     setEventModalOpen(true);
-  }
+  }, [selectMode]);
 
   function closeEventModal() {
     setEventModalOpen(false);
@@ -309,14 +308,14 @@ export default function CalendarPage() {
     setSelectedIds(new Set());
   }
 
-  function toggleSelectId(id) {
+  const toggleSelectId = useCallback((id) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }
+  }, []);
 
   function deleteSelected() {
     if (!selectedIds.size) return;
@@ -377,7 +376,7 @@ export default function CalendarPage() {
     refresh();
   }
 
-  function handleEditFromDetail() {
+  const handleEditFromDetail = useCallback(() => {
     if (!detailEvent) return;
     const baseId = detailEvent.recurringBaseId || detailEvent.id;
     const baseEvent = events.find(e => e.id === baseId) || detailEvent;
@@ -385,9 +384,9 @@ export default function CalendarPage() {
     setDetailEvent(null);
     setSelectedEvent(baseEvent);
     setEventModalOpen(true);
-  }
+  }, [detailEvent, events]);
 
-  function handleCopyFromDetail() {
+  const handleCopyFromDetail = useCallback(() => {
     if (!detailEvent) return;
     // eslint-disable-next-line no-unused-vars
     const { id, creatorId, recurringBaseId, isRecurring, source, ...rest } = detailEvent;
@@ -396,7 +395,7 @@ export default function CalendarPage() {
     setCopyTemplate(rest);
     setSelectedEvent(null);
     setEventModalOpen(true);
-  }
+  }, [detailEvent]);
 
   // ── Search handler ────────────────────────────────────────────
   function handleSearchSelect(event) {
