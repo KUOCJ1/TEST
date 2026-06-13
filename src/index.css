@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-800 outline-none transition-colors;
+    @apply focus:border-teal-500 focus:ring-2 focus:ring-teal-100;
+  }
+}
+
 * {
   box-sizing: border-box;
 }

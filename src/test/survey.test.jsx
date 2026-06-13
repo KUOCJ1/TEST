@@ -52,12 +52,24 @@ describe('SurveyApp', () => {
     expect(screen.getByText(/1 \/ 31 題/)).toBeInTheDocument();
   });
 
-  it('作答內容會持久化到 localStorage', () => {
+  it('作答內容會持久化到 localStorage（依使用者分開）', () => {
     render(<SurveyApp />);
     const radios = document.querySelectorAll(`input[name="q1"]`);
     fireEvent.click(radios[3]); // 4 分
-    const stored = JSON.parse(localStorage.getItem('ai-assessment-answers-v1'));
+    const stored = JSON.parse(localStorage.getItem('aiassess_draft_guest'));
     expect(stored.q1).toBe(4);
+  });
+
+  it('送出後會建立一筆作答紀錄並回呼 onSubmitted', () => {
+    let submitted = null;
+    render(<SurveyApp user={{ id: 'u1', name: '小明' }} onSubmitted={(r) => (submitted = r)} />);
+    answerAll(4);
+    fireEvent.click(screen.getByRole('button', { name: /送出評測/ }));
+    expect(submitted?.total).toBe(124);
+    const subs = JSON.parse(localStorage.getItem('aiassess_submissions_v1'));
+    expect(subs).toHaveLength(1);
+    expect(subs[0].userId).toBe('u1');
+    expect(subs[0].result.total).toBe(124);
   });
 
   it('低分情境落到 AI 新手村', () => {

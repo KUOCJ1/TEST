@@ -6,28 +6,15 @@ import {
   isComplete,
   unansweredQuestionIds,
 } from './utils/scoring';
+import { readJSON, writeJSON } from './utils/storage';
+import { resultSummaryText, copyToClipboard } from './utils/format';
+import { addSubmission } from './data/submissionStore';
 import ProgressBar from './components/ProgressBar';
 import QuestionCard from './components/QuestionCard';
 import ResultPanel from './components/ResultPanel';
 
-const STORAGE_KEY = 'ai-assessment-answers-v1';
-
-function loadAnswers() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveAnswers(answers) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
-  } catch {
-    /* localStorage 不可用時靜默忽略 */
-  }
-}
+// 作答草稿依使用者分開儲存，避免共用瀏覽器時互相覆蓋。
+const draftKey = (userId) => `aiassess_draft_${userId}`;
 
 let questionCounter = 0;
 const QUESTION_NUMBER = {};
@@ -37,8 +24,9 @@ DIMENSIONS.forEach((d) =>
   }),
 );
 
-export default function SurveyApp() {
-  const [answers, setAnswers] = useState(loadAnswers);
+export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, onSubmitted }) {
+  const storageKey = useMemo(() => draftKey(user.id), [user.id]);
+  const [answers, setAnswers] = useState(() => readJSON(storageKey, {}));
   const [result, setResult] = useState(null);
   const [invalidIds, setInvalidIds] = useState([]);
   const [copied, setCopied] = useState(false);
@@ -48,14 +36,17 @@ export default function SurveyApp() {
 
   const answered = useMemo(() => answeredCount(answers), [answers]);
 
-  const handleChange = useCallback((qid, value) => {
-    setAnswers((prev) => {
-      const next = { ...prev, [qid]: value };
-      saveAnswers(next);
-      return next;
-    });
-    setInvalidIds((prev) => (prev.length ? prev.filter((id) => id !== qid) : prev));
-  }, []);
+  const handleChange = useCallback(
+    (qid, value) => {
+      setAnswers((prev) => {
+        const next = { ...prev, [qid]: value };
+        writeJSON(storageKey, next);
+        return next;
+      });
+      setInvalidIds((prev) => (prev.length ? prev.filter((id) => id !== qid) : prev));
+    },
+    [storageKey],
+  );
 
   const handleSubmit = useCallback(() => {
     if (!isComplete(answers)) {
@@ -68,43 +59,29 @@ export default function SurveyApp() {
       return;
     }
     setInvalidIds([]);
-    setResult(buildResult(answers));
+    const r = buildResult(answers);
+    setResult(r);
+    addSubmission({ userId: user.id, userName: user.name, answers, result: r });
+    onSubmitted?.(r);
     requestAnimationFrame(() => {
       resultRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
     });
-  }, [answers]);
+  }, [answers, user.id, user.name, onSubmitted]);
 
   const handleRetake = useCallback(() => {
     setAnswers({});
-    saveAnswers({});
+    writeJSON(storageKey, {});
     setResult(null);
     setInvalidIds([]);
     setCopied(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [storageKey]);
 
   const handleCopy = useCallback(async () => {
     if (!result) return;
-    const lines = [
-      'AI 全方位職能實戰課前評測 — 結果摘要',
-      `總得分：${result.total} / ${result.maxScore}（達成率 ${result.percent}%）`,
-      `落點等級：${result.level.badge}（${result.level.badgeEn}）`,
-      '',
-      '各構面得分：',
-      ...result.dimensions.map(
-        (d) => `・${d.subtitle}（${d.name}）：${d.score}/${d.max}  ${d.percent}%  ${d.rating.label}`,
-      ),
-      '',
-      `最強構面：${result.strongest.subtitle}  優先強化：${result.weakest.subtitle}`,
-    ];
-    const text = lines.join('\n');
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      setCopied(false);
-    }
+    const ok = await copyToClipboard(resultSummaryText(result));
+    setCopied(ok);
+    if (ok) setTimeout(() => setCopied(false), 2500);
   }, [result]);
 
   return (
