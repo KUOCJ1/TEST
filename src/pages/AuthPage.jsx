@@ -100,6 +100,7 @@ export default function AuthPage() {
                     value={form.name}
                     onChange={e => update('name', e.target.value)}
                     placeholder="你的名字"
+                    autoComplete="name"
                     className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     required
                   />
@@ -117,6 +118,7 @@ export default function AuthPage() {
                   value={form.email}
                   onChange={e => update('email', e.target.value)}
                   placeholder="your@email.com"
+                  autoComplete="email"
                   className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   required
                 />
@@ -133,6 +135,7 @@ export default function AuthPage() {
                   value={form.password}
                   onChange={e => update('password', e.target.value)}
                   placeholder={mode === 'register' ? '至少 6 個字元' : '••••••••'}
+                  autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                   className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   required
                 />
@@ -165,6 +168,7 @@ export default function AuthPage() {
                     value={form.confirm}
                     onChange={e => update('confirm', e.target.value)}
                     placeholder="再次輸入密碼"
+                    autoComplete="new-password"
                     className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     required
                   />
