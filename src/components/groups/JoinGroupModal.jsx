@@ -42,8 +42,9 @@ export default function JoinGroupModal({ isOpen, onClose, onJoined }) {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">邀請碼</label>
+            <label htmlFor="join-group-code" className="block text-sm font-medium text-slate-700 mb-1.5">邀請碼</label>
             <input
+              id="join-group-code"
               type="text"
               value={code}
               onChange={e => { setCode(e.target.value.toUpperCase()); setError(''); }}

@@ -38,8 +38,9 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">群組名稱</label>
+            <label htmlFor="create-group-name" className="block text-sm font-medium text-slate-700 mb-1.5">群組名稱</label>
             <input
+              id="create-group-name"
               type="text"
               value={name}
               onChange={e => { setName(e.target.value); setError(''); }}

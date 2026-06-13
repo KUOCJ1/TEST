@@ -65,6 +65,7 @@ export default function MembersModal({ isOpen, onClose, groupId, currentUserId, 
               onChange={e => setNameVal(e.target.value)}
               onBlur={saveRename}
               onKeyDown={e => e.key === 'Enter' && saveRename()}
+              aria-label="群組名稱"
               className="text-lg font-semibold text-slate-800 border-b-2 border-indigo-500 outline-none bg-transparent"
             />
           ) : (
@@ -72,7 +73,11 @@ export default function MembersModal({ isOpen, onClose, groupId, currentUserId, 
               id="members-modal-title"
               className={`text-lg font-semibold text-slate-800 ${isOwner ? 'cursor-pointer hover:text-indigo-600' : ''}`}
               onClick={isOwner ? startRename : undefined}
+              onKeyDown={isOwner ? (e => (e.key === 'Enter' || e.key === ' ') && startRename()) : undefined}
+              role={isOwner ? 'button' : undefined}
+              tabIndex={isOwner ? 0 : undefined}
               title={isOwner ? '點擊編輯群組名稱' : undefined}
+              aria-label={isOwner ? `群組名稱：${group.name}，點擊編輯` : undefined}
             >
               {group.name}
             </h2>
@@ -140,12 +145,13 @@ export default function MembersModal({ isOpen, onClose, groupId, currentUserId, 
                   <p className="text-xs text-slate-400 truncate">{m.email}</p>
                 </div>
                 {m.role === 'owner' && (
-                  <Crown size={14} className="text-amber-400 shrink-0" title="管理員" />
+                  <Crown size={14} className="text-amber-400 shrink-0" title="管理員" aria-label="管理員" />
                 )}
                 {isOwner && m.userId !== currentUserId && (
                   <button
                     onClick={() => setPendingAction({ type: 'remove', userId: m.userId, name: m.name })}
                     className="text-slate-300 hover:text-red-500 transition-colors"
+                    aria-label={`移除成員 ${m.name}`}
                     title="移除成員"
                   >
                     <UserMinus size={15} />

@@ -99,8 +99,9 @@ export default function GoogleSettingsModal({
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">OAuth 用戶端 ID</label>
+                <label htmlFor="google-client-id" className="block text-xs font-medium text-slate-600 mb-1.5">OAuth 用戶端 ID</label>
                 <input
+                  id="google-client-id"
                   type="text"
                   value={inputClientId}
                   onChange={e => setInputClientId(e.target.value)}
