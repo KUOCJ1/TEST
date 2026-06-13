@@ -207,8 +207,14 @@ export default function CalendarPage() {
         closeEventModal();
         return;
       }
+      const prev = { ...selectedEvent };
       updateEvent(selectedEvent.id, data);
-      addToast({ type: 'success', title: '事件已更新', body: data.title });
+      addToast({
+        type: 'success',
+        title: '事件已更新',
+        body: data.title,
+        action: { label: '復原', onClick: () => updateEvent(prev.id, prev) },
+      });
     } else {
       addEvent(data);
       addToast({ type: 'success', title: '事件已新增', body: data.title });
@@ -291,16 +297,30 @@ export default function CalendarPage() {
     const diff = targetDate.getTime() - new Date(originalDate).getTime();
     const newStart = new Date(new Date(evt.startAt).getTime() + diff);
     const newEnd   = new Date(new Date(evt.endAt).getTime() + diff);
+    const prevStartAt = evt.startAt;
+    const prevEndAt   = evt.endAt;
     updateEvent(eventId, { ...evt, startAt: newStart.toISOString(), endAt: newEnd.toISOString() });
-    addToast({ type: 'success', title: '已移動事件', body: evt.title });
+    addToast({
+      type: 'success',
+      title: '已移動事件',
+      body: evt.title,
+      action: { label: '復原', onClick: () => updateEvent(eventId, { ...evt, startAt: prevStartAt, endAt: prevEndAt }) },
+    });
   }, [events, updateEvent, addToast]);
 
   // ── Drag-and-drop (WeekView/DayView: time-level) ─────────────
   const handleMoveEventToTime = useCallback((eventId, newStartAt, newEndAt) => {
     const evt = events.find(e => e.id === eventId);
     if (!evt) return;
+    const prevStartAt = evt.startAt;
+    const prevEndAt   = evt.endAt;
     updateEvent(eventId, { ...evt, startAt: newStartAt, endAt: newEndAt });
-    addToast({ type: 'success', title: '已移動事件', body: evt.title });
+    addToast({
+      type: 'success',
+      title: '已移動事件',
+      body: evt.title,
+      action: { label: '復原', onClick: () => updateEvent(eventId, { ...evt, startAt: prevStartAt, endAt: prevEndAt }) },
+    });
   }, [events, updateEvent, addToast]);
 
   // ── Bulk select ──────────────────────────────────────────────
