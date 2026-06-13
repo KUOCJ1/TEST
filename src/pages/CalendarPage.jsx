@@ -500,7 +500,8 @@ export default function CalendarPage() {
         <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={() => setSidebarOpen(o => !o)}
-            aria-label="開啟側邊欄"
+            aria-label={sidebarOpen ? '關閉側邊欄' : '開啟側邊欄'}
+            aria-expanded={sidebarOpen}
             className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors lg:hidden"
           >
             <Menu size={18} />
