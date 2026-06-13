@@ -8,7 +8,10 @@ function toICSDate(iso) {
 }
 
 function toICSDateOnly(iso) {
-  return iso.slice(0,10).replace(/-/g,'');
+  // Use local date components so all-day events export on the correct local date
+  // (slicing UTC ISO would give wrong day for UTC+ timezones)
+  const d = new Date(iso);
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
 }
 
 function escICS(s) {
@@ -27,7 +30,10 @@ export function exportToIcs(events) {
     lines.push(`DTSTAMP:${toICSDate(new Date().toISOString())}`);
     if (e.isAllDay) {
       lines.push(`DTSTART;VALUE=DATE:${toICSDateOnly(e.startAt)}`);
-      lines.push(`DTEND;VALUE=DATE:${toICSDateOnly(e.endAt)}`);
+      // RFC 5545 §3.6.1: DTEND for DATE-valued events is exclusive; add 1 day
+      const excEnd = new Date(e.startAt);
+      excEnd.setDate(excEnd.getDate() + 1);
+      lines.push(`DTEND;VALUE=DATE:${toICSDateOnly(excEnd.toISOString())}`);
     } else {
       lines.push(`DTSTART:${toICSDate(e.startAt)}`);
       lines.push(`DTEND:${toICSDate(e.endAt)}`);

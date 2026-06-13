@@ -29,7 +29,7 @@ describe('Auth flow', () => {
     render(<App />);
     fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: 'nobody@example.com' } });
     fireEvent.change(screen.getByPlaceholderText('••••••••'), { target: { value: 'wrongpass' } });
-    fireEvent.click(screen.getAllByRole('button', { name: '登入' })[1]);
+    fireEvent.click(screen.getAllByRole('button', { name: '登入' })[0]);
     expect(await screen.findByText('Email 或密碼錯誤')).toBeInTheDocument();
   });
 });

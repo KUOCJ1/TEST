@@ -74,6 +74,7 @@ export default function AgendaSidebar({ events, onEventClick, onNavigateDay }) {
                     <button
                       key={e.id}
                       onClick={() => onEventClick(e)}
+                      aria-label={`${e.title}${e.isAllDay ? '，全天' : `，${formatDisplayTime(e.startAt)}`}`}
                       className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 transition-colors group"
                     >
                       <div

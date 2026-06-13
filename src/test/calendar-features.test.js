@@ -325,6 +325,25 @@ describe('ICS roundtrip', () => {
     expect(parsed[0].title).toBe('Company Holiday');
   });
 
+  it('all-day DTEND is exclusive (start + 1 day) per RFC 5545', () => {
+    const ics = exportToIcs([allDay]);
+    // allDay startAt is 2026-06-15; DTEND must be 20260616 (exclusive)
+    const start = new Date(allDay.startAt);
+    const expectedEnd = new Date(start);
+    expectedEnd.setDate(expectedEnd.getDate() + 1);
+    const pad = n => String(n).padStart(2, '0');
+    const expectedDateStr = `${expectedEnd.getFullYear()}${pad(expectedEnd.getMonth()+1)}${pad(expectedEnd.getDate())}`;
+    expect(ics).toContain(`DTEND;VALUE=DATE:${expectedDateStr}`);
+  });
+
+  it('all-day DTSTART uses local date (not UTC date)', () => {
+    const ics = exportToIcs([allDay]);
+    const localDate = new Date(allDay.startAt);
+    const pad = n => String(n).padStart(2, '0');
+    const localDateStr = `${localDate.getFullYear()}${pad(localDate.getMonth()+1)}${pad(localDate.getDate())}`;
+    expect(ics).toContain(`DTSTART;VALUE=DATE:${localDateStr}`);
+  });
+
   it('handles special characters in title (escaping)', () => {
     const special = {
       ...timed,

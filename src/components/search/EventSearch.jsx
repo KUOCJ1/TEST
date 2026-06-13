@@ -186,6 +186,13 @@ export default function EventSearch({ isOpen, onClose, events, onSelectEvent }) 
             </div>
           ))}
 
+          <div
+            aria-live="polite"
+            aria-atomic="true"
+            className="sr-only"
+          >
+            {query ? (results.length > 0 ? `找到 ${results.length} 筆結果` : '找不到符合的事件') : ''}
+          </div>
           {results.length > 0 && (
             <div className="px-4 py-2 text-xs text-slate-300 text-right border-t border-slate-50">
               {results.length} 筆結果

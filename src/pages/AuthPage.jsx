@@ -72,10 +72,12 @@ export default function AuthPage() {
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Tabs */}
-          <div className="flex rounded-xl bg-slate-100 p-1 mb-6">
+          <div role="tablist" aria-label="登入或註冊" className="flex rounded-xl bg-slate-100 p-1 mb-6">
             {['login', 'register'].map(m => (
               <button
                 key={m}
+                role="tab"
+                aria-selected={mode === m}
                 onClick={() => switchMode(m)}
                 className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                   mode === m
@@ -169,10 +171,18 @@ export default function AuthPage() {
                     onChange={e => update('confirm', e.target.value)}
                     placeholder="再次輸入密碼"
                     autoComplete="new-password"
-                    className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    aria-describedby={form.confirm && form.password !== form.confirm ? 'confirm-mismatch' : undefined}
+                    className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent ${
+                      form.confirm && form.password !== form.confirm
+                        ? 'border-red-300 focus:ring-red-400'
+                        : 'border-slate-200 focus:ring-indigo-500'
+                    }`}
                     required
                   />
                 </div>
+                {form.confirm && form.password !== form.confirm && (
+                  <p id="confirm-mismatch" role="alert" className="text-xs text-red-500 mt-1">密碼不一致</p>
+                )}
               </div>
             )}
 

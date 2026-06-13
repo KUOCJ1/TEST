@@ -78,8 +78,12 @@ export function useGoogleCalendar() {
       })));
       setIsConnected(true);
     } catch (e) {
-      if (e.status === 401) { setIsConnected(false); }
-      setError(e.message || 'Google Calendar 讀取失敗');
+      if (e.status === 401) {
+        setIsConnected(false);
+        setError('授權已過期，請重新連結 Google Calendar');
+      } else {
+        setError(e.message || 'Google Calendar 讀取失敗');
+      }
     }
     setIsLoading(false);
   }, []);
