@@ -53,7 +53,7 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
             {isPrivate && !onEdit ? (
               <div className="flex items-center gap-2">
                 <Lock size={16} className="text-slate-400 shrink-0" />
-                <h2 className="text-lg font-semibold text-slate-500">私人事項</h2>
+                <h2 id="detail-modal-title" className="text-lg font-semibold text-slate-500">私人事項</h2>
               </div>
             ) : (
               <h2 id="detail-modal-title" className="text-lg font-semibold text-slate-800">{event.title}</h2>

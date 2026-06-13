@@ -532,6 +532,7 @@ export default function CalendarPage() {
           {/* Agenda sidebar toggle (desktop only) */}
           <button
             onClick={() => setAgendaOpen(o => !o)}
+            aria-pressed={agendaOpen}
             className={`hidden lg:flex flex-col items-center p-1.5 rounded-lg transition-colors ${
               agendaOpen ? 'text-indigo-600 bg-indigo-50' : 'text-slate-500 hover:bg-slate-100'
             }`}
@@ -544,6 +545,7 @@ export default function CalendarPage() {
           {/* Bulk select toggle */}
           <button
             onClick={toggleSelectMode}
+            aria-pressed={selectMode}
             className={`flex flex-col items-center p-1.5 rounded-lg transition-colors ${
               selectMode ? 'text-indigo-600 bg-indigo-50' : 'text-slate-500 hover:bg-slate-100'
             }`}

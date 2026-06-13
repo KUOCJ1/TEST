@@ -11,7 +11,13 @@ function loadEvents(userId) {
 }
 
 function persist(userId, events) {
-  localStorage.setItem(storageKey(userId), JSON.stringify(events));
+  try {
+    localStorage.setItem(storageKey(userId), JSON.stringify(events));
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+      console.warn('localStorage quota exceeded — events not saved');
+    }
+  }
 }
 
 export function CalendarProvider({ children, userId }) {

@@ -21,6 +21,7 @@ export default function FilterBar({ events, tagFilters, colorFilters, typeFilter
           <button
             key={typeId}
             onClick={() => onTypeToggle?.(typeId)}
+            aria-pressed={active}
             className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
               active
                 ? 'bg-slate-700 text-white border-slate-700'
@@ -67,6 +68,8 @@ export default function FilterBar({ events, tagFilters, colorFilters, typeFilter
           <button
             key={tag}
             onClick={() => onTagToggle(tag)}
+            aria-pressed={active}
+            aria-label={`篩選標籤 ${tag}${active ? '（已選取）' : ''}`}
             className={`text-xs px-2 py-1 rounded-full transition-colors ${
               active
                 ? 'bg-indigo-600 text-white'

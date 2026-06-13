@@ -37,7 +37,9 @@ export default function NotificationCenter({ permission, requestPermission, upco
     <div className="relative">
       <button
         onClick={() => setOpen(o => !o)}
-        aria-label="通知"
+        aria-label={`通知${count > 0 ? `（${count} 個即將到來）` : ''}`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         className="relative p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
       >
         {permission === 'denied' ? <BellOff size={18} /> : <Bell size={18} />}
