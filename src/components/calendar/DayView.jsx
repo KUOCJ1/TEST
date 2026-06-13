@@ -26,6 +26,7 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart
       draggable={draggable}
       onDragStart={draggable ? e => { e.stopPropagation(); onDragStart(event, e); } : undefined}
       onClick={e => { e.stopPropagation(); onClick(event); }}
+      aria-label={isOtherPrivate ? '私人事項' : `${event.title}，${formatDisplayTime(event.startAt)} – ${formatDisplayTime(event.endAt)}`}
       style={{
         position: 'absolute',
         top: startMin,
@@ -128,6 +129,7 @@ export default function DayView({ currentDate, events, onEventClick, onSlotClick
               <button
                 key={event.id}
                 onClick={() => onEventClick(event)}
+                aria-label={`${isOtherPrivate ? '私人事項' : event.title}，全天`}
                 style={{ backgroundColor: isOtherPrivate ? '#f1f5f9' : getColorHex(event.color) }}
                 className="text-xs px-2 py-0.5 rounded text-white font-medium hover:opacity-90 truncate max-w-xs"
               >

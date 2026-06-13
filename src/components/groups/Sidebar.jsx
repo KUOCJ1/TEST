@@ -10,7 +10,9 @@ export default function Sidebar({ groups, activeGroupId, onSelectPersonal, onSel
       )}
 
       {/* Sidebar panel */}
-      <aside className={`
+      <aside
+        aria-label="行事曆導航"
+        className={`
         fixed lg:relative top-0 left-0 h-full z-40 lg:z-auto
         w-56 bg-white border-r border-slate-200 flex flex-col
         transition-transform duration-200 ease-in-out
@@ -23,7 +25,7 @@ export default function Sidebar({ groups, activeGroupId, onSelectPersonal, onSel
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-3 space-y-0.5 px-2">
+        <nav aria-label="行事曆列表" className="flex-1 overflow-y-auto py-3 space-y-0.5 px-2">
           {/* Personal */}
           <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-2 mb-1 mt-1">我的行事曆</p>
           <button

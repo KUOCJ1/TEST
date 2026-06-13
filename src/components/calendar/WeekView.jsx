@@ -30,6 +30,7 @@ function EventBlock({ event, col, totalCols, onClick, currentUserId, onDragStart
       draggable={draggable}
       onDragStart={draggable ? e => { e.stopPropagation(); onDragStart(event, e); } : undefined}
       onClick={e => { e.stopPropagation(); onClick(event); }}
+      aria-label={isOtherPrivate ? '私人事項' : `${event.title}，${formatDisplayTime(event.startAt)} – ${formatDisplayTime(event.endAt)}`}
       style={{
         position: 'absolute',
         top: startMin,
@@ -143,6 +144,7 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
                   <button
                     key={e.id}
                     onClick={() => onEventClick(e)}
+                    aria-label={`${e.title}，全天`}
                     style={{ backgroundColor: getColorHex(e.color) }}
                     className="w-full text-left text-[10px] text-white font-medium px-1.5 py-0.5 rounded truncate hover:opacity-80 transition-opacity block"
                   >

@@ -28,6 +28,7 @@ const EventPill = memo(function EventPill({
       <button
         onClick={handleClick}
         draggable={false}
+        aria-label={selectMode ? `選取私人事項` : '私人事項'}
         className="w-full text-left text-xs px-1.5 py-0.5 rounded truncate flex items-center gap-1 bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors"
       >
         {selectMode && (
@@ -43,10 +44,17 @@ const EventPill = memo(function EventPill({
     ? event.title
     : `${event.title}\n${formatDisplayTime(event.startAt)} – ${formatDisplayTime(event.endAt)}${event.description ? '\n' + event.description.slice(0, 80) : ''}`;
 
+  const ariaLabel = selectMode
+    ? `選取 ${event.title}`
+    : event.isAllDay
+      ? event.title
+      : `${event.title}，${formatDisplayTime(event.startAt)} – ${formatDisplayTime(event.endAt)}`;
+
   return (
     <button
       onClick={handleClick}
       title={tooltip}
+      aria-label={ariaLabel}
       draggable={!selectMode && !event.isRecurring}
       onDragStart={e => {
         e.stopPropagation();
@@ -127,6 +135,7 @@ const DayCell = memo(function DayCell({
           {overflow > 0 && (
             <button
               onClick={e => { e.stopPropagation(); (onNavigateDay || onDayClick)(day.date); }}
+              aria-label={`查看 ${overflow} 個更多事件`}
               className="w-full text-left text-xs text-indigo-500 px-1.5 hover:underline"
             >
               + {overflow} 更多

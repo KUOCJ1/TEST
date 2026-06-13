@@ -220,6 +220,7 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
               {isGoogleConnected && onPushToGoogle && !event?.htmlLink && (
                 <button
                   onClick={onPushToGoogle}
+                  aria-label="推送到 Google Calendar"
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
                   title="推送到 Google Calendar"
                 >
@@ -231,6 +232,7 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
                 <>
                   <button
                     onClick={() => exportSingleEvent(event)}
+                    aria-label="匯出為 .ics"
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                     title="匯出為 .ics"
                   >
