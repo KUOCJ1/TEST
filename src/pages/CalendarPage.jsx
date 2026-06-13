@@ -264,6 +264,9 @@ export default function CalendarPage() {
       return;
     }
     deleteEvent(id);
+    if (evt?.googleEventId && googleCalendar.isConnected) {
+      googleCalendar.deleteFromGoogle(evt.googleEventId).catch(() => {});
+    }
     if (evt) addToast({
       type: 'info',
       title: '事件已刪除',
@@ -417,6 +420,18 @@ export default function CalendarPage() {
     setSelectedEvent(null);
     setEventModalOpen(true);
   }, [detailEvent]);
+
+  // ── Google push ───────────────────────────────────────────────
+  async function handlePushToGoogle(event) {
+    try {
+      const { googleId, htmlLink } = await googleCalendar.pushToGoogle(event);
+      updateEvent(event.id, { ...event, googleEventId: googleId, htmlLink });
+      setDetailEvent(e => e ? { ...e, googleEventId: googleId, htmlLink } : e);
+      addToast({ type: 'success', title: '已推送到 Google', body: event.title });
+    } catch (err) {
+      addToast({ type: 'info', title: '推送失敗', body: err.message || 'Google Calendar 寫入失敗' });
+    }
+  }
 
   // ── Search handler ────────────────────────────────────────────
   function handleSearchSelect(event) {
@@ -726,6 +741,8 @@ export default function CalendarPage() {
         event={detailEvent}
         onEdit={detailEvent?.creatorId === currentUser.id && detailEvent?.source !== 'google' ? handleEditFromDetail : null}
         onCopy={detailEvent?.source !== 'google' ? handleCopyFromDetail : null}
+        isGoogleConnected={googleCalendar.isConnected}
+        onPushToGoogle={detailEvent?.source !== 'google' && detailEvent?.creatorId === currentUser.id ? () => handlePushToGoogle(detailEvent) : null}
       />
 
       <CreateGroupModal

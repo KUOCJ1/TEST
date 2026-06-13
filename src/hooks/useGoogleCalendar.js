@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 const DISCOVERY = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
 
 function loadScript(src) {
@@ -109,5 +109,37 @@ export function useGoogleCalendar() {
     setError(null);
   }, []);
 
-  return { isConnected, googleEvents, isLoading, error, scriptsReady, clientId, connect, disconnect };
+  const pushToGoogle = useCallback(async (localEvent) => {
+    if (!window.gapi?.client?.calendar) throw new Error('Google Calendar 未連線');
+    const body = {
+      summary: localEvent.title,
+      description: localEvent.description || '',
+      location: localEvent.location || '',
+    };
+    if (localEvent.isAllDay) {
+      const dateStr = localEvent.startAt.slice(0, 10);
+      const endDate = new Date(localEvent.endAt);
+      endDate.setDate(endDate.getDate() + 1);
+      body.start = { date: dateStr };
+      body.end   = { date: endDate.toISOString().slice(0, 10) };
+    } else {
+      body.start = { dateTime: localEvent.startAt };
+      body.end   = { dateTime: localEvent.endAt };
+    }
+    const resp = await window.gapi.client.calendar.events.insert({
+      calendarId: 'primary',
+      resource: body,
+    });
+    return { googleId: resp.result.id, htmlLink: resp.result.htmlLink };
+  }, []);
+
+  const deleteFromGoogle = useCallback(async (googleEventId) => {
+    if (!window.gapi?.client?.calendar) return;
+    await window.gapi.client.calendar.events.delete({
+      calendarId: 'primary',
+      eventId: googleEventId,
+    });
+  }, []);
+
+  return { isConnected, googleEvents, isLoading, error, scriptsReady, clientId, connect, disconnect, pushToGoogle, deleteFromGoogle };
 }

@@ -22,7 +22,7 @@ function exportSingleEvent(event) {
   URL.revokeObjectURL(url);
 }
 
-export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCopy }) {
+export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCopy, isGoogleConnected, onPushToGoogle }) {
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -216,6 +216,16 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
                   <ExternalLink size={13} />
                   在 Google 開啟
                 </a>
+              )}
+              {isGoogleConnected && onPushToGoogle && !event?.htmlLink && (
+                <button
+                  onClick={onPushToGoogle}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="推送到 Google Calendar"
+                >
+                  <span className="w-3.5 h-3.5 rounded bg-red-500 text-white text-[8px] flex items-center justify-center font-bold shrink-0">G</span>
+                  推送
+                </button>
               )}
               {event?.source !== 'google' && (
                 <>

@@ -108,7 +108,7 @@ export default function GoogleSettingsModal({
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <p className="text-xs text-slate-400 mt-1">
-                  在 <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" className="text-indigo-500 underline">Google Cloud Console</a> 建立 OAuth Client ID（Web 應用程式），並將 <code className="bg-slate-100 px-1 rounded">https://kuocj1.github.io</code> 加入已授權的 JavaScript 來源。
+                  在 <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" className="text-indigo-500 underline">Google Cloud Console</a> 建立 OAuth Client ID（Web 應用程式），並將 <code className="bg-slate-100 px-1 rounded">https://kuocj1.github.io</code> 加入已授權的 JavaScript 來源。連線後可讀取並推送事件到 Google Calendar。
                 </p>
               </div>
               <button
