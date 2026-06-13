@@ -21,5 +21,10 @@ export function useSwipe({ onSwipeLeft, onSwipeRight, minDistance = 48 }) {
     else if (dx < -minDistance) onSwipeLeft?.();
   }, [onSwipeLeft, onSwipeRight, minDistance]);
 
-  return { onTouchStart, onTouchEnd };
+  const onTouchCancel = useCallback(() => {
+    startX.current = null;
+    startY.current = null;
+  }, []);
+
+  return { onTouchStart, onTouchEnd, onTouchCancel };
 }
