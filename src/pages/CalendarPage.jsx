@@ -49,7 +49,10 @@ export default function CalendarPage() {
   const { groups, getGroupEvents, refresh } = useGroups();
 
   // View & navigation
-  const [view, setView] = useState('month');
+  const [view, setView] = useState(() => {
+    const saved = localStorage.getItem('cal_view');
+    return ['month', 'week', 'day'].includes(saved) ? saved : 'month';
+  });
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Group
@@ -102,6 +105,9 @@ export default function CalendarPage() {
 
   // ── Settings modal ────────────────────────────────────────────
   const [showSettings, setShowSettings] = useState(false);
+
+  // Persist view preference
+  useEffect(() => { localStorage.setItem('cal_view', view); }, [view]);
 
   // ── Keyboard shortcuts ────────────────────────────────────────
   const [showHelp, setShowHelp] = useState(false);

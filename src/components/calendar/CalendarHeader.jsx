@@ -45,12 +45,14 @@ export default function CalendarHeader({ currentDate, view, onPrev, onNext, onTo
         </button>
         <button
           onClick={onPrev}
+          aria-label="上一個時段"
           className="p-2.5 sm:p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
         >
           <ChevronLeft size={18} />
         </button>
         <button
           onClick={onNext}
+          aria-label="下一個時段"
           className="p-2.5 sm:p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
         >
           <ChevronRight size={18} />
@@ -82,6 +84,7 @@ export default function CalendarHeader({ currentDate, view, onPrev, onNext, onTo
             <button
               key={v.id}
               onClick={() => onViewChange(v.id)}
+              aria-pressed={view === v.id}
               className={`px-3 py-2 sm:py-1.5 text-sm font-medium transition-colors ${
                 view === v.id
                   ? 'bg-indigo-600 text-white'
