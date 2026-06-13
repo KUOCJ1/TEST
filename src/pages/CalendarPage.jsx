@@ -725,6 +725,9 @@ export default function CalendarPage() {
               onSlotClick={handleSlotClick}
               onMoveEvent={handleMoveEventToTime}
               currentUserId={currentUser.id}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelectId}
             />
           )}
           {view === 'day' && (
@@ -735,6 +738,9 @@ export default function CalendarPage() {
               onSlotClick={handleSlotClick}
               onMoveEvent={handleMoveEventToTime}
               currentUserId={currentUser.id}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelectId}
             />
           )}
         </div>
