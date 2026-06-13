@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { getEventsForDay, isToday, layoutDayEvents, formatDisplayTime, formatDateInput } from '../../utils/calendar';
 import { getColorHex } from '../../utils/colors';
+import { useCurrentMinute } from '../../hooks/useCurrentMinute';
 
 const HOUR_HEIGHT = 60;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -77,8 +78,7 @@ export default function DayView({ currentDate, events, onEventClick, onSlotClick
   const layouts = layoutDayEvents(timedEvents);
 
   const today = isToday(currentDate);
-  const now = new Date();
-  const currentMinute = now.getHours() * 60 + now.getMinutes();
+  const currentMinute = useCurrentMinute();
 
   function handleGridClick(e) {
     if (dragRef.current) return;

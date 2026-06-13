@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback } from 'react';
 import { getWeekDays, getEventsForDay, isToday, layoutDayEvents, formatDisplayTime } from '../../utils/calendar';
 import { getColorHex } from '../../utils/colors';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useCurrentMinute } from '../../hooks/useCurrentMinute';
 
 const HOUR_HEIGHT = 60;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -69,8 +70,7 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
     if (scrollRef.current) scrollRef.current.scrollTop = 8 * HOUR_HEIGHT;
   }, []);
 
-  const now = new Date();
-  const currentMinute = now.getHours() * 60 + now.getMinutes();
+  const currentMinute = useCurrentMinute();
   const allEmpty = weekDays.every(day => getEventsForDay(events, day).length === 0);
 
   function handleColumnClick(e, day) {
