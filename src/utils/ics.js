@@ -32,7 +32,7 @@ export function exportToIcs(events) {
       lines.push(`DTSTART:${toICSDate(e.startAt)}`);
       lines.push(`DTEND:${toICSDate(e.endAt)}`);
     }
-    lines.push(`SUMMARY:${escICS(e.title)}`);
+    lines.push(`SUMMARY:${escICS(e.title || '(無標題)' )}`);
     if (e.description) lines.push(`DESCRIPTION:${escICS(e.description)}`);
     if (e.location)    lines.push(`LOCATION:${escICS(e.location)}`);
     if (e.url)         lines.push(`URL:${e.url}`);

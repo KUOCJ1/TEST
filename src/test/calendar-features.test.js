@@ -65,13 +65,31 @@ describe('findConflicts', () => {
     expect(findConflicts([googleEvent], candidate)).toHaveLength(0);
   });
 
-  it('skips all-day events in the event list', () => {
+  it('skips all-day events in the event list for timed candidates', () => {
     const allDayEvent = { ...base, isAllDay: true };
     const candidate = {
       isAllDay: false,
       startAt: '2026-06-10T10:30:00.000Z',
       endAt:   '2026-06-10T11:30:00.000Z',
     };
+    expect(findConflicts([allDayEvent], candidate)).toHaveLength(0);
+  });
+
+  it('detects duplicate all-day events on the same day', () => {
+    const allDayEvent = {
+      id: 'a1', title: 'Holiday', isAllDay: true, source: undefined,
+      startAt: '2026-06-15T00:00:00.000Z', endAt: '2026-06-15T23:59:59.000Z',
+    };
+    const candidate = { isAllDay: true, startAt: '2026-06-15T00:00:00.000Z', endAt: '2026-06-15T23:59:59.000Z' };
+    expect(findConflicts([allDayEvent], candidate)).toHaveLength(1);
+  });
+
+  it('all-day candidate does not conflict with events on different days', () => {
+    const allDayEvent = {
+      id: 'a1', title: 'Holiday', isAllDay: true, source: undefined,
+      startAt: '2026-06-14T00:00:00.000Z', endAt: '2026-06-14T23:59:59.000Z',
+    };
+    const candidate = { isAllDay: true, startAt: '2026-06-15T00:00:00.000Z', endAt: '2026-06-15T23:59:59.000Z' };
     expect(findConflicts([allDayEvent], candidate)).toHaveLength(0);
   });
 
@@ -186,6 +204,24 @@ describe('expandRecurringEvents', () => {
     result.forEach(e => {
       expect(new Date(e.startAt).getUTCDate()).toBe(15);
     });
+  });
+
+  it('monthly recurrence on month-end clamps to last day of shorter months', () => {
+    const monthEnd = {
+      ...baseEvent,
+      id: 'me1',
+      startAt: '2026-01-31T09:00:00.000Z',
+      endAt:   '2026-01-31T10:00:00.000Z',
+      recurrence: { freq: 'monthly', until: '2026-03-31' },
+    };
+    const start = new Date('2026-01-01T00:00:00.000Z');
+    const end   = new Date('2026-03-31T23:59:59.000Z');
+    const result = expandRecurringEvents([monthEnd], start, end);
+    // Jan 31, Feb 28 (clamped), Mar 31 = 3 instances
+    expect(result).toHaveLength(3);
+    expect(new Date(result[0].startAt).getUTCDate()).toBe(31); // Jan 31
+    expect(new Date(result[1].startAt).getUTCDate()).toBe(28); // Feb 28 (2026 not leap)
+    expect(new Date(result[2].startAt).getUTCDate()).toBe(31); // Mar 31
   });
 
   it('yearly recurrence generates one instance per year', () => {
