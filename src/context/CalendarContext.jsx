@@ -47,7 +47,7 @@ export function CalendarProvider({ children, userId }) {
 
   const updateEvent = useCallback((id, data) => {
     setEvents(prev => {
-      const next = prev.map(e => e.id === id ? { ...e, ...data } : e);
+      const next = prev.map(e => e.id === id ? { ...e, ...data, id: e.id, creatorId: e.creatorId } : e);
       persist(userId, next);
       return next;
     });

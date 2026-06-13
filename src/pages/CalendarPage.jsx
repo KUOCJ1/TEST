@@ -862,7 +862,13 @@ export default function CalendarPage() {
       {recurScopeDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setRecurScopeDialog(null)} />
-          <div role="dialog" aria-modal="true" aria-labelledby="recur-scope-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="recur-scope-title"
+            onKeyDown={e => e.key === 'Escape' && setRecurScopeDialog(null)}
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden"
+          >
             <div className="px-5 pt-5 pb-3">
               <h3 id="recur-scope-title" className="text-base font-semibold text-slate-800">
                 {recurScopeDialog.isDelete ? '刪除重複事件' : '編輯重複事件'}
@@ -874,9 +880,10 @@ export default function CalendarPage() {
                 { scope: 'this',   label: '只此活動' },
                 { scope: 'future', label: '此活動及以後' },
                 { scope: 'all',    label: '全部重複活動' },
-              ].map(({ scope, label }) => (
+              ].map(({ scope, label }, i) => (
                 <button
                   key={scope}
+                  autoFocus={i === 0}
                   onClick={() => recurScopeDialog.isDelete ? applyRecurDeleteScope(scope) : applyRecurScope(scope)}
                   className="w-full text-left px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
                 >

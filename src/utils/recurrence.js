@@ -18,7 +18,13 @@ function step(date, freq, originDay) {
     d.setFullYear(targetYear, normalizedMonth, Math.min(originDay, daysInTarget));
     return d;
   }
-  if (freq === 'yearly')  { d.setFullYear(d.getFullYear() + 1); return d; }
+  if (freq === 'yearly') {
+    const targetYear = d.getFullYear() + 1;
+    const month = d.getMonth();
+    const daysInTarget = new Date(targetYear, month + 1, 0).getDate();
+    d.setFullYear(targetYear, month, Math.min(originDay, daysInTarget));
+    return d;
+  }
   return d;
 }
 

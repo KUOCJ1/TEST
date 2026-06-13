@@ -256,6 +256,27 @@ describe('expandRecurringEvents', () => {
       expect(d.getUTCMonth()).toBe(5); // June (0-indexed)
     });
   });
+
+  it('yearly recurrence on Feb 29 clamps to Feb 28 in non-leap years', () => {
+    const leapDay = {
+      ...baseEvent,
+      id: 'leap1',
+      startAt: '2024-02-29T09:00:00.000Z',
+      endAt:   '2024-02-29T10:00:00.000Z',
+      recurrence: { freq: 'yearly', until: '2028-12-31' },
+    };
+    const start = new Date('2024-01-01T00:00:00.000Z');
+    const end   = new Date('2028-12-31T23:59:59.000Z');
+    const result = expandRecurringEvents([leapDay], start, end);
+    // 2024 (Feb 29), 2025 (Feb 28), 2026 (Feb 28), 2027 (Feb 28), 2028 (Feb 29)
+    expect(result).toHaveLength(5);
+    const dates = result.map(e => new Date(e.startAt).getUTCDate());
+    expect(dates[0]).toBe(29); // 2024 leap
+    expect(dates[1]).toBe(28); // 2025 not leap
+    expect(dates[2]).toBe(28); // 2026 not leap
+    expect(dates[3]).toBe(28); // 2027 not leap
+    expect(dates[4]).toBe(29); // 2028 leap
+  });
 });
 
 // ── ICS import/export roundtrip ───────────────────────────────────

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Copy, Check, Crown, LogOut, Trash2, UserMinus, AlertTriangle } from 'lucide-react';
+import { X, Copy, Check, Crown, LogOut, Trash2, UserMinus, AlertTriangle, Pencil } from 'lucide-react';
 import { useGroups } from '../../context/GroupContext';
 
 export default function MembersModal({ isOpen, onClose, groupId, currentUserId, onLeft }) {
@@ -69,18 +69,23 @@ export default function MembersModal({ isOpen, onClose, groupId, currentUserId, 
               className="text-lg font-semibold text-slate-800 border-b-2 border-indigo-500 outline-none bg-transparent"
             />
           ) : (
-            <h2
-              id="members-modal-title"
-              className={`text-lg font-semibold text-slate-800 ${isOwner ? 'cursor-pointer hover:text-indigo-600' : ''}`}
-              onClick={isOwner ? startRename : undefined}
-              onKeyDown={isOwner ? (e => (e.key === 'Enter' || e.key === ' ') && startRename()) : undefined}
-              role={isOwner ? 'button' : undefined}
-              tabIndex={isOwner ? 0 : undefined}
-              title={isOwner ? '點擊編輯群組名稱' : undefined}
-              aria-label={isOwner ? `群組名稱：${group.name}，點擊編輯` : undefined}
-            >
-              {group.name}
-            </h2>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h2
+                id="members-modal-title"
+                className="text-lg font-semibold text-slate-800 truncate"
+              >
+                {group.name}
+              </h2>
+              {isOwner && (
+                <button
+                  onClick={startRename}
+                  aria-label="編輯群組名稱"
+                  className="p-1 text-slate-400 hover:text-indigo-600 rounded-md transition-colors shrink-0"
+                >
+                  <Pencil size={13} />
+                </button>
+              )}
+            </div>
           )}
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="關閉">
             <X size={20} />
