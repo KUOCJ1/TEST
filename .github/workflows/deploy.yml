@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - claude/travel-planning-app-Z4Nx6
+      - claude/ai-assessment-survey-4vhjun
   workflow_dispatch:
 
 jobs:
