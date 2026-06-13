@@ -219,7 +219,7 @@ export default function CalendarPage() {
 
   function handleSave(data) {
     if (selectedEvent) {
-      if (selectedEvent.isRecurring) {
+      if (selectedEvent.isRecurring || selectedEvent.recurrence?.freq) {
         setRecurScopeDialog({ data, event: selectedEvent });
         closeEventModal();
         return;
@@ -276,7 +276,7 @@ export default function CalendarPage() {
   function handleDelete(id) {
     const evt = events.find(e => e.id === id);
     closeEventModal();
-    if (evt?.isRecurring) {
+    if (evt?.isRecurring || evt?.recurrence?.freq) {
       setRecurScopeDialog({ data: null, event: evt, isDelete: true });
       return;
     }

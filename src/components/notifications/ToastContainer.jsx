@@ -15,13 +15,20 @@ export default function ToastContainer({ toasts, onDismiss }) {
   const visible = [...toasts].reverse().slice(0, 4);
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-xs w-full">
+    <div
+      role="log"
+      aria-live="polite"
+      aria-atomic="false"
+      aria-label="通知"
+      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-xs w-full"
+    >
       {visible.map(toast => {
         const cfg = TYPE_CONFIG[toast.type] ?? TYPE_CONFIG.default;
         const Icon = cfg.icon;
         return (
           <div
             key={toast.id}
+            role="status"
             className="bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden animate-fade-in"
           >
             {/* Auto-dismiss progress bar */}
