@@ -39,5 +39,6 @@ export function publicUser(user) {
     email: user.email,
     role: user.role,
     createdAt: user.createdAt,
+    preferences: user.preferences ?? {},
   };
 }

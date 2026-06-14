@@ -50,6 +50,7 @@ export default function AdminDashboard() {
   const [toggling, setToggling] = useState(false);
   const [error, setError] = useState('');
   const [roleChanging, setRoleChanging] = useState(null);
+  const [resetInfo, setResetInfo] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -294,32 +295,49 @@ export default function AdminDashboard() {
                     </span>
                   </td>
                   <td className="py-2.5">
-                    <button
-                      type="button"
-                      disabled={roleChanging === u.id}
-                      onClick={async () => {
-                        setRoleChanging(u.id);
-                        try {
-                          const newRole = u.role === 'coach' ? 'user' : 'coach';
-                          const updated = await api.setUserRole(u.id, newRole);
-                          setOverview((prev) => ({
-                            ...prev,
-                            users: prev.users.map((x) => (x.id === updated.id ? updated : x)),
-                          }));
-                        } catch (e) {
-                          alert(e.message || '操作失敗');
-                        } finally {
-                          setRoleChanging(null);
-                        }
-                      }}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
-                        u.role === 'coach'
-                          ? 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
-                          : 'bg-violet-100 text-violet-700 hover:bg-violet-200'
-                      }`}
-                    >
-                      {roleChanging === u.id ? '…' : u.role === 'coach' ? '取消教練身份' : '設為教練'}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={roleChanging === u.id}
+                        onClick={async () => {
+                          setRoleChanging(u.id);
+                          try {
+                            const newRole = u.role === 'coach' ? 'user' : 'coach';
+                            const updated = await api.setUserRole(u.id, newRole);
+                            setOverview((prev) => ({
+                              ...prev,
+                              users: prev.users.map((x) => (x.id === updated.id ? updated : x)),
+                            }));
+                          } catch (e) {
+                            alert(e.message || '操作失敗');
+                          } finally {
+                            setRoleChanging(null);
+                          }
+                        }}
+                        className={`rounded-lg px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                          u.role === 'coach'
+                            ? 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+                            : 'bg-violet-100 text-violet-700 hover:bg-violet-200'
+                        }`}
+                      >
+                        {roleChanging === u.id ? '…' : u.role === 'coach' ? '取消教練身份' : '設為教練'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const info = await api.generateResetToken(u.id);
+                            const url = `${window.location.origin}${window.location.pathname}?reset=${info.token}`;
+                            setResetInfo({ name: u.name, email: u.email, url, hours: info.expiresInHours });
+                          } catch (e) {
+                            alert(e.message || '產生失敗');
+                          }
+                        }}
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                      >
+                        產生重設連結
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -327,6 +345,41 @@ export default function AdminDashboard() {
           </table>
         </div>
       </section>
+
+      {resetInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setResetInfo(null)}>
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-800">密碼重設連結</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              給 <span className="font-semibold">{resetInfo.name}</span>（{resetInfo.email}）。
+              此連結 {resetInfo.hours} 小時內有效，請複製後私下交給該使用者，他可自行設定新密碼。
+            </p>
+            <textarea
+              readOnly
+              value={resetInfo.url}
+              onFocus={(e) => e.target.select()}
+              className="mt-3 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+              rows={3}
+            />
+            <div className="mt-3 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => navigator.clipboard?.writeText(resetInfo.url)}
+                className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+              >
+                複製連結
+              </button>
+              <button
+                type="button"
+                onClick={() => setResetInfo(null)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+              >
+                關閉
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

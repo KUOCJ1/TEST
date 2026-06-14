@@ -78,6 +78,48 @@ describe('認證', () => {
   });
 });
 
+describe('個人檔案 / 密碼', () => {
+  test('可更新姓名與偏好設定', async () => {
+    const app = await setup();
+    const agent = request.agent(app);
+    await agent.post('/api/auth/register').send({ name: '舊名', email: 'p@b.co', password: 'abcdef' });
+    const res = await agent.patch('/api/auth/profile').send({ name: '新名', preferences: { darkMode: true } });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.user.name, '新名');
+    assert.equal(res.body.user.preferences.darkMode, true);
+  });
+
+  test('變更密碼需驗證目前密碼，成功後可用新密碼登入', async () => {
+    const app = await setup();
+    const agent = request.agent(app);
+    await agent.post('/api/auth/register').send({ name: 'u', email: 'pw@b.co', password: 'abcdef' });
+    assert.equal((await agent.post('/api/auth/password').send({ currentPassword: 'wrong', newPassword: 'newpass' })).status, 401);
+    assert.equal((await agent.post('/api/auth/password').send({ currentPassword: 'abcdef', newPassword: 'newpass' })).status, 200);
+    const fresh = request.agent(app);
+    assert.equal((await fresh.post('/api/auth/login').send({ email: 'pw@b.co', password: 'newpass' })).status, 200);
+  });
+
+  test('管理員產生重設 token，使用者可用其設定新密碼', async () => {
+    const app = await setup({ withAdmin: true });
+    const u = request.agent(app);
+    const reg = await u.post('/api/auth/register').send({ name: 'u', email: 'r@b.co', password: 'abcdef' });
+
+    const admin = request.agent(app);
+    await admin.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
+    const tok = await admin.post(`/api/admin/users/${reg.body.user.id}/reset-token`);
+    assert.equal(tok.status, 200);
+    assert.ok(tok.body.token);
+
+    // 錯誤 token 應失敗
+    assert.equal((await request(app).post('/api/auth/reset-password').send({ token: 'bad', newPassword: 'fresh1' })).status, 400);
+    // 正確 token 可重設
+    assert.equal((await request(app).post('/api/auth/reset-password').send({ token: tok.body.token, newPassword: 'fresh1' })).status, 200);
+    // 用新密碼登入
+    const fresh = request.agent(app);
+    assert.equal((await fresh.post('/api/auth/login').send({ email: 'r@b.co', password: 'fresh1' })).status, 200);
+  });
+});
+
 describe('作答', () => {
   test('需登入才能建立作答，並可取回自己的紀錄', async () => {
     const app = await setup();

@@ -6,6 +6,7 @@ import SurveyApp from './SurveyApp';
 import UserDashboard from './dashboard/UserDashboard';
 import AdminDashboard from './admin/AdminDashboard';
 import CoachDashboard from './coach/CoachDashboard';
+import ProfilePage from './profile/ProfilePage';
 
 function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
   const [assessments, setAssessments] = useState([]);
@@ -55,8 +56,9 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
 
 export default function AppShell() {
   const { user, isAdmin, isCoach, logout } = useAuth();
-  const [view, setView] = useState('home');
-  const [activeAssessmentId, setActiveAssessmentId] = useState(null);
+  const defaultAid = user?.preferences?.defaultAssessmentId || null;
+  const [view, setView] = useState(defaultAid ? 'survey' : 'home');
+  const [activeAssessmentId, setActiveAssessmentId] = useState(defaultAid);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const tabs = [
@@ -64,6 +66,7 @@ export default function AppShell() {
     { id: 'analysis', label: '我的分析' },
     ...(isCoach && !isAdmin ? [{ id: 'coach', label: '教練後台' }] : []),
     ...(isAdmin ? [{ id: 'coach', label: '教練後台' }, { id: 'admin', label: '管理後台' }] : []),
+    { id: 'profile', label: '個人設定' },
   ];
 
   const handleStartSurvey = (id) => { setActiveAssessmentId(id); setView('survey'); };
@@ -167,6 +170,8 @@ export default function AppShell() {
       {view === 'admin' && isAdmin && (
         <AdminDashboard key={refreshKey} />
       )}
+
+      {view === 'profile' && <ProfilePage />}
     </div>
   );
 }

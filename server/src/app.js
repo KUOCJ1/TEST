@@ -1,6 +1,6 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import {
   hashPassword,
   verifyPassword,
@@ -64,6 +64,8 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   function normalizeSubmission(s) {
     return { ...s, assessmentId: s.assessmentId ?? 'ai-competency' };
   }
+
+  const hashToken = (t) => createHash('sha256').update(t).digest('hex');
 
   // 將使用者 email 比對各班別的待加入名單；命中則自動轉為正式成員。
   function claimPendingGroups(user) {
@@ -178,6 +180,52 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     res.json({ user: publicUser(req.user) });
   });
 
+  // 更新個人檔案：姓名與偏好設定。
+  app.patch('/api/auth/profile', requireAuth, (req, res) => {
+    const { name, preferences } = req.body ?? {};
+    if (name !== undefined) {
+      if (!name.trim()) return res.status(400).json({ error: '姓名不可為空' });
+      req.user.name = name.trim();
+    }
+    if (preferences !== undefined && preferences && typeof preferences === 'object') {
+      req.user.preferences = { ...(req.user.preferences ?? {}), ...preferences };
+    }
+    db.persist();
+    res.json({ user: publicUser(req.user) });
+  });
+
+  // 登入狀態下變更密碼。
+  app.post('/api/auth/password', requireAuth, async (req, res) => {
+    const { currentPassword, newPassword } = req.body ?? {};
+    if ((newPassword || '').length < 6) {
+      return res.status(400).json({ error: '新密碼至少需 6 碼' });
+    }
+    if (!(await verifyPassword(currentPassword || '', req.user.passwordHash))) {
+      return res.status(401).json({ error: '目前密碼不正確' });
+    }
+    req.user.passwordHash = await hashPassword(newPassword);
+    db.persist();
+    res.json({ ok: true });
+  });
+
+  // 以重設 token 設定新密碼（忘記密碼流程，免登入）。
+  app.post('/api/auth/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body ?? {};
+    if (!token || (newPassword || '').length < 6) {
+      return res.status(400).json({ error: '重設連結或新密碼不正確（密碼至少 6 碼）' });
+    }
+    const h = hashToken(token);
+    const user = db.data.users.find(
+      (u) => u.resetTokenHash === h && (u.resetTokenExpires || 0) > Date.now(),
+    );
+    if (!user) return res.status(400).json({ error: '重設連結無效或已過期，請向管理員重新索取' });
+    user.passwordHash = await hashPassword(newPassword);
+    delete user.resetTokenHash;
+    delete user.resetTokenExpires;
+    db.persist();
+    res.json({ ok: true });
+  });
+
   // ── 作答 ────────────────────────────────────────────────
   app.post('/api/submissions', requireAuth, (req, res) => {
     const { answers, result, assessmentId } = req.body || {};
@@ -243,6 +291,17 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     user.role = role;
     db.persist();
     res.json({ user: publicUser(user) });
+  });
+
+  // 管理員協助：產生一次性密碼重設 token（24 小時有效），交給使用者自行設定新密碼。
+  app.post('/api/admin/users/:id/reset-token', requireAuth, requireAdmin, (req, res) => {
+    const user = db.data.users.find((u) => u.id === req.params.id);
+    if (!user) return res.status(404).json({ error: '使用者不存在' });
+    const token = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '');
+    user.resetTokenHash = hashToken(token);
+    user.resetTokenExpires = Date.now() + 24 * 60 * 60 * 1000;
+    db.persist();
+    res.json({ token, email: user.email, expiresInHours: 24 });
   });
 
   // ── 教練後台 ─────────────────────────────────────────────

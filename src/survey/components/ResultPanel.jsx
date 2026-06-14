@@ -1,5 +1,7 @@
 import { forwardRef } from 'react';
 import RadarChart from './RadarChart';
+import { getAssessment } from '../data/assessments/index.js';
+import { buildSuggestions } from '../utils/suggestions';
 
 const ResultPanel = forwardRef(function ResultPanel(
   { result, onRetake, onCopy, copied, percentile = null, benchmarkDims = null },
@@ -7,6 +9,7 @@ const ResultPanel = forwardRef(function ResultPanel(
 ) {
   const { total, maxScore, percent, level, dimensions, strongest, weakest, assessmentName } = result;
   const dimCount = dimensions.length;
+  const suggestions = buildSuggestions(result, getAssessment(result.assessmentId));
 
   return (
     <section
@@ -97,6 +100,38 @@ const ResultPanel = forwardRef(function ResultPanel(
             {level.advice}
           </p>
         </div>
+
+        {suggestions && (
+          <div className="mt-4 rounded-xl border border-teal-100 bg-white p-4 shadow-sm">
+            <p className="mb-3 font-semibold text-slate-700">🎯 為您客製的行動建議</p>
+            {suggestions.develop.length > 0 && (
+              <div className="mb-3">
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">優先強化</p>
+                <ul className="space-y-2">
+                  {suggestions.develop.map((d) => (
+                    <li key={d.id} className="flex gap-2 text-sm leading-relaxed text-slate-700">
+                      <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full" style={{ background: d.color }} />
+                      <span><span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>：{d.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {suggestions.leverage.length > 0 && (
+              <div>
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-600">發揮優勢</p>
+                <ul className="space-y-2">
+                  {suggestions.leverage.map((d) => (
+                    <li key={d.id} className="flex gap-2 text-sm leading-relaxed text-slate-700">
+                      <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full" style={{ background: d.color }} />
+                      <span><span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>：{d.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row print:hidden">
           <button

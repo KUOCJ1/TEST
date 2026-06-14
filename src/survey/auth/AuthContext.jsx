@@ -39,6 +39,19 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const updateProfile = useCallback(async (payload) => {
+    const u = await api.updateProfile(payload);
+    setUser(u);
+    return u;
+  }, []);
+
+  // 套用深色模式偏好（並在未登入時沿用上次設定）。
+  useEffect(() => {
+    const dark = user?.preferences?.darkMode ?? (localStorage.getItem('aiassess_dark') === '1');
+    document.documentElement.classList.toggle('dark', Boolean(dark));
+    if (user) localStorage.setItem('aiassess_dark', dark ? '1' : '0');
+  }, [user]);
+
   const value = useMemo(
     () => ({
       user,
@@ -48,8 +61,9 @@ export function AuthProvider({ children }) {
       register,
       login,
       logout,
+      updateProfile,
     }),
-    [user, ready, register, login, logout],
+    [user, ready, register, login, logout, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

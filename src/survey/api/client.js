@@ -29,6 +29,9 @@ export const api = {
   login: (payload) => request('/auth/login', { method: 'POST', body: payload }).then((d) => d.user),
   logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me').then((d) => d.user),
+  updateProfile: (payload) => request('/auth/profile', { method: 'PATCH', body: payload }).then((d) => d.user),
+  changePassword: (payload) => request('/auth/password', { method: 'POST', body: payload }),
+  resetPassword: (payload) => request('/auth/reset-password', { method: 'POST', body: payload }),
 
   assessments: () => request('/assessments').then((d) => d.assessments),
   benchmark: (assessmentId) => request(`/assessments/${assessmentId}/benchmark`),
@@ -43,6 +46,8 @@ export const api = {
   adminOverview: () => request('/admin/overview'),
   setUserRole: (userId, role) =>
     request(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role } }).then((d) => d.user),
+  generateResetToken: (userId) =>
+    request(`/admin/users/${userId}/reset-token`, { method: 'POST' }),
 
   coachOverview: () => request('/coach/overview'),
   coachGroups: () => request('/coach/groups').then((d) => d.groups),

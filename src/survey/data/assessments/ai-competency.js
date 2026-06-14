@@ -109,6 +109,38 @@ export const LEVELS = [
   },
 ];
 
+/**
+ * 構面別的自動建議（規則庫）。依各構面的評級分成兩種情境：
+ * - develop：弱項（待啟蒙/萌芽/發展中）→ 優先強化的具體行動。
+ * - leverage：強項（熟練/精熟）→ 如何發揮並擴大影響。
+ */
+export const DIMENSION_ADVICE = {
+  foundation: {
+    develop: '先建立每日使用習慣：固定用一種主流模型（ChatGPT/Gemini/Claude）處理 Email、摘要與初稿，連續兩週養成「先問 AI」的反射動作。',
+    leverage: '你已具備扎實的工具基礎，可進一步比較各模型在不同任務的優劣，成為團隊選工具時的諮詢窗口。',
+  },
+  communication: {
+    develop: '套用提示詞公式「角色＋背景＋任務＋限制＋範例」，並練習用多輪對話逐步修正，而非期待一次到位。',
+    leverage: '你的提問技巧成熟，建議整理一份個人提示詞模板庫，並嘗試 Few-Shot 與思維鏈等進階技巧拉高產出品質。',
+  },
+  workflow: {
+    develop: '挑選一個重複性高的工作（如週報、資料彙整），試著用 AI 拆解步驟並固定成流程，先求穩定再求自動化。',
+    leverage: '可導入 NotebookLM 建立知識庫，或用 Make／Zapier 串接 AI，把個人效率擴大為團隊可複用的自動化流程。',
+  },
+  collaboration: {
+    develop: '練習當「總編輯」：不直接複製 AI 產出，而是設定明確修改方向；並嘗試上傳圖片／圖表讓 AI 做多模態分析。',
+    leverage: '善用 Canva／Gamma 與多模態能力產出高質感成果，可主導跨格式、跨媒材的專案企劃。',
+  },
+  innovation: {
+    develop: '從建立一個解決自身痛點的小型 GPTs 開始，設定知識庫並反覆測試回覆品質，累積客製化經驗。',
+    leverage: '你已有開發能力，建議把做好的 GPTs／工具分享給團隊，並持續追蹤 AI Agent 等前沿趨勢。',
+  },
+  safety: {
+    develop: '建立兩個底線習慣：關鍵數據一律人工核對（防幻覺）、機密與個資絕不輸入免費版 AI；並培養資訊真偽的篩選力。',
+    leverage: '你的資安與素養觀念良好，可在團隊內推動使用規範、帶動同事提升 AI 素養。',
+  },
+};
+
 export function dimensionRating(average) {
   if (average >= 4.2) return { label: '精熟', tone: 'strong' };
   if (average >= 3.4) return { label: '熟練', tone: 'good' };

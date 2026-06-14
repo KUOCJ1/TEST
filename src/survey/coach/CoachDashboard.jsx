@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
+import { useAuth } from '../auth/useAuth';
 import { getAssessment } from '../data/assessments/index.js';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
 import RadarChart from '../components/RadarChart';
@@ -129,7 +130,7 @@ function CommentEditor({ submission, existingComment, onSaved, onCancel }) {
 }
 
 // ── 個人評語 Tab ──────────────────────────────────────────────
-function IndividualTab({ users, submissions }) {
+function IndividualTab({ users, submissions, currentUserId }) {
   const [selectedAssessmentId, setSelectedAssessmentId] = useState('ai-competency');
   const [editingSubId, setEditingSubId] = useState(null);
   const [commentPatch, setCommentPatch] = useState({});
@@ -146,8 +147,10 @@ function IndividualTab({ users, submissions }) {
 
   const rows = latestByUser.map((s) => {
     const user = users.find((u) => u.id === s.userId);
-    const myComment = s.comments?.[0] ?? null;
-    return { sub: s, user, myComment };
+    const all = s.comments ?? [];
+    const myComment = all.find((c) => c.coachId === currentUserId) ?? null;
+    const otherComments = all.filter((c) => c.coachId !== currentUserId);
+    return { sub: s, user, myComment, otherComments };
   }).sort((a, b) => (b.sub.result?.total ?? 0) - (a.sub.result?.total ?? 0));
 
   const patchComments = useCallback((subId, updater) => {
@@ -195,7 +198,7 @@ function IndividualTab({ users, submissions }) {
         <p className="py-8 text-center text-slate-400">此評量尚無作答資料。</p>
       ) : (
         <div className="space-y-3">
-          {rows.map(({ sub, user, myComment }) => (
+          {rows.map(({ sub, user, myComment, otherComments }) => (
             <div key={sub.id} className="rounded-xl border border-slate-200 bg-white p-4">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 <span className="font-semibold text-slate-800">{user?.name ?? sub.userName}</span>
@@ -231,6 +234,7 @@ function IndividualTab({ users, submissions }) {
 
               {myComment && editingSubId !== sub.id && (
                 <div className="mt-2 rounded-lg border-l-4 border-violet-400 bg-violet-50 px-3 py-2">
+                  <p className="text-xs font-semibold text-violet-600">我的評語</p>
                   <p className="text-sm text-slate-700">{myComment.text}</p>
                   {myComment.tips?.length > 0 && (
                     <ul className="mt-1 space-y-0.5">
@@ -240,6 +244,24 @@ function IndividualTab({ users, submissions }) {
                     </ul>
                   )}
                   <p className="mt-1 text-xs text-slate-400">更新於 {formatDate(myComment.updatedAt)}</p>
+                </div>
+              )}
+
+              {otherComments?.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {otherComments.map((c) => (
+                    <div key={c.id} className="rounded-lg border-l-4 border-slate-300 bg-slate-50 px-3 py-2">
+                      <p className="text-xs font-semibold text-slate-500">其他教練：{c.coachName}</p>
+                      <p className="text-sm text-slate-700">{c.text}</p>
+                      {c.tips?.length > 0 && (
+                        <ul className="mt-1 space-y-0.5">
+                          {c.tips.map((t, i) => (
+                            <li key={i} className="text-xs text-slate-600">・{t}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -590,6 +612,7 @@ function GroupTab({ users, submissions }) {
 
 // ── 主元件 ───────────────────────────────────────────────────
 export default function CoachDashboard() {
+  const { user } = useAuth();
   const [tab, setTab] = useState('individual');
   const [overview, setOverview] = useState(null);
   const [error, setError] = useState('');
@@ -629,7 +652,7 @@ export default function CoachDashboard() {
 
       <div className="rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
         {tab === 'individual' && (
-          <IndividualTab users={overview.users} submissions={overview.submissions} />
+          <IndividualTab users={overview.users} submissions={overview.submissions} currentUserId={user.id} />
         )}
         {tab === 'group' && (
           <GroupTab users={overview.users} submissions={overview.submissions} />
