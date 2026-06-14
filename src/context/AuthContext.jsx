@@ -81,6 +81,16 @@ export function AuthProvider({ children }) {
     const session = { ...currentUser, name: trimmed };
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     setCurrentUser(session);
+    // Sync display name across all group memberships
+    try {
+      const groups = JSON.parse(localStorage.getItem('cal_groups') || '[]');
+      localStorage.setItem('cal_groups', JSON.stringify(
+        groups.map(g => ({
+          ...g,
+          members: g.members.map(m => m.userId === currentUser.id ? { ...m, name: trimmed } : m),
+        }))
+      ));
+    } catch { /* non-critical */ }
   }, [currentUser]);
 
   const changePassword = useCallback(async (currentPassword, newPassword) => {

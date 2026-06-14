@@ -145,6 +145,7 @@ export default function CalendarPage() {
       if (e.key === 'm') { setView('month'); return; }
       if (e.key === 'w') { setView('week'); return; }
       if (e.key === 'd') { setView('day'); return; }
+      if (e.key === 's') { setSelectMode(m => { if (m) setSelectedIds(new Set()); return !m; }); return; }
       if (e.key === 'ArrowLeft') { navigate(-1); return; }
       if (e.key === 'ArrowRight') { navigate(1); return; }
     }
@@ -891,13 +892,14 @@ export default function CalendarPage() {
             </div>
             <div className="px-5 py-4 space-y-2.5 text-sm">
               {[
-                ['Ctrl+K', '開啟搜尋'],
+                [/Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘K' : 'Ctrl+K', '開啟搜尋'],
                 ['←  /  →', '上 / 下一個時段'],
                 ['T', '回到今天'],
                 ['N', '新增事件'],
                 ['M', '月視圖'],
                 ['W', '週視圖'],
                 ['D', '日視圖'],
+                ['S', '切換選取模式'],
                 ['?', '顯示 / 隱藏快捷鍵'],
                 ['Esc', '關閉浮層'],
               ].map(([key, desc]) => (
