@@ -1,7 +1,10 @@
 import { forwardRef } from 'react';
 import RadarChart from './RadarChart';
 
-const ResultPanel = forwardRef(function ResultPanel({ result, onRetake, onCopy, copied }, ref) {
+const ResultPanel = forwardRef(function ResultPanel(
+  { result, onRetake, onCopy, copied, percentile = null, benchmarkDims = null },
+  ref,
+) {
   const { total, maxScore, percent, level, dimensions, strongest, weakest, assessmentName } = result;
   const dimCount = dimensions.length;
 
@@ -25,12 +28,21 @@ const ResultPanel = forwardRef(function ResultPanel({ result, onRetake, onCopy, 
           {level.badgeEn && <span className="ml-2 text-sm font-normal opacity-80">{level.badgeEn}</span>}
         </span>
         <p className="mt-2 text-sm text-teal-100">能力達成率 {percent}%</p>
+        {percentile !== null && (
+          <p className="mt-2 inline-block rounded-full bg-teal-700/60 px-3 py-1 text-sm font-semibold text-white">
+            🏆 您的總分超越了 {percentile}% 的填答者
+          </p>
+        )}
       </div>
 
       <div className="px-5 py-6 sm:px-7">
         <div className="flex flex-col items-center">
           <h3 className="mb-2 text-base font-bold text-slate-700">{dimCount} 大構面落點雷達圖</h3>
-          <RadarChart dimensions={dimensions} />
+          <RadarChart
+            dimensions={dimensions}
+            compare={benchmarkDims}
+            compareLabel="全體平均"
+          />
         </div>
 
         <div className="mt-6 space-y-3">

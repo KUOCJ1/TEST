@@ -31,6 +31,7 @@ export const api = {
   me: () => request('/auth/me').then((d) => d.user),
 
   assessments: () => request('/assessments').then((d) => d.assessments),
+  benchmark: (assessmentId) => request(`/assessments/${assessmentId}/benchmark`),
   adminAssessments: () => request('/admin/assessments').then((d) => d.assessments),
   toggleAssessment: (id, enabled) =>
     request(`/admin/assessments/${id}`, { method: 'PATCH', body: { enabled } }).then((d) => d.assessment),
@@ -49,6 +50,8 @@ export const api = {
   getGroup: (id) => request(`/coach/groups/${id}`),
   updateGroup: (id, payload) => request(`/coach/groups/${id}`, { method: 'PUT', body: payload }).then((d) => d.group),
   deleteGroup: (id) => request(`/coach/groups/${id}`, { method: 'DELETE' }),
+  importRoster: (id, entries) =>
+    request(`/coach/groups/${id}/roster`, { method: 'POST', body: { entries } }),
 
   upsertComment: (submissionId, payload) =>
     request(`/submissions/${submissionId}/comment`, { method: 'POST', body: payload }).then((d) => d.comment),

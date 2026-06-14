@@ -77,6 +77,13 @@ vi.mock('../survey/api/client', () => {
         };
       },
       async myGroups() { return []; },
+      async benchmark(assessmentId) {
+        const totals = state.submissions
+          .filter((s) => (s.assessmentId ?? 'ai-competency') === assessmentId)
+          .map((s) => s.result.total)
+          .sort((a, b) => a - b);
+        return { assessmentId, count: totals.length, avgTotal: 0, totals, dimensionAverages: [] };
+      },
       async coachOverview() { return { users: state.users.map(pub), submissions: [] }; },
       async coachGroups() { return []; },
     },

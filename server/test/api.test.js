@@ -102,6 +102,97 @@ describe('作答', () => {
   });
 });
 
+describe('母體基準 / 百分位', () => {
+  test('benchmark 回傳已排序的總分陣列與構面平均', async () => {
+    const app = await setup();
+    for (const [email, total] of [['a@b.co', 80], ['c@b.co', 155], ['d@b.co', 124]]) {
+      const agent = request.agent(app);
+      await agent.post('/api/auth/register').send({ name: email, email, password: 'abcdef' });
+      await agent.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(total) });
+    }
+    const agent = request.agent(app);
+    await agent.post('/api/auth/register').send({ name: 'q', email: 'q@b.co', password: 'abcdef' });
+    const res = await agent.get('/api/assessments/ai-competency/benchmark');
+    assert.equal(res.status, 200);
+    assert.equal(res.body.count, 3);
+    assert.deepEqual(res.body.totals, [80, 124, 155]); // 已排序
+  });
+});
+
+describe('教練 / 班別 / 名單', () => {
+  async function makeCoach(app) {
+    const admin = request.agent(app);
+    await admin.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
+    const coach = request.agent(app);
+    const reg = await coach.post('/api/auth/register').send({ name: '教練', email: 'coach@b.co', password: 'abcdef' });
+    await admin.patch(`/api/admin/users/${reg.body.user.id}/role`).send({ role: 'coach' });
+    return { admin, coach };
+  }
+
+  test('一般使用者無法存取教練 API（403）', async () => {
+    const app = await setup({ withAdmin: true });
+    const user = request.agent(app);
+    await user.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef' });
+    assert.equal((await user.get('/api/coach/overview')).status, 403);
+  });
+
+  test('教練可建立班別、寫評語', async () => {
+    const app = await setup({ withAdmin: true });
+    const { coach } = await makeCoach(app);
+    // 重新登入取得 coach 角色 cookie
+    await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef' });
+
+    const g = await coach.post('/api/coach/groups').send({ name: 'A 班', assessmentId: 'ai-competency' });
+    assert.equal(g.status, 201);
+
+    const u = request.agent(app);
+    const ureg = await u.post('/api/auth/register').send({ name: '學員', email: 's@b.co', password: 'abcdef' });
+    const sub = await u.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(124) });
+
+    const c = await coach.post(`/api/submissions/${sub.body.submission.id}/comment`)
+      .send({ text: '表現良好', tips: ['多練習提示詞'] });
+    assert.equal(c.status, 200);
+    assert.equal(c.body.comment.text, '表現良好');
+
+    // 學員自己的紀錄應帶有評語
+    const mine = await u.get('/api/submissions/me');
+    assert.equal(mine.body.submissions[0].comments[0].text, '表現良好');
+    assert.equal(ureg.body.user.role, 'user');
+  });
+
+  test('批量名單：現有用戶入班、未註冊者待加入並於註冊後自動入班', async () => {
+    const app = await setup({ withAdmin: true });
+    const { coach } = await makeCoach(app);
+    await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef' });
+
+    const existing = request.agent(app);
+    const ereg = await existing.post('/api/auth/register').send({ name: '已註冊', email: 'have@b.co', password: 'abcdef' });
+
+    const g = await coach.post('/api/coach/groups').send({ name: 'B 班', assessmentId: 'ai-competency' });
+    const gid = g.body.group.id;
+
+    const imp = await coach.post(`/api/coach/groups/${gid}/roster`).send({
+      entries: [
+        { name: '已註冊', email: 'have@b.co' },
+        { name: '未註冊', email: 'new@b.co' },
+        { name: '壞格式', email: 'not-an-email' },
+      ],
+    });
+    assert.equal(imp.status, 200);
+    assert.equal(imp.body.result.added, 1);
+    assert.equal(imp.body.result.pending, 1);
+    assert.equal(imp.body.result.invalid.length, 1);
+    assert.ok(imp.body.group.memberIds.includes(ereg.body.user.id));
+
+    // 未註冊者註冊後應自動成為成員
+    const fresh = request.agent(app);
+    const freg = await fresh.post('/api/auth/register').send({ name: '未註冊', email: 'new@b.co', password: 'abcdef' });
+    const myGroups = await fresh.get('/api/groups/mine');
+    assert.equal(myGroups.body.groups.length, 1);
+    assert.ok(myGroups.body.groups[0].memberIds.includes(freg.body.user.id));
+  });
+});
+
 describe('管理後台', () => {
   test('一般使用者無權限（403），管理員可取得總覽', async () => {
     const app = await setup({ withAdmin: true });

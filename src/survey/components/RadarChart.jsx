@@ -4,8 +4,10 @@ import { useId } from 'react';
  * 純 SVG 六角雷達圖，無第三方相依。
  * @param {Array<{name,subtitle,percent,color}>} dimensions 各構面（百分比 0~100）
  * @param {number} size 畫布邊長 (px)
+ * @param {Array<{id,percent}>} [compare] 對照數列（如全體 / 班級平均），以虛線疊加
+ * @param {string} [compareLabel] 對照數列的圖例文字
  */
-export default function RadarChart({ dimensions, size = 340 }) {
+export default function RadarChart({ dimensions, size = 340, compare = null, compareLabel = '全體平均' }) {
   const gradientId = useId();
   const cx = size / 2;
   const cy = size / 2;
@@ -31,6 +33,13 @@ export default function RadarChart({ dimensions, size = 340 }) {
       .join(' ') + ' Z';
 
   const dataPath = toPath((i) => Math.max(0, Math.min(1, dimensions[i].percent / 100)));
+
+  const comparePct = (i) => {
+    if (!compare) return null;
+    const match = compare.find((c) => c.id === dimensions[i].id);
+    return match ? Math.max(0, Math.min(1, match.percent / 100)) : 0;
+  };
+  const comparePath = compare ? toPath((i) => comparePct(i) ?? 0) : null;
 
   return (
     <svg
@@ -64,8 +73,21 @@ export default function RadarChart({ dimensions, size = 340 }) {
         return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e2e8f0" strokeWidth="1" />;
       })}
 
+      {/* 對照數列（虛線，置於資料區塊之下） */}
+      {comparePath && (
+        <path d={comparePath} fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeDasharray="5 4" />
+      )}
+
       {/* 資料區塊 */}
       <path d={dataPath} fill={`url(#${gradientId})`} stroke="#2c7a7b" strokeWidth="2" />
+
+      {/* 圖例 */}
+      {compare && (
+        <g>
+          <line x1={12} y1={size - 14} x2={32} y2={size - 14} stroke="#94a3b8" strokeWidth="1.8" strokeDasharray="5 4" />
+          <text x={36} y={size - 10} fontSize="11" fill="#64748b">{compareLabel}</text>
+        </g>
+      )}
 
       {/* 資料頂點 */}
       {dimensions.map((d, i) => {

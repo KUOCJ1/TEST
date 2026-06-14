@@ -18,6 +18,18 @@ function avg(nums) {
   return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
 }
 
+/**
+ * 計算某數值在母體中的百分位（你超越了多少 % 的人）。
+ * @param {number} value 個人數值
+ * @param {number[]} population 母體數值（不需先排序）
+ * @returns {number|null} 0~100 的整數；母體不足 2 人時回 null（樣本太小無意義）
+ */
+export function computePercentile(value, population) {
+  if (!Array.isArray(population) || population.length < 2) return null;
+  const below = population.filter((v) => v < value).length;
+  return Math.round((below / population.length) * 100);
+}
+
 /** 後台彙整統計：以「每人最新一筆」為母體計算。可選傳入題庫 config 以使用對應的構面和落點定義。 */
 export function aggregateStats(submissions, config) {
   const dimensions = config?.DIMENSIONS ?? DIMENSIONS;

@@ -65,12 +65,70 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     return { ...s, assessmentId: s.assessmentId ?? 'ai-competency' };
   }
 
+  // 將使用者 email 比對各班別的待加入名單；命中則自動轉為正式成員。
+  function claimPendingGroups(user) {
+    let changed = false;
+    for (const g of db.data.groups ?? []) {
+      const pending = g.pendingMembers ?? [];
+      const idx = pending.findIndex((p) => p.email === user.email);
+      if (idx >= 0) {
+        if (!g.memberIds.includes(user.id)) g.memberIds.push(user.id);
+        pending.splice(idx, 1);
+        g.pendingMembers = pending;
+        changed = true;
+      }
+    }
+    if (changed) db.persist();
+  }
+
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
   // ── 評量清單 ─────────────────────────────────────────────
   app.get('/api/assessments', requireAuth, (_req, res) => {
     const list = (db.data.assessments ?? []).filter((a) => a.enabled);
     res.json({ assessments: list });
+  });
+
+  // ── 母體基準（百分位 / Benchmark）─────────────────────────
+  // 以「每位填答者最新一筆」為母體，回傳不含 PII 的聚合統計。
+  app.get('/api/assessments/:id/benchmark', requireAuth, (req, res) => {
+    const assessmentId = req.params.id;
+    const all = db.data.submissions.filter(
+      (s) => (s.assessmentId ?? 'ai-competency') === assessmentId,
+    );
+    const latestMap = new Map();
+    for (const s of all) {
+      const cur = latestMap.get(s.userId);
+      if (!cur || new Date(s.createdAt) >= new Date(cur.createdAt)) latestMap.set(s.userId, s);
+    }
+    const latest = [...latestMap.values()];
+    const totals = latest.map((s) => s.result?.total ?? 0).sort((a, b) => a - b);
+
+    // 各構面平均百分比
+    const dimMap = new Map();
+    for (const s of latest) {
+      for (const d of s.result?.dimensions ?? []) {
+        if (!dimMap.has(d.id)) dimMap.set(d.id, { id: d.id, subtitle: d.subtitle, name: d.name, color: d.color, sum: 0, n: 0 });
+        const e = dimMap.get(d.id);
+        e.sum += d.percent ?? 0;
+        e.n += 1;
+      }
+    }
+    const dimensionAverages = [...dimMap.values()].map((e) => ({
+      id: e.id, subtitle: e.subtitle, name: e.name, color: e.color,
+      percent: e.n ? Math.round(e.sum / e.n) : 0,
+    }));
+
+    const count = latest.length;
+    const avgTotal = count ? Math.round((totals.reduce((a, b) => a + b, 0) / count) * 10) / 10 : 0;
+
+    res.json({
+      assessmentId,
+      count,
+      avgTotal,
+      totals, // 已排序的總分陣列，供前端算百分位
+      dimensionAverages,
+    });
   });
 
   // ── 認證 ────────────────────────────────────────────────
@@ -95,6 +153,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     };
     db.data.users.push(user);
     db.persist();
+    claimPendingGroups(user);
     setAuthCookie(res, user);
     res.status(201).json({ user: publicUser(user) });
   });
@@ -105,6 +164,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     if (!user || !(await verifyPassword(password || '', user.passwordHash))) {
       return res.status(401).json({ error: 'Email 或密碼錯誤' });
     }
+    claimPendingGroups(user);
     setAuthCookie(res, user);
     res.json({ user: publicUser(user) });
   });
@@ -258,6 +318,38 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     };
     db.persist();
     res.json({ group: groups[idx] });
+  });
+
+  // 批量匯入名單：以 email 比對現有用戶；未註冊者列入待加入名單，註冊後自動入班。
+  app.post('/api/coach/groups/:id/roster', requireAuth, requireCoach, (req, res) => {
+    const groups = db.data.groups ?? [];
+    const group = groups.find((g) => g.id === req.params.id);
+    if (!group) return res.status(404).json({ error: '班別不存在' });
+    if (group.coachId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '無權限' });
+    }
+    const { entries } = req.body ?? {};
+    if (!Array.isArray(entries)) return res.status(400).json({ error: '名單格式不正確' });
+
+    const emailRe = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (!group.pendingMembers) group.pendingMembers = [];
+    const result = { added: 0, pending: 0, invalid: [] };
+
+    for (const raw of entries) {
+      const email = (raw.email || '').trim().toLowerCase();
+      const name = (raw.name || '').trim();
+      if (!emailRe.test(email)) { result.invalid.push(raw.email || '(空白)'); continue; }
+      const existing = db.data.users.find((u) => u.email === email && u.role !== 'admin');
+      if (existing) {
+        if (!group.memberIds.includes(existing.id)) { group.memberIds.push(existing.id); result.added += 1; }
+      } else if (!group.pendingMembers.some((p) => p.email === email)) {
+        group.pendingMembers.push({ name, email });
+        result.pending += 1;
+      }
+    }
+    group.updatedAt = new Date().toISOString();
+    db.persist();
+    res.json({ group, result });
   });
 
   app.delete('/api/coach/groups/:id', requireAuth, requireCoach, (req, res) => {

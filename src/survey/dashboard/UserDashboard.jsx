@@ -3,11 +3,13 @@ import { api } from '../api/client';
 import ResultPanel from '../components/ResultPanel';
 import TrendChart from '../components/charts/TrendChart';
 import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachCommentPanel';
+import { computePercentile } from '../utils/analytics';
 import { resultSummaryText, copyToClipboard, formatDate, formatDateShort } from '../utils/format';
 
 export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey }) {
   const [subs, setSubs] = useState(null);
   const [myGroups, setMyGroups] = useState([]);
+  const [benchmark, setBenchmark] = useState(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [selectedId, setSelectedId] = useState(initialAssessmentId ?? null);
@@ -26,6 +28,18 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
       .catch((e) => active && (setError(e.message || '載入失敗'), setSubs([])));
     return () => { active = false; };
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 載入母體基準（百分位 / Benchmark），隨選取的評量變動。
+  useEffect(() => {
+    if (!subs?.length) return undefined;
+    const ids = [...new Set(subs.map((s) => s.assessmentId ?? 'ai-competency'))];
+    const id = selectedId ?? ids[0];
+    let active = true;
+    api.benchmark(id)
+      .then((b) => active && setBenchmark(b))
+      .catch(() => active && setBenchmark(null));
+    return () => { active = false; };
+  }, [selectedId, subs]);
 
   if (subs === null && !error) return <p className="py-20 text-center text-slate-400">載入中…</p>;
 
@@ -48,6 +62,11 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
   const latest = filtered[0];
   const oldest = filtered[filtered.length - 1];
   const myGroupForActive = myGroups.find((g) => g.assessmentId === activeId);
+
+  const benchmarkForActive = benchmark?.assessmentId === activeId ? benchmark : null;
+  const percentile = benchmarkForActive
+    ? computePercentile(latest.result.total, benchmarkForActive.totals)
+    : null;
 
   const handleCopy = async () => {
     const ok = await copyToClipboard(resultSummaryText(latest.result));
@@ -125,6 +144,8 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
             onRetake={() => onTakeSurvey(activeId)}
             onCopy={handleCopy}
             copied={copied}
+            percentile={percentile}
+            benchmarkDims={benchmarkForActive?.dimensionAverages ?? null}
           />
 
           <CoachCommentPanel comments={latest.comments} />

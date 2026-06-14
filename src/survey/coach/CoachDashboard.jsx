@@ -5,6 +5,44 @@ import { aggregateStats, latestPerUser } from '../utils/analytics';
 import RadarChart from '../components/RadarChart';
 import { formatDate } from '../utils/format';
 
+// 解析貼上或上傳的名單文字（每行：姓名,Email 或僅 Email）。
+function parseRoster(text) {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split(/[,\t]/).map((p) => p.trim());
+      if (parts.length >= 2) return { name: parts[0], email: parts[1] };
+      return { name: '', email: parts[0] };
+    })
+    .filter((e) => e.email);
+}
+
+// 匯出班級成績 CSV（含各構面分數與教練評語）。
+function exportGroupCsv(group, submissions, users) {
+  const config = getAssessment(group.assessmentId);
+  const dimHeaders = (config?.DIMENSIONS ?? []).map((d) => d.subtitle);
+  const header = ['姓名', 'Email', '作答時間', '總分', '達成率', '落點等級', ...dimHeaders, '教練評語'];
+  const latest = latestPerUser(submissions);
+  const rows = latest.map((s) => {
+    const u = users.find((x) => x.id === s.userId);
+    const dims = (config?.DIMENSIONS ?? []).map((d) => s.result?.dimensions?.find((x) => x.id === d.id)?.score ?? '');
+    const comment = s.comments?.[0]?.text ?? '';
+    return [u?.name ?? s.userName, u?.email ?? '', formatDate(s.createdAt), s.result?.total, `${s.result?.percent}%`, s.result?.level?.badge, ...dims, comment];
+  });
+  const csv = [header, ...rows]
+    .map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${group.name}-成績-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ── 評語編輯器 ────────────────────────────────────────────────
 function CommentEditor({ submission, existingComment, onSaved, onCancel }) {
   const [text, setText] = useState(existingComment?.text ?? '');
@@ -235,6 +273,9 @@ function GroupTab({ users, submissions }) {
   const [groupTips, setGroupTips] = useState(['']);
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [error, setError] = useState('');
+  const [rosterText, setRosterText] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   const assessmentIds = [...new Set(submissions.map((s) => s.assessmentId ?? 'ai-competency'))];
 
@@ -311,6 +352,34 @@ function GroupTab({ users, submissions }) {
     setSelectedMembers((prev) =>
       prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
     );
+  };
+
+  const handleImportRoster = async () => {
+    const entries = parseRoster(rosterText);
+    if (entries.length === 0) { setImportResult({ error: '沒有可匯入的有效名單' }); return; }
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const { group, result } = await api.importRoster(selectedGroupId, entries);
+      setGroups((prev) => prev.map((g) => (g.id === group.id ? group : g)));
+      setGroupDetail((prev) => prev ? { ...prev, group } : prev);
+      setSelectedMembers(group.memberIds ?? []);
+      setImportResult(result);
+      setRosterText('');
+    } catch (e) {
+      setImportResult({ error: e.message || '匯入失敗' });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setRosterText(String(ev.target?.result ?? ''));
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const groupStats = useMemo(() => {
@@ -403,7 +472,13 @@ function GroupTab({ users, submissions }) {
         ) : (
           <div className="space-y-5">
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <h3 className="mb-3 font-semibold text-slate-700">成員管理</h3>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-semibold text-slate-700">成員管理</h3>
+                <button type="button" onClick={() => exportGroupCsv(groupDetail.group, groupDetail.submissions, users)}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                  ⬇ 匯出班級成績 CSV
+                </button>
+              </div>
               <div className="max-h-40 overflow-y-auto space-y-1">
                 {nonAdminUsers.map((u) => (
                   <label key={u.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-50">
@@ -414,6 +489,53 @@ function GroupTab({ users, submissions }) {
                   </label>
                 ))}
               </div>
+
+              {groupDetail.group.pendingMembers?.length > 0 && (
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  <p className="mb-1.5 text-xs font-semibold text-amber-600">待加入（尚未註冊，註冊後自動入班）</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {groupDetail.group.pendingMembers.map((p) => (
+                      <span key={p.email} className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
+                        {p.name ? `${p.name} ` : ''}{p.email}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 批量匯入名單 */}
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <h3 className="mb-1 font-semibold text-slate-700">批量匯入名單</h3>
+              <p className="mb-2 text-xs text-slate-400">每行一筆，格式：<code className="rounded bg-slate-100 px-1">姓名,Email</code> 或僅 Email。可直接貼上或上傳 CSV。</p>
+              <textarea value={rosterText} onChange={(e) => setRosterText(e.target.value)} rows={4}
+                placeholder={'王小明,ming@company.com\n李小華,hua@company.com'}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              />
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button type="button" onClick={handleImportRoster} disabled={importing}
+                  className="rounded-lg bg-violet-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50">
+                  {importing ? '匯入中…' : '匯入名單'}
+                </button>
+                <label className="cursor-pointer rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+                  上傳 CSV 檔
+                  <input type="file" accept=".csv,.txt" onChange={handleFileUpload} className="hidden" />
+                </label>
+              </div>
+              {importResult && (
+                <div className="mt-2 text-xs">
+                  {importResult.error ? (
+                    <p className="text-red-500">{importResult.error}</p>
+                  ) : (
+                    <p className="text-emerald-600">
+                      ✓ 已加入 {importResult.added} 位現有用戶、{importResult.pending} 位列入待加入
+                      {importResult.invalid?.length > 0 && (
+                        <span className="text-amber-600">；{importResult.invalid.length} 筆 Email 格式錯誤已略過</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {groupStats && groupStats.respondents > 0 && (
