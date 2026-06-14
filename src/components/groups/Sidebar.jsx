@@ -30,6 +30,7 @@ export default function Sidebar({ groups, activeGroupId, onSelectPersonal, onSel
           <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-2 mb-1 mt-1">我的行事曆</p>
           <button
             onClick={() => { onSelectPersonal(); onClose(); }}
+            aria-current={activeGroupId === null ? 'page' : undefined}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
               activeGroupId === null
                 ? 'bg-indigo-50 text-indigo-700'
@@ -50,6 +51,7 @@ export default function Sidebar({ groups, activeGroupId, onSelectPersonal, onSel
               <div key={group.id} className="flex items-center group">
                 <button
                   onClick={() => { onSelectGroup(group.id); onClose(); }}
+                  aria-current={activeGroupId === group.id ? 'page' : undefined}
                   className={`flex-1 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
                     activeGroupId === group.id
                       ? 'bg-indigo-50 text-indigo-700'
