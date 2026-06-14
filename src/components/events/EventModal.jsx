@@ -587,7 +587,8 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
               <button
                 type="submit"
                 style={submitBtnStyle}
-                className="px-5 py-2 text-sm text-white font-medium rounded-xl hover:opacity-90 transition-opacity"
+                disabled={endBeforeStart}
+                className="px-5 py-2 text-sm text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isEditing ? '儲存' : '新增'}
               </button>

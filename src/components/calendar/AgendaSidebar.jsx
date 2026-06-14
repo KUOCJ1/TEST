@@ -14,7 +14,9 @@ export default function AgendaSidebar({ events, onEventClick, onNavigateDay }) {
       const dayEvents = events
         .filter(e => {
           const start = new Date(e.startAt);
-          return isSameDay(start, date);
+          const end = new Date(e.endAt);
+          // Multi-day events appear on every day they span
+          return isSameDay(start, date) || (start < date && end > date);
         })
         .sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
       result.push({ date, events: dayEvents });
