@@ -9,7 +9,7 @@ import path from 'node:path';
  */
 export function createDb(file) {
   const memory = !file || file === ':memory:';
-  const data = { users: [], submissions: [], assessments: [] };
+  const data = { users: [], submissions: [], assessments: [], groups: [] };
 
   if (!memory && fs.existsSync(file)) {
     try {
@@ -17,6 +17,7 @@ export function createDb(file) {
       data.users = Array.isArray(parsed.users) ? parsed.users : [];
       data.submissions = Array.isArray(parsed.submissions) ? parsed.submissions : [];
       data.assessments = Array.isArray(parsed.assessments) ? parsed.assessments : [];
+      data.groups = Array.isArray(parsed.groups) ? parsed.groups : [];
     } catch {
       // 檔案毀損時以空資料啟動，避免整個服務無法上線。
     }

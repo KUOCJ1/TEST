@@ -49,6 +49,7 @@ export default function AdminDashboard() {
   const [selectedId, setSelectedId] = useState(null);
   const [toggling, setToggling] = useState(false);
   const [error, setError] = useState('');
+  const [roleChanging, setRoleChanging] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -265,6 +266,67 @@ export default function AdminDashboard() {
           </section>
         </>
       )}
+
+      <section className="mt-5 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60">
+        <h3 className="mb-4 text-base font-bold text-slate-700">用戶角色管理</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-500">
+                <th className="py-2 pr-3 font-medium">姓名</th>
+                <th className="py-2 pr-3 font-medium">Email</th>
+                <th className="py-2 pr-3 font-medium">目前角色</th>
+                <th className="py-2 font-medium">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(overview?.users ?? []).filter((u) => u.role !== 'admin').map((u) => (
+                <tr key={u.id} className="border-b border-slate-100 last:border-0">
+                  <td className="py-2.5 pr-3 font-medium text-slate-700">{u.name}</td>
+                  <td className="py-2.5 pr-3 text-slate-500">{u.email}</td>
+                  <td className="py-2.5 pr-3">
+                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      u.role === 'coach'
+                        ? 'bg-violet-100 text-violet-700'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {u.role === 'coach' ? '教練' : '一般用戶'}
+                    </span>
+                  </td>
+                  <td className="py-2.5">
+                    <button
+                      type="button"
+                      disabled={roleChanging === u.id}
+                      onClick={async () => {
+                        setRoleChanging(u.id);
+                        try {
+                          const newRole = u.role === 'coach' ? 'user' : 'coach';
+                          const updated = await api.setUserRole(u.id, newRole);
+                          setOverview((prev) => ({
+                            ...prev,
+                            users: prev.users.map((x) => (x.id === updated.id ? updated : x)),
+                          }));
+                        } catch (e) {
+                          alert(e.message || '操作失敗');
+                        } finally {
+                          setRoleChanging(null);
+                        }
+                      }}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                        u.role === 'coach'
+                          ? 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+                          : 'bg-violet-100 text-violet-700 hover:bg-violet-200'
+                      }`}
+                    >
+                      {roleChanging === u.id ? '…' : u.role === 'coach' ? '取消教練身份' : '設為教練'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
   );
 }

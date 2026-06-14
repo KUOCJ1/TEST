@@ -5,6 +5,7 @@ import AssessmentCard from './components/AssessmentCard';
 import SurveyApp from './SurveyApp';
 import UserDashboard from './dashboard/UserDashboard';
 import AdminDashboard from './admin/AdminDashboard';
+import CoachDashboard from './coach/CoachDashboard';
 
 function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
   const [assessments, setAssessments] = useState([]);
@@ -53,7 +54,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
 }
 
 export default function AppShell() {
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin, isCoach, logout } = useAuth();
   const [view, setView] = useState('home');
   const [activeAssessmentId, setActiveAssessmentId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -61,7 +62,8 @@ export default function AppShell() {
   const tabs = [
     { id: 'home', label: '我的評量' },
     { id: 'analysis', label: '我的分析' },
-    ...(isAdmin ? [{ id: 'admin', label: '管理後台' }] : []),
+    ...(isCoach && !isAdmin ? [{ id: 'coach', label: '教練後台' }] : []),
+    ...(isAdmin ? [{ id: 'coach', label: '教練後台' }, { id: 'admin', label: '管理後台' }] : []),
   ];
 
   const handleStartSurvey = (id) => { setActiveAssessmentId(id); setView('survey'); };
@@ -114,6 +116,11 @@ export default function AppShell() {
                   管理員
                 </span>
               )}
+              {!isAdmin && user.role === 'coach' && (
+                <span className="ml-1.5 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-semibold text-violet-700">
+                  教練
+                </span>
+              )}
             </span>
             <button
               type="button"
@@ -151,6 +158,10 @@ export default function AppShell() {
           initialAssessmentId={activeAssessmentId}
           onTakeSurvey={handleStartSurvey}
         />
+      )}
+
+      {view === 'coach' && isCoach && (
+        <CoachDashboard key={refreshKey} />
       )}
 
       {view === 'admin' && isAdmin && (

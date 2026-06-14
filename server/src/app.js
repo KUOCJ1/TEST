@@ -53,6 +53,13 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     next();
   }
 
+  function requireCoach(req, res, next) {
+    if (req.user.role !== 'coach' && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '需要教練或管理員權限' });
+    }
+    next();
+  }
+
   // Normalize legacy submissions that lack assessmentId.
   function normalizeSubmission(s) {
     return { ...s, assessmentId: s.assessmentId ?? 'ai-competency' };
@@ -159,9 +166,154 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       users: db.data.users.map(publicUser),
       submissions: db.data.submissions.map((s) => ({
         ...normalizeSubmission(s),
-        answers: undefined, // strip raw answers from overview
+        answers: undefined,
       })),
     });
+  });
+
+  // ── 角色管理 ────────────────────────────────────────────
+  app.patch('/api/admin/users/:id/role', requireAuth, requireAdmin, (req, res) => {
+    const { role } = req.body ?? {};
+    if (!['user', 'coach'].includes(role)) {
+      return res.status(400).json({ error: '角色必須是 user 或 coach' });
+    }
+    const user = db.data.users.find((u) => u.id === req.params.id);
+    if (!user) return res.status(404).json({ error: '使用者不存在' });
+    if (user.role === 'admin') return res.status(400).json({ error: '不能修改管理員角色' });
+    user.role = role;
+    db.persist();
+    res.json({ user: publicUser(user) });
+  });
+
+  // ── 教練後台 ─────────────────────────────────────────────
+  app.get('/api/coach/overview', requireAuth, requireCoach, (_req, res) => {
+    res.json({
+      users: db.data.users.filter((u) => u.role !== 'admin').map(publicUser),
+      submissions: db.data.submissions.map((s) => ({
+        ...normalizeSubmission(s),
+        answers: undefined,
+      })),
+    });
+  });
+
+  // ── 班別 CRUD ─────────────────────────────────────────────
+  app.get('/api/coach/groups', requireAuth, requireCoach, (req, res) => {
+    const groups = (db.data.groups ?? []).filter(
+      (g) => g.coachId === req.user.id || req.user.role === 'admin',
+    );
+    res.json({ groups });
+  });
+
+  app.post('/api/coach/groups', requireAuth, requireCoach, (req, res) => {
+    const { name, companyName, assessmentId, memberIds } = req.body ?? {};
+    if (!name?.trim()) return res.status(400).json({ error: '請輸入班別名稱' });
+    const group = {
+      id: randomUUID(),
+      name: name.trim(),
+      companyName: companyName?.trim() ?? '',
+      assessmentId: typeof assessmentId === 'string' ? assessmentId : 'ai-competency',
+      coachId: req.user.id,
+      coachName: req.user.name,
+      memberIds: Array.isArray(memberIds) ? memberIds : [],
+      groupComment: '',
+      groupTips: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    if (!db.data.groups) db.data.groups = [];
+    db.data.groups.push(group);
+    db.persist();
+    res.status(201).json({ group });
+  });
+
+  app.get('/api/coach/groups/:id', requireAuth, requireCoach, (req, res) => {
+    const group = (db.data.groups ?? []).find((g) => g.id === req.params.id);
+    if (!group) return res.status(404).json({ error: '班別不存在' });
+    if (group.coachId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '無權限' });
+    }
+    const memberSubs = db.data.submissions
+      .filter((s) => group.memberIds.includes(s.userId) && (s.assessmentId ?? 'ai-competency') === group.assessmentId)
+      .map((s) => ({ ...normalizeSubmission(s), answers: undefined }));
+    res.json({ group, submissions: memberSubs });
+  });
+
+  app.put('/api/coach/groups/:id', requireAuth, requireCoach, (req, res) => {
+    const groups = db.data.groups ?? [];
+    const idx = groups.findIndex((g) => g.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: '班別不存在' });
+    if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '無權限' });
+    }
+    const { name, companyName, assessmentId, memberIds, groupComment, groupTips } = req.body ?? {};
+    groups[idx] = {
+      ...groups[idx],
+      ...(name !== undefined && { name: name.trim() }),
+      ...(companyName !== undefined && { companyName: companyName.trim() }),
+      ...(assessmentId !== undefined && { assessmentId }),
+      ...(memberIds !== undefined && { memberIds: Array.isArray(memberIds) ? memberIds : [] }),
+      ...(groupComment !== undefined && { groupComment }),
+      ...(groupTips !== undefined && { groupTips: Array.isArray(groupTips) ? groupTips : [] }),
+      updatedAt: new Date().toISOString(),
+    };
+    db.persist();
+    res.json({ group: groups[idx] });
+  });
+
+  app.delete('/api/coach/groups/:id', requireAuth, requireCoach, (req, res) => {
+    const groups = db.data.groups ?? [];
+    const idx = groups.findIndex((g) => g.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: '班別不存在' });
+    if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '無權限' });
+    }
+    groups.splice(idx, 1);
+    db.persist();
+    res.json({ ok: true });
+  });
+
+  // ── 評語（每位教練對每份作答只留一則，POST = upsert）────────
+  app.post('/api/submissions/:id/comment', requireAuth, requireCoach, (req, res) => {
+    const submission = db.data.submissions.find((s) => s.id === req.params.id);
+    if (!submission) return res.status(404).json({ error: '作答記錄不存在' });
+    const { text, tips } = req.body ?? {};
+    if (!text?.trim()) return res.status(400).json({ error: '請輸入評語' });
+    if (!submission.comments) submission.comments = [];
+    const existingIdx = submission.comments.findIndex((c) => c.coachId === req.user.id);
+    const now = new Date().toISOString();
+    const comment = {
+      id: existingIdx >= 0 ? submission.comments[existingIdx].id : randomUUID(),
+      coachId: req.user.id,
+      coachName: req.user.name,
+      text: text.trim(),
+      tips: Array.isArray(tips) ? tips.map((t) => t?.trim()).filter(Boolean) : [],
+      createdAt: existingIdx >= 0 ? submission.comments[existingIdx].createdAt : now,
+      updatedAt: now,
+    };
+    if (existingIdx >= 0) submission.comments[existingIdx] = comment;
+    else submission.comments.push(comment);
+    db.persist();
+    res.json({ comment });
+  });
+
+  app.delete('/api/submissions/:id/comment/:commentId', requireAuth, requireCoach, (req, res) => {
+    const submission = db.data.submissions.find((s) => s.id === req.params.id);
+    if (!submission) return res.status(404).json({ error: '作答記錄不存在' });
+    const comments = submission.comments ?? [];
+    const idx = comments.findIndex((c) => c.id === req.params.commentId);
+    if (idx === -1) return res.status(404).json({ error: '評語不存在' });
+    if (comments[idx].coachId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '無權限' });
+    }
+    comments.splice(idx, 1);
+    db.persist();
+    res.json({ ok: true });
+  });
+
+  // ── 用戶：查看自己所在的班別 ──────────────────────────────
+  app.get('/api/groups/mine', requireAuth, (req, res) => {
+    const myGroups = (db.data.groups ?? []).filter((g) => g.memberIds.includes(req.user.id));
+    res.json({ groups: myGroups });
   });
 
   return app;

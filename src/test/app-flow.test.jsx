@@ -76,6 +76,9 @@ vi.mock('../survey/api/client', () => {
           })),
         };
       },
+      async myGroups() { return []; },
+      async coachOverview() { return { users: state.users.map(pub), submissions: [] }; },
+      async coachGroups() { return []; },
     },
   };
 });

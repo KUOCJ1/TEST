@@ -2,20 +2,23 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import ResultPanel from '../components/ResultPanel';
 import TrendChart from '../components/charts/TrendChart';
+import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachCommentPanel';
 import { resultSummaryText, copyToClipboard, formatDate, formatDateShort } from '../utils/format';
 
 export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey }) {
   const [subs, setSubs] = useState(null);
+  const [myGroups, setMyGroups] = useState([]);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [selectedId, setSelectedId] = useState(initialAssessmentId ?? null);
 
   useEffect(() => {
     let active = true;
-    api.mySubmissions()
-      .then((list) => {
+    Promise.all([api.mySubmissions(), api.myGroups()])
+      .then(([list, groups]) => {
         if (!active) return;
         setSubs(list);
+        setMyGroups(groups);
         if (!selectedId && list.length > 0) {
           setSelectedId(list[0].assessmentId ?? 'ai-competency');
         }
@@ -44,6 +47,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
   const filtered = subs.filter((s) => (s.assessmentId ?? 'ai-competency') === activeId);
   const latest = filtered[0];
   const oldest = filtered[filtered.length - 1];
+  const myGroupForActive = myGroups.find((g) => g.assessmentId === activeId);
 
   const handleCopy = async () => {
     const ok = await copyToClipboard(resultSummaryText(latest.result));
@@ -122,6 +126,9 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
             onCopy={handleCopy}
             copied={copied}
           />
+
+          <CoachCommentPanel comments={latest.comments} />
+          <GroupCommentPanel group={myGroupForActive} />
 
           {hasTrend && (
             <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7 print:hidden">

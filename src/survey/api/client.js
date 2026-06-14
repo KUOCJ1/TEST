@@ -40,4 +40,20 @@ export const api = {
   mySubmissions: () => request('/submissions/me').then((d) => d.submissions),
 
   adminOverview: () => request('/admin/overview'),
+  setUserRole: (userId, role) =>
+    request(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role } }).then((d) => d.user),
+
+  coachOverview: () => request('/coach/overview'),
+  coachGroups: () => request('/coach/groups').then((d) => d.groups),
+  createGroup: (payload) => request('/coach/groups', { method: 'POST', body: payload }).then((d) => d.group),
+  getGroup: (id) => request(`/coach/groups/${id}`),
+  updateGroup: (id, payload) => request(`/coach/groups/${id}`, { method: 'PUT', body: payload }).then((d) => d.group),
+  deleteGroup: (id) => request(`/coach/groups/${id}`, { method: 'DELETE' }),
+
+  upsertComment: (submissionId, payload) =>
+    request(`/submissions/${submissionId}/comment`, { method: 'POST', body: payload }).then((d) => d.comment),
+  deleteComment: (submissionId, commentId) =>
+    request(`/submissions/${submissionId}/comment/${commentId}`, { method: 'DELETE' }),
+
+  myGroups: () => request('/groups/mine').then((d) => d.groups),
 };
