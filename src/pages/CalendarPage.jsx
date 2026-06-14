@@ -182,6 +182,22 @@ export default function CalendarPage() {
     return [...result, ...googleVisible];
   }, [rawEvents, colorFilters, tagFilters, typeFilters, view, currentDate, googleCalendar.isConnected, googleCalendar.googleEvents]);
 
+  // Separate expansion for AgendaSidebar — always covers today + 7 days regardless of current view window
+  const agendaEvents = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const end = new Date(today.getTime() + 7 * 86400000);
+    let result = rawEvents;
+    if (colorFilters.length > 0) result = result.filter(e => colorFilters.includes(e.color));
+    if (tagFilters.length > 0)   result = result.filter(e => tagFilters.some(t => e.tags?.includes(t)));
+    if (typeFilters.length > 0)  result = result.filter(e => typeFilters.includes(e.type));
+    result = expandRecurringEvents(result, today, end);
+    const pushedGoogleIds = new Set(rawEvents.filter(e => e.googleEventId).map(e => `gcal_${e.googleEventId}`));
+    const googleVisible = googleCalendar.isConnected
+      ? googleCalendar.googleEvents.filter(e => !pushedGoogleIds.has(e.id))
+      : [];
+    return [...result, ...googleVisible];
+  }, [rawEvents, colorFilters, tagFilters, typeFilters, googleCalendar.isConnected, googleCalendar.googleEvents]);
+
   const activeGroupName = activeGroupId ? groups.find(g => g.id === activeGroupId)?.name : null;
 
   // ── Document title with today's event count ───────────────────
@@ -753,7 +769,7 @@ export default function CalendarPage() {
         {/* Agenda sidebar (right, desktop only) */}
         {isDesktop && agendaOpen && (
           <AgendaSidebar
-            events={displayEvents}
+            events={agendaEvents}
             onEventClick={handleEventClick}
             onNavigateDay={handleNavigateDay}
           />
