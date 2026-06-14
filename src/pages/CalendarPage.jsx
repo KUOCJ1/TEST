@@ -5,6 +5,7 @@ import { useGoogleCalendar } from '../hooks/useGoogleCalendar';
 import { exportToIcs, parseIcs } from '../utils/ics';
 import { expandRecurringEvents } from '../utils/recurrence';
 import GoogleSettingsModal from '../components/settings/GoogleSettingsModal';
+import UserSettingsModal from '../components/settings/UserSettingsModal';
 import NotificationCenter from '../components/notifications/NotificationCenter';
 import ToastContainer from '../components/notifications/ToastContainer';
 import EventSearch from '../components/search/EventSearch';
@@ -112,6 +113,7 @@ export default function CalendarPage() {
 
   // ── Settings modal ────────────────────────────────────────────
   const [showSettings, setShowSettings] = useState(false);
+  const [showUserSettings, setShowUserSettings] = useState(false);
 
   // Persist view preference
   useEffect(() => { localStorage.setItem('cal_view', view); }, [view]);
@@ -635,6 +637,14 @@ export default function CalendarPage() {
                   </div>
                   <button
                     role="menuitem"
+                    onClick={() => { setShowUserMenu(false); setShowUserSettings(true); }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    <Settings size={14} />
+                    帳號設定
+                  </button>
+                  <button
+                    role="menuitem"
                     onClick={() => { setShowUserMenu(false); logout(); }}
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                   >
@@ -848,6 +858,11 @@ export default function CalendarPage() {
         addEvent={addEvent}
         onExportIcs={handleExportIcs}
         onImportIcs={handleImportIcs}
+      />
+
+      <UserSettingsModal
+        isOpen={showUserSettings}
+        onClose={() => setShowUserSettings(false)}
       />
 
       <EventSearch
