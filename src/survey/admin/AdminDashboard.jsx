@@ -7,6 +7,30 @@ import BarList from '../components/charts/BarList';
 import LevelDistribution from '../components/charts/LevelDistribution';
 import { formatDate } from '../utils/format';
 
+function exportCsv(rows, activeConfig, assessmentName) {
+  if (!rows.length) return;
+  const dimHeaders = (activeConfig?.DIMENSIONS ?? []).map((d) => d.subtitle);
+  const header = ['姓名', 'Email', '作答時間', '總分', '達成率', '落點等級', '作答次數', ...dimHeaders];
+  const data = rows.map((r) => {
+    const sub = r._latestSub;
+    const dimScores = sub ? (activeConfig?.DIMENSIONS ?? []).map((d) => {
+      const found = sub.result?.dimensions?.find((x) => x.id === d.id);
+      return found ? found.score : '';
+    }) : dimHeaders.map(() => '');
+    return [r.name, r.email, formatDate(r.when), r.total, `${r.percent}%`, r.level.badge, r.attempts, ...dimScores];
+  });
+  const csv = [header, ...data]
+    .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${assessmentName ?? 'assessment'}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function Kpi({ label, value, suffix }) {
   return (
     <div className="rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-100">
@@ -88,6 +112,7 @@ export default function AdminDashboard() {
           level: s.result.level,
           attempts: countByUser[s.userId] || 1,
           when: s.createdAt,
+          _latestSub: s,
         };
       })
       .sort((a, b) => b.total - a.total);
@@ -192,7 +217,16 @@ export default function AdminDashboard() {
           </section>
 
           <section className="mt-5 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60">
-            <h3 className="mb-4 text-base font-bold text-slate-700">填答者明細</h3>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-700">填答者明細</h3>
+              <button
+                type="button"
+                onClick={() => exportCsv(rows, activeConfig, activeConfig?.NAME)}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+              >
+                ⬇ 匯出 CSV
+              </button>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>

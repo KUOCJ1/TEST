@@ -1,7 +1,7 @@
 /** 將 buildResult() 結果整理成可複製的純文字摘要。 */
 export function resultSummaryText(result) {
   return [
-    'AI 全方位職能實戰課前評測 — 結果摘要',
+    `${result.assessmentName ?? '職能評測'} — 結果摘要`,
     `總得分：${result.total} / ${result.maxScore}（達成率 ${result.percent}%）`,
     `落點等級：${result.level.badge}（${result.level.badgeEn}）`,
     '',

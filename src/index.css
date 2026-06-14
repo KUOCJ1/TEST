@@ -75,6 +75,13 @@ body {
   animation: slideUp 0.22s ease-out;
 }
 
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { background: white !important; }
+  @page { margin: 15mm 20mm; size: A4 portrait; }
+  section { break-inside: avoid; }
+}
+
 @keyframes toastProgress {
   from { transform: scaleX(1); }
   to   { transform: scaleX(0); }

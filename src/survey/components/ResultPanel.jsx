@@ -86,7 +86,7 @@ const ResultPanel = forwardRef(function ResultPanel({ result, onRetake, onCopy, 
           </p>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row print:hidden">
           <button
             type="button"
             onClick={onCopy}
