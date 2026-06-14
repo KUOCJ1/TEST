@@ -119,7 +119,8 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
         const dur = oldEnd - oldStart;
         if (dur > 0 && new Date(combineDatetime(next.endDate, next.endTime)) <= newStart) {
           const newEnd = new Date(newStart.getTime() + dur);
-          next.endDate = newEnd.toISOString().slice(0, 10);
+          // Use local date components to avoid UTC-offset date-slip in UTC+ timezones
+          next.endDate = formatDateInput(newEnd);
           next.endTime = `${String(newEnd.getHours()).padStart(2,'0')}:${String(newEnd.getMinutes()).padStart(2,'0')}`;
         }
       }
