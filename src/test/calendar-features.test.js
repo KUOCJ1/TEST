@@ -493,4 +493,44 @@ describe('ICS roundtrip', () => {
     expect(parsed[0].recurrence?.freq).toBe('monthly');
     expect(parsed[0].recurrence?.until).toBeNull();
   });
+
+  it('roundtrips tags containing commas without data loss', () => {
+    const withCommaTag = { ...timed, id: 'tag1', tags: ['work,urgent', 'personal'] };
+    const ics = exportToIcs([withCommaTag]);
+    const parsed = parseIcs(ics);
+    expect(parsed[0].tags).toEqual(['work,urgent', 'personal']);
+  });
+
+  it('escapes commas in CATEGORIES export', () => {
+    const withCommaTag = { ...timed, id: 'tag2', tags: ['a,b'] };
+    const ics = exportToIcs([withCommaTag]);
+    expect(ics).toContain('CATEGORIES:a\\,b');
+  });
+
+  it('folds lines longer than 75 chars in ICS export', () => {
+    const longTitle = 'A'.repeat(80);
+    const evt = { ...timed, id: 'fold1', title: longTitle };
+    const ics = exportToIcs([evt]);
+    const lines = ics.split('\r\n');
+    for (const line of lines) {
+      expect(line.length).toBeLessThanOrEqual(75);
+    }
+  });
+
+  it('roundtrips long title via folded ICS', () => {
+    const longTitle = 'B'.repeat(100);
+    const evt = { ...timed, id: 'fold2', title: longTitle };
+    const ics = exportToIcs([evt]);
+    const parsed = parseIcs(ics);
+    expect(parsed[0].title).toBe(longTitle);
+  });
+
+  it('VALARM lines are separate entries in ICS export', () => {
+    const withReminder = { ...timed, id: 'val1', reminder: '15' };
+    const ics = exportToIcs([withReminder]);
+    const lines = ics.split('\r\n');
+    expect(lines).toContain('BEGIN:VALARM');
+    expect(lines).toContain('END:VALARM');
+    expect(lines).toContain('ACTION:DISPLAY');
+  });
 });

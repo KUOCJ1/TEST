@@ -22,39 +22,55 @@ function unescICS(s) {
   return s.replace(/\\n/gi,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\');
 }
 
+// RFC 5545 §3.1 — fold lines longer than 75 octets (ASCII) with CRLF + single space
+function foldLine(line) {
+  if (line.length <= 75) return line;
+  let out = '';
+  while (line.length > 75) {
+    out += line.slice(0, 75) + '\r\n ';
+    line = line.slice(75);
+  }
+  return out + line;
+}
+
 export function exportToIcs(events) {
+  const push = (arr, line) => arr.push(foldLine(line));
   const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//共享行事曆//ZH','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
   for (const e of events) {
     lines.push('BEGIN:VEVENT');
-    lines.push(`UID:${e.id}@shared-cal`);
-    lines.push(`DTSTAMP:${toICSDate(new Date().toISOString())}`);
+    push(lines, `UID:${e.id}@shared-cal`);
+    push(lines, `DTSTAMP:${toICSDate(new Date().toISOString())}`);
     if (e.isAllDay) {
-      lines.push(`DTSTART;VALUE=DATE:${toICSDateOnly(e.startAt)}`);
+      push(lines, `DTSTART;VALUE=DATE:${toICSDateOnly(e.startAt)}`);
       // RFC 5545 §3.6.1: DTEND for DATE-valued events is exclusive; add 1 day
       const excEnd = new Date(e.startAt);
       excEnd.setDate(excEnd.getDate() + 1);
-      lines.push(`DTEND;VALUE=DATE:${toICSDateOnly(excEnd.toISOString())}`);
+      push(lines, `DTEND;VALUE=DATE:${toICSDateOnly(excEnd.toISOString())}`);
     } else {
-      lines.push(`DTSTART:${toICSDate(e.startAt)}`);
-      lines.push(`DTEND:${toICSDate(e.endAt)}`);
+      push(lines, `DTSTART:${toICSDate(e.startAt)}`);
+      push(lines, `DTEND:${toICSDate(e.endAt)}`);
     }
-    lines.push(`SUMMARY:${escICS(e.title || '(無標題)' )}`);
-    if (e.description) lines.push(`DESCRIPTION:${escICS(e.description)}`);
-    if (e.location)    lines.push(`LOCATION:${escICS(e.location)}`);
-    if (e.url)         lines.push(`URL:${e.url}`);
-    if (e.tags?.length) lines.push(`CATEGORIES:${e.tags.join(',')}`);
+    push(lines, `SUMMARY:${escICS(e.title || '(無標題)')}`);
+    if (e.description) push(lines, `DESCRIPTION:${escICS(e.description)}`);
+    if (e.location)    push(lines, `LOCATION:${escICS(e.location)}`);
+    if (e.url)         push(lines, `URL:${e.url}`);
+    if (e.tags?.length) push(lines, `CATEGORIES:${e.tags.map(t => escICS(t)).join(',')}`);
     if (e.isPrivate)   lines.push('CLASS:PRIVATE');
     if (e.recurrence?.freq) {
       const freq = e.recurrence.freq.toUpperCase();
       const until = e.recurrence.until
         ? `;UNTIL=${e.recurrence.until.replace(/-/g,'')}T000000Z`
         : '';
-      lines.push(`RRULE:FREQ=${freq}${until}`);
+      push(lines, `RRULE:FREQ=${freq}${until}`);
     }
     if (e.reminder) {
       const mins = parseInt(e.reminder, 10);
       const trigger = mins % 1440 === 0 ? `-P${mins / 1440}D` : mins % 60 === 0 ? `-PT${mins / 60}H` : `-PT${mins}M`;
-      lines.push(`BEGIN:VALARM\r\nTRIGGER:${trigger}\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder\r\nEND:VALARM`);
+      lines.push('BEGIN:VALARM');
+      push(lines, `TRIGGER:${trigger}`);
+      lines.push('ACTION:DISPLAY');
+      lines.push('DESCRIPTION:Reminder');
+      lines.push('END:VALARM');
     }
     lines.push('END:VEVENT');
   }
@@ -126,7 +142,8 @@ export function parseIcs(text) {
       }
     }
     else if (prop === 'CATEGORIES') {
-      cur.tags = val.split(',').map(t=>t.trim()).filter(Boolean);
+      // Split on unescaped commas (escaped commas \, are part of individual tag values)
+      cur.tags = val.split(/(?<!\\),/).map(t => unescICS(t.trim())).filter(Boolean);
     }
     else if (prop === 'CLASS') {
       cur.isPrivate = val.trim().toUpperCase() === 'PRIVATE';
