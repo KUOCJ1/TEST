@@ -121,11 +121,19 @@ export function useGoogleCalendar() {
       location: localEvent.location || '',
     };
     if (localEvent.isAllDay) {
-      const dateStr = localEvent.startAt.slice(0, 10);
-      const endDate = new Date(localEvent.endAt);
-      endDate.setDate(endDate.getDate() + 1);
-      body.start = { date: dateStr };
-      body.end   = { date: endDate.toISOString().slice(0, 10) };
+      // Use local calendar date, not UTC slice — they differ for UTC+ timezones
+      function toLocalDateStr(iso) {
+        const d = new Date(iso);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+      const startStr = toLocalDateStr(localEvent.startAt);
+      const endD = new Date(localEvent.endAt);
+      endD.setDate(endD.getDate() + 1);
+      body.start = { date: startStr };
+      body.end   = { date: toLocalDateStr(endD.toISOString()) };
     } else {
       body.start = { dateTime: localEvent.startAt };
       body.end   = { dateTime: localEvent.endAt };
