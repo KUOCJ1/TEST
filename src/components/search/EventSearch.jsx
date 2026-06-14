@@ -111,6 +111,11 @@ export default function EventSearch({ isOpen, onClose, events, onSelectEvent }) 
             placeholder="搜尋關鍵字、地點、標籤..."
             className="flex-1 text-sm outline-none text-slate-800 placeholder-slate-400"
             aria-label="搜尋關鍵字"
+            role="combobox"
+            aria-expanded={results.length > 0}
+            aria-controls="search-results"
+            aria-autocomplete="list"
+            aria-activedescendant={activeIndex >= 0 ? `search-result-${activeIndex}` : undefined}
           />
           {query && (
             <button onClick={() => setQuery('')} className="text-slate-400 hover:text-slate-600" aria-label="清除搜尋">
@@ -123,7 +128,7 @@ export default function EventSearch({ isOpen, onClose, events, onSelectEvent }) 
         </div>
 
         {/* Results */}
-        <div className="max-h-96 overflow-y-auto" ref={listRef}>
+        <div id="search-results" role="listbox" aria-label="搜尋結果" className="max-h-96 overflow-y-auto" ref={listRef}>
           {query && grouped.length === 0 && (
             <div className="flex flex-col items-center justify-center py-10 text-slate-400">
               <Calendar size={32} className="mb-2 opacity-40" />
@@ -149,7 +154,10 @@ export default function EventSearch({ isOpen, onClose, events, onSelectEvent }) 
                 return (
                   <button
                     key={e.id}
+                    id={`search-result-${idx}`}
                     data-result={idx}
+                    role="option"
+                    aria-selected={isActive}
                     onClick={() => { onSelectEvent(e); onClose(); }}
                     onMouseEnter={() => setActiveIndex(idx)}
                     className={`w-full text-left px-4 py-3 transition-colors border-b border-slate-50 last:border-0 flex items-start gap-3 ${

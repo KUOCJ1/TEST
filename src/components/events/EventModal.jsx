@@ -83,6 +83,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
   const [form, setForm] = useState(() => buildForm(event, initialDate, copyFrom));
   const [error, setError] = useState('');
   const [tagSuggestions, setTagSuggestions] = useState([]);
+  const [tagSuggestionIndex, setTagSuggestionIndex] = useState(-1);
   const tagsRef = useRef(null);
   const isMobile = useIsMobile();
   const { events } = useCalendar();
@@ -386,6 +387,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
           <div className="relative">
             <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
+              id="evt-location"
               type="text"
               value={form.location}
               onChange={e => set('location', e.target.value)}
@@ -399,6 +401,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
           <div className="relative">
             <Link size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
+              id="evt-url"
               type="url"
               value={form.url}
               onChange={e => set('url', e.target.value)}
@@ -412,6 +415,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
           <div className="relative">
             <Users size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
+              id="evt-attendees"
               type="text"
               value={form.attendees}
               onChange={e => set('attendees', e.target.value)}
@@ -443,25 +447,58 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
                   setTagSuggestions([]);
                 }
               }}
-              onBlur={() => setTimeout(() => setTagSuggestions([]), 200)}
+              onBlur={() => setTimeout(() => { setTagSuggestions([]); setTagSuggestionIndex(-1); }, 200)}
+              onKeyDown={e => {
+                if (!tagSuggestions.length) return;
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setTagSuggestionIndex(i => Math.min(i + 1, tagSuggestions.length - 1));
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setTagSuggestionIndex(i => Math.max(i - 1, -1));
+                } else if (e.key === 'Enter' && tagSuggestionIndex >= 0) {
+                  e.preventDefault();
+                  const tag = tagSuggestions[tagSuggestionIndex];
+                  const parts = form.tags.split(',');
+                  parts[parts.length - 1] = ` ${tag}`;
+                  set('tags', parts.join(',').replace(/^,\s*/, '') + ', ');
+                  setTagSuggestions([]);
+                  setTagSuggestionIndex(-1);
+                } else if (e.key === 'Escape') {
+                  setTagSuggestions([]);
+                  setTagSuggestionIndex(-1);
+                }
+              }}
               placeholder="例：行銷, 開發, 重要"
+              aria-expanded={tagSuggestions.length > 0}
+              aria-controls="tag-suggestions"
+              aria-autocomplete="list"
+              aria-activedescendant={tagSuggestionIndex >= 0 ? `tag-suggestion-${tagSuggestionIndex}` : undefined}
               className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             {tagSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg z-10 mt-1 overflow-hidden">
-                {tagSuggestions.map(tag => (
+              <div id="tag-suggestions" role="listbox" aria-label="標籤建議" className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg z-10 mt-1 overflow-hidden">
+                {tagSuggestions.map((tag, idx) => (
                   <button
                     key={tag}
+                    id={`tag-suggestion-${idx}`}
                     type="button"
+                    role="option"
+                    aria-selected={idx === tagSuggestionIndex}
                     onMouseDown={e => {
                       e.preventDefault();
                       const parts = form.tags.split(',');
                       parts[parts.length - 1] = ` ${tag}`;
                       set('tags', parts.join(',').replace(/^,\s*/, '') + ', ');
                       setTagSuggestions([]);
+                      setTagSuggestionIndex(-1);
                       tagsRef.current?.focus();
                     }}
-                    className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                      idx === tagSuggestionIndex
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-700'
+                    }`}
                   >
                     #{tag}
                   </button>
