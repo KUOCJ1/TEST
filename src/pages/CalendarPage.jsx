@@ -98,7 +98,14 @@ export default function CalendarPage() {
   const [copyTemplate, setCopyTemplate] = useState(null);
 
   // ── Notifications ─────────────────────────────────────────────
-  const { permission, requestPermission, upcomingReminders, toasts, addToast, dismissToast } = useNotifications(events);
+  // Expand recurring events within the 48-hour reminder window so recurring occurrences trigger notifications
+  const reminderEvents = useMemo(() => {
+    const raw = activeGroupId ? getGroupEvents(activeGroupId) : events;
+    const now = new Date();
+    const in48h = new Date(now.getTime() + 48 * 3600 * 1000);
+    return expandRecurringEvents(raw, now, in48h);
+  }, [events, activeGroupId, getGroupEvents]);
+  const { permission, requestPermission, upcomingReminders, toasts, addToast, dismissToast } = useNotifications(reminderEvents);
 
   // ── Google Calendar ───────────────────────────────────────────
   const googleCalendar = useGoogleCalendar();
@@ -203,7 +210,7 @@ export default function CalendarPage() {
   // ── Document title with today's event count ───────────────────
   useEffect(() => {
     const today = new Date();
-    const todayCount = rawEvents.filter(e => {
+    const todayCount = agendaEvents.filter(e => {
       const s = new Date(e.startAt);
       return s.getFullYear() === today.getFullYear() &&
              s.getMonth()    === today.getMonth()    &&
@@ -211,7 +218,7 @@ export default function CalendarPage() {
     }).length;
     document.title = todayCount > 0 ? `(${todayCount}) 共享行事曆` : '共享行事曆';
     return () => { document.title = '共享行事曆'; };
-  }, [rawEvents]);
+  }, [agendaEvents]);
 
   // ── Event click handlers ─────────────────────────────────────
   const handleEventClick = useCallback((event) => {
