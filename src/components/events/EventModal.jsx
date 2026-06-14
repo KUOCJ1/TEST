@@ -143,6 +143,8 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
     return findConflicts(events, candidate, event?.id);
   }, [form.startDate, form.startTime, form.endDate, form.endTime, form.isAllDay, events, event?.id, endBeforeStart]);
 
+  const submitBtnStyle = useMemo(() => ({ backgroundColor: getColorHex(form.color) }), [form.color]);
+
   function handleSubmit(e) {
     e.preventDefault();
     if (!form.title.trim()) return setError('請輸入標題');
@@ -300,6 +302,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
               />
               {!form.isAllDay && (
                 <input
+                  id="evt-start-time"
                   type="time"
                   value={form.startTime}
                   onChange={e => set('startTime', e.target.value)}
@@ -321,6 +324,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
               />
               {!form.isAllDay && (
                 <input
+                  id="evt-end-time"
                   type="time"
                   value={form.endTime}
                   onChange={e => set('endTime', e.target.value)}
@@ -545,7 +549,7 @@ export default function EventModal({ isOpen, onClose, onSave, onDelete, event, i
               </button>
               <button
                 type="submit"
-                style={{ backgroundColor: getColorHex(form.color) }}
+                style={submitBtnStyle}
                 className="px-5 py-2 text-sm text-white font-medium rounded-xl hover:opacity-90 transition-opacity"
               >
                 {isEditing ? '儲存' : '新增'}

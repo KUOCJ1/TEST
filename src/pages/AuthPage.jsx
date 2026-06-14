@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Calendar, Mail, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 function getPasswordStrength(pwd) {
@@ -20,6 +20,7 @@ export default function AuthPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const strength = mode === 'register' && form.password ? getPasswordStrength(form.password) : null;
 
   function update(field, value) {
@@ -133,14 +134,22 @@ export default function AuthPage() {
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   id="auth-password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={form.password}
                   onChange={e => update('password', e.target.value)}
                   placeholder={mode === 'register' ? '至少 6 個字元' : '••••••••'}
                   autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                  className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full pl-9 pr-10 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  aria-label={showPassword ? '隱藏密碼' : '顯示密碼'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
               {strength && (
                 <div className="mt-1.5 px-0.5">
