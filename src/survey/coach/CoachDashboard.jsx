@@ -4,6 +4,7 @@ import { useAuth } from '../auth/useAuth';
 import { getAssessment } from '../data/assessments/index.js';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
 import RadarChart from '../components/RadarChart';
+import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import { formatDate } from '../utils/format';
 
 // 解析貼上或上傳的名單文字（每行：姓名,Email 或僅 Email）。
@@ -568,6 +569,13 @@ function GroupTab({ users, submissions }) {
                   <RadarChart dimensions={groupStats.dimensionAverages} />
                 </div>
               </div>
+            )}
+
+            {groupDetail && groupDetail.submissions.length >= 2 && (
+              <GroupNarrativeReport
+                results={groupDetail.submissions.map((s) => s.result).filter(Boolean)}
+                assessmentId={groupDetail.group.assessmentId}
+              />
             )}
 
             <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
