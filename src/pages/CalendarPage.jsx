@@ -46,7 +46,7 @@ function getViewWindow(view, currentDate) {
 
 export default function CalendarPage() {
   const { currentUser, logout } = useAuth();
-  const { events, addEvent, updateEvent, deleteEvent } = useCalendar();
+  const { events, addEvent, updateEvent, deleteEvent, restoreEvents } = useCalendar();
   const { groups, getGroupEvents, refresh } = useGroups();
 
   // View & navigation
@@ -867,7 +867,7 @@ export default function CalendarPage() {
         connect={googleCalendar.connect}
         disconnect={googleCalendar.disconnect}
         events={events}
-        addEvent={addEvent}
+        restoreEvents={restoreEvents}
         onExportIcs={handleExportIcs}
         onImportIcs={handleImportIcs}
       />

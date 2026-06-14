@@ -24,9 +24,12 @@ export default function MembersModal({ isOpen, onClose, groupId, currentUserId, 
   const isOwner = group.members.find(m => m.userId === currentUserId)?.role === 'owner';
 
   function copyCode() {
-    navigator.clipboard.writeText(group.inviteCode).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard.writeText(group.inviteCode)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
   }
 
   function startRename() {

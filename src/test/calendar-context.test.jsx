@@ -156,3 +156,46 @@ describe('persistence on mount', () => {
     expect(result.current.events).toHaveLength(0);
   });
 });
+
+describe('restoreEvents', () => {
+  it('merges restored events into the list preserving their original IDs', () => {
+    const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper() });
+    const backup = [
+      { id: 'backup-1', title: 'Restored A', creatorId: USER_ID, startAt: '2026-06-10T09:00:00.000Z', endAt: '2026-06-10T10:00:00.000Z' },
+      { id: 'backup-2', title: 'Restored B', creatorId: USER_ID, startAt: '2026-06-11T09:00:00.000Z', endAt: '2026-06-11T10:00:00.000Z' },
+    ];
+    act(() => { result.current.restoreEvents(backup); });
+    expect(result.current.events).toHaveLength(2);
+    expect(result.current.events.find(e => e.id === 'backup-1').title).toBe('Restored A');
+    expect(result.current.events.find(e => e.id === 'backup-2').title).toBe('Restored B');
+  });
+
+  it('skips events whose IDs already exist (de-duplication)', () => {
+    const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper() });
+    let existing;
+    act(() => { existing = result.current.addEvent({ title: 'Original', startAt: '2026-06-10T09:00:00.000Z', endAt: '2026-06-10T10:00:00.000Z' }); });
+    act(() => { result.current.restoreEvents([{ id: existing.id, title: 'Duplicate', creatorId: USER_ID, startAt: '2026-06-10T09:00:00.000Z', endAt: '2026-06-10T10:00:00.000Z' }]); });
+    expect(result.current.events).toHaveLength(1);
+    expect(result.current.events[0].title).toBe('Original');
+  });
+
+  it('skips entries with no id', () => {
+    const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper() });
+    act(() => { result.current.restoreEvents([{ title: 'No ID', creatorId: USER_ID, startAt: '2026-06-10T09:00:00.000Z', endAt: '2026-06-10T10:00:00.000Z' }]); });
+    expect(result.current.events).toHaveLength(0);
+  });
+
+  it('merges only new events when some IDs already exist', () => {
+    const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper() });
+    let existing;
+    act(() => { existing = result.current.addEvent({ title: 'Keep', startAt: '2026-06-10T09:00:00.000Z', endAt: '2026-06-10T10:00:00.000Z' }); });
+    const backup = [
+      { id: existing.id, title: 'Dup', creatorId: USER_ID, startAt: '2026-06-10T09:00:00.000Z', endAt: '2026-06-10T10:00:00.000Z' },
+      { id: 'new-1', title: 'New', creatorId: USER_ID, startAt: '2026-06-12T09:00:00.000Z', endAt: '2026-06-12T10:00:00.000Z' },
+    ];
+    act(() => { result.current.restoreEvents(backup); });
+    expect(result.current.events).toHaveLength(2);
+    expect(result.current.events.find(e => e.id === existing.id).title).toBe('Keep');
+    expect(result.current.events.find(e => e.id === 'new-1').title).toBe('New');
+  });
+});

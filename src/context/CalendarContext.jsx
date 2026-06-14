@@ -57,9 +57,18 @@ export function CalendarProvider({ children, userId }) {
     setEvents(prev => prev.filter(e => e.id !== id));
   }, []);
 
+  // Used for JSON backup restore: merges events preserving their original IDs.
+  // Regular addEvent always generates a new ID, making de-duplication impossible.
+  const restoreEvents = useCallback((restored) => {
+    setEvents(prev => {
+      const existingIds = new Set(prev.map(e => e.id));
+      return [...prev, ...restored.filter(e => e.id && !existingIds.has(e.id))];
+    });
+  }, []);
+
   const value = useMemo(
-    () => ({ events, addEvent, updateEvent, deleteEvent }),
-    [events, addEvent, updateEvent, deleteEvent]
+    () => ({ events, addEvent, updateEvent, deleteEvent, restoreEvents }),
+    [events, addEvent, updateEvent, deleteEvent, restoreEvents]
   );
 
   return (
