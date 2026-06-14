@@ -450,7 +450,8 @@ export default function CalendarPage() {
   const handleNavigateDay = useCallback((date) => {
     setCurrentDate(date);
     setView('day');
-  }, []);
+    if (!isDesktop) setSidebarOpen(false);
+  }, [isDesktop]);
 
   // ── Group handlers ────────────────────────────────────────────
   function handleGroupLeft() {
