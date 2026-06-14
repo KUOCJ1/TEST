@@ -12,7 +12,8 @@ export default function UserSettingsModal({ isOpen, onClose }) {
   const [showNew, setShowNew] = useState(false);
   const [nameStatus, setNameStatus] = useState(null);
   const [pwdStatus, setPwdStatus] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [savingPwd, setSavingPwd] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -36,7 +37,7 @@ export default function UserSettingsModal({ isOpen, onClose }) {
 
   async function handleSaveName(e) {
     e.preventDefault();
-    setSaving(true);
+    setSavingName(true);
     setNameStatus(null);
     try {
       updateProfile(name);
@@ -44,7 +45,7 @@ export default function UserSettingsModal({ isOpen, onClose }) {
     } catch (err) {
       setNameStatus({ ok: false, msg: err.message });
     } finally {
-      setSaving(false);
+      setSavingName(false);
     }
   }
 
@@ -58,7 +59,7 @@ export default function UserSettingsModal({ isOpen, onClose }) {
       setPwdStatus({ ok: false, msg: '新密碼至少需要 6 個字元' });
       return;
     }
-    setSaving(true);
+    setSavingPwd(true);
     setPwdStatus(null);
     try {
       await changePassword(currentPwd, newPwd);
@@ -69,7 +70,7 @@ export default function UserSettingsModal({ isOpen, onClose }) {
     } catch (err) {
       setPwdStatus({ ok: false, msg: err.message });
     } finally {
-      setSaving(false);
+      setSavingPwd(false);
     }
   }
 
@@ -110,7 +111,7 @@ export default function UserSettingsModal({ isOpen, onClose }) {
             )}
             <button
               type="submit"
-              disabled={saving || !name.trim() || name.trim() === currentUser?.name}
+              disabled={savingName || !name.trim() || name.trim() === currentUser?.name}
               className="w-full py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               儲存名稱
@@ -176,7 +177,7 @@ export default function UserSettingsModal({ isOpen, onClose }) {
             )}
             <button
               type="submit"
-              disabled={saving || !currentPwd || !newPwd || !confirmPwd}
+              disabled={savingPwd || !currentPwd || !newPwd || !confirmPwd || (confirmPwd.length > 0 && newPwd !== confirmPwd)}
               className="w-full py-2 rounded-xl text-sm font-medium bg-slate-700 text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               變更密碼
