@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import RadarChart from './RadarChart';
+import NarrativeReport from './NarrativeReport';
 import { getAssessment } from '../data/assessments/index.js';
 import { buildSuggestions } from '../utils/suggestions';
 
@@ -132,6 +133,8 @@ const ResultPanel = forwardRef(function ResultPanel(
             )}
           </div>
         )}
+
+        <NarrativeReport result={result} />
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row print:hidden">
           <button

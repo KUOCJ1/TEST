@@ -52,6 +52,29 @@ export function getLevel(total, config) {
   return LEVELS.find((l) => total >= l.min && total <= l.max) ?? LEVELS[0];
 }
 
+/**
+ * 依子能力（question.subId）分組計算各子能力的平均分。
+ * 僅在 dimension 設有 subDimensions 時回傳，否則回傳空陣列（向後相容）。
+ */
+function computeSubScores(dim, answers, scaleMin, scaleMax) {
+  if (!Array.isArray(dim.subDimensions) || dim.subDimensions.length === 0) return [];
+  return dim.subDimensions.map((sub) => {
+    const qs = dim.questions.filter((q) => q.subId === sub.id);
+    let sum = 0;
+    let answered = 0;
+    qs.forEach((q) => {
+      const v = effectiveScore(answers[q.id], q, scaleMin, scaleMax);
+      if (v !== null) { sum += v; answered += 1; }
+    });
+    return {
+      id: sub.id,
+      name: sub.name,
+      count: qs.length,
+      average: answered > 0 ? sum / answered : 0,
+    };
+  });
+}
+
 export function computeDimensionScores(answers = {}, config) {
   const { DIMENSIONS, SCALE_MIN, SCALE_MAX, dimensionRating } = config;
   return DIMENSIONS.map((dim) => {
@@ -76,6 +99,7 @@ export function computeDimensionScores(answers = {}, config) {
       average,
       percent,
       rating: dimensionRating(average),
+      subs: computeSubScores(dim, answers, SCALE_MIN, SCALE_MAX),
     };
   });
 }
