@@ -437,6 +437,16 @@ export default function CalendarPage() {
     setTypeFilters([]);
   }
 
+  // Auto-remove filters that no longer match any event (e.g. after bulk delete)
+  useEffect(() => {
+    const existingTags  = new Set(rawEvents.flatMap(e => e.tags || []));
+    const existingTypes = new Set(rawEvents.map(e => e.type).filter(Boolean));
+    const existingColors = new Set(rawEvents.map(e => e.color).filter(Boolean));
+    setTagFilters(f => f.filter(t => existingTags.has(t)));
+    setTypeFilters(f => f.filter(t => existingTypes.has(t)));
+    setColorFilters(f => f.filter(c => existingColors.has(c)));
+  }, [rawEvents]);
+
   const handleNavigateDay = useCallback((date) => {
     setCurrentDate(date);
     setView('day');

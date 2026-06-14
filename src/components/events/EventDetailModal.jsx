@@ -141,40 +141,54 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
             )}
 
             {/* Attendees */}
-            {event.attendees?.length > 0 && (
-              <div className="flex items-start gap-2.5">
-                <Users size={15} className="text-slate-400 mt-0.5 shrink-0" />
-                <div className="flex flex-wrap gap-1.5">
-                  {event.attendees.map(email => {
-                    const initials = email.split('@')[0].slice(0, 2).toUpperCase();
-                    return (
-                      <span
-                        key={email}
-                        title={email}
-                        className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full"
-                      >
-                        <span className="w-4 h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
-                          {initials}
+            {(() => {
+              const attendees = Array.isArray(event.attendees)
+                ? event.attendees
+                : typeof event.attendees === 'string' && event.attendees.trim()
+                  ? [event.attendees.trim()]
+                  : [];
+              return attendees.length > 0 ? (
+                <div className="flex items-start gap-2.5">
+                  <Users size={15} className="text-slate-400 mt-0.5 shrink-0" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {attendees.map(email => {
+                      const initials = email.split('@')[0].slice(0, 2).toUpperCase();
+                      return (
+                        <span
+                          key={email}
+                          title={email}
+                          className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full"
+                        >
+                          <span className="w-4 h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                            {initials}
+                          </span>
+                          {email}
                         </span>
-                        {email}
-                      </span>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : null;
+            })()}
 
             {/* Tags */}
-            {event.tags?.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <Tag size={15} className="text-slate-400 shrink-0" />
-                {event.tags.map(tag => (
-                  <span key={tag} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
+            {(() => {
+              const tags = Array.isArray(event.tags)
+                ? event.tags
+                : typeof event.tags === 'string' && event.tags.trim()
+                  ? event.tags.split(',').map(t => t.trim()).filter(Boolean)
+                  : [];
+              return tags.length > 0 ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Tag size={15} className="text-slate-400 shrink-0" />
+                  {tags.map(tag => (
+                    <span key={tag} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null;
+            })()}
 
             {/* Description */}
             {event.description && (
