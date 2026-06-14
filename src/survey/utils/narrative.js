@@ -102,6 +102,119 @@ export function buildNarrative(dim, config, seedBase = 0) {
 }
 
 /**
+ * 組出班級／組織層級的整體敘事評語。
+ * @param {Array}  results  多位成員的 buildResult() 輸出陣列
+ * @param {object} config   題庫設定（需含 COMMENTARY）
+ * @returns {{ overall: string, dimensions: Array<{name,avg,text}> }|null}
+ */
+export function buildGroupNarrative(results, config) {
+  const commentary = config?.COMMENTARY;
+  if (!commentary || !Array.isArray(results) || results.length < 2) return null;
+
+  const n = results.length;
+  const totalAvg = Math.round(results.reduce((s, r) => s + (r.total ?? 0), 0) / n);
+  const seed = hashStr(`${n}|${totalAvg}`);
+
+  // 群體各子能力平均
+  const subTotals = {};
+  const subCounts = {};
+  results.forEach((r) => {
+    (r.dimensions ?? []).forEach((dim) => {
+      (dim.subs ?? []).forEach((s) => {
+        subTotals[s.id] = (subTotals[s.id] ?? 0) + s.average;
+        subCounts[s.id] = (subCounts[s.id] ?? 0) + 1;
+      });
+    });
+  });
+  const subAvgs = Object.entries(subTotals)
+    .map(([id, sum]) => ({ id, avg: sum / (subCounts[id] ?? 1) }))
+    .filter((s) => commentary[s.id])
+    .sort((a, b) => b.avg - a.avg);
+
+  if (subAvgs.length === 0) return null;
+
+  const tops = subAvgs.slice(0, 2);
+  const lows = subAvgs.slice(-2).reverse();
+
+  // 落點分布（最多人的等級）
+  const LEVEL_ORDER = ['leader', 'proficient', 'developer', 'explorer'];
+  const levelCounts = {};
+  results.forEach((r) => {
+    const lid = r.level?.id ?? 'explorer';
+    levelCounts[lid] = (levelCounts[lid] ?? 0) + 1;
+  });
+  const dominantLevel = LEVEL_ORDER.map((id) => ({
+    id,
+    badge: results.find((r) => r.level?.id === id)?.level?.badge ?? id,
+    count: levelCounts[id] ?? 0,
+  })).sort((a, b) => b.count - a.count)[0];
+
+  // 子能力名稱對照
+  const subNames = {};
+  (config.DIMENSIONS ?? []).forEach((dim) => {
+    (dim.subDimensions ?? []).forEach((s) => { subNames[s.id] = s.name; });
+  });
+
+  const top1 = subNames[tops[0]?.id] ?? tops[0]?.id ?? '';
+  const top2 = subNames[tops[1]?.id] ?? tops[1]?.id ?? '';
+  const low1 = subNames[lows[0]?.id] ?? lows[0]?.id ?? '';
+  const low2 = subNames[lows[1]?.id] ?? lows[1]?.id ?? '';
+  const badge = dominantLevel.badge;
+
+  const templates = [
+    () => `就整體組織表現而言，本次共 ${n} 位成員完成評量，整體平均總分 ${totalAvg} 分，多數成員落在「${badge}」。在集體優勢上，「${top1}」與「${top2}」展現了整個團隊的核心競爭力；而「${low1}」與「${low2}」則是組織目前最需要系統性投資的成長區塊，建議透過團隊工作坊或導師機制進行針對性強化。`,
+    () => `綜觀本班 ${n} 位成員的領導力輪廓，整體落在「${badge}」，平均總分 ${totalAvg} 分。在「${top1}」與「${top2}」兩個子能力上，成員普遍展現出穩健的行為基礎，是組織可持續深耕的優勢；相對地，「${low1}」與「${low2}」的群體平均偏低，是近期規劃發展資源時的優先考量。`,
+    () => `從組織整體視角來看，${n} 位成員的平均總分為 ${totalAvg} 分，主要集中在「${badge}」落點。團隊最顯著的集體強項是「${top1}」，可作為互相學習的基礎；「${top2}」同樣表現亮眼，值得進一步轉化為組織習慣。在發展重點上，「${low1}」與「${low2}」呈現的群體差距，建議優先納入下一期的課程設計或教練議題。`,
+  ];
+
+  // 每個構面的組織評語
+  const dimAvgs = {};
+  const dimNames = {};
+  results.forEach((r) => {
+    (r.dimensions ?? []).forEach((dim) => {
+      dimAvgs[dim.id] = (dimAvgs[dim.id] ?? 0) + (dim.average ?? 0);
+      dimNames[dim.id] = dim.name;
+    });
+  });
+  const dimensionSummaries = Object.entries(dimAvgs).map(([id, sum]) => {
+    const avg = sum / n;
+    const band = bandOf(avg);
+    const dimConfig = (config.DIMENSIONS ?? []).find((d) => d.id === id);
+    if (!dimConfig?.subDimensions) return null;
+    // 找出該構面子能力中群體最高與最低
+    const dimSubAvgs = dimConfig.subDimensions
+      .map((s) => ({ id: s.id, name: s.name, avg: (subTotals[s.id] ?? 0) / (subCounts[s.id] ?? 1) }))
+      .filter((s) => commentary[s.id])
+      .sort((a, b) => b.avg - a.avg);
+    if (dimSubAvgs.length === 0) return null;
+    const topSub = dimSubAvgs[0];
+    const lowSub = dimSubAvgs[dimSubAvgs.length - 1];
+    const hasMix = dimSubAvgs.length > 1 && bandOf(topSub.avg) !== bandOf(lowSub.avg);
+    const strengthText = commentary[topSub.id][bandOf(topSub.avg)];
+    const growthText = hasMix ? commentary[lowSub.id][bandOf(lowSub.avg)] : null;
+    const BAND_LABEL = { high: '優秀表現', mid: '穩定展現', low: '尚待強化' };
+    const advicePool = {
+      high: ['建議作為全班標竿持續深化，並轉化為團隊習慣。', '可進一步帶入課程設計，讓每位成員都能提升至此水準。', '以此為基礎，推動跨成員的互相學習與傳承。'],
+      mid:  ['建議在工作坊中刻意練習，加速整體達到優秀水準。', '可設計具體的實踐任務，協助成員鞏固這個構面的行為。', '透過定期回饋機制，協助成員持續精進。'],
+      low:  ['此為本班首要發展重點，建議優先規劃針對性課程。', '建議搭配教練式對話，協助成員找到突破口。', '以小組練習或案例討論為起點，協助全班逐步改善。'],
+    };
+    const advice = pick(advicePool[band], seed + dimConfig.index * 13);
+    let text = `「${dimNames[id]}」方面，全班平均 ${avg.toFixed(1)}/5（${BAND_LABEL[band]}）。${strengthText}`;
+    if (growthText) text += `；另一方面，${growthText}`;
+    text += `。${advice}`;
+    return { id, name: dimNames[id], avg, band, text };
+  }).filter(Boolean).sort((a, b) => {
+    const order = (config.DIMENSIONS ?? []).findIndex((d) => d.id === a.id) - (config.DIMENSIONS ?? []).findIndex((d) => d.id === b.id);
+    return order;
+  });
+
+  return {
+    overall: pick(templates, seed)(),
+    dimensions: dimensionSummaries,
+  };
+}
+
+/**
  * 組出報告最上方的整體總評段落：點出落點等級、最強與最待強化構面，並給總結方向。
  */
 export function buildOverallSummary(result, config, seedBase = 0) {
