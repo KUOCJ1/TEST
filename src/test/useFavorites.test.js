@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import React from 'react';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { CalendarProvider, useCalendar } from '../context/CalendarContext';
@@ -122,13 +122,16 @@ describe('CalendarContext', () => {
     expect(result.current.events).toHaveLength(0);
   });
 
-  it('persists events to localStorage', () => {
+  it('persists events to localStorage after debounce', async () => {
+    vi.useFakeTimers();
     const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper('u4') });
     act(() => {
       result.current.addEvent({ title: 'Persisted', type: 'work', color: 'blue',
         startAt: '2026-06-09T10:00:00.000Z', endAt: '2026-06-09T11:00:00.000Z',
         isAllDay: false, isPrivate: false, tags: [], description: '', reminder: '' });
     });
+    act(() => { vi.advanceTimersByTime(300); });
+    vi.useRealTimers();
     const stored = JSON.parse(localStorage.getItem('cal_events_u4'));
     expect(stored[0].title).toBe('Persisted');
   });

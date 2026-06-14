@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { generateId } from '../utils/calendar';
 
 const CalendarContext = createContext(null);
@@ -22,6 +22,14 @@ function persist(userId, events) {
 
 export function CalendarProvider({ children, userId }) {
   const [events, setEvents] = useState(() => loadEvents(userId));
+  const persistTimer = useRef(null);
+
+  // Debounced persist: batch rapid mutations (bulk delete, multi-event paste) into one write
+  useEffect(() => {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => persist(userId, events), 300);
+    return () => clearTimeout(persistTimer.current);
+  }, [userId, events]);
 
   // Sync across tabs: when another tab writes to localStorage, reload events
   useEffect(() => {
@@ -37,29 +45,17 @@ export function CalendarProvider({ children, userId }) {
 
   const addEvent = useCallback((data) => {
     const event = { ...data, id: generateId(), creatorId: userId };
-    setEvents(prev => {
-      const next = [...prev, event];
-      persist(userId, next);
-      return next;
-    });
+    setEvents(prev => [...prev, event]);
     return event;
   }, [userId]);
 
   const updateEvent = useCallback((id, data) => {
-    setEvents(prev => {
-      const next = prev.map(e => e.id === id ? { ...e, ...data, id: e.id, creatorId: e.creatorId } : e);
-      persist(userId, next);
-      return next;
-    });
-  }, [userId]);
+    setEvents(prev => prev.map(e => e.id === id ? { ...e, ...data, id: e.id, creatorId: e.creatorId } : e));
+  }, []);
 
   const deleteEvent = useCallback((id) => {
-    setEvents(prev => {
-      const next = prev.filter(e => e.id !== id);
-      persist(userId, next);
-      return next;
-    });
-  }, [userId]);
+    setEvents(prev => prev.filter(e => e.id !== id));
+  }, []);
 
   const value = useMemo(
     () => ({ events, addEvent, updateEvent, deleteEvent }),

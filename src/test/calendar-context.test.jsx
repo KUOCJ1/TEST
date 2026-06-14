@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { CalendarProvider, useCalendar } from '../context/CalendarContext';
 
@@ -13,6 +13,7 @@ function makeWrapper() {
 
 beforeEach(() => {
   localStorage.clear();
+  vi.useRealTimers();
 });
 
 describe('addEvent', () => {
@@ -32,9 +33,11 @@ describe('addEvent', () => {
     expect(result.current.events[0].title).toBe('Alpha');
   });
 
-  it('persists the event to localStorage', () => {
+  it('persists the event to localStorage after debounce', () => {
+    vi.useFakeTimers();
     const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper() });
     act(() => { result.current.addEvent({ title: 'Stored', startAt: '2026-06-10T09:00:00.000Z', endAt: '2026-06-10T10:00:00.000Z' }); });
+    act(() => { vi.advanceTimersByTime(300); });
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
     expect(stored).toHaveLength(1);
     expect(stored[0].title).toBe('Stored');
@@ -76,11 +79,13 @@ describe('updateEvent', () => {
     expect(result.current.events[0].creatorId).toBe(USER_ID);
   });
 
-  it('persists the update to localStorage', () => {
+  it('persists the update to localStorage after debounce', () => {
+    vi.useFakeTimers();
     const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper() });
     let event;
     act(() => { event = result.current.addEvent({ title: 'Orig', startAt: '2026-06-10T09:00:00.000Z', endAt: '2026-06-10T10:00:00.000Z' }); });
     act(() => { result.current.updateEvent(event.id, { title: 'Saved' }); });
+    act(() => { vi.advanceTimersByTime(300); });
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
     expect(stored[0].title).toBe('Saved');
   });
@@ -107,11 +112,13 @@ describe('deleteEvent', () => {
     expect(result.current.events).toHaveLength(0);
   });
 
-  it('persists the deletion to localStorage', () => {
+  it('persists the deletion to localStorage after debounce', () => {
+    vi.useFakeTimers();
     const { result } = renderHook(() => useCalendar(), { wrapper: makeWrapper() });
     let event;
     act(() => { event = result.current.addEvent({ title: 'Gone', startAt: '2026-06-10T09:00:00.000Z', endAt: '2026-06-10T10:00:00.000Z' }); });
     act(() => { result.current.deleteEvent(event.id); });
+    act(() => { vi.advanceTimersByTime(300); });
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
     expect(stored).toHaveLength(0);
   });
