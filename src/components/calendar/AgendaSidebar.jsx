@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
 import { getColorHex } from '../../utils/colors';
 import { formatDisplayTime, isSameDay } from '../../utils/calendar';
+import { useCurrentMinute } from '../../hooks/useCurrentMinute';
 
 const DAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
 
 export default function AgendaSidebar({ events, onEventClick, onNavigateDay }) {
+  const minute = useCurrentMinute();
+
   const days = useMemo(() => {
     const result = [];
     const today = new Date();
@@ -22,7 +25,7 @@ export default function AgendaSidebar({ events, onEventClick, onNavigateDay }) {
       result.push({ date, events: dayEvents });
     }
     return result;
-  }, [events]);
+  }, [events, minute]);
 
   return (
     <div className="hidden lg:flex flex-col w-64 xl:w-72 border-l border-slate-200 bg-white shrink-0 overflow-y-auto">

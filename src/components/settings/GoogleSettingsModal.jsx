@@ -5,7 +5,7 @@ export default function GoogleSettingsModal({
   isOpen, onClose,
   isConnected, isLoading, error, scriptsReady, clientId,
   connect, disconnect,
-  events, addEvent,
+  events, restoreEvents,
   onExportIcs, onImportIcs,
 }) {
   const [inputClientId, setInputClientId] = useState(clientId || '');
@@ -60,12 +60,10 @@ export default function GoogleSettingsModal({
       try {
         const { events: imported } = JSON.parse(evt.target.result);
         if (!Array.isArray(imported)) throw new Error('格式錯誤');
-        let added = 0;
         const existingIds = new Set(events.map(ev => ev.id));
-        imported.forEach(ev => {
-          if (!existingIds.has(ev.id)) { addEvent(ev); added++; }
-        });
-        setBackupMsg(`已還原 ${added} 個事件（重複略過）`);
+        const toRestore = imported.filter(ev => ev.id && !existingIds.has(ev.id));
+        restoreEvents(toRestore);
+        setBackupMsg(`已還原 ${toRestore.length} 個事件（重複略過）`);
         setTimeout(() => setBackupMsg(''), 4000);
       } catch {
         setBackupMsg('備份檔格式不正確');
