@@ -196,7 +196,7 @@ export default function WeekView({ currentDate, events, onEventClick, onSlotClic
                 className="absolute right-2 text-xs text-slate-400 -translate-y-1/2"
                 style={{ top: h * HOUR_HEIGHT }}
               >
-                {h > 0 && `${String(h).padStart(2, '0')}:00`}
+                {`${String(h).padStart(2, '0')}:00`}
               </div>
             ))}
           </div>
