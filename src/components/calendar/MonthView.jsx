@@ -12,11 +12,12 @@ const EventPill = memo(function EventPill({
 }) {
   const isOwn = event.creatorId === currentUserId;
   const isOtherPrivate = event.isPrivate && !isOwn;
+  const canSelect = !event.isRecurring && event.source !== 'google';
   const color = getColorHex(event.color);
 
   function handleClick(e) {
     e.stopPropagation();
-    if (selectMode) {
+    if (selectMode && canSelect) {
       onToggleSelect(event.id);
     } else {
       onClick(event);
@@ -28,10 +29,10 @@ const EventPill = memo(function EventPill({
       <button
         onClick={handleClick}
         draggable={false}
-        aria-label={selectMode ? `選取私人事項` : '私人事項'}
+        aria-label={selectMode && canSelect ? `選取私人事項` : '私人事項'}
         className="w-full text-left text-xs px-1.5 py-0.5 rounded truncate flex items-center gap-1 bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors"
       >
-        {selectMode && (
+        {selectMode && canSelect && (
           <input type="checkbox" checked={selected} readOnly aria-label={`選取私人事項`} className="mr-1 shrink-0" />
         )}
         <span className="shrink-0">🔒</span>
@@ -65,7 +66,7 @@ const EventPill = memo(function EventPill({
       }`}
       style={{ backgroundColor: selected ? '#4f46e5' : color }}
     >
-      {selectMode && (
+      {selectMode && canSelect && (
         <input type="checkbox" checked={selected} readOnly aria-label={`選取 ${event.title}`} className="mr-0.5 shrink-0" onClick={e => e.stopPropagation()} />
       )}
       {!isOwn && event.creatorName && (
@@ -133,7 +134,7 @@ const DayCell = memo(function DayCell({
               onClick={onEventClick}
               currentUserId={currentUserId}
               selectMode={selectMode}
-              selected={selectedIds.has(event.recurringBaseId || event.id)}
+              selected={selectedIds.has(event.id)}
               onToggleSelect={onToggleSelect}
               onDragStart={onDragStart}
             />
