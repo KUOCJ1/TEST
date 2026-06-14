@@ -14,8 +14,11 @@ function saveGroups(groups) {
   localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
 }
 
-function generateInviteCode() {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
+function generateInviteCode(existingCodes = new Set()) {
+  let code;
+  do { code = Math.random().toString(36).slice(2, 8).toUpperCase(); }
+  while (existingCodes.has(code));
+  return code;
 }
 
 export function GroupProvider({ children, currentUser }) {
@@ -32,7 +35,7 @@ export function GroupProvider({ children, currentUser }) {
     const newGroup = {
       id: generateId(),
       name: name.trim(),
-      inviteCode: generateInviteCode(),
+      inviteCode: generateInviteCode(new Set(all.map(g => g.inviteCode))),
       members: [{ userId: currentUser.id, name: currentUser.name, email: currentUser.email, role: 'owner' }],
     };
     saveGroups([...all, newGroup]);

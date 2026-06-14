@@ -92,13 +92,25 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
               <Clock size={15} className="text-slate-400 mt-0.5 shrink-0" />
               <div className="text-sm text-slate-700">
                 {event.isAllDay ? (
-                  <span>全天</span>
+                  (() => {
+                    const startD = new Date(event.startAt);
+                    const endD = new Date(event.endAt);
+                    const sameDay = startD.getFullYear() === endD.getFullYear() &&
+                      startD.getMonth() === endD.getMonth() &&
+                      startD.getDate() === endD.getDate();
+                    const fmt = d => d.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' });
+                    return sameDay
+                      ? <span className="text-slate-400">{fmt(startD)} 全天</span>
+                      : <span className="text-slate-400">{fmt(startD)} – {fmt(endD)} 全天</span>;
+                  })()
                 ) : (
-                  <span>{formatDisplayTime(event.startAt)} – {formatDisplayTime(event.endAt)}</span>
+                  <>
+                    <span>{formatDisplayTime(event.startAt)} – {formatDisplayTime(event.endAt)}</span>
+                    <span className="text-slate-400 ml-1">
+                      {new Date(event.startAt).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}
+                    </span>
+                  </>
                 )}
-                <span className="text-slate-400 ml-1">
-                  {new Date(event.startAt).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}
-                </span>
               </div>
             </div>
 
@@ -203,13 +215,25 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
               <Clock size={15} className="text-slate-400 mt-0.5 shrink-0" />
               <div className="text-sm text-slate-500">
                 {event.isAllDay ? (
-                  <span>全天</span>
+                  (() => {
+                    const startD = new Date(event.startAt);
+                    const endD = new Date(event.endAt);
+                    const sameDay = startD.getFullYear() === endD.getFullYear() &&
+                      startD.getMonth() === endD.getMonth() &&
+                      startD.getDate() === endD.getDate();
+                    const fmt = d => d.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' });
+                    return sameDay
+                      ? <span>{fmt(startD)} 全天</span>
+                      : <span>{fmt(startD)} – {fmt(endD)} 全天</span>;
+                  })()
                 ) : (
-                  <span>{formatDisplayTime(event.startAt)} – {formatDisplayTime(event.endAt)}</span>
+                  <>
+                    <span>{formatDisplayTime(event.startAt)} – {formatDisplayTime(event.endAt)}</span>
+                    <span className="text-slate-400 ml-1">
+                      {new Date(event.startAt).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}
+                    </span>
+                  </>
                 )}
-                <span className="text-slate-400 ml-1">
-                  {new Date(event.startAt).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}
-                </span>
               </div>
             </div>
             <p className="text-sm text-slate-400 pl-[22px]">內容不對外顯示。</p>
