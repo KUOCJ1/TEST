@@ -494,6 +494,57 @@ describe('ICS roundtrip', () => {
     expect(parsed[0].recurrence?.until).toBeNull();
   });
 
+  it('multi-day all-day event DTEND uses endAt (not startAt) so span is correct', () => {
+    const multiDay = {
+      id: 'md1',
+      title: 'Multi Day',
+      startAt: '2026-06-15T00:00:00.000Z',
+      endAt:   '2026-06-17T23:59:59.000Z',
+      isAllDay: true,
+      tags: [], reminder: '', isPrivate: false, type: 'personal', color: 'blue',
+    };
+    const ics = exportToIcs([multiDay]);
+    expect(ics).toContain('DTSTART;VALUE=DATE:20260615');
+    expect(ics).toContain('DTEND;VALUE=DATE:20260618'); // exclusive; event covers Jun 15–17
+    // Must not use startAt+1 (which would give 20260616, leaving Jun 16–17 invisible)
+    expect(ics).not.toContain('DTEND;VALUE=DATE:20260616');
+  });
+
+  it('importing all-day DTEND (exclusive) produces correct editable end date', () => {
+    const ics = [
+      'BEGIN:VCALENDAR', 'BEGIN:VEVENT',
+      'SUMMARY:Holiday',
+      'DTSTART;VALUE=DATE:20260615',
+      'DTEND;VALUE=DATE:20260618', // exclusive → event covers Jun 15–17
+      'END:VEVENT', 'END:VCALENDAR',
+    ].join('\r\n');
+    const parsed = parseIcs(ics);
+    expect(parsed).toHaveLength(1);
+    // endAt should resolve to Jun 17 (the last inclusive day) when formatted for editing
+    const endDate = new Date(parsed[0].endAt);
+    expect(endDate.getFullYear()).toBe(2026);
+    expect(endDate.getMonth()).toBe(5); // June (0-indexed)
+    expect(endDate.getDate()).toBe(17);
+  });
+
+  it('roundtrips multi-day all-day event preserving full span', () => {
+    const multiDay = {
+      id: 'md2',
+      title: 'Conference',
+      startAt: '2026-08-01T00:00:00.000Z',
+      endAt:   '2026-08-03T23:59:59.000Z',
+      isAllDay: true,
+      tags: [], reminder: '', isPrivate: false, type: 'work', color: 'blue',
+    };
+    const ics = exportToIcs([multiDay]);
+    const parsed = parseIcs(ics);
+    expect(parsed[0].isAllDay).toBe(true);
+    const startDate = new Date(parsed[0].startAt);
+    const endDate = new Date(parsed[0].endAt);
+    expect(startDate.getDate()).toBe(1);  // Aug 1
+    expect(endDate.getDate()).toBe(3);    // Aug 3 (not Aug 4)
+  });
+
   it('roundtrips tags containing commas without data loss', () => {
     const withCommaTag = { ...timed, id: 'tag1', tags: ['work,urgent', 'personal'] };
     const ics = exportToIcs([withCommaTag]);

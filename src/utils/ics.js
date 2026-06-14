@@ -42,9 +42,11 @@ export function exportToIcs(events) {
     push(lines, `DTSTAMP:${toICSDate(new Date().toISOString())}`);
     if (e.isAllDay) {
       push(lines, `DTSTART;VALUE=DATE:${toICSDateOnly(e.startAt)}`);
-      // RFC 5545 §3.6.1: DTEND for DATE-valued events is exclusive; add 1 day
-      const excEnd = new Date(e.startAt);
-      excEnd.setDate(excEnd.getDate() + 1);
+      // RFC 5545 §3.6.1: DTEND for DATE-valued events is exclusive.
+      // e.endAt is stored as 23:59:59 on the last inclusive local day;
+      // use local date components to get the inclusive end, then add 1 day.
+      const endLocal = new Date(e.endAt);
+      const excEnd = new Date(endLocal.getFullYear(), endLocal.getMonth(), endLocal.getDate() + 1);
       push(lines, `DTEND;VALUE=DATE:${toICSDateOnly(excEnd.toISOString())}`);
     } else {
       push(lines, `DTSTART:${toICSDate(e.startAt)}`);
@@ -133,7 +135,12 @@ export function parseIcs(text) {
     else if (prop.startsWith('DTEND')) {
       if (prop.includes('VALUE=DATE') || val.length === 8) {
         const y=val.slice(0,4), m=val.slice(4,6), d=val.slice(6,8);
-        cur.endAt = new Date(`${y}-${m}-${d}T00:00:00`).toISOString();
+        // RFC 5545: DTEND for DATE values is exclusive. Subtract 1 day and store
+        // as 23:59:59 on the last inclusive day, matching the EventModal convention.
+        const incEnd = new Date(`${y}-${m}-${d}T00:00:00`);
+        incEnd.setDate(incEnd.getDate() - 1);
+        incEnd.setHours(23, 59, 59, 0);
+        cur.endAt = incEnd.toISOString();
       } else {
         const clean = val.replace('Z','');
         const y=clean.slice(0,4),mo=clean.slice(4,6),d=clean.slice(6,8);

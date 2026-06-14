@@ -125,8 +125,8 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
               </div>
             )}
 
-            {/* URL */}
-            {event.url && (
+            {/* URL — only render http/https to prevent javascript: XSS from ICS imports */}
+            {event.url && /^https?:\/\//i.test(event.url) && (
               <div className="flex items-start gap-2.5">
                 <Link size={15} className="text-slate-400 mt-0.5 shrink-0" />
                 <a
