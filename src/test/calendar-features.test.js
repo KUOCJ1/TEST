@@ -93,6 +93,24 @@ describe('findConflicts', () => {
     expect(findConflicts([allDayEvent], candidate)).toHaveLength(0);
   });
 
+  it('multi-day all-day candidate conflicts with event on an interior day', () => {
+    const midDay = {
+      id: 'a2', title: 'Mid', isAllDay: true, source: undefined,
+      startAt: '2026-06-16T00:00:00.000Z', endAt: '2026-06-16T23:59:59.000Z',
+    };
+    const candidate = { isAllDay: true, startAt: '2026-06-14T00:00:00.000Z', endAt: '2026-06-17T23:59:59.000Z' };
+    expect(findConflicts([midDay], candidate)).toHaveLength(1);
+  });
+
+  it('multi-day all-day candidate does not conflict with adjacent event', () => {
+    const afterEvent = {
+      id: 'a3', title: 'After', isAllDay: true, source: undefined,
+      startAt: '2026-06-18T00:00:00.000Z', endAt: '2026-06-18T23:59:59.000Z',
+    };
+    const candidate = { isAllDay: true, startAt: '2026-06-14T00:00:00.000Z', endAt: '2026-06-17T23:59:59.000Z' };
+    expect(findConflicts([afterEvent], candidate)).toHaveLength(0);
+  });
+
   it('returns multiple conflicts', () => {
     const e2 = { ...base, id: 'e2', startAt: '2026-06-10T10:45:00.000Z', endAt: '2026-06-10T11:15:00.000Z' };
     const candidate = {
