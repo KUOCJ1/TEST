@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 const DISCOVERY = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
+const GCAL_COLOR_MAP = { '1':'blue','2':'green','3':'violet','4':'red','5':'orange','6':'orange','7':'indigo','8':'green','9':'indigo','10':'green','11':'red' };
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -59,7 +60,6 @@ export function useGoogleCalendar() {
         maxResults: 500,
         orderBy: 'startTime',
       });
-      const COLOR_MAP = { '1':'blue','2':'green','3':'violet','4':'red','5':'orange','6':'orange','7':'indigo','8':'green','9':'indigo','10':'green','11':'red' };
       const items = resp.result.items || [];
       setGoogleEvents(items.map(item => ({
         id: `gcal_${item.id}`,
@@ -68,7 +68,7 @@ export function useGoogleCalendar() {
         endAt:   item.end?.dateTime   || `${item.end?.date}T00:00:00`,
         isAllDay: !!item.start?.date,
         description: item.description || '',
-        color: COLOR_MAP[item.colorId] || 'blue',
+        color: GCAL_COLOR_MAP[item.colorId] || 'blue',
         type: 'work',
         tags: [],
         isPrivate: false,
