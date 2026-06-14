@@ -14,9 +14,16 @@ function getTitle(view, date) {
   return formatDayTitle(date);
 }
 
+const NAV_LABELS = {
+  month: ['上個月', '下個月'],
+  week:  ['上一週', '下一週'],
+  day:   ['前一天', '下一天'],
+};
+
 export default function CalendarHeader({ currentDate, view, onPrev, onNext, onToday, onViewChange, onAddEvent, onNavigate }) {
   const [showPicker, setShowPicker] = useState(false);
   const pickerRef = useRef(null);
+  const [prevLabel, nextLabel] = NAV_LABELS[view] ?? ['上一個時段', '下一個時段'];
 
   function handleTitleClick() {
     setShowPicker(true);
@@ -45,14 +52,14 @@ export default function CalendarHeader({ currentDate, view, onPrev, onNext, onTo
         </button>
         <button
           onClick={onPrev}
-          aria-label="上一個時段"
+          aria-label={prevLabel}
           className="p-2.5 sm:p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
         >
           <ChevronLeft size={18} />
         </button>
         <button
           onClick={onNext}
-          aria-label="下一個時段"
+          aria-label={nextLabel}
           className="p-2.5 sm:p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
         >
           <ChevronRight size={18} />
