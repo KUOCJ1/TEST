@@ -76,11 +76,12 @@ export function GroupProvider({ children, currentUser }) {
 
   const removeMember = useCallback((groupId, userId) => {
     const all = loadGroups();
-    const updated = all.map(g =>
-      g.id === groupId
-        ? { ...g, members: g.members.filter(m => m.userId !== userId) }
-        : g
-    );
+    const updated = all.reduce((acc, g) => {
+      if (g.id !== groupId) { acc.push(g); return acc; }
+      const members = g.members.filter(m => m.userId !== userId);
+      if (members.length > 0) acc.push({ ...g, members });
+      return acc;
+    }, []);
     saveGroups(updated);
     refresh();
   }, []);
