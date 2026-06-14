@@ -175,6 +175,20 @@ describe('removeMember', () => {
     expect(stored[0].members).toHaveLength(1);
     expect(stored[0].members[0].userId).toBe(alice.id);
   });
+
+  it('deletes the group record when the last member is removed', () => {
+    const group = {
+      id: 'g1', name: 'Solo', inviteCode: 'ZZZ999',
+      members: [
+        { userId: bob.id, name: bob.name, email: bob.email, role: 'member' },
+      ],
+    };
+    localStorage.setItem(GROUPS_KEY, JSON.stringify([group]));
+    const { result } = renderHook(() => useGroups(), { wrapper: makeWrapper(alice) });
+    act(() => { result.current.removeMember('g1', bob.id); });
+    const stored = JSON.parse(localStorage.getItem(GROUPS_KEY));
+    expect(stored).toHaveLength(0);
+  });
 });
 
 describe('renameGroup', () => {
