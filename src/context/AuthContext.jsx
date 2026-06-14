@@ -73,8 +73,31 @@ export function AuthProvider({ children }) {
     setCurrentUser(null);
   }, []);
 
+  const updateProfile = useCallback((name) => {
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error('名稱不能為空');
+    const users = loadUsers();
+    saveUsers(users.map(u => u.id === currentUser.id ? { ...u, name: trimmed } : u));
+    const session = { ...currentUser, name: trimmed };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    setCurrentUser(session);
+  }, [currentUser]);
+
+  const changePassword = useCallback(async (currentPassword, newPassword) => {
+    const users = loadUsers();
+    const user = users.find(u => u.id === currentUser.id);
+    if (!user) throw new Error('找不到使用者');
+    const valid = typeof user.password === 'string'
+      ? user.password === currentPassword
+      : (await sha256(user.password.salt, currentPassword)) === user.password.hash;
+    if (!valid) throw new Error('目前密碼不正確');
+    const salt = randomSalt();
+    const hash = await sha256(salt, newPassword);
+    saveUsers(users.map(u => u.id === currentUser.id ? { ...u, password: { hash, salt } } : u));
+  }, [currentUser]);
+
   return (
-    <AuthContext.Provider value={{ currentUser, login, register, logout }}>
+    <AuthContext.Provider value={{ currentUser, login, register, logout, updateProfile, changePassword }}>
       {children}
     </AuthContext.Provider>
   );
