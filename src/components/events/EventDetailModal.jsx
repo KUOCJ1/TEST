@@ -95,6 +95,11 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
                   (() => {
                     const startD = new Date(event.startAt);
                     const endD = new Date(event.endAt);
+                    // Normalize exclusive-midnight end (Google Calendar stores DTEND as midnight
+                    // of the exclusive next day) so the displayed date is the actual last day.
+                    if (endD.getHours() === 0 && endD.getMinutes() === 0 && endD.getSeconds() === 0) {
+                      endD.setDate(endD.getDate() - 1);
+                    }
                     const sameDay = startD.getFullYear() === endD.getFullYear() &&
                       startD.getMonth() === endD.getMonth() &&
                       startD.getDate() === endD.getDate();
@@ -218,6 +223,9 @@ export default function EventDetailModal({ isOpen, onClose, event, onEdit, onCop
                   (() => {
                     const startD = new Date(event.startAt);
                     const endD = new Date(event.endAt);
+                    if (endD.getHours() === 0 && endD.getMinutes() === 0 && endD.getSeconds() === 0) {
+                      endD.setDate(endD.getDate() - 1);
+                    }
                     const sameDay = startD.getFullYear() === endD.getFullYear() &&
                       startD.getMonth() === endD.getMonth() &&
                       startD.getDate() === endD.getDate();
