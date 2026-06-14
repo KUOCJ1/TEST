@@ -126,10 +126,13 @@ export function parseIcs(text) {
         const y=val.slice(0,4), m=val.slice(4,6), d=val.slice(6,8);
         cur.startAt = new Date(`${y}-${m}-${d}T00:00:00`).toISOString();
       } else {
-        const clean = val.replace('Z','').replace(/[T]/,(c)=>c);
+        // RFC 5545: trailing Z means UTC; no Z means local floating time
+        const isUTC = val.endsWith('Z');
+        const clean = isUTC ? val.slice(0, -1) : val;
         const y=clean.slice(0,4),mo=clean.slice(4,6),d=clean.slice(6,8);
         const h=clean.slice(9,11)||'00', mi=clean.slice(11,13)||'00', s=clean.slice(13,15)||'00';
-        cur.startAt = new Date(`${y}-${mo}-${d}T${h}:${mi}:${s}Z`).toISOString();
+        const dateStr = `${y}-${mo}-${d}T${h}:${mi}:${s}`;
+        cur.startAt = new Date(isUTC ? dateStr + 'Z' : dateStr).toISOString();
       }
     }
     else if (prop.startsWith('DTEND')) {
@@ -142,10 +145,12 @@ export function parseIcs(text) {
         incEnd.setHours(23, 59, 59, 0);
         cur.endAt = incEnd.toISOString();
       } else {
-        const clean = val.replace('Z','');
+        const isUTC = val.endsWith('Z');
+        const clean = isUTC ? val.slice(0, -1) : val;
         const y=clean.slice(0,4),mo=clean.slice(4,6),d=clean.slice(6,8);
         const h=clean.slice(9,11)||'00', mi=clean.slice(11,13)||'00', s=clean.slice(13,15)||'00';
-        cur.endAt = new Date(`${y}-${mo}-${d}T${h}:${mi}:${s}Z`).toISOString();
+        const dateStr = `${y}-${mo}-${d}T${h}:${mi}:${s}`;
+        cur.endAt = new Date(isUTC ? dateStr + 'Z' : dateStr).toISOString();
       }
     }
     else if (prop === 'CATEGORIES') {
