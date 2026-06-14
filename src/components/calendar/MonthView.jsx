@@ -88,6 +88,8 @@ const DayCell = memo(function DayCell({
   const today = isToday(day.date);
   const visible = events.slice(0, MAX_VISIBLE);
   const overflow = events.length - MAX_VISIBLE;
+  const dow = day.date.getDay();
+  const isWeekend = dow === 0 || dow === 6;
 
   function handleDragOver(e) { e.preventDefault(); }
   function handleDrop(e) { e.preventDefault(); onDrop(e, day.date); }
@@ -98,7 +100,11 @@ const DayCell = memo(function DayCell({
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       className={`min-h-[72px] sm:min-h-[100px] p-1 border-b border-r border-slate-100 transition-colors ${
-        !day.isCurrentMonth ? 'bg-slate-50/60' : 'bg-white'
+        !day.isCurrentMonth
+          ? 'bg-slate-50/60'
+          : isWeekend
+          ? 'bg-slate-50/50'
+          : 'bg-white'
       } ${!selectMode ? 'cursor-pointer hover:bg-slate-50/80' : ''}`}
     >
       <div className="flex justify-end mb-1">

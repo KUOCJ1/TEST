@@ -38,8 +38,9 @@ export default function NotificationCenter({ permission, requestPermission, upco
       <button
         onClick={() => setOpen(o => !o)}
         aria-label={`通知${count > 0 ? `（${count} 個即將到來）` : ''}`}
-        aria-haspopup="dialog"
+        aria-haspopup="menu"
         aria-expanded={open}
+        aria-controls="notification-panel"
         className="relative p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
       >
         {permission === 'denied' ? <BellOff size={18} /> : <Bell size={18} />}
@@ -53,10 +54,15 @@ export default function NotificationCenter({ permission, requestPermission, upco
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl w-72 z-20 overflow-hidden">
+          <div
+            id="notification-panel"
+            role="menu"
+            aria-label="提醒通知"
+            className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl w-72 z-20 overflow-hidden"
+          >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-              <span className="text-sm font-semibold text-slate-800">提醒通知</span>
+              <span id="notification-panel-title" className="text-sm font-semibold text-slate-800">提醒通知</span>
               <button onClick={() => setOpen(false)} aria-label="關閉通知" className="text-slate-400 hover:text-slate-600 transition-colors">
                 <X size={16} />
               </button>
@@ -104,7 +110,7 @@ export default function NotificationCenter({ permission, requestPermission, upco
                 ))
               )}
             </div>
-          </div>
+          </div>{/* #notification-panel */}
         </>
       )}
     </div>
