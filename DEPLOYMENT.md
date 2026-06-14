@@ -149,12 +149,24 @@ sudoedit /docker/traefik/config/dynamic.yml   # 貼入 assess 路由與 assess-s
 ---
 
 ## 之後要更新版本
-把新 commit 拉下來後，一鍵重新部署：
+把新 commit 拉下來後，一鍵重新部署。**在 VPS 上**於專案根目錄執行：
 ```bash
 cd /opt/ai-assessment/app
-git pull
+git fetch origin claude/ai-assessment-survey-4vhjun
+git checkout claude/ai-assessment-survey-4vhjun
+git pull origin claude/ai-assessment-survey-4vhjun
 bash deploy/deploy.sh        # 重新 build 前端、同步後端、重啟服務（保留 .env 與資料）
 ```
+> `deploy.sh` 會：重建前端 → 同步 `dist/` 到 `/var/www/ai-assessment` → 同步後端 →
+> `npm ci --omit=dev` → 重啟 `ai-assessment-api` 並 reload Nginx。
+
+部署後快速驗證：
+```bash
+curl -s localhost:3101/api/health      # 應回 {"ok":true}（本站後端埠為 3101）
+```
+再開 `https://assess.rong-rise.com` 確認網站正常；若要驗證「整體組織敘事評論」，
+進教練後台 → 選一個 `leadership-9d` 班別（需 ≥2 位成員已作答），確認雷達圖下方
+出現「🏢 整體組織評語」區塊。
 
 ## 備份與還原
 ```bash
