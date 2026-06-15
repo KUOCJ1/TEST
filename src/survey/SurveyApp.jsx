@@ -16,6 +16,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
 
   const storageKey = useMemo(() => draftKey(user.id, assessmentId), [user.id, assessmentId]);
   const [answers, setAnswers] = useState(() => readJSON(storageKey, {}));
+  const [phase, setPhase] = useState('pre');
   const [result, setResult] = useState(null);
   const [invalidIds, setInvalidIds] = useState([]);
   const [copied, setCopied] = useState(false);
@@ -53,7 +54,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     setSubmitting(true);
     const r = buildResult(answers, config);
     try {
-      await api.createSubmission({ answers, result: r, assessmentId });
+      await api.createSubmission({ answers, result: r, assessmentId, phase });
       setResult(r);
       onSubmitted?.(r);
       requestAnimationFrame(() => resultRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
@@ -62,7 +63,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     } finally {
       setSubmitting(false);
     }
-  }, [answers, config, assessmentId, onSubmitted]);
+  }, [answers, config, assessmentId, phase, onSubmitted]);
 
   const handleRetake = useCallback(() => {
     setAnswers({});
@@ -103,6 +104,29 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
               <span className="ml-2 text-amber-600">· 🔄 標示題目為反向計分</span>
             )}
           </span>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-slate-500">本次填答屬於：</span>
+          {[
+            { id: 'pre', label: '課前評測' },
+            { id: 'post', label: '課後複測' },
+          ].map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setPhase(opt.id)}
+              aria-pressed={phase === opt.id}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                phase === opt.id
+                  ? 'bg-teal-600 text-white shadow-sm'
+                  : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+          <span className="text-xs text-slate-400">課後複測可在「我的分析」看到學習增益</span>
         </div>
 
         <ProgressBar answered={answered} total={TOTAL_QUESTIONS} />

@@ -62,7 +62,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
 
   // Normalize legacy submissions that lack assessmentId.
   function normalizeSubmission(s) {
-    return { ...s, assessmentId: s.assessmentId ?? 'ai-competency' };
+    return { ...s, assessmentId: s.assessmentId ?? 'ai-competency', phase: s.phase ?? null };
   }
 
   const hashToken = (t) => createHash('sha256').update(t).digest('hex');
@@ -228,7 +228,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
 
   // ── 作答 ────────────────────────────────────────────────
   app.post('/api/submissions', requireAuth, (req, res) => {
-    const { answers, result, assessmentId } = req.body || {};
+    const { answers, result, assessmentId, phase } = req.body || {};
     if (!result || typeof result.total !== 'number' || !Array.isArray(result.dimensions)) {
       return res.status(400).json({ error: '作答結果格式不正確' });
     }
@@ -237,6 +237,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       userId: req.user.id,
       userName: req.user.name,
       assessmentId: typeof assessmentId === 'string' ? assessmentId : 'ai-competency',
+      phase: phase === 'pre' || phase === 'post' ? phase : null,
       createdAt: new Date().toISOString(),
       answers: answers && typeof answers === 'object' ? answers : {},
       result,

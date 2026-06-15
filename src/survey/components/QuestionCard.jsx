@@ -15,6 +15,14 @@ export default function QuestionCard({ number, question, value, onChange, invali
       <legend className="mb-3 block text-[15px] font-medium leading-relaxed text-slate-800">
         <span className="mr-1.5 font-semibold text-blue-600">{number}.</span>
         {question.text}
+        {question.reversed && (
+          <span
+            className="ml-1.5 align-middle text-xs font-semibold text-amber-600"
+            title="反向計分題：分數會反轉計算"
+          >
+            🔄
+          </span>
+        )}
         {invalid && <span className="ml-2 text-sm font-medium text-red-500">（尚未作答）</span>}
       </legend>
 

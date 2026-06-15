@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { getAssessment } from '../data/assessments/index.js';
-import { buildGroupNarrative, bandOf } from '../utils/narrative';
+import { buildGroupNarrative } from '../utils/narrative';
 
 const BAND_BADGE = {
   high: { label: '集體優勢', cls: 'bg-emerald-100 text-emerald-700' },

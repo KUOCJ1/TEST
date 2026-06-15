@@ -90,6 +90,25 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
       })
     : [];
 
+  // 課前 / 課後追蹤：優先採用明確標記的期別，否則退回「最早 vs 最新」。
+  // filtered 為新到舊排序，故由尾端往前找最早的課前作答。
+  const preSub = [...filtered].reverse().find((s) => s.phase === 'pre') ?? oldest;
+  const postSub = filtered.find((s) => s.phase === 'post') ?? (hasTrend ? latest : null);
+  const hasGain = preSub && postSub && preSub.id !== postSub.id;
+  const labelledPhase = filtered.some((s) => s.phase === 'pre' || s.phase === 'post');
+  const gain = hasGain
+    ? {
+        total: postSub.result.total - preSub.result.total,
+        dims: postSub.result.dimensions
+          .map((d) => {
+            const pre = preSub.result.dimensions.find((p) => p.id === d.id);
+            return { id: d.id, subtitle: d.subtitle, color: d.color, delta: pre ? d.score - pre.score : 0 };
+          })
+          .sort((a, b) => b.delta - a.delta),
+      }
+    : null;
+  const topGain = gain?.dims?.[0] ?? null;
+
   const printDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
@@ -150,6 +169,48 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
 
           <CoachCommentPanel comments={latest.comments} />
           <GroupCommentPanel group={myGroupForActive} />
+
+          {gain && (
+            <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
+              <h3 className="mb-1 text-base font-bold text-slate-700">學習增益</h3>
+              <p className="mb-4 text-xs text-slate-400">
+                {labelledPhase ? '課前評測' : '首次'} → {labelledPhase ? '課後複測' : '最新'}
+                （{formatDateShort(preSub.createdAt)} → {formatDateShort(postSub.createdAt)}）
+              </p>
+              <div className="flex flex-wrap items-stretch gap-3">
+                <div className="flex-1 rounded-xl bg-slate-50 px-4 py-3 text-center">
+                  <p className="text-xs text-slate-400">課前總分</p>
+                  <p className="mt-0.5 text-2xl font-extrabold text-slate-700">{preSub.result.total}</p>
+                </div>
+                <div className="flex items-center text-xl font-bold text-slate-300">→</div>
+                <div className="flex-1 rounded-xl bg-slate-50 px-4 py-3 text-center">
+                  <p className="text-xs text-slate-400">課後總分</p>
+                  <p className="mt-0.5 text-2xl font-extrabold text-slate-700">{postSub.result.total}</p>
+                </div>
+                <div
+                  className={`flex-1 rounded-xl px-4 py-3 text-center ${
+                    gain.total > 0 ? 'bg-emerald-50' : gain.total < 0 ? 'bg-red-50' : 'bg-slate-50'
+                  }`}
+                >
+                  <p className="text-xs text-slate-400">整體增益</p>
+                  <p
+                    className={`mt-0.5 text-2xl font-extrabold ${
+                      gain.total > 0 ? 'text-emerald-600' : gain.total < 0 ? 'text-red-500' : 'text-slate-500'
+                    }`}
+                  >
+                    {gain.total > 0 ? `+${gain.total}` : gain.total}
+                  </p>
+                </div>
+              </div>
+              {topGain && topGain.delta > 0 && (
+                <p className="mt-4 text-sm text-slate-500">
+                  進步最多的構面是
+                  <span className="mx-1 font-bold" style={{ color: topGain.color }}>{topGain.subtitle}</span>
+                  （+{topGain.delta} 分），持續保持！
+                </p>
+              )}
+            </section>
+          )}
 
           {hasTrend && (
             <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7 print:hidden">
@@ -223,7 +284,15 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
                 <tbody>
                   {filtered.map((s) => (
                     <tr key={s.id} className="border-b border-slate-100 last:border-0">
-                      <td className="py-2.5 pr-3 text-slate-600">{formatDate(s.createdAt)}</td>
+                      <td className="py-2.5 pr-3 text-slate-600">
+                        {formatDate(s.createdAt)}
+                        {s.phase === 'pre' && (
+                          <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">課前</span>
+                        )}
+                        {s.phase === 'post' && (
+                          <span className="ml-2 rounded bg-teal-100 px-1.5 py-0.5 text-xs font-medium text-teal-700">課後</span>
+                        )}
+                      </td>
                       <td className="py-2.5 pr-3 font-semibold text-slate-700">{s.result.total}</td>
                       <td className="py-2.5 pr-3 text-slate-600">{s.result.percent}%</td>
                       <td className="py-2.5">
