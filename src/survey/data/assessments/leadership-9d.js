@@ -1,6 +1,29 @@
 export const ID = 'leadership-9d';
 export const NAME = '經贏® 領導力九大構面行為評量';
-export const DESCRIPTION = '9 大構面、90 題，含反向題（🔄）';
+export const NAME_EN = 'Leadership 9-Dimension Behavioral Assessment';
+export const ABBR = 'L9D';
+export const DESCRIPTION = '以行為錨定評量量表（BARS）設計，涵蓋 9 大構面、20 個子能力、90 題行為頻率型題目（含反向題 🔄），適用於接班人才與中高階管理者發展評量。';
+
+export const LAYERS = [
+  {
+    id: 'foundation',
+    name: '個人基礎',
+    desc: '我是否能有效管理自己、清楚溝通並持續學習？',
+    dimensions: ['communication', 'task-management', 'execution', 'self-development'],
+  },
+  {
+    id: 'interpersonal',
+    name: '人際協作',
+    desc: '我是否能建立信任並協助他人成長？',
+    dimensions: ['collaboration', 'developing-others'],
+  },
+  {
+    id: 'organizational',
+    name: '組織領導',
+    desc: '我是否能引領組織方向並承擔更大責任？',
+    dimensions: ['leadership-impact', 'critical-thinking', 'succession-readiness'],
+  },
+];
 
 export const SCALE_MIN = 1;
 export const SCALE_MAX = 5;
@@ -15,7 +38,7 @@ export const SCALE_LABELS = [
 
 export const DIMENSIONS = [
   {
-    id: 'communication', index: 1, name: '溝通力', subtitle: 'Communication', color: '#3182ce',
+    id: 'communication', index: 1, name: '溝通力', subtitle: 'Communication', color: '#3182ce', layer: 'foundation',
     subDimensions: [
       { id: 'listening', name: '聆聽他人' },
       { id: 'processing', name: '處理訊息' },
@@ -35,7 +58,7 @@ export const DIMENSIONS = [
     ],
   },
   {
-    id: 'collaboration', index: 2, name: '協作關係', subtitle: 'Collaboration', color: '#38a169',
+    id: 'collaboration', index: 2, name: '協作關係', subtitle: 'Collaboration', color: '#38a169', layer: 'interpersonal',
     subDimensions: [
       { id: 'build-relations', name: '建立人員關係' },
       { id: 'lead-team', name: '引領團隊成功' },
@@ -54,7 +77,7 @@ export const DIMENSIONS = [
     ],
   },
   {
-    id: 'task-management', index: 3, name: '任務管理', subtitle: 'Task Management', color: '#dd6b20',
+    id: 'task-management', index: 3, name: '任務管理', subtitle: 'Task Management', color: '#dd6b20', layer: 'foundation',
     subDimensions: [
       { id: 'efficiency', name: '工作效率' },
       { id: 'competence', name: '勝任工作' },
@@ -73,7 +96,7 @@ export const DIMENSIONS = [
     ],
   },
   {
-    id: 'execution', index: 4, name: '執行力', subtitle: 'Execution', color: '#d53f8c',
+    id: 'execution', index: 4, name: '執行力', subtitle: 'Execution', color: '#d53f8c', layer: 'foundation',
     subDimensions: [
       { id: 'take-action', name: '採取行動' },
       { id: 'create-results', name: '創造結果' },
@@ -92,7 +115,7 @@ export const DIMENSIONS = [
     ],
   },
   {
-    id: 'leadership-impact', index: 5, name: '領導影響力', subtitle: 'Leadership Impact', color: '#805ad5',
+    id: 'leadership-impact', index: 5, name: '領導影響力', subtitle: 'Leadership Impact', color: '#805ad5', layer: 'organizational',
     subDimensions: [
       { id: 'trust', name: '讓人信任' },
       { id: 'direction', name: '提供方向' },
@@ -112,7 +135,7 @@ export const DIMENSIONS = [
     ],
   },
   {
-    id: 'developing-others', index: 6, name: '人才發展', subtitle: 'Developing Others', color: '#319795',
+    id: 'developing-others', index: 6, name: '人才發展', subtitle: 'Developing Others', color: '#319795', layer: 'interpersonal',
     subDimensions: [
       { id: 'cultivate', name: '培養個人才能' },
       { id: 'motivate', name: '激勵成功' },
@@ -131,7 +154,7 @@ export const DIMENSIONS = [
     ],
   },
   {
-    id: 'critical-thinking', index: 7, name: '思辨與決策', subtitle: 'Critical Thinking', color: '#2c7a7b',
+    id: 'critical-thinking', index: 7, name: '思辨與決策', subtitle: 'Critical Thinking', color: '#2c7a7b', layer: 'organizational',
     subDimensions: [
       { id: 'analysis', name: '分析判斷' },
       { id: 'decisiveness', name: '決策定見' },
@@ -150,7 +173,7 @@ export const DIMENSIONS = [
     ],
   },
   {
-    id: 'self-development', index: 8, name: '自我成長', subtitle: 'Self-Development', color: '#c05621',
+    id: 'self-development', index: 8, name: '自我成長', subtitle: 'Self-Development', color: '#c05621', layer: 'foundation',
     subDimensions: [
       { id: 'commitment', name: '展現承諾' },
       { id: 'improvement', name: '尋求改善' },
@@ -169,7 +192,7 @@ export const DIMENSIONS = [
     ],
   },
   {
-    id: 'succession-readiness', index: 9, name: '接班成熟度', subtitle: 'Succession Readiness', color: '#744210',
+    id: 'succession-readiness', index: 9, name: '接班成熟度', subtitle: 'Succession Readiness', color: '#744210', layer: 'organizational',
     subDimensions: [
       { id: 'mission-commitment', name: '使命承諾' },
       { id: 'generational', name: '世代協作與準備' },
