@@ -93,7 +93,7 @@ export default function AppShell() {
               ← 返回評量列表
             </button>
           ) : (
-            <nav className="flex flex-1 flex-wrap items-center gap-1">
+            <nav className="flex flex-1 flex-wrap gap-1">
               {tabs.map((t) => (
                 <button
                   key={t.id}
@@ -108,14 +108,6 @@ export default function AppShell() {
                   {t.label}
                 </button>
               ))}
-              <a
-                href={`${import.meta.env.BASE_URL}volunteer-survey.html`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-lg px-3 py-1.5 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50"
-              >
-                📋 課程需求調查
-              </a>
             </nav>
           )}
 
