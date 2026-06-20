@@ -111,6 +111,13 @@ export default function LoginPage() {
             管理員請使用部署時設定的帳號密碼登入。
           </p>
         </div>
+
+        <a
+          href={`${import.meta.env.BASE_URL}volunteer-survey.html`}
+          className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-center font-bold text-blue-700 shadow-sm transition-colors hover:bg-blue-100"
+        >
+          📋 下半年 AI 課程需求調查（免登入填寫）
+        </a>
       </div>
     </main>
   );
