@@ -687,6 +687,7 @@ function GroupTab({ users, submissions }) {
               <GroupNarrativeReport
                 results={groupDetail.submissions.map((s) => s.result).filter(Boolean)}
                 assessmentId={groupDetail.group.assessmentId}
+                focusDimensionIds={groupDetail.group.focusDimensionIds ?? []}
               />
             )}
 

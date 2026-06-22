@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { getAssessment } from '../data/assessments/index.js';
-import { buildNarrative, buildOverallSummary, bandOf } from '../utils/narrative';
+import {
+  buildNarrative,
+  buildOverallSummary,
+  bandOf,
+  buildCoachNarrative,
+  buildConsultantNarrative,
+  buildDevelopmentPlan,
+} from '../utils/narrative';
 
 const BAND_BADGE = {
   high: { label: '優秀表現', cls: 'bg-emerald-100 text-emerald-700' },
@@ -8,20 +15,27 @@ const BAND_BADGE = {
   low: { label: '尚待強化', cls: 'bg-amber-100 text-amber-700' },
 };
 
-function DimensionCard({ dim, config, seedBase }) {
+const TABS = [
+  { id: 'coach', label: '🎯 教練視角' },
+  { id: 'consultant', label: '🏛️ 顧問視角' },
+  { id: 'plan', label: '🧭 發展建議' },
+];
+
+function DimensionCard({ dim, config, seedBase, focus }) {
   const [open, setOpen] = useState(true);
   const text = buildNarrative(dim, config, seedBase);
   if (!text) return null;
   const badge = BAND_BADGE[bandOf(dim.average)];
 
   return (
-    <div className="rounded-xl border border-slate-200">
+    <div className={`rounded-xl border ${focus ? 'border-violet-300 bg-violet-50/40' : 'border-slate-200'}`}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left print:cursor-default"
       >
         <span className="font-semibold text-slate-700">
+          {focus && <span title="重點構面" className="mr-1">⭐</span>}
           <span style={{ color: dim.color }}>{dim.name}</span>
           <span className="ml-2 text-xs font-normal text-slate-400">平均 {dim.average.toFixed(1)} / 5</span>
         </span>
@@ -38,10 +52,13 @@ function DimensionCard({ dim, config, seedBase }) {
 }
 
 /**
- * 綜合能力評語：報告最上方一段整體總評，下方每構面一張可展開卡片。
+ * 綜合能力評語：整體總評 + 三種視角分頁（教練 / 顧問 / 發展建議）。
  * 僅在題庫設有 COMMENTARY 且結果帶有子能力分數（result.dimensions[].subs）時顯示。
+ * 列印時三個分頁內容會全部展開（各自帶標題）。
+ * @param {string[]} focusDimensionIds 班級設定的重點構面，會在報告中以 ⭐ 標記並優先排入發展建議。
  */
-export default function NarrativeReport({ result }) {
+export default function NarrativeReport({ result, focusDimensionIds = [] }) {
+  const [tab, setTab] = useState('coach');
   const config = getAssessment(result?.assessmentId);
   const hasSubs =
     Array.isArray(result?.dimensions) &&
@@ -50,6 +67,12 @@ export default function NarrativeReport({ result }) {
 
   const seedBase = result.total;
   const overall = buildOverallSummary(result, config, seedBase);
+  const coachText = buildCoachNarrative(result, config, seedBase);
+  const consultantText = buildConsultantNarrative(result, config, seedBase);
+  const plan = buildDevelopmentPlan(result, config, { focusDimensionIds });
+
+  // 列印時：未選取的分頁也要顯示 → block；螢幕上則依分頁切換。
+  const panelCls = (id) => `${tab === id ? 'block' : 'hidden'} print:block`;
 
   return (
     <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
@@ -62,10 +85,80 @@ export default function NarrativeReport({ result }) {
         </div>
       )}
 
-      <div className="mt-4 space-y-3">
-        {result.dimensions.map((dim) => (
-          <DimensionCard key={dim.id} dim={dim} config={config} seedBase={seedBase} />
+      {/* 分頁列（列印時隱藏） */}
+      <div className="mt-4 flex gap-1 rounded-lg bg-slate-100 p-1 print:hidden">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
+              tab === t.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {t.label}
+          </button>
         ))}
+      </div>
+
+      {/* 教練視角 */}
+      <div className={`mt-4 ${panelCls('coach')}`}>
+        <p className="mb-2 hidden text-sm font-bold text-slate-600 print:block">🎯 教練視角</p>
+        {coachText && (
+          <div className="rounded-xl border-l-4 border-sky-500 bg-sky-50/60 p-4 leading-relaxed text-slate-700">
+            {coachText}
+          </div>
+        )}
+        <div className="mt-4 space-y-3">
+          {result.dimensions.map((dim) => (
+            <DimensionCard
+              key={dim.id}
+              dim={dim}
+              config={config}
+              seedBase={seedBase}
+              focus={focusDimensionIds.includes(dim.id)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 顧問視角 */}
+      <div className={`mt-4 ${panelCls('consultant')}`}>
+        <p className="mb-2 hidden text-sm font-bold text-slate-600 print:block">🏛️ 顧問視角</p>
+        {consultantText ? (
+          <div className="rounded-xl border-l-4 border-violet-500 bg-violet-50/60 p-4 leading-relaxed text-slate-700">
+            {consultantText}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400">此題庫尚未提供顧問級敘事。</p>
+        )}
+      </div>
+
+      {/* 發展建議 */}
+      <div className={`mt-4 ${panelCls('plan')}`}>
+        <p className="mb-2 hidden text-sm font-bold text-slate-600 print:block">🧭 發展建議</p>
+        {plan.length > 0 ? (
+          <ol className="space-y-3">
+            {plan.map((p) => (
+              <li key={p.id + p.horizon} className="rounded-xl border border-slate-200 p-4">
+                <p className="font-semibold text-slate-700">
+                  <span className="mr-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{p.horizon}</span>
+                  {p.title}
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {p.actions.map((a) => (
+                    <li key={a} className="flex gap-2 text-sm leading-relaxed text-slate-600">
+                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-teal-500" />
+                      <span>{a}</span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="text-sm text-slate-400">資料不足，無法產生發展建議。</p>
+        )}
       </div>
     </section>
   );

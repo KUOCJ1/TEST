@@ -355,3 +355,40 @@ export function buildDevelopmentPlan(result, config, options = {}) {
   }
   return plan;
 }
+
+/**
+ * 把多位成員的結果聚合成單一「類 result」物件（各構面取平均、落點取主導等級），
+ * 供班級層級沿用顧問級敘事與發展建議。
+ * @returns {{total:number, level:object, dimensions:Array<{id,name,color,average}>}|null}
+ */
+export function aggregateResult(results, config) {
+  if (!Array.isArray(results) || results.length === 0) return null;
+  const n = results.length;
+  const agg = new Map();
+  results.forEach((r) =>
+    (r.dimensions ?? []).forEach((d) => {
+      const e = agg.get(d.id) ?? { id: d.id, name: d.name, color: d.color, sum: 0, cnt: 0 };
+      e.sum += d.average ?? 0;
+      e.cnt += 1;
+      agg.set(d.id, e);
+    }),
+  );
+  let dimensions = [...agg.values()].map((e) => ({
+    id: e.id, name: e.name, color: e.color, average: e.cnt ? e.sum / e.cnt : 0,
+  }));
+  if (config?.DIMENSIONS) {
+    const order = (id) => config.DIMENSIONS.findIndex((d) => d.id === id);
+    dimensions = dimensions.sort((a, b) => order(a.id) - order(b.id));
+  }
+  if (dimensions.length === 0) return null;
+
+  const total = Math.round(results.reduce((s, r) => s + (r.total ?? 0), 0) / n);
+  const lvlCount = {};
+  results.forEach((r) => {
+    const id = r.level?.id;
+    if (id) lvlCount[id] = (lvlCount[id] ?? 0) + 1;
+  });
+  const domId = Object.entries(lvlCount).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const level = results.find((r) => r.level?.id === domId)?.level ?? results[0]?.level ?? { badge: '' };
+  return { total, level, dimensions };
+}

@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react';
 import { getAssessment } from '../data/assessments/index.js';
-import { buildGroupNarrative } from '../utils/narrative';
+import {
+  buildGroupNarrative,
+  buildConsultantNarrative,
+  buildDevelopmentPlan,
+  aggregateResult,
+} from '../utils/narrative';
 
 const BAND_BADGE = {
   high: { label: '集體優勢', cls: 'bg-emerald-100 text-emerald-700' },
@@ -39,11 +44,20 @@ function DimRow({ item }) {
  * @param {Array}  results       班級所有成員的 result 物件陣列（含 dimensions[].subs）
  * @param {string} assessmentId  題庫 id
  */
-export default function GroupNarrativeReport({ results, assessmentId }) {
+export default function GroupNarrativeReport({ results, assessmentId, focusDimensionIds = [] }) {
   const config = getAssessment(assessmentId);
   const report = useMemo(
     () => buildGroupNarrative(results, config),
     [results, config],
+  );
+  const agg = useMemo(() => aggregateResult(results, config), [results, config]);
+  const consultantText = useMemo(
+    () => (agg ? buildConsultantNarrative(agg, config, agg.total) : ''),
+    [agg, config],
+  );
+  const plan = useMemo(
+    () => (agg ? buildDevelopmentPlan(agg, config, { focusDimensionIds }) : []),
+    [agg, config, focusDimensionIds],
   );
 
   if (!report) return null;
@@ -64,6 +78,39 @@ export default function GroupNarrativeReport({ results, assessmentId }) {
           {report.dimensions.map((item) => (
             <DimRow key={item.id} item={item} />
           ))}
+        </div>
+      )}
+
+      {consultantText && (
+        <div className="mt-5">
+          <h4 className="mb-2 text-sm font-bold text-slate-600">🏛️ 顧問視角（組織人才佈局）</h4>
+          <div className="rounded-xl border-l-4 border-indigo-500 bg-indigo-50/60 p-4 leading-relaxed text-slate-700">
+            {consultantText}
+          </div>
+        </div>
+      )}
+
+      {plan.length > 0 && (
+        <div className="mt-5">
+          <h4 className="mb-2 text-sm font-bold text-slate-600">🧭 班級發展藍圖</h4>
+          <ol className="space-y-3">
+            {plan.map((p) => (
+              <li key={p.id + p.horizon} className="rounded-xl border border-slate-200 p-4">
+                <p className="font-semibold text-slate-700">
+                  <span className="mr-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{p.horizon}</span>
+                  {p.title}
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {p.actions.map((a) => (
+                    <li key={a} className="flex gap-2 text-sm leading-relaxed text-slate-600">
+                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-500" />
+                      <span>{a}</span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
         </div>
       )}
     </section>
