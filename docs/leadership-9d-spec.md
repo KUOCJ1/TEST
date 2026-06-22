@@ -726,4 +726,68 @@
 
 ---
 
-*本規格書由系統自動彙整，對應程式碼：`src/survey/data/assessments/leadership-9d.js`、`src/survey/utils/narrative.js`、`src/survey/components/NarrativeReport.jsx`*
+## 十五、班級評量設定（評量初期）
+
+教練／管理員在建立班別時，可於評量初期鎖定評量重點並規劃班級規模。所有欄位皆為
+選填、向後相容，舊班別不受影響。
+
+### 資料模型（`group` 新增欄位）
+
+| 欄位 | 型別 | 說明 |
+|------|------|------|
+| `focusDimensionIds` | `string[]` | 鎖定的重點構面（九取 N）。報告中以 ⭐ 標記並優先排入發展建議 |
+| `targetHeadcount` | `number \| null` | 預計人數。詳情頁顯示「已加入 N / 目標 M」與達標進度 |
+| `dimensionNotes` | `{ [dimId]: string }` | 各重點構面的客製內容（培訓目標／觀察重點） |
+
+### 設計原則
+
+- **報告聚焦、不縮短量表**：勾選構面僅影響報告呈現重點與發展建議排序；受測者仍
+  完成全部 90 題，落點等級與跨人比較不受影響。
+- **後端僅做型別／長度防呆**：構面 id 屬前端題庫設定，後端不持有完整清單，故對
+  `focusDimensionIds`（去重、上限 50）、`targetHeadcount`（≥0、負數→null）、
+  `dimensionNotes`（字串、單則上限 2000 字）做清洗，合法選項由前端提供。
+
+### 入口
+
+- 建立班別表單：目標人數 + 九大構面勾選。
+- 班別詳情「🎯 評量設定」卡：編輯目標人數、重點構面、各重點構面備註，與其餘班級
+  設定一併以「儲存班級設定」保存。
+
+---
+
+## 十六、三視角報告敘事（評量結果）
+
+最終報告在「整體總評」之下，提供三種視角的敘事，皆為 seed 決定性（同一份報告
+穩定、跨人有變化）、向後相容（無 COMMENTARY 或無子能力分數時不顯示）。
+
+| 視角 | 口吻與重點 | 取材 | 函式 |
+|------|-----------|------|------|
+| 🎯 教練視角 | 發展教練口吻，聚焦個人成長優先序與可執行練習；下接逐構面評語 | 最強／最弱構面、`COMMENTARY` | `buildCoachNarrative` |
+| 🏛️ 顧問視角 | 組織／策略高度，以三圈層描述能力梯度與人才定位，含接班佈局 | `LAYERS`、`succession-readiness` 構面 | `buildConsultantNarrative` |
+| 🧭 發展建議 | 近期（0–3 月）／中期（3–6 月）／長期（6–12 月）發展路徑 | 最弱構面（重點構面優先）+ 最強構面 | `buildDevelopmentPlan` |
+
+### 顧問視角邏輯
+
+- 以 `LAYERS`（個人基礎 → 人際協作 → 組織領導）彙整各圈層平均，點出最強圈層
+  （立足點）與最弱圈層（能力斷點）。
+- 若題庫含「接班成熟度」構面，依其平均給出接班準備度觀點與人才定位
+  （平均 ≥3.8 →「可培育的關鍵接班候選」）。
+- 無 `LAYERS` 的題庫自動退回構面層級敘事，不報錯。
+
+### 發展建議邏輯
+
+- 依構面平均由低到高排序；若班級設有 `focusDimensionIds`，重點構面中的最弱者
+  優先進入「近期」。
+- 各階段行動項依該構面分段（high／mid／low）對應不同建議語句。
+
+### 呈現與列印
+
+- 螢幕上以分頁切換三視角；**列印（PDF）時三頁全部展開**並各帶標題，確保輸出
+  報告完整。
+- 班級報告（`GroupNarrativeReport`）以 `aggregateResult` 將全班結果聚合成單一
+  「類 result」物件後，沿用同一引擎產出「🏛️ 顧問視角（組織人才佈局）」與
+  「🧭 班級發展藍圖」，藍圖優先鎖定該班重點構面。
+
+---
+
+*本規格書由系統自動彙整，對應程式碼：`src/survey/data/assessments/leadership-9d.js`、`src/survey/utils/narrative.js`、`src/survey/components/NarrativeReport.jsx`、`src/survey/components/GroupNarrativeReport.jsx`、`src/survey/coach/CoachDashboard.jsx`、`server/src/app.js`*
