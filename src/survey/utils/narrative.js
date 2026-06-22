@@ -233,3 +233,125 @@ export function buildOverallSummary(result, config, seedBase = 0) {
 
   return pick(templates, seed)();
 }
+
+// 依題庫的三圈層（LAYERS）彙整各層平均，供顧問級敘事描述「能力梯度」。
+function layerStats(result, config) {
+  const layers = config?.LAYERS;
+  if (!Array.isArray(layers) || layers.length === 0) return [];
+  const dimById = new Map((result.dimensions ?? []).map((d) => [d.id, d]));
+  return layers
+    .map((layer) => {
+      const dims = (layer.dimensions ?? []).map((id) => dimById.get(id)).filter(Boolean);
+      const avg = dims.length ? dims.reduce((s, d) => s + d.average, 0) / dims.length : 0;
+      return { id: layer.id, name: layer.name, avg, dims };
+    })
+    .filter((l) => l.dims.length > 0);
+}
+
+/**
+ * 教練級敘事 — 以「發展教練」的口吻，聚焦個人成長優先序與可執行的練習。
+ * 與 buildOverallSummary（中性總評）刻意採不同語氣。
+ */
+export function buildCoachNarrative(result, config, seedBase = 0) {
+  if (!Array.isArray(result?.dimensions) || result.dimensions.length === 0) return '';
+  const seed = hashStr(`${seedBase}|coach`);
+  const sorted = [...result.dimensions].sort((a, b) => b.average - a.average);
+  const top = sorted.slice(0, 2).map((d) => d.name);
+  const low = sorted.slice(-2).map((d) => d.name).reverse();
+  const lowest = sorted[sorted.length - 1];
+  const badge = result.level?.badge ?? '';
+
+  const templates = [
+    () => `作為您的發展教練，我看見您在「${top.join('」與「')}」展現了可被倚重的行為慣性，這是我們能立刻「以強帶弱」的支點。下一步，建議把焦點放在「${low.join('」與「')}」——尤其是「${lowest.name}」，它目前是投報率最高的練習區。不妨從一個每週可重複的小行為開始，每次對談檢視一個具體情境、調整一個做法。`,
+    () => `從教練的角度，您目前落在「${badge}」，整體節奏穩定。「${top.join('」、「')}」是明顯優勢，請刻意在團隊中多「示範」這些行為，讓它成為可被觀察與學習的範本；而「${low.join('」、「')}」則是這一期的核心議題，我會陪您把抽象目標拆成可演練的行動，從最小可行的一步啟動改變。`,
+    () => `先肯定您在「${top.join('」與「')}」的投入——這些行為已內化成習慣，是您領導風格中最有辨識度的部分。接下來的成長空間集中在「${lowest.name}」，這不是缺點，而是尚未被刻意練習的肌群；建議搭配每兩週一次的回饋對話與情境演練，讓改變看得見、可累積。`,
+  ];
+  return pick(templates, seed)();
+}
+
+/**
+ * 顧問級敘事 — 拉高到組織/策略視角，以三圈層描述能力梯度與人才定位；
+ * 若題庫含「接班成熟度」構面則一併納入接班佈局觀點。無 LAYERS 時退回構面層級。
+ */
+export function buildConsultantNarrative(result, config, seedBase = 0) {
+  if (!Array.isArray(result?.dimensions) || result.dimensions.length === 0) return '';
+  const seed = hashStr(`${seedBase}|consultant`);
+  const badge = result.level?.badge ?? '';
+  const layers = layerStats(result, config);
+  const succession = result.dimensions.find((d) => d.id === 'succession-readiness');
+  const successionText = succession
+    ? `在接班成熟度上目前平均 ${succession.average.toFixed(1)}/5，${
+        succession.average >= 3.5
+          ? '已展現承接更大責任的心理與能力準備，建議於實戰專案中加速養成。'
+          : '建議優先透過任務歷練與導師制補強，縮短與接班期待之間的落差。'
+      }`
+    : '';
+
+  if (layers.length >= 2) {
+    const sortedL = [...layers].sort((a, b) => b.avg - a.avg);
+    const strongL = sortedL[0];
+    const weakL = sortedL[sortedL.length - 1];
+    const positioning = strongL.avg >= 3.8 ? '可培育的關鍵接班候選' : '需中期發展的潛力人才';
+    const templates = [
+      () => `綜觀整體領導梯度，其優勢集中在「${strongL.name}」層（平均 ${strongL.avg.toFixed(1)}/5），在此能力圈層已具備可被組織倚賴的穩定度；相對地，「${weakL.name}」層（平均 ${weakL.avg.toFixed(1)}/5）是現階段最關鍵的能力斷點，將直接影響其能否承擔更大的管理幅度。整體落點為「${badge}」。${successionText}從人才佈局來看，建議將其定位為「${positioning}」，並以「${weakL.name}」層作為下一階段發展投資的主軸。`,
+      () => `從組織人才地圖的高度來看，這份結果呈現清晰的能力梯度：「${strongL.name}」是其立足點，「${weakL.name}」則是邁向更高領導職位前必須補強的關鍵環節，整體成熟度落於「${badge}」。${successionText}建議採取「以優勢建立信任、以弱項設定里程碑」的發展策略，並透過跨部門專案讓能力在真實情境中被驗證。`,
+    ];
+    return pick(templates, seed)();
+  }
+
+  const sorted = [...result.dimensions].sort((a, b) => b.average - a.average);
+  const top = sorted[0]?.name;
+  const low = sorted[sorted.length - 1]?.name;
+  return `整體落點為「${badge}」。從人才發展視角，「${top}」是其可被組織倚賴的優勢，「${low}」則是下一階段最關鍵的發展投資方向，建議透過任務歷練與定期檢核加速養成。${successionText}`;
+}
+
+/**
+ * 未來發展建議 — 依最弱構面（重點構面優先）排出近/中/長期路徑。
+ * @param {object} options 可帶 { focusDimensionIds: string[] } 讓重點構面優先進入近中期。
+ * @returns {Array<{id,horizon,title,actions:string[]}>}
+ */
+export function buildDevelopmentPlan(result, config, options = {}) {
+  if (!Array.isArray(result?.dimensions) || result.dimensions.length === 0) return [];
+  const focusIds = Array.isArray(options.focusDimensionIds) ? options.focusDimensionIds : [];
+  const dims = result.dimensions;
+  const weakestFirst = [...dims].sort((a, b) => a.average - b.average);
+  const focusWeakest = weakestFirst.filter((d) => focusIds.includes(d.id));
+
+  const near = focusWeakest[0] ?? weakestFirst[0];
+  const mid = weakestFirst.find((d) => d.id !== near.id);
+  const strongest = [...dims].sort((a, b) => b.average - a.average)[0];
+
+  const ACTIONS = {
+    low: [
+      '鎖定一個高頻情境，設計可每週重複的具體行為，並記錄前後差異。',
+      '尋求一位導師或同儕給予即時回饋，每兩週檢視一次進展。',
+    ],
+    mid: [
+      '將既有行為標準化為可複製的流程，並在團隊中試行。',
+      '挑選一個略高於現況的挑戰任務，作為能力延伸的試煉場。',
+    ],
+    high: [
+      '把這項優勢轉化為團隊可學習的範本，透過帶教擴大影響。',
+      '在跨部門或更高層級的任務中發揮此強項，累積組織能見度。',
+    ],
+  };
+
+  const phase = (dim, horizon, label) => ({
+    id: dim.id,
+    horizon,
+    title: `${label}：聚焦「${dim.name}」（目前 ${dim.average.toFixed(1)} / 5）`,
+    actions: ACTIONS[bandOf(dim.average)],
+  });
+
+  const plan = [phase(near, '近期（0–3 個月）', '打底')];
+  if (mid && mid.id !== near.id) plan.push(phase(mid, '中期（3–6 個月）', '進階'));
+  if (strongest && strongest.id !== near.id && strongest.id !== mid?.id) {
+    plan.push({
+      id: strongest.id,
+      horizon: '長期（6–12 個月）',
+      title: `發揮：以「${strongest.name}」帶動全局（目前 ${strongest.average.toFixed(1)} / 5）`,
+      actions: ACTIONS.high,
+    });
+  }
+  return plan;
+}

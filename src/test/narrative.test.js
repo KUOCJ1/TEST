@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { buildResult, computeDimensionScores } from '../survey/utils/scoring';
-import { bandOf, buildNarrative, buildOverallSummary } from '../survey/utils/narrative';
+import {
+  bandOf,
+  buildNarrative,
+  buildOverallSummary,
+  buildCoachNarrative,
+  buildConsultantNarrative,
+  buildDevelopmentPlan,
+} from '../survey/utils/narrative';
 import { getAssessment } from '../survey/data/assessments/index.js';
 
 const config = getAssessment('leadership-9d');
@@ -106,5 +113,59 @@ describe('buildOverallSummary 整體總評', () => {
     const summary = buildOverallSummary(result, config, result.total);
     expect(summary).toContain(result.level.badge);
     expect(summary).toContain(result.dimensions[0].name);
+  });
+});
+
+describe('buildCoachNarrative 教練級敘事', () => {
+  it('產出非空段落且決定性（相同 seed 相同輸出）', () => {
+    const result = buildResult(fillAll(4), config);
+    const a = buildCoachNarrative(result, config, result.total);
+    const b = buildCoachNarrative(result, config, result.total);
+    expect(a.length).toBeGreaterThan(30);
+    expect(a).toBe(b);
+  });
+  it('結果為空時回傳空字串', () => {
+    expect(buildCoachNarrative({ dimensions: [] }, config, 1)).toBe('');
+  });
+});
+
+describe('buildConsultantNarrative 顧問級敘事', () => {
+  it('L9D（有三圈層）會提到能力梯度與落點', () => {
+    const result = buildResult(fillAll(4), config);
+    const text = buildConsultantNarrative(result, config, result.total);
+    expect(text.length).toBeGreaterThan(40);
+    expect(text).toContain(result.level.badge);
+    // 應提到某一圈層名稱
+    expect(config.LAYERS.some((l) => text.includes(l.name))).toBe(true);
+  });
+  it('無 LAYERS 的題庫會退回構面層級且不報錯', () => {
+    const result = buildResult(fillAll(4), config);
+    const text = buildConsultantNarrative(result, { ...config, LAYERS: undefined }, result.total);
+    expect(text).toContain(result.level.badge);
+  });
+});
+
+describe('buildDevelopmentPlan 發展建議', () => {
+  it('回傳近/中/長期階段，每階段含行動項', () => {
+    const result = buildResult(fillAll(3), config);
+    const plan = buildDevelopmentPlan(result, config, {}, result.total);
+    expect(plan.length).toBeGreaterThanOrEqual(2);
+    expect(plan[0].horizon).toContain('近期');
+    expect(Array.isArray(plan[0].actions)).toBe(true);
+    expect(plan[0].actions.length).toBeGreaterThan(0);
+  });
+  it('指定重點構面時，近期階段優先鎖定重點構面中的最弱者', () => {
+    // 讓 communication 偏弱、其餘較高：communication 全 2，其餘全 5
+    const answers = Object.fromEntries(
+      ALL_QUESTIONS.map((q) => {
+        const dim = DIMENSIONS.find((d) => d.questions.some((x) => x.id === q.id));
+        const weak = dim.id === 'communication';
+        const base = weak ? 2 : 5;
+        return [q.id, q.reversed ? 6 - base : base];
+      }),
+    );
+    const result = buildResult(answers, config);
+    const plan = buildDevelopmentPlan(result, config, { focusDimensionIds: ['communication'] }, result.total);
+    expect(plan[0].id).toBe('communication');
   });
 });
