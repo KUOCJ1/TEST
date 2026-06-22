@@ -13,6 +13,32 @@ import {
 const COOKIE_NAME = 'aiassess_token';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 天
 
+// ── 班別「評量設定」欄位清洗 ───────────────────────────────
+// 構面 id 屬於前端題庫設定，後端不持有完整清單，故僅做型別/長度防呆，
+// 由前端提供合法選項（與現有 assessmentId 僅存字串的作法一致）。
+export function sanitizeFocusDimensionIds(v) {
+  if (!Array.isArray(v)) return [];
+  const cleaned = v.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim());
+  return [...new Set(cleaned)].slice(0, 50);
+}
+export function sanitizeTargetHeadcount(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.min(Math.floor(n), 100000);
+}
+export function sanitizeDimensionNotes(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+  const out = {};
+  for (const [k, val] of Object.entries(v)) {
+    if (typeof k === 'string' && typeof val === 'string') {
+      const t = val.trim();
+      if (t) out[k] = t.slice(0, 2000);
+    }
+  }
+  return out;
+}
+
 /**
  * 建立 Express app（不啟動監聽），方便測試直接以 supertest 注入。
  * @param {{db, jwtSecret:string, secureCookies?:boolean}} opts
@@ -325,7 +351,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   });
 
   app.post('/api/coach/groups', requireAuth, requireCoach, (req, res) => {
-    const { name, companyName, assessmentId, memberIds } = req.body ?? {};
+    const { name, companyName, assessmentId, memberIds, focusDimensionIds, targetHeadcount, dimensionNotes } = req.body ?? {};
     if (!name?.trim()) return res.status(400).json({ error: '請輸入班別名稱' });
     const group = {
       id: randomUUID(),
@@ -335,6 +361,9 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       coachId: req.user.id,
       coachName: req.user.name,
       memberIds: Array.isArray(memberIds) ? memberIds : [],
+      focusDimensionIds: sanitizeFocusDimensionIds(focusDimensionIds),
+      targetHeadcount: sanitizeTargetHeadcount(targetHeadcount),
+      dimensionNotes: sanitizeDimensionNotes(dimensionNotes),
       groupComment: '',
       groupTips: [],
       createdAt: new Date().toISOString(),
@@ -365,7 +394,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: '無權限' });
     }
-    const { name, companyName, assessmentId, memberIds, groupComment, groupTips } = req.body ?? {};
+    const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes } = req.body ?? {};
     groups[idx] = {
       ...groups[idx],
       ...(name !== undefined && { name: name.trim() }),
@@ -374,6 +403,9 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       ...(memberIds !== undefined && { memberIds: Array.isArray(memberIds) ? memberIds : [] }),
       ...(groupComment !== undefined && { groupComment }),
       ...(groupTips !== undefined && { groupTips: Array.isArray(groupTips) ? groupTips : [] }),
+      ...(focusDimensionIds !== undefined && { focusDimensionIds: sanitizeFocusDimensionIds(focusDimensionIds) }),
+      ...(targetHeadcount !== undefined && { targetHeadcount: sanitizeTargetHeadcount(targetHeadcount) }),
+      ...(dimensionNotes !== undefined && { dimensionNotes: sanitizeDimensionNotes(dimensionNotes) }),
       updatedAt: new Date().toISOString(),
     };
     db.persist();

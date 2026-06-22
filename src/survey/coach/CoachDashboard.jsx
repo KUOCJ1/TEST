@@ -291,10 +291,15 @@ function GroupTab({ users, submissions }) {
   const [newGroupName, setNewGroupName] = useState('');
   const [newCompany, setNewCompany] = useState('');
   const [newAssessmentId, setNewAssessmentId] = useState('ai-competency');
+  const [newTarget, setNewTarget] = useState('');
+  const [newFocusDims, setNewFocusDims] = useState([]);
   const [savingGroup, setSavingGroup] = useState(false);
   const [groupComment, setGroupComment] = useState('');
   const [groupTips, setGroupTips] = useState(['']);
   const [selectedMembers, setSelectedMembers] = useState([]);
+  const [targetHeadcount, setTargetHeadcount] = useState('');
+  const [focusDims, setFocusDims] = useState([]);
+  const [dimNotes, setDimNotes] = useState({});
   const [error, setError] = useState('');
   const [rosterText, setRosterText] = useState('');
   const [importing, setImporting] = useState(false);
@@ -314,6 +319,9 @@ function GroupTab({ users, submissions }) {
       setGroupComment(group.groupComment ?? '');
       setGroupTips(group.groupTips?.length ? group.groupTips : ['']);
       setSelectedMembers(group.memberIds ?? []);
+      setTargetHeadcount(group.targetHeadcount == null ? '' : String(group.targetHeadcount));
+      setFocusDims(group.focusDimensionIds ?? []);
+      setDimNotes(group.dimensionNotes ?? {});
     } catch (e) {
       alert(e.message || '載入失敗');
     }
@@ -329,11 +337,15 @@ function GroupTab({ users, submissions }) {
         companyName: newCompany.trim(),
         assessmentId: newAssessmentId,
         memberIds: [],
+        targetHeadcount: newTarget === '' ? null : Number(newTarget),
+        focusDimensionIds: newFocusDims,
       });
       setGroups((prev) => [group, ...prev]);
       setCreating(false);
       setNewGroupName('');
       setNewCompany('');
+      setNewTarget('');
+      setNewFocusDims([]);
       loadGroup(group.id);
     } catch (e) {
       setError(e.message || '建立失敗');
@@ -350,6 +362,9 @@ function GroupTab({ users, submissions }) {
         memberIds: selectedMembers,
         groupComment: groupComment.trim(),
         groupTips: groupTips.filter((t) => t.trim()),
+        targetHeadcount: targetHeadcount === '' ? null : Number(targetHeadcount),
+        focusDimensionIds: focusDims,
+        dimensionNotes: Object.fromEntries(focusDims.map((id) => [id, (dimNotes[id] ?? '').trim()]).filter(([, v]) => v)),
       });
       setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
       setGroupDetail((prev) => prev ? { ...prev, group: updated } : prev);
@@ -376,6 +391,13 @@ function GroupTab({ users, submissions }) {
       prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
     );
   };
+
+  const toggleSetter = (setter) => (dimId) =>
+    setter((prev) => (prev.includes(dimId) ? prev.filter((id) => id !== dimId) : [...prev, dimId]));
+  const toggleNewFocus = toggleSetter(setNewFocusDims);
+  const toggleFocus = toggleSetter(setFocusDims);
+
+  const newDims = getAssessment(newAssessmentId)?.DIMENSIONS ?? [];
 
   const handleImportRoster = async () => {
     const entries = parseRoster(rosterText);
@@ -436,12 +458,33 @@ function GroupTab({ users, submissions }) {
               placeholder="公司名稱（選填）"
               className="w-full rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
             />
-            <select value={newAssessmentId} onChange={(e) => setNewAssessmentId(e.target.value)}
+            <select value={newAssessmentId} onChange={(e) => { setNewAssessmentId(e.target.value); setNewFocusDims([]); }}
               className="w-full rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-violet-400">
               {assessmentIds.map((id) => (
                 <option key={id} value={id}>{getAssessment(id)?.NAME ?? id}</option>
               ))}
             </select>
+            <input type="number" min="0" value={newTarget} onChange={(e) => setNewTarget(e.target.value)}
+              placeholder="目標人數（選填）"
+              className="w-full rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+            />
+            {newDims.length > 0 && (
+              <div>
+                <p className="mb-1 text-xs font-semibold text-violet-600">重點構面（選填，可複選；報告將優先呈現）</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {newDims.map((d) => (
+                    <button key={d.id} type="button" onClick={() => toggleNewFocus(d.id)}
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                        newFocusDims.includes(d.id)
+                          ? 'bg-violet-600 text-white'
+                          : 'bg-white text-slate-500 ring-1 ring-violet-200 hover:bg-violet-100'
+                      }`}>
+                      {newFocusDims.includes(d.id) ? '⭐ ' : ''}{d.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {error && <p className="text-xs text-red-500">{error}</p>}
             <div className="flex gap-2">
               <button type="button" onClick={handleCreateGroup} disabled={savingGroup}
@@ -494,6 +537,75 @@ function GroupTab({ users, submissions }) {
           </div>
         ) : (
           <div className="space-y-5">
+            {/* 評量設定：目標人數、重點構面、逐構面內容 */}
+            <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-4">
+              <h3 className="mb-3 font-semibold text-violet-700">🎯 評量設定</h3>
+
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <label className="text-sm font-medium text-slate-600">目標人數</label>
+                <input type="number" min="0" value={targetHeadcount} onChange={(e) => setTargetHeadcount(e.target.value)}
+                  placeholder="未設定"
+                  className="w-28 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                />
+                <span className="text-sm text-slate-500">
+                  已加入 <span className="font-bold text-violet-700">{selectedMembers.length}</span>
+                  {targetHeadcount !== '' && Number(targetHeadcount) > 0 && (
+                    <> / 目標 {targetHeadcount} 人
+                      <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        selectedMembers.length >= Number(targetHeadcount)
+                          ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {selectedMembers.length >= Number(targetHeadcount)
+                          ? '已達標' : `尚缺 ${Number(targetHeadcount) - selectedMembers.length} 人`}
+                      </span>
+                    </>
+                  )}
+                </span>
+              </div>
+
+              {(() => {
+                const dims = getAssessment(groupDetail.group.assessmentId)?.DIMENSIONS ?? [];
+                if (dims.length === 0) return null;
+                return (
+                  <>
+                    <p className="mb-1.5 text-xs font-semibold text-violet-600">重點構面（可複選；報告將以 ⭐ 標記並優先呈現）</p>
+                    <div className="mb-3 flex flex-wrap gap-1.5">
+                      {dims.map((d) => (
+                        <button key={d.id} type="button" onClick={() => toggleFocus(d.id)}
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                            focusDims.includes(d.id)
+                              ? 'bg-violet-600 text-white'
+                              : 'bg-white text-slate-500 ring-1 ring-violet-200 hover:bg-violet-100'
+                          }`}>
+                          {focusDims.includes(d.id) ? '⭐ ' : ''}{d.name}
+                        </button>
+                      ))}
+                    </div>
+                    {focusDims.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-violet-600">重點構面內容（培訓目標 / 觀察重點）</p>
+                        {focusDims.map((id) => {
+                          const dim = dims.find((d) => d.id === id);
+                          if (!dim) return null;
+                          return (
+                            <div key={id}>
+                              <label className="mb-0.5 block text-xs font-medium text-slate-600">⭐ {dim.name}</label>
+                              <textarea rows={2} value={dimNotes[id] ?? ''}
+                                onChange={(e) => setDimNotes((prev) => ({ ...prev, [id]: e.target.value }))}
+                                placeholder={`針對「${dim.name}」的培訓目標、觀察重點或備註…`}
+                                className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+              <p className="mt-2 text-xs text-slate-400">設定變更後，請點最下方「儲存班級設定」一併儲存。</p>
+            </div>
+
             <div className="rounded-xl border border-slate-200 bg-white p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-700">成員管理</h3>

@@ -233,6 +233,47 @@ describe('教練 / 班別 / 名單', () => {
     assert.equal(myGroups.body.groups.length, 1);
     assert.ok(myGroups.body.groups[0].memberIds.includes(freg.body.user.id));
   });
+
+  test('班別評量設定：重點構面、目標人數、逐構面備註（建立 + 更新 + 清洗）', async () => {
+    const app = await setup({ withAdmin: true });
+    const { coach } = await makeCoach(app);
+    await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef' });
+
+    // 建立時帶入設定，含需清洗的髒值（重複構面、負數人數、空白備註）
+    const g = await coach.post('/api/coach/groups').send({
+      name: 'L9D 班',
+      assessmentId: 'leadership-9d',
+      focusDimensionIds: ['communication', 'communication', 'leadership-impact', '  '],
+      targetHeadcount: 12,
+      dimensionNotes: { communication: '  加強跨部門溝通  ', 'leadership-impact': '', bogus: 123 },
+    });
+    assert.equal(g.status, 201);
+    const grp = g.body.group;
+    assert.deepEqual(grp.focusDimensionIds, ['communication', 'leadership-impact']);
+    assert.equal(grp.targetHeadcount, 12);
+    assert.deepEqual(grp.dimensionNotes, { communication: '加強跨部門溝通' });
+
+    // 更新：改人數、改備註、清空重點構面
+    const upd = await coach.put(`/api/coach/groups/${grp.id}`).send({
+      targetHeadcount: -5,
+      focusDimensionIds: [],
+      dimensionNotes: { communication: '已達標，轉觀察' },
+    });
+    assert.equal(upd.status, 200);
+    assert.equal(upd.body.group.targetHeadcount, null); // 負數→null
+    assert.deepEqual(upd.body.group.focusDimensionIds, []);
+    assert.deepEqual(upd.body.group.dimensionNotes, { communication: '已達標，轉觀察' });
+  });
+
+  test('班別設定向後相容：舊欄位省略時給安全預設', async () => {
+    const app = await setup({ withAdmin: true });
+    const { coach } = await makeCoach(app);
+    await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef' });
+    const g = await coach.post('/api/coach/groups').send({ name: '純舊欄位班', assessmentId: 'ai-competency' });
+    assert.deepEqual(g.body.group.focusDimensionIds, []);
+    assert.equal(g.body.group.targetHeadcount, null);
+    assert.deepEqual(g.body.group.dimensionNotes, {});
+  });
 });
 
 describe('管理後台', () => {
