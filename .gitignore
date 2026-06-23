@@ -22,4 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.claude/
+# Ignore local Claude state, but track vendored Superpowers files
+.claude/*
+!.claude/skills/
+!.claude/hooks/
+!.claude/settings.json
+!.claude/plugin.json
+!.claude/SUPERPOWERS-LICENSE
