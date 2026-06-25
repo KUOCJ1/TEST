@@ -6,7 +6,7 @@ export default function AssessmentCard({ assessment, latestSubmission, onStart, 
   const hasResult = !!latestSubmission;
 
   return (
-    <div className="flex flex-col rounded-2xl bg-white p-6 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100">
+    <div className="card flex flex-col transition-shadow hover:shadow-card-hover">
       <div className="flex-1">
         <h3 className="text-lg font-extrabold text-slate-800">{assessment.name}</h3>
         <p className="mt-1 text-sm text-slate-500">{assessment.description}</p>
@@ -38,19 +38,11 @@ export default function AssessmentCard({ assessment, latestSubmission, onStart, 
       </div>
 
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-        <button
-          type="button"
-          onClick={() => onStart(assessment.id)}
-          className="flex-1 rounded-lg bg-gradient-to-r from-teal-500 to-teal-600 px-4 py-2.5 font-bold text-white shadow-sm transition-all hover:from-teal-600 hover:to-teal-700"
-        >
+        <button type="button" onClick={() => onStart(assessment.id)} className="btn-primary flex-1">
           {hasResult ? '重新作答' : '開始作答'}
         </button>
         {hasResult && (
-          <button
-            type="button"
-            onClick={() => onViewAnalysis(assessment.id)}
-            className="flex-1 rounded-lg border border-teal-500 bg-white px-4 py-2.5 font-semibold text-teal-600 transition-colors hover:bg-teal-50"
-          >
+          <button type="button" onClick={() => onViewAnalysis(assessment.id)} className="btn-secondary flex-1">
             查看分析
           </button>
         )}

@@ -46,12 +46,12 @@ export default function ResetPasswordPage({ token, onDone }) {
 
             {msg.text && (
               <p className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                msg.type === 'err' ? 'border border-red-200 bg-red-50 text-red-600' : 'border border-teal-200 bg-teal-50 text-teal-700'
+                msg.type === 'err' ? 'border border-red-200 bg-red-50 text-red-600' : 'border border-brand-200 bg-brand-50 text-brand-700'
               }`}>{msg.text}</p>
             )}
 
             <button type="submit" disabled={busy}
-              className="w-full rounded-lg bg-gradient-to-r from-teal-500 to-teal-600 px-4 py-2.5 font-bold text-white shadow-md transition-all hover:from-teal-600 hover:to-teal-700 disabled:opacity-60">
+              className="w-full rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 font-bold text-white shadow-md transition-all hover:from-brand-600 hover:to-brand-700 disabled:opacity-60">
               {busy ? '處理中…' : '重設密碼'}
             </button>
 

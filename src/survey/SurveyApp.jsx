@@ -119,7 +119,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
               aria-pressed={phase === opt.id}
               className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
                 phase === opt.id
-                  ? 'bg-teal-600 text-white shadow-sm'
+                  ? 'bg-brand-600 text-white shadow-sm'
                   : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -171,7 +171,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           <button
             type="submit"
             disabled={submitting}
-            className="mt-6 w-full rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-3.5 text-lg font-bold text-white shadow-md transition-all hover:from-teal-600 hover:to-teal-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-6 w-full rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-3.5 text-lg font-bold text-white shadow-md transition-all hover:from-brand-600 hover:to-brand-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? '送出中…' : '送出評測，立即查看落點分析'}
           </button>

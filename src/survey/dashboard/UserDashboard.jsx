@@ -146,7 +146,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
               onClick={() => setSelectedId(id)}
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                 activeId === id
-                  ? 'bg-teal-600 text-white'
+                  ? 'bg-brand-600 text-white'
                   : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -290,7 +290,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
                           <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">課前</span>
                         )}
                         {s.phase === 'post' && (
-                          <span className="ml-2 rounded bg-teal-100 px-1.5 py-0.5 text-xs font-medium text-teal-700">課後</span>
+                          <span className="ml-2 rounded bg-brand-100 px-1.5 py-0.5 text-xs font-medium text-brand-700">課後</span>
                         )}
                       </td>
                       <td className="py-2.5 pr-3 font-semibold text-slate-700">{s.result.total}</td>

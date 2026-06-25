@@ -24,7 +24,7 @@ function Toggle({ checked, onChange, label, hint }) {
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative mt-0.5 h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-teal-600' : 'bg-slate-300'}`}
+        className={`relative mt-0.5 h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-brand-600' : 'bg-slate-300'}`}
       >
         <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
       </button>
@@ -109,12 +109,12 @@ export default function ProfilePage() {
         <div className="mt-1.5 flex gap-2">
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
           <button type="button" onClick={saveName} disabled={savingName}
-            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50">
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
             {savingName ? '儲存中…' : '儲存'}
           </button>
         </div>
         <p className="mt-2 text-sm text-slate-400">Email：{user.email}（不可變更）</p>
-        {nameMsg && <p className="mt-1 text-sm text-teal-600">{nameMsg}</p>}
+        {nameMsg && <p className="mt-1 text-sm text-brand-600">{nameMsg}</p>}
       </Card>
 
       <Card title="介面偏好">
@@ -137,7 +137,7 @@ export default function ProfilePage() {
             ))}
           </select>
         </div>
-        {prefMsg && <p className="mt-2 text-sm text-teal-600">{prefMsg}</p>}
+        {prefMsg && <p className="mt-2 text-sm text-brand-600">{prefMsg}</p>}
         {savingPref && <p className="mt-2 text-sm text-slate-400">儲存中…</p>}
       </Card>
 
@@ -174,10 +174,10 @@ export default function ProfilePage() {
               value={pw.confirm} onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))} />
           </div>
           {pwMsg.text && (
-            <p className={`text-sm ${pwMsg.type === 'err' ? 'text-red-500' : 'text-teal-600'}`}>{pwMsg.text}</p>
+            <p className={`text-sm ${pwMsg.type === 'err' ? 'text-red-500' : 'text-brand-600'}`}>{pwMsg.text}</p>
           )}
           <button type="button" onClick={changePassword} disabled={savingPw}
-            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50">
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
             {savingPw ? '處理中…' : '變更密碼'}
           </button>
         </div>

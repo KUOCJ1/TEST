@@ -151,7 +151,7 @@ export default function AdminDashboard() {
                   onClick={() => setSelectedId(a.id)}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                     selectedId === a.id
-                      ? 'bg-teal-600 text-white'
+                      ? 'bg-brand-600 text-white'
                       : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -288,7 +288,7 @@ export default function AdminDashboard() {
                   <td className="py-2.5 pr-3">
                     <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                       u.role === 'coach'
-                        ? 'bg-violet-100 text-violet-700'
+                        ? 'bg-brand-100 text-brand-700'
                         : 'bg-slate-100 text-slate-500'
                     }`}>
                       {u.role === 'coach' ? '教練' : '一般用戶'}
@@ -317,7 +317,7 @@ export default function AdminDashboard() {
                         className={`rounded-lg px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
                           u.role === 'coach'
                             ? 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
-                            : 'bg-violet-100 text-violet-700 hover:bg-violet-200'
+                            : 'bg-brand-100 text-brand-700 hover:bg-brand-200'
                         }`}
                       >
                         {roleChanging === u.id ? '…' : u.role === 'coach' ? '取消教練身份' : '設為教練'}
@@ -365,7 +365,7 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => navigator.clipboard?.writeText(resetInfo.url)}
-                className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
               >
                 複製連結
               </button>

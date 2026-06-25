@@ -74,8 +74,8 @@ function CommentEditor({ submission, existingComment, onSaved, onCancel }) {
   };
 
   return (
-    <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50 p-4">
-      <p className="mb-2 text-sm font-semibold text-violet-700">
+    <div className="mt-3 rounded-xl border border-brand-200 bg-brand-50 p-4">
+      <p className="mb-2 text-sm font-semibold text-brand-700">
         {existingComment ? '編輯評語' : '新增評語'}
       </p>
 
@@ -84,20 +84,20 @@ function CommentEditor({ submission, existingComment, onSaved, onCancel }) {
         onChange={(e) => setText(e.target.value)}
         rows={4}
         placeholder="針對此學員的整體觀察與評語…"
-        className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+        className="w-full rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
       />
 
-      <p className="mt-3 mb-1.5 text-xs font-semibold text-violet-600 uppercase tracking-wide">精進建議（最多 5 條）</p>
+      <p className="mt-3 mb-1.5 text-xs font-semibold text-brand-600 uppercase tracking-wide">精進建議（最多 5 條）</p>
       <div className="space-y-2">
         {tips.map((tip, i) => (
           <div key={i} className="flex gap-2">
-            <span className="mt-2 text-xs font-bold text-violet-400">{i + 1}.</span>
+            <span className="mt-2 text-xs font-bold text-brand-400">{i + 1}.</span>
             <input
               type="text"
               value={tip}
               onChange={(e) => setTip(i, e.target.value)}
               placeholder={`建議 ${i + 1}`}
-              className="flex-1 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="flex-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
             />
             {tips.length > 1 && (
               <button type="button" onClick={() => removeTip(i)} className="text-slate-400 hover:text-red-500">✕</button>
@@ -105,7 +105,7 @@ function CommentEditor({ submission, existingComment, onSaved, onCancel }) {
           </div>
         ))}
         {tips.length < 5 && (
-          <button type="button" onClick={addTip} className="text-xs font-semibold text-violet-600 hover:text-violet-800">
+          <button type="button" onClick={addTip} className="text-xs font-semibold text-brand-600 hover:text-brand-800">
             + 新增建議
           </button>
         )}
@@ -118,7 +118,7 @@ function CommentEditor({ submission, existingComment, onSaved, onCancel }) {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded-lg bg-violet-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
+          className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
         >
           {saving ? '儲存中…' : '儲存評語'}
         </button>
@@ -186,7 +186,7 @@ function IndividualTab({ users, submissions, currentUserId }) {
           {assessmentIds.map((id) => (
             <button key={id} type="button" onClick={() => setSelectedAssessmentId(id)}
               className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-                selectedAssessmentId === id ? 'bg-teal-600 text-white' : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+                selectedAssessmentId === id ? 'bg-brand-600 text-white' : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
               {getAssessment(id)?.NAME ?? id}
@@ -204,7 +204,7 @@ function IndividualTab({ users, submissions, currentUserId }) {
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 <span className="font-semibold text-slate-800">{user?.name ?? sub.userName}</span>
                 <span className="text-sm text-slate-400">{user?.email ?? ''}</span>
-                <span className="font-bold text-teal-700">{sub.result?.total} / {sub.result?.maxScore}</span>
+                <span className="font-bold text-brand-700">{sub.result?.total} / {sub.result?.maxScore}</span>
                 <span
                   className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
                   style={{ background: sub.result?.level?.color }}
@@ -216,7 +216,7 @@ function IndividualTab({ users, submissions, currentUserId }) {
                   {myComment ? (
                     <>
                       <button type="button" onClick={() => setEditingSubId(editingSubId === sub.id ? null : sub.id)}
-                        className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 hover:bg-violet-100">
+                        className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100">
                         ✏ 編輯評語
                       </button>
                       <button type="button" onClick={() => handleDelete(sub.id, myComment.id)}
@@ -226,7 +226,7 @@ function IndividualTab({ users, submissions, currentUserId }) {
                     </>
                   ) : (
                     <button type="button" onClick={() => setEditingSubId(editingSubId === sub.id ? null : sub.id)}
-                      className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 hover:bg-violet-100">
+                      className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100">
                       + 新增評語
                     </button>
                   )}
@@ -234,8 +234,8 @@ function IndividualTab({ users, submissions, currentUserId }) {
               </div>
 
               {myComment && editingSubId !== sub.id && (
-                <div className="mt-2 rounded-lg border-l-4 border-violet-400 bg-violet-50 px-3 py-2">
-                  <p className="text-xs font-semibold text-violet-600">我的評語</p>
+                <div className="mt-2 rounded-lg border-l-4 border-brand-400 bg-brand-50 px-3 py-2">
+                  <p className="text-xs font-semibold text-brand-600">我的評語</p>
                   <p className="text-sm text-slate-700">{myComment.text}</p>
                   {myComment.tips?.length > 0 && (
                     <ul className="mt-1 space-y-0.5">
@@ -443,41 +443,41 @@ function GroupTab({ users, submissions }) {
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-semibold text-slate-700">班別列表</h3>
           <button type="button" onClick={() => setCreating(true)}
-            className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700">
+            className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700">
             + 建立班別
           </button>
         </div>
 
         {creating && (
-          <div className="mb-3 rounded-xl border border-violet-200 bg-violet-50 p-3 space-y-2">
+          <div className="mb-3 rounded-xl border border-brand-200 bg-brand-50 p-3 space-y-2">
             <input type="text" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)}
               placeholder="班別名稱（必填）"
-              className="w-full rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
             />
             <input type="text" value={newCompany} onChange={(e) => setNewCompany(e.target.value)}
               placeholder="公司名稱（選填）"
-              className="w-full rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
             />
             <select value={newAssessmentId} onChange={(e) => { setNewAssessmentId(e.target.value); setNewFocusDims([]); }}
-              className="w-full rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-violet-400">
+              className="w-full rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand-400">
               {assessmentIds.map((id) => (
                 <option key={id} value={id}>{getAssessment(id)?.NAME ?? id}</option>
               ))}
             </select>
             <input type="number" min="0" value={newTarget} onChange={(e) => setNewTarget(e.target.value)}
               placeholder="目標人數（選填）"
-              className="w-full rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
             />
             {newDims.length > 0 && (
               <div>
-                <p className="mb-1 text-xs font-semibold text-violet-600">重點構面（選填，可複選；報告將優先呈現）</p>
+                <p className="mb-1 text-xs font-semibold text-brand-600">重點構面（選填，可複選；報告將優先呈現）</p>
                 <div className="flex flex-wrap gap-1.5">
                   {newDims.map((d) => (
                     <button key={d.id} type="button" onClick={() => toggleNewFocus(d.id)}
                       className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                         newFocusDims.includes(d.id)
-                          ? 'bg-violet-600 text-white'
-                          : 'bg-white text-slate-500 ring-1 ring-violet-200 hover:bg-violet-100'
+                          ? 'bg-brand-600 text-white'
+                          : 'bg-white text-slate-500 ring-1 ring-brand-200 hover:bg-brand-100'
                       }`}>
                       {newFocusDims.includes(d.id) ? '⭐ ' : ''}{d.name}
                     </button>
@@ -488,7 +488,7 @@ function GroupTab({ users, submissions }) {
             {error && <p className="text-xs text-red-500">{error}</p>}
             <div className="flex gap-2">
               <button type="button" onClick={handleCreateGroup} disabled={savingGroup}
-                className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50">
+                className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
                 {savingGroup ? '建立中…' : '建立'}
               </button>
               <button type="button" onClick={() => { setCreating(false); setError(''); }}
@@ -508,8 +508,8 @@ function GroupTab({ users, submissions }) {
             <div key={g.id}
               className={`cursor-pointer rounded-xl border px-4 py-3 transition-colors ${
                 selectedGroupId === g.id
-                  ? 'border-violet-400 bg-violet-50'
-                  : 'border-slate-200 bg-white hover:border-violet-200'
+                  ? 'border-brand-400 bg-brand-50'
+                  : 'border-slate-200 bg-white hover:border-brand-200'
               }`}
               onClick={() => loadGroup(g.id)}
             >
@@ -538,17 +538,17 @@ function GroupTab({ users, submissions }) {
         ) : (
           <div className="space-y-5">
             {/* 評量設定：目標人數、重點構面、逐構面內容 */}
-            <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-4">
-              <h3 className="mb-3 font-semibold text-violet-700">🎯 評量設定</h3>
+            <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4">
+              <h3 className="mb-3 font-semibold text-brand-700">🎯 評量設定</h3>
 
               <div className="mb-3 flex flex-wrap items-center gap-3">
                 <label className="text-sm font-medium text-slate-600">目標人數</label>
                 <input type="number" min="0" value={targetHeadcount} onChange={(e) => setTargetHeadcount(e.target.value)}
                   placeholder="未設定"
-                  className="w-28 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  className="w-28 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
                 />
                 <span className="text-sm text-slate-500">
-                  已加入 <span className="font-bold text-violet-700">{selectedMembers.length}</span>
+                  已加入 <span className="font-bold text-brand-700">{selectedMembers.length}</span>
                   {targetHeadcount !== '' && Number(targetHeadcount) > 0 && (
                     <> / 目標 {targetHeadcount} 人
                       <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${
@@ -568,14 +568,14 @@ function GroupTab({ users, submissions }) {
                 if (dims.length === 0) return null;
                 return (
                   <>
-                    <p className="mb-1.5 text-xs font-semibold text-violet-600">重點構面（可複選；報告將以 ⭐ 標記並優先呈現）</p>
+                    <p className="mb-1.5 text-xs font-semibold text-brand-600">重點構面（可複選；報告將以 ⭐ 標記並優先呈現）</p>
                     <div className="mb-3 flex flex-wrap gap-1.5">
                       {dims.map((d) => (
                         <button key={d.id} type="button" onClick={() => toggleFocus(d.id)}
                           className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                             focusDims.includes(d.id)
-                              ? 'bg-violet-600 text-white'
-                              : 'bg-white text-slate-500 ring-1 ring-violet-200 hover:bg-violet-100'
+                              ? 'bg-brand-600 text-white'
+                              : 'bg-white text-slate-500 ring-1 ring-brand-200 hover:bg-brand-100'
                           }`}>
                           {focusDims.includes(d.id) ? '⭐ ' : ''}{d.name}
                         </button>
@@ -583,7 +583,7 @@ function GroupTab({ users, submissions }) {
                     </div>
                     {focusDims.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-xs font-semibold text-violet-600">重點構面內容（培訓目標 / 觀察重點）</p>
+                        <p className="text-xs font-semibold text-brand-600">重點構面內容（培訓目標 / 觀察重點）</p>
                         {focusDims.map((id) => {
                           const dim = dims.find((d) => d.id === id);
                           if (!dim) return null;
@@ -593,7 +593,7 @@ function GroupTab({ users, submissions }) {
                               <textarea rows={2} value={dimNotes[id] ?? ''}
                                 onChange={(e) => setDimNotes((prev) => ({ ...prev, [id]: e.target.value }))}
                                 placeholder={`針對「${dim.name}」的培訓目標、觀察重點或備註…`}
-                                className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                                className="w-full rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
                               />
                             </div>
                           );
@@ -618,7 +618,7 @@ function GroupTab({ users, submissions }) {
                 {nonAdminUsers.map((u) => (
                   <label key={u.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-50">
                     <input type="checkbox" checked={selectedMembers.includes(u.id)} onChange={() => toggleMember(u.id)}
-                      className="accent-violet-600" />
+                      className="accent-brand-600" />
                     <span className="text-sm font-medium text-slate-700">{u.name}</span>
                     <span className="text-xs text-slate-400">{u.email}</span>
                   </label>
@@ -645,11 +645,11 @@ function GroupTab({ users, submissions }) {
               <p className="mb-2 text-xs text-slate-400">每行一筆，格式：<code className="rounded bg-slate-100 px-1">姓名,Email</code> 或僅 Email。可直接貼上或上傳 CSV。</p>
               <textarea value={rosterText} onChange={(e) => setRosterText(e.target.value)} rows={4}
                 placeholder={'王小明,ming@company.com\n李小華,hua@company.com'}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
               />
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button type="button" onClick={handleImportRoster} disabled={importing}
-                  className="rounded-lg bg-violet-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50">
+                  className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
                   {importing ? '匯入中…' : '匯入名單'}
                 </button>
                 <label className="cursor-pointer rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
@@ -691,21 +691,21 @@ function GroupTab({ users, submissions }) {
               />
             )}
 
-            <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
-              <h3 className="mb-2 font-semibold text-violet-700">班級整體評語</h3>
+            <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
+              <h3 className="mb-2 font-semibold text-brand-700">班級整體評語</h3>
               <textarea value={groupComment} onChange={(e) => setGroupComment(e.target.value)} rows={4}
                 placeholder="針對本班整體觀察與評語…"
-                className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
               />
 
-              <p className="mt-3 mb-1.5 text-xs font-semibold text-violet-600 uppercase tracking-wide">班級精進建議</p>
+              <p className="mt-3 mb-1.5 text-xs font-semibold text-brand-600 uppercase tracking-wide">班級精進建議</p>
               <div className="space-y-2">
                 {groupTips.map((tip, i) => (
                   <div key={i} className="flex gap-2">
-                    <span className="mt-2 text-xs font-bold text-violet-400">{i + 1}.</span>
+                    <span className="mt-2 text-xs font-bold text-brand-400">{i + 1}.</span>
                     <input type="text" value={tip} onChange={(e) => setGroupTips((prev) => prev.map((t, j) => j === i ? e.target.value : t))}
                       placeholder={`班級建議 ${i + 1}`}
-                      className="flex-1 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                      className="flex-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
                     />
                     {groupTips.length > 1 && (
                       <button type="button" onClick={() => setGroupTips((prev) => prev.filter((_, j) => j !== i))}
@@ -715,12 +715,12 @@ function GroupTab({ users, submissions }) {
                 ))}
                 {groupTips.length < 5 && (
                   <button type="button" onClick={() => setGroupTips((prev) => [...prev, ''])}
-                    className="text-xs font-semibold text-violet-600 hover:text-violet-800">+ 新增建議</button>
+                    className="text-xs font-semibold text-brand-600 hover:text-brand-800">+ 新增建議</button>
                 )}
               </div>
 
               <button type="button" onClick={handleSaveGroup} disabled={savingGroup}
-                className="mt-4 rounded-lg bg-violet-600 px-5 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50">
+                className="mt-4 rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
                 {savingGroup ? '儲存中…' : '儲存班級設定'}
               </button>
             </div>
@@ -763,7 +763,7 @@ export default function CoachDashboard() {
         ].map(({ id, label }) => (
           <button key={id} type="button" onClick={() => setTab(id)}
             className={`rounded-md px-4 py-1.5 transition-colors ${
-              tab === id ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              tab === id ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             {label}

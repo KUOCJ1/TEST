@@ -16,13 +16,13 @@ const ResultPanel = forwardRef(function ResultPanel(
     <section
       ref={ref}
       aria-live="polite"
-      className="mt-8 overflow-hidden rounded-2xl border-2 border-teal-500 bg-gradient-to-b from-teal-50/70 to-white"
+      className="mt-8 overflow-hidden rounded-3xl ring-1 ring-brand-100 bg-gradient-to-b from-brand-50/60 to-white shadow-card"
     >
-      <div className="bg-teal-600 px-6 py-6 text-center text-white">
-        <p className="text-sm font-medium text-teal-100">{assessmentName ?? '評測'} · 您的總得分</p>
+      <div className="bg-gradient-to-br from-brand-600 to-indigo-600 px-6 py-7 text-center text-white">
+        <p className="text-sm font-medium text-brand-100">{assessmentName ?? '評測'} · 您的總得分</p>
         <p className="mt-1 text-5xl font-extrabold tracking-tight">
           {total}
-          <span className="ml-1 text-xl font-semibold text-teal-100">/ {maxScore}</span>
+          <span className="ml-1 text-xl font-semibold text-brand-100">/ {maxScore}</span>
         </p>
         <span
           className="mt-3 inline-block rounded-full px-4 py-1.5 text-lg font-bold shadow"
@@ -31,9 +31,9 @@ const ResultPanel = forwardRef(function ResultPanel(
           {level.badge}
           {level.badgeEn && <span className="ml-2 text-sm font-normal opacity-80">{level.badgeEn}</span>}
         </span>
-        <p className="mt-2 text-sm text-teal-100">能力達成率 {percent}%</p>
+        <p className="mt-2 text-sm text-brand-100">能力達成率 {percent}%</p>
         {percentile !== null && (
-          <p className="mt-2 inline-block rounded-full bg-teal-700/60 px-3 py-1 text-sm font-semibold text-white">
+          <p className="mt-2 inline-block rounded-full bg-brand-700/60 px-3 py-1 text-sm font-semibold text-white">
             🏆 您的總分超越了 {percentile}% 的填答者
           </p>
         )}
@@ -97,13 +97,13 @@ const ResultPanel = forwardRef(function ResultPanel(
 
         <div className="mt-4">
           <p className="mb-2 font-semibold text-slate-700">💡 學習修煉建議</p>
-          <p className="rounded-r-lg border-l-4 border-teal-500 bg-white p-4 leading-relaxed text-slate-700 shadow-sm">
+          <p className="rounded-r-lg border-l-4 border-brand-500 bg-white p-4 leading-relaxed text-slate-700 shadow-sm">
             {level.advice}
           </p>
         </div>
 
         {suggestions && (
-          <div className="mt-4 rounded-xl border border-teal-100 bg-white p-4 shadow-sm">
+          <div className="mt-4 rounded-xl border border-brand-100 bg-white p-4 shadow-sm">
             <p className="mb-3 font-semibold text-slate-700">🎯 為您客製的行動建議</p>
             {suggestions.develop.length > 0 && (
               <div className="mb-3">
@@ -140,7 +140,7 @@ const ResultPanel = forwardRef(function ResultPanel(
           <button
             type="button"
             onClick={onCopy}
-            className="flex-1 rounded-lg border border-teal-500 bg-white px-4 py-2.5 font-semibold text-teal-600 transition-colors hover:bg-teal-50"
+            className="flex-1 rounded-lg border border-brand-500 bg-white px-4 py-2.5 font-semibold text-brand-600 transition-colors hover:bg-brand-50"
           >
             {copied ? '✓ 已複製結果摘要' : '📋 複製結果摘要'}
           </button>

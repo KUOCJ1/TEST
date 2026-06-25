@@ -82,7 +82,10 @@ export default function AppShell() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
-          <span className="text-base font-extrabold text-teal-700">全方位職能評測</span>
+          <span className="flex items-center gap-2 text-base font-extrabold tracking-tight text-slate-800">
+            <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
+            全方位職能評測
+          </span>
 
           {view === 'survey' ? (
             <button
@@ -101,7 +104,7 @@ export default function AppShell() {
                   onClick={() => handleTabClick(t.id)}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                     view === t.id
-                      ? 'bg-teal-50 text-teal-700'
+                      ? 'bg-brand-600 text-white shadow-sm'
                       : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
                   }`}
                 >
@@ -120,7 +123,7 @@ export default function AppShell() {
                 </span>
               )}
               {!isAdmin && user.role === 'coach' && (
-                <span className="ml-1.5 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-semibold text-violet-700">
+                <span className="ml-1.5 rounded bg-brand-100 px-1.5 py-0.5 text-xs font-semibold text-brand-700">
                   教練
                 </span>
               )}

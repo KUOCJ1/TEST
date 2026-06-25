@@ -69,7 +69,7 @@ export default function GroupNarrativeReport({ results, assessmentId, focusDimen
         依全體 {results.length} 位成員綜合表現自動生成，供教練規劃課程參考
       </p>
 
-      <div className="rounded-xl border-l-4 border-violet-500 bg-violet-50/60 p-4 leading-relaxed text-slate-700">
+      <div className="rounded-xl border-l-4 border-brand-500 bg-brand-50/60 p-4 leading-relaxed text-slate-700">
         {report.overall}
       </div>
 
@@ -103,7 +103,7 @@ export default function GroupNarrativeReport({ results, assessmentId, focusDimen
                 <ul className="mt-2 space-y-1.5">
                   {p.actions.map((a) => (
                     <li key={a} className="flex gap-2 text-sm leading-relaxed text-slate-600">
-                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-500" />
+                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-brand-500" />
                       <span>{a}</span>
                     </li>
                   ))}

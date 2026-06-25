@@ -3,26 +3,26 @@ import { formatDate } from '../utils/format';
 export function CoachCommentPanel({ comments }) {
   if (!comments?.length) return null;
   return (
-    <section className="mt-6 rounded-2xl bg-gradient-to-b from-violet-50 to-white px-5 py-6 shadow-lg ring-2 ring-violet-200 sm:px-7">
+    <section className="mt-6 rounded-2xl bg-gradient-to-b from-brand-50 to-white px-5 py-6 shadow-lg ring-2 ring-brand-200 sm:px-7">
       <div className="mb-4 flex items-center gap-2">
         <span className="text-2xl">👨‍🏫</span>
-        <h3 className="text-base font-bold text-violet-800">教練評語</h3>
+        <h3 className="text-base font-bold text-brand-800">教練評語</h3>
       </div>
       <div className="space-y-5">
         {comments.map((c) => (
           <div key={c.id}>
             <div className="mb-1 flex items-center gap-2">
-              <span className="font-semibold text-violet-700">{c.coachName}</span>
+              <span className="font-semibold text-brand-700">{c.coachName}</span>
               <span className="text-xs text-slate-400">{formatDate(c.updatedAt)}</span>
             </div>
             <p className="leading-relaxed text-slate-700">{c.text}</p>
             {c.tips?.length > 0 && (
               <div className="mt-3">
-                <p className="mb-2 text-sm font-semibold text-violet-600">💡 精進建議</p>
+                <p className="mb-2 text-sm font-semibold text-brand-600">💡 精進建議</p>
                 <ol className="space-y-1.5">
                   {c.tips.map((tip, i) => (
                     <li key={i} className="flex gap-2 text-sm text-slate-700">
-                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-600">
+                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-600">
                         {i + 1}
                       </span>
                       {tip}

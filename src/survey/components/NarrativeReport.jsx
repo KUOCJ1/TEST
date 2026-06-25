@@ -28,7 +28,7 @@ function DimensionCard({ dim, config, seedBase, focus }) {
   const badge = BAND_BADGE[bandOf(dim.average)];
 
   return (
-    <div className={`rounded-xl border ${focus ? 'border-violet-300 bg-violet-50/40' : 'border-slate-200'}`}>
+    <div className={`rounded-xl border ${focus ? 'border-brand-300 bg-brand-50/40' : 'border-slate-200'}`}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -80,7 +80,7 @@ export default function NarrativeReport({ result, focusDimensionIds = [] }) {
       <p className="mb-4 mt-0.5 text-xs text-slate-400">系統依各構面與子能力得分自動生成，僅供參考</p>
 
       {overall && (
-        <div className="rounded-xl border-l-4 border-teal-500 bg-teal-50/60 p-4 leading-relaxed text-slate-700">
+        <div className="rounded-xl border-l-4 border-brand-500 bg-brand-50/60 p-4 leading-relaxed text-slate-700">
           {overall}
         </div>
       )}
@@ -126,7 +126,7 @@ export default function NarrativeReport({ result, focusDimensionIds = [] }) {
       <div className={`mt-4 ${panelCls('consultant')}`}>
         <p className="mb-2 hidden text-sm font-bold text-slate-600 print:block">🏛️ 顧問視角</p>
         {consultantText ? (
-          <div className="rounded-xl border-l-4 border-violet-500 bg-violet-50/60 p-4 leading-relaxed text-slate-700">
+          <div className="rounded-xl border-l-4 border-brand-500 bg-brand-50/60 p-4 leading-relaxed text-slate-700">
             {consultantText}
           </div>
         ) : (
@@ -148,7 +148,7 @@ export default function NarrativeReport({ result, focusDimensionIds = [] }) {
                 <ul className="mt-2 space-y-1.5">
                   {p.actions.map((a) => (
                     <li key={a} className="flex gap-2 text-sm leading-relaxed text-slate-600">
-                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-teal-500" />
+                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-brand-500" />
                       <span>{a}</span>
                     </li>
                   ))}

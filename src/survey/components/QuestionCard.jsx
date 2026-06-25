@@ -38,8 +38,8 @@ export default function QuestionCard({ number, question, value, onChange, invali
               key={opt.value}
               className={`flex min-w-[58px] flex-1 cursor-pointer flex-col items-center rounded-lg border px-2 py-2 text-center transition-all sm:min-w-[72px] ${
                 selected
-                  ? 'border-teal-500 bg-teal-500 text-white shadow-sm'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:bg-teal-50'
+                  ? 'border-brand-500 bg-brand-500 text-white shadow-sm'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:bg-brand-50'
               }`}
             >
               <input
@@ -51,7 +51,7 @@ export default function QuestionCard({ number, question, value, onChange, invali
                 className="sr-only"
               />
               <span className="text-base font-bold leading-none">{opt.value}</span>
-              <span className={`mt-1 text-[11px] leading-tight ${selected ? 'text-teal-50' : 'text-slate-400'}`}>
+              <span className={`mt-1 text-[11px] leading-tight ${selected ? 'text-brand-50' : 'text-slate-400'}`}>
                 {opt.label}
               </span>
             </label>
