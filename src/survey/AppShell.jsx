@@ -28,7 +28,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
   if (loading) return <p className="py-20 text-center text-slate-400">載入中…</p>;
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
       <header className="mb-6">
         <h2 className="text-2xl font-extrabold text-slate-800">選擇評量</h2>
         <p className="mt-1 text-sm text-slate-500">選擇一個題庫開始作答，或點擊「查看分析」瀏覽歷次結果。</p>
@@ -38,7 +38,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
           目前沒有可用的評量。
         </p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {assessments.map((a) => (
             <AssessmentCard
               key={a.id}

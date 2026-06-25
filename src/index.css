@@ -60,22 +60,23 @@ body {
 
 /* ── 深色模式（以全域覆寫常用工具類，避免逐元件加 dark:）── */
 .dark body {
-  color: #e2e8f0;
-  background-color: #0b1020;
+  color: #eef2f9;
+  background-color: #0d1424;
   background-image:
     radial-gradient(60rem 60rem at 110% -10%, rgba(124, 58, 237, .14), transparent 60%),
     radial-gradient(50rem 50rem at -10% 0%, rgba(79, 70, 229, .12), transparent 55%);
 }
-.dark .bg-white { background-color: #161c2e !important; }
+.dark .bg-white { background-color: #1a2236 !important; }
 .dark .bg-white\/95,
-.dark .bg-white\/90 { background-color: rgba(22, 28, 46, 0.92) !important; }
+.dark .bg-white\/90 { background-color: rgba(26, 34, 54, 0.92) !important; }
 .dark .bg-slate-50,
-.dark .bg-slate-100 { background-color: #0f1424 !important; }
+.dark .bg-slate-100 { background-color: #131a2c !important; }
+.dark .text-slate-900,
 .dark .text-slate-800,
 .dark .text-slate-700,
-.dark .text-slate-600 { color: #e2e8f0 !important; }
+.dark .text-slate-600 { color: #eef2f9 !important; }
 .dark .text-slate-500,
-.dark .text-slate-400 { color: #94a3b8 !important; }
+.dark .text-slate-400 { color: #aebbd0 !important; }
 .dark .border-slate-200,
 .dark .border-slate-300,
 .dark .border-slate-100 { border-color: #2a3350 !important; }
