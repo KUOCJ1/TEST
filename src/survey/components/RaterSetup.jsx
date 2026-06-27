@@ -31,7 +31,8 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
 
   const handleConfirm = () => {
     const finalRaterType = isSelf ? 'self' : raterType;
-    onConfirm(rateeId, finalRaterType);
+    const rateeName = isSelf ? user.name : (members.find((m) => m.id === rateeId)?.name ?? '');
+    onConfirm(rateeId, finalRaterType, rateeName);
   };
 
   return (

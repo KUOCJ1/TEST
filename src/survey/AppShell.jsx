@@ -83,8 +83,8 @@ export default function AppShell() {
       setView('survey');
     }
   };
-  const handleRaterConfirm = (rateeId, raterType) => {
-    setRaterConfig({ rateeId, raterType });
+  const handleRaterConfirm = (rateeId, raterType, rateeName) => {
+    setRaterConfig({ rateeId, raterType, rateeName });
     setView('survey');
   };
   const handleViewAnalysis = (id) => { setActiveAssessmentId(id); setView('analysis'); };
@@ -180,6 +180,7 @@ export default function AppShell() {
           assessmentId={activeAssessmentId}
           rateeId={raterConfig?.rateeId}
           raterType={raterConfig?.raterType}
+          rateeName={raterConfig?.rateeName}
           onSubmitted={handleSubmitted}
         />
       )}

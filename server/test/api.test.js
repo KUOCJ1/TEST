@@ -276,6 +276,141 @@ describe('教練 / 班別 / 名單', () => {
   });
 });
 
+describe('360° 多元評測', () => {
+  async function makeCoach360(app) {
+    const admin = request.agent(app);
+    await admin.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
+    const coach = request.agent(app);
+    const reg = await coach.post('/api/auth/register').send({ name: '教練', email: 'coach@b.co', password: 'abcdef' });
+    await admin.patch(`/api/admin/users/${reg.body.user.id}/role`).send({ role: 'coach' });
+    await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef' });
+    return { admin, coach };
+  }
+
+  test('POST /api/submissions 帶 rateeId 與 raterType 後正確存入', async () => {
+    const app = await setup();
+    const ratee = request.agent(app);
+    const rateeReg = await ratee.post('/api/auth/register').send({ name: '被評者', email: 'ratee@b.co', password: 'abcdef' });
+    const rateeId = rateeReg.body.user.id;
+
+    const rater = request.agent(app);
+    await rater.post('/api/auth/register').send({ name: '同儕', email: 'rater@b.co', password: 'abcdef' });
+    const res = await rater.post('/api/submissions').send({
+      answers: { q1: 4 }, result: sampleResult(124),
+      assessmentId: 'leadership-9d', rateeId, raterType: 'peer',
+    });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.submission.rateeId, rateeId);
+    assert.equal(res.body.submission.raterType, 'peer');
+    assert.notEqual(res.body.submission.userId, rateeId);
+  });
+
+  test('raterType=self 時強制 rateeId 為登入者自己', async () => {
+    const app = await setup();
+    const user = request.agent(app);
+    const reg = await user.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef' });
+    const res = await user.post('/api/submissions').send({
+      result: sampleResult(), rateeId: 'someone-else-id', raterType: 'self',
+    });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.submission.rateeId, reg.body.user.id);
+  });
+
+  test('本人可取得自己的 360° 評測集', async () => {
+    const app = await setup();
+    const user = request.agent(app);
+    const reg = await user.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef' });
+    await user.post('/api/submissions').send({ result: sampleResult(), assessmentId: 'leadership-9d' });
+    const res = await user.get(`/api/submissions/ratee/${reg.body.user.id}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.submissions.length, 1);
+  });
+
+  test('他人無法取得別人的 ratee 資料（403）', async () => {
+    const app = await setup();
+    const userA = request.agent(app);
+    const regA = await userA.post('/api/auth/register').send({ name: 'A', email: 'a@b.co', password: 'abcdef' });
+    await userA.post('/api/submissions').send({ result: sampleResult() });
+
+    const userB = request.agent(app);
+    await userB.post('/api/auth/register').send({ name: 'B', email: 'b@b.co', password: 'abcdef' });
+    assert.equal((await userB.get(`/api/submissions/ratee/${regA.body.user.id}`)).status, 403);
+  });
+
+  test('同儕評的評分者身份被匿名化，管理員評與自評不被匿名', async () => {
+    const app = await setup();
+    const ratee = request.agent(app);
+    const rateeReg = await ratee.post('/api/auth/register').send({ name: '被評者', email: 'ratee@b.co', password: 'abcdef' });
+    const rateeId = rateeReg.body.user.id;
+
+    const peer = request.agent(app);
+    await peer.post('/api/auth/register').send({ name: '同儕', email: 'peer@b.co', password: 'abcdef' });
+    await peer.post('/api/submissions').send({
+      result: sampleResult(), assessmentId: 'leadership-9d', rateeId, raterType: 'peer',
+    });
+    // self submission for the ratee
+    await ratee.post('/api/submissions').send({
+      result: sampleResult(), assessmentId: 'leadership-9d', raterType: 'self',
+    });
+
+    const res = await ratee.get(`/api/submissions/ratee/${rateeId}`);
+    assert.equal(res.status, 200);
+    const peerSub = res.body.submissions.find((s) => s.raterType === 'peer');
+    const selfSub = res.body.submissions.find((s) => s.raterType === 'self');
+    assert.ok(peerSub, '找不到同儕評');
+    assert.equal(peerSub.userId, 'anonymous');
+    assert.equal(peerSub.userName, '匿名');
+    assert.equal(selfSub.userId, rateeId);
+  });
+
+  test('教練可取得組員的 ratee 資料並以 deanonymize=1 解匿名', async () => {
+    const app = await setup({ withAdmin: true });
+    const { coach } = await makeCoach360(app);
+
+    const member = request.agent(app);
+    const memReg = await member.post('/api/auth/register').send({ name: '學員', email: 'mem@b.co', password: 'abcdef' });
+    const memId = memReg.body.user.id;
+
+    const g = await coach.post('/api/coach/groups').send({ name: 'G', assessmentId: 'leadership-9d' });
+    await coach.post(`/api/coach/groups/${g.body.group.id}/roster`).send({ entries: [{ name: '學員', email: 'mem@b.co' }] });
+
+    const peer = request.agent(app);
+    await peer.post('/api/auth/register').send({ name: '同儕', email: 'peer@b.co', password: 'abcdef' });
+    await peer.post('/api/submissions').send({
+      result: sampleResult(), assessmentId: 'leadership-9d', rateeId: memId, raterType: 'peer',
+    });
+
+    const res = await coach.get(`/api/submissions/ratee/${memId}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.submissions.length, 1);
+
+    const deAnon = await coach.get(`/api/submissions/ratee/${memId}?deanonymize=1`);
+    assert.equal(deAnon.status, 200);
+    assert.notEqual(deAnon.body.submissions[0].userId, 'anonymous');
+  });
+
+  test('GET /groups/mine/members 回傳同班成員（不含自己）', async () => {
+    const app = await setup({ withAdmin: true });
+    const { coach } = await makeCoach360(app);
+
+    const userA = request.agent(app);
+    const regA = await userA.post('/api/auth/register').send({ name: 'A', email: 'a@b.co', password: 'abcdef' });
+
+    const userB = request.agent(app);
+    const regB = await userB.post('/api/auth/register').send({ name: 'B', email: 'b@b.co', password: 'abcdef' });
+
+    const g = await coach.post('/api/coach/groups').send({ name: 'G', assessmentId: 'leadership-9d' });
+    await coach.post(`/api/coach/groups/${g.body.group.id}/roster`).send({
+      entries: [{ name: 'A', email: 'a@b.co' }, { name: 'B', email: 'b@b.co' }],
+    });
+
+    const res = await userA.get('/api/groups/mine/members');
+    assert.equal(res.status, 200);
+    assert.ok(res.body.members.some((m) => m.id === regB.body.user.id), 'B 應在成員列表');
+    assert.ok(!res.body.members.some((m) => m.id === regA.body.user.id), 'A 本人不應出現');
+  });
+});
+
 describe('管理後台', () => {
   test('一般使用者無權限（403），管理員可取得總覽', async () => {
     const app = await setup({ withAdmin: true });

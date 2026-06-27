@@ -11,7 +11,7 @@ import ResultPanel from './components/ResultPanel';
 const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
 const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmentId}`;
 
-export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, assessmentId = 'ai-competency', rateeId, raterType, onSubmitted }) {
+export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, assessmentId = 'ai-competency', rateeId, raterType, rateeName, onSubmitted }) {
   const config = useMemo(() => getAssessment(assessmentId), [assessmentId]);
 
   const storageKey = useMemo(() => draftKey(user.id, assessmentId), [user.id, assessmentId]);
@@ -105,6 +105,13 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
             )}
           </span>
         </div>
+
+        {raterType && raterType !== 'self' && rateeName && (
+          <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm">
+            <span className="font-semibold text-brand-700">您正在評估「{rateeName}」</span>
+            <span className="ml-1 text-brand-600">的領導力行為表現</span>
+          </div>
+        )}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-slate-500">本次填答屬於：</span>
