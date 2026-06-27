@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import ResultPanel from '../components/ResultPanel';
+import PrintableReport from '../components/PrintableReport';
 import TrendChart from '../components/charts/TrendChart';
 import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachCommentPanel';
 import { computePercentile } from '../utils/analytics';
@@ -13,6 +14,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [selectedId, setSelectedId] = useState(initialAssessmentId ?? null);
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -74,8 +76,6 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
     if (ok) setTimeout(() => setCopied(false), 2500);
   };
 
-  const handlePrint = () => window.print();
-
   const trendPoints = [...filtered].reverse().map((s) => ({
     label: formatDateShort(s.createdAt),
     value: s.result.total,
@@ -109,16 +109,18 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
     : null;
   const topGain = gain?.dims?.[0] ?? null;
 
-  const printDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
-
   return (
+    <>
+    {showReport && latest && (
+      <PrintableReport
+        result={latest.result}
+        benchmark={benchmarkForActive}
+        user={user}
+        submittedAt={latest.createdAt}
+        onClose={() => setShowReport(false)}
+      />
+    )}
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      {/* Print-only report header */}
-      <div className="mb-6 hidden border-b border-slate-200 pb-4 print:block">
-        <p className="text-xs text-slate-400">全方位職能評測 · 個人評測報告</p>
-        <h2 className="mt-0.5 text-xl font-bold text-slate-800">{user.name}</h2>
-        <p className="text-sm text-slate-500">報告列印日期：{printDate}</p>
-      </div>
 
       {/* Screen header */}
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden">
@@ -130,10 +132,10 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
         </div>
         <button
           type="button"
-          onClick={handlePrint}
-          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+          onClick={() => setShowReport(true)}
+          className="rounded-lg border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition-colors hover:bg-brand-50"
         >
-          🖨️ 下載 PDF 報告
+          📄 產出 PDF 報告
         </button>
       </header>
 
@@ -312,5 +314,6 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
         </>
       )}
     </main>
+    </>
   );
 }
