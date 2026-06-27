@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from './auth/useAuth';
 import { api } from './api/client';
+import { getAssessment } from './data/assessments/index.js';
 import AssessmentCard from './components/AssessmentCard';
+import RaterSetup from './components/RaterSetup';
 import SurveyApp from './SurveyApp';
 import UserDashboard from './dashboard/UserDashboard';
 import AdminDashboard from './admin/AdminDashboard';
@@ -59,6 +61,7 @@ export default function AppShell() {
   const defaultAid = user?.preferences?.defaultAssessmentId || null;
   const [view, setView] = useState(defaultAid ? 'survey' : 'home');
   const [activeAssessmentId, setActiveAssessmentId] = useState(defaultAid);
+  const [raterConfig, setRaterConfig] = useState(null); // { rateeId, raterType }
   const [refreshKey, setRefreshKey] = useState(0);
 
   const tabs = [
@@ -69,7 +72,21 @@ export default function AppShell() {
     { id: 'profile', label: '個人設定' },
   ];
 
-  const handleStartSurvey = (id) => { setActiveAssessmentId(id); setView('survey'); };
+  const handleStartSurvey = (id) => {
+    setActiveAssessmentId(id);
+    const config = getAssessment(id);
+    if (config?.SUPPORTS_360) {
+      setRaterConfig(null);
+      setView('rater-setup');
+    } else {
+      setRaterConfig({ rateeId: user.id, raterType: 'self' });
+      setView('survey');
+    }
+  };
+  const handleRaterConfirm = (rateeId, raterType) => {
+    setRaterConfig({ rateeId, raterType });
+    setView('survey');
+  };
   const handleViewAnalysis = (id) => { setActiveAssessmentId(id); setView('analysis'); };
   const handleSubmitted = () => { setRefreshKey((k) => k + 1); setView('home'); };
 
@@ -87,7 +104,7 @@ export default function AppShell() {
             全方位職能評測
           </span>
 
-          {view === 'survey' ? (
+          {(view === 'survey' || view === 'rater-setup') ? (
             <button
               type="button"
               onClick={() => setView('home')}
@@ -148,11 +165,21 @@ export default function AppShell() {
         />
       )}
 
+      {view === 'rater-setup' && activeAssessmentId && (
+        <RaterSetup
+          user={user}
+          onConfirm={handleRaterConfirm}
+          onCancel={() => setView('home')}
+        />
+      )}
+
       {view === 'survey' && activeAssessmentId && (
         <SurveyApp
-          key={activeAssessmentId}
+          key={`${activeAssessmentId}-${raterConfig?.rateeId}-${raterConfig?.raterType}`}
           user={user}
           assessmentId={activeAssessmentId}
+          rateeId={raterConfig?.rateeId}
+          raterType={raterConfig?.raterType}
           onSubmitted={handleSubmitted}
         />
       )}

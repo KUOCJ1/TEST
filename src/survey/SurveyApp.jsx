@@ -11,7 +11,7 @@ import ResultPanel from './components/ResultPanel';
 const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
 const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmentId}`;
 
-export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, assessmentId = 'ai-competency', onSubmitted }) {
+export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, assessmentId = 'ai-competency', rateeId, raterType, onSubmitted }) {
   const config = useMemo(() => getAssessment(assessmentId), [assessmentId]);
 
   const storageKey = useMemo(() => draftKey(user.id, assessmentId), [user.id, assessmentId]);
@@ -54,7 +54,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     setSubmitting(true);
     const r = buildResult(answers, config);
     try {
-      await api.createSubmission({ answers, result: r, assessmentId, phase });
+      await api.createSubmission({ answers, result: r, assessmentId, phase, rateeId: rateeId || user.id, raterType: raterType || 'self' });
       setResult(r);
       onSubmitted?.(r);
       requestAnimationFrame(() => resultRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
@@ -63,7 +63,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     } finally {
       setSubmitting(false);
     }
-  }, [answers, config, assessmentId, phase, onSubmitted]);
+  }, [answers, config, assessmentId, phase, rateeId, raterType, onSubmitted, user.id]);
 
   const handleRetake = useCallback(() => {
     setAnswers({});

@@ -1,4 +1,5 @@
 export const ID = 'leadership-9d';
+export const SUPPORTS_360 = true;
 export const NAME = '經贏® 領導力九大構面行為評量';
 export const NAME_EN = 'Leadership 9-Dimension Behavioral Assessment';
 export const ABBR = 'L9D';

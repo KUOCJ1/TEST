@@ -4,6 +4,7 @@ import ResultPanel from '../components/ResultPanel';
 import PrintableReport from '../components/PrintableReport';
 import TrendChart from '../components/charts/TrendChart';
 import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachCommentPanel';
+import MultiRaterDashboard from '../analysis/MultiRaterDashboard';
 import { computePercentile } from '../utils/analytics';
 import { resultSummaryText, copyToClipboard, formatDate, formatDateShort } from '../utils/format';
 
@@ -15,6 +16,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
   const [copied, setCopied] = useState(false);
   const [selectedId, setSelectedId] = useState(initialAssessmentId ?? null);
   const [showReport, setShowReport] = useState(false);
+  const [show360, setShow360] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -130,13 +132,15 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
             {user.name}，共完成 {subs.length} 次評測
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowReport(true)}
-          className="rounded-lg border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition-colors hover:bg-brand-50"
-        >
-          📄 產出 PDF 報告
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => { setShow360(false); setShowReport(true); }}
+            className="rounded-lg border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition-colors hover:bg-brand-50"
+          >
+            📄 產出 PDF 報告
+          </button>
+        </div>
       </header>
 
       {assessmentIds.length > 1 && (
@@ -145,9 +149,9 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
             <button
               key={id}
               type="button"
-              onClick={() => setSelectedId(id)}
+              onClick={() => { setSelectedId(id); setShow360(false); }}
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                activeId === id
+                activeId === id && !show360
                   ? 'bg-brand-600 text-white'
                   : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}
@@ -158,7 +162,39 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
         </div>
       )}
 
-      {latest && (
+      {/* 360° tab button — shown when at least one L9D submission exists */}
+      {filtered.some((s) => s.assessmentId === 'leadership-9d') && (
+        <div className="mb-5 flex gap-2 print:hidden">
+          <button
+            type="button"
+            onClick={() => setShow360(false)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+              !show360 ? 'bg-brand-600 text-white' : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            個人分析
+          </button>
+          <button
+            type="button"
+            onClick={() => setShow360(true)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+              show360 ? 'bg-brand-600 text-white' : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            360° 多元視角
+          </button>
+        </div>
+      )}
+
+      {show360 && (
+        <MultiRaterDashboard
+          rateeId={user.id}
+          rateeName={user.name}
+          assessmentId={activeId}
+        />
+      )}
+
+      {!show360 && latest && (
         <>
           <ResultPanel
             result={latest.result}

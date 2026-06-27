@@ -42,6 +42,10 @@ export const api = {
   createSubmission: (payload) =>
     request('/submissions', { method: 'POST', body: payload }).then((d) => d.submission),
   mySubmissions: () => request('/submissions/me').then((d) => d.submissions),
+  rateeSubmissions: (rateeId, assessmentId, opts = {}) => {
+    const qs = new URLSearchParams({ assessmentId, ...(opts.deanonymize ? { deanonymize: '1' } : {}) });
+    return request(`/submissions/ratee/${rateeId}?${qs}`).then((d) => d.submissions);
+  },
 
   adminOverview: () => request('/admin/overview'),
   setUserRole: (userId, role) =>
@@ -64,4 +68,5 @@ export const api = {
     request(`/submissions/${submissionId}/comment/${commentId}`, { method: 'DELETE' }),
 
   myGroups: () => request('/groups/mine').then((d) => d.groups),
+  groupMembers: () => request('/groups/mine/members').then((d) => d.members),
 };

@@ -86,9 +86,15 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     next();
   }
 
-  // Normalize legacy submissions that lack assessmentId.
+  // Normalize legacy submissions that lack assessmentId / rater fields.
   function normalizeSubmission(s) {
-    return { ...s, assessmentId: s.assessmentId ?? 'ai-competency', phase: s.phase ?? null };
+    return {
+      ...s,
+      assessmentId: s.assessmentId ?? 'ai-competency',
+      phase: s.phase ?? null,
+      rateeId: s.rateeId ?? s.userId,
+      raterType: s.raterType ?? 'self',
+    };
   }
 
   const hashToken = (t) => createHash('sha256').update(t).digest('hex');
@@ -253,15 +259,26 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   });
 
   // ── 作答 ────────────────────────────────────────────────
+  const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
+
   app.post('/api/submissions', requireAuth, (req, res) => {
-    const { answers, result, assessmentId, phase } = req.body || {};
+    const { answers, result, assessmentId, phase, rateeId, raterType } = req.body || {};
     if (!result || typeof result.total !== 'number' || !Array.isArray(result.dimensions)) {
       return res.status(400).json({ error: '作答結果格式不正確' });
     }
+    const effectiveRateeId = typeof rateeId === 'string' && rateeId.trim()
+      ? rateeId.trim()
+      : req.user.id;
+    const effectiveRaterType = VALID_RATER_TYPES.has(raterType) ? raterType : 'self';
+    // 自評時強制 rateeId = self
+    const finalRateeId = effectiveRaterType === 'self' ? req.user.id : effectiveRateeId;
+
     const record = {
       id: randomUUID(),
       userId: req.user.id,
       userName: req.user.name,
+      rateeId: finalRateeId,
+      raterType: effectiveRaterType,
       assessmentId: typeof assessmentId === 'string' ? assessmentId : 'ai-competency',
       phase: phase === 'pre' || phase === 'post' ? phase : null,
       createdAt: new Date().toISOString(),
@@ -279,6 +296,41 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .map(normalizeSubmission);
     res.json({ submissions: mine });
+  });
+
+  // 查詢某位被評者（ratee）的所有 360° 評測紀錄。
+  // 存取控制：本人 / 該 ratee 所在班別的教練 / 管理員。
+  // 同儕與部屬評測者預設匿名（教練與管理員可傳 ?deanonymize=1 解匿名）。
+  app.get('/api/submissions/ratee/:rateeId', requireAuth, (req, res) => {
+    const { rateeId } = req.params;
+    const { assessmentId, deanonymize } = req.query;
+    const isAdmin = req.user.role === 'admin';
+    const isSelf = req.user.id === rateeId;
+    const isCoachOfRatee = !isAdmin && !isSelf && (db.data.groups ?? []).some(
+      (g) => g.coachId === req.user.id && g.memberIds.includes(rateeId),
+    );
+    if (!isSelf && !isCoachOfRatee && !isAdmin) {
+      return res.status(403).json({ error: '無權限查看此評測資料' });
+    }
+    const canDeanonymize = isAdmin || isCoachOfRatee || (isSelf && deanonymize === '1');
+
+    let subs = db.data.submissions
+      .filter((s) => {
+        const rid = s.rateeId ?? s.userId;
+        const matchRatee = rid === rateeId;
+        const matchAssessment = !assessmentId || (s.assessmentId ?? 'ai-competency') === assessmentId;
+        return matchRatee && matchAssessment;
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map((s) => {
+        const n = normalizeSubmission(s);
+        if (!canDeanonymize && (n.raterType === 'peer' || n.raterType === 'subordinate')) {
+          return { ...n, userId: 'anonymous', userName: '匿名', answers: undefined };
+        }
+        return { ...n, answers: undefined };
+      });
+
+    res.json({ submissions: subs });
   });
 
   // ── 管理後台 ────────────────────────────────────────────
@@ -498,6 +550,19 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   app.get('/api/groups/mine', requireAuth, (req, res) => {
     const myGroups = (db.data.groups ?? []).filter((g) => g.memberIds.includes(req.user.id));
     res.json({ groups: myGroups });
+  });
+
+  // 回傳使用者在所有班別中的同儕成員（不含自己），供 360° 選人介面使用。
+  app.get('/api/groups/mine/members', requireAuth, (req, res) => {
+    const myGroups = (db.data.groups ?? []).filter((g) => g.memberIds.includes(req.user.id));
+    const memberIds = [...new Set(myGroups.flatMap((g) => g.memberIds))].filter((id) => id !== req.user.id);
+    const members = memberIds
+      .map((id) => {
+        const u = db.data.users.find((x) => x.id === id);
+        return u ? { id: u.id, name: u.name } : null;
+      })
+      .filter(Boolean);
+    res.json({ members });
   });
 
   return app;
