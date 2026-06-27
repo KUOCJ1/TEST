@@ -1,9 +1,7 @@
+import { memo } from 'react';
 import { SCALE_LABELS } from '../data/questions';
 
-/**
- * 單一題目：題幹 + 1~5 分量表（無障礙 radiogroup）。
- */
-export default function QuestionCard({ number, question, value, onChange, invalid, inputRef }) {
+function QuestionCard({ number, question, value, onChange, invalid, inputRef }) {
   return (
     <fieldset
       ref={inputRef}
@@ -61,3 +59,5 @@ export default function QuestionCard({ number, question, value, onChange, invali
     </fieldset>
   );
 }
+
+export default memo(QuestionCard);

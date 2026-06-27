@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import ResultPanel from '../components/ResultPanel';
 import PrintableReport from '../components/PrintableReport';
@@ -12,11 +12,13 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
   const [subs, setSubs] = useState(null);
   const [myGroups, setMyGroups] = useState([]);
   const [benchmark, setBenchmark] = useState(null);
+  const [benchmarkLoading, setBenchmarkLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [selectedId, setSelectedId] = useState(initialAssessmentId ?? null);
   const [showReport, setShowReport] = useState(false);
   const [show360, setShow360] = useState(false);
+  const benchmarkCache = useRef({});
 
   useEffect(() => {
     let active = true;
@@ -33,15 +35,26 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
     return () => { active = false; };
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 載入母體基準（百分位 / Benchmark），隨選取的評量變動。
+  // Benchmark fetch with in-memory cache per assessment id.
   useEffect(() => {
     if (!subs?.length) return undefined;
     const ids = [...new Set(subs.map((s) => s.assessmentId ?? 'ai-competency'))];
     const id = selectedId ?? ids[0];
+    if (!id) return undefined;
+    if (benchmarkCache.current[id]) {
+      setBenchmark(benchmarkCache.current[id]);
+      return undefined;
+    }
     let active = true;
+    setBenchmarkLoading(true);
     api.benchmark(id)
-      .then((b) => active && setBenchmark(b))
-      .catch(() => active && setBenchmark(null));
+      .then((b) => {
+        if (!active) return;
+        benchmarkCache.current[id] = b;
+        setBenchmark(b);
+      })
+      .catch(() => active && setBenchmark(null))
+      .finally(() => active && setBenchmarkLoading(false));
     return () => { active = false; };
   }, [selectedId, subs]);
 
@@ -71,6 +84,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
   const percentile = benchmarkForActive
     ? computePercentile(latest.result.total, benchmarkForActive.totals)
     : null;
+  const isBenchmarkLoading = benchmarkLoading && !benchmarkForActive;
 
   const handleCopy = async () => {
     const ok = await copyToClipboard(resultSummaryText(latest.result));
@@ -196,6 +210,9 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
 
       {!show360 && latest && (
         <>
+          {isBenchmarkLoading && (
+            <p className="mb-3 text-center text-xs text-slate-400">正在載入母體基準…</p>
+          )}
           <ResultPanel
             result={latest.result}
             onRetake={() => onTakeSurvey(activeId)}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useAuth } from './auth/useAuth';
 import { api } from './api/client';
 import { getAssessment } from './data/assessments/index.js';
@@ -6,9 +6,14 @@ import AssessmentCard from './components/AssessmentCard';
 import RaterSetup from './components/RaterSetup';
 import SurveyApp from './SurveyApp';
 import UserDashboard from './dashboard/UserDashboard';
-import AdminDashboard from './admin/AdminDashboard';
-import CoachDashboard from './coach/CoachDashboard';
 import ProfilePage from './profile/ProfilePage';
+
+const CoachDashboard = lazy(() => import('./coach/CoachDashboard'));
+const AdminDashboard = lazy(() => import('./admin/AdminDashboard'));
+
+function DashboardFallback() {
+  return <p className="py-20 text-center text-slate-400">載入中…</p>;
+}
 
 function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
   const [assessments, setAssessments] = useState([]);
@@ -118,6 +123,7 @@ export default function AppShell() {
                 <button
                   key={t.id}
                   type="button"
+                  aria-current={view === t.id ? 'page' : undefined}
                   onClick={() => handleTabClick(t.id)}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                     view === t.id
@@ -195,11 +201,15 @@ export default function AppShell() {
       )}
 
       {view === 'coach' && isCoach && (
-        <CoachDashboard key={refreshKey} />
+        <Suspense fallback={<DashboardFallback />}>
+          <CoachDashboard key={refreshKey} />
+        </Suspense>
       )}
 
       {view === 'admin' && isAdmin && (
-        <AdminDashboard key={refreshKey} />
+        <Suspense fallback={<DashboardFallback />}>
+          <AdminDashboard key={refreshKey} />
+        </Suspense>
       )}
 
       {view === 'profile' && <ProfilePage />}

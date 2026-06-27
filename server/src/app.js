@@ -1,5 +1,6 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
 import { randomUUID, createHash } from 'node:crypto';
 import {
   hashPassword,
@@ -14,8 +15,6 @@ const COOKIE_NAME = 'aiassess_token';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 天
 
 // ── 班別「評量設定」欄位清洗 ───────────────────────────────
-// 構面 id 屬於前端題庫設定，後端不持有完整清單，故僅做型別/長度防呆，
-// 由前端提供合法選項（與現有 assessmentId 僅存字串的作法一致）。
 export function sanitizeFocusDimensionIds(v) {
   if (!Array.isArray(v)) return [];
   const cleaned = v.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim());
@@ -39,6 +38,11 @@ export function sanitizeDimensionNotes(v) {
   return out;
 }
 
+// Wraps an async route handler so any thrown error propagates to Express
+// error-handling middleware rather than causing an unhandled rejection.
+const asyncHandler = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
 /**
  * 建立 Express app（不啟動監聽），方便測試直接以 supertest 注入。
  * @param {{db, jwtSecret:string, secureCookies?:boolean}} opts
@@ -49,6 +53,15 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   const app = express();
   app.use(express.json({ limit: '512kb' }));
   app.use(cookieParser());
+
+  // Rate limit for auth endpoints — 10 attempts per 5 minutes per IP.
+  const authLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: '請求過於頻繁，請稍後再試' },
+  });
 
   function setAuthCookie(res, user) {
     res.cookie(COOKIE_NAME, signToken({ sub: user.id }, jwtSecret), {
@@ -99,6 +112,16 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
 
   const hashToken = (t) => createHash('sha256').update(t).digest('hex');
 
+  function auditLog(req, action, extra = {}) {
+    console.log(JSON.stringify({
+      ts: new Date().toISOString(),
+      actor: req.user?.id,
+      actorEmail: req.user?.email,
+      action,
+      ...extra,
+    }));
+  }
+
   // 將使用者 email 比對各班別的待加入名單；命中則自動轉為正式成員。
   function claimPendingGroups(user) {
     let changed = false;
@@ -124,7 +147,6 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   });
 
   // ── 母體基準（百分位 / Benchmark）─────────────────────────
-  // 以「每位填答者最新一筆」為母體，回傳不含 PII 的聚合統計。
   app.get('/api/assessments/:id/benchmark', requireAuth, (req, res) => {
     const assessmentId = req.params.id;
     const all = db.data.submissions.filter(
@@ -138,7 +160,6 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     const latest = [...latestMap.values()];
     const totals = latest.map((s) => s.result?.total ?? 0).sort((a, b) => a - b);
 
-    // 各構面平均百分比
     const dimMap = new Map();
     for (const s of latest) {
       for (const d of s.result?.dimensions ?? []) {
@@ -156,17 +177,13 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     const count = latest.length;
     const avgTotal = count ? Math.round((totals.reduce((a, b) => a + b, 0) / count) * 10) / 10 : 0;
 
-    res.json({
-      assessmentId,
-      count,
-      avgTotal,
-      totals, // 已排序的總分陣列，供前端算百分位
-      dimensionAverages,
-    });
+    res.json({ assessmentId, count, avgTotal, totals, dimensionAverages });
   });
 
   // ── 認證 ────────────────────────────────────────────────
-  app.post('/api/auth/register', async (req, res) => {
+  // Hash password BEFORE checking for duplicate email so the synchronous
+  // check+push+persist block has no await (atomic under Node.js single thread).
+  app.post('/api/auth/register', authLimiter, asyncHandler(async (req, res) => {
     const { name, email, password } = req.body || {};
     try {
       validateRegistration({ name, email, password });
@@ -174,6 +191,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       return res.status(400).json({ error: e.message });
     }
     const normEmail = email.trim().toLowerCase();
+    const passwordHash = await hashPassword(password);
     if (db.data.users.some((u) => u.email === normEmail)) {
       return res.status(409).json({ error: '此 Email 已被註冊' });
     }
@@ -181,7 +199,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       id: randomUUID(),
       name: name.trim(),
       email: normEmail,
-      passwordHash: await hashPassword(password),
+      passwordHash,
       role: 'user',
       createdAt: new Date().toISOString(),
     };
@@ -190,9 +208,9 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     claimPendingGroups(user);
     setAuthCookie(res, user);
     res.status(201).json({ user: publicUser(user) });
-  });
+  }));
 
-  app.post('/api/auth/login', async (req, res) => {
+  app.post('/api/auth/login', authLimiter, asyncHandler(async (req, res) => {
     const { email, password } = req.body || {};
     const user = db.data.users.find((u) => u.email === (email || '').trim().toLowerCase());
     if (!user || !(await verifyPassword(password || '', user.passwordHash))) {
@@ -201,7 +219,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     claimPendingGroups(user);
     setAuthCookie(res, user);
     res.json({ user: publicUser(user) });
-  });
+  }));
 
   app.post('/api/auth/logout', (_req, res) => {
     res.clearCookie(COOKIE_NAME);
@@ -212,7 +230,6 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     res.json({ user: publicUser(req.user) });
   });
 
-  // 更新個人檔案：姓名與偏好設定。
   app.patch('/api/auth/profile', requireAuth, (req, res) => {
     const { name, preferences } = req.body ?? {};
     if (name !== undefined) {
@@ -226,8 +243,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     res.json({ user: publicUser(req.user) });
   });
 
-  // 登入狀態下變更密碼。
-  app.post('/api/auth/password', requireAuth, async (req, res) => {
+  app.post('/api/auth/password', requireAuth, asyncHandler(async (req, res) => {
     const { currentPassword, newPassword } = req.body ?? {};
     if ((newPassword || '').length < 6) {
       return res.status(400).json({ error: '新密碼至少需 6 碼' });
@@ -238,10 +254,9 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     req.user.passwordHash = await hashPassword(newPassword);
     db.persist();
     res.json({ ok: true });
-  });
+  }));
 
-  // 以重設 token 設定新密碼（忘記密碼流程，免登入）。
-  app.post('/api/auth/reset-password', async (req, res) => {
+  app.post('/api/auth/reset-password', asyncHandler(async (req, res) => {
     const { token, newPassword } = req.body ?? {};
     if (!token || (newPassword || '').length < 6) {
       return res.status(400).json({ error: '重設連結或新密碼不正確（密碼至少 6 碼）' });
@@ -256,7 +271,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     delete user.resetTokenExpires;
     db.persist();
     res.json({ ok: true });
-  });
+  }));
 
   // ── 作答 ────────────────────────────────────────────────
   const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
@@ -270,7 +285,6 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       ? rateeId.trim()
       : req.user.id;
     const effectiveRaterType = VALID_RATER_TYPES.has(raterType) ? raterType : 'self';
-    // 自評時強制 rateeId = self
     const finalRateeId = effectiveRaterType === 'self' ? req.user.id : effectiveRateeId;
 
     const record = {
@@ -290,17 +304,23 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     res.status(201).json({ submission: record });
   });
 
+  // Supports ?page=&limit= pagination. answers field excluded (large, not used by frontend).
   app.get('/api/submissions/me', requireAuth, (req, res) => {
-    const mine = db.data.submissions
+    const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const all = db.data.submissions
       .filter((s) => s.userId === req.user.id)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .map(normalizeSubmission);
-    res.json({ submissions: mine });
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const total = all.length;
+    const mine = all
+      .slice((page - 1) * limit, page * limit)
+      .map((s) => {
+        const n = normalizeSubmission(s);
+        return { ...n, answers: undefined };
+      });
+    res.json({ submissions: mine, total, page, limit });
   });
 
-  // 查詢某位被評者（ratee）的所有 360° 評測紀錄。
-  // 存取控制：本人 / 該 ratee 所在班別的教練 / 管理員。
-  // 同儕與部屬評測者預設匿名（教練與管理員可傳 ?deanonymize=1 解匿名）。
   app.get('/api/submissions/ratee/:rateeId', requireAuth, (req, res) => {
     const { rateeId } = req.params;
     const { assessmentId, deanonymize } = req.query;
@@ -314,7 +334,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     }
     const canDeanonymize = isAdmin || isCoachOfRatee || (isSelf && deanonymize === '1');
 
-    let subs = db.data.submissions
+    const subs = db.data.submissions
       .filter((s) => {
         const rid = s.rateeId ?? s.userId;
         const matchRatee = rid === rateeId;
@@ -345,6 +365,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     if (idx === -1) return res.status(404).json({ error: '評量不存在' });
     list[idx] = { ...list[idx], enabled: Boolean(enabled) };
     db.persist();
+    auditLog(req, 'toggle_assessment', { assessmentId: req.params.id, enabled: Boolean(enabled) });
     res.json({ assessment: list[idx] });
   });
 
@@ -367,12 +388,13 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     const user = db.data.users.find((u) => u.id === req.params.id);
     if (!user) return res.status(404).json({ error: '使用者不存在' });
     if (user.role === 'admin') return res.status(400).json({ error: '不能修改管理員角色' });
+    const prevRole = user.role;
     user.role = role;
     db.persist();
+    auditLog(req, 'change_role', { targetUserId: user.id, from: prevRole, to: role });
     res.json({ user: publicUser(user) });
   });
 
-  // 管理員協助：產生一次性密碼重設 token（24 小時有效），交給使用者自行設定新密碼。
   app.post('/api/admin/users/:id/reset-token', requireAuth, requireAdmin, (req, res) => {
     const user = db.data.users.find((u) => u.id === req.params.id);
     if (!user) return res.status(404).json({ error: '使用者不存在' });
@@ -380,6 +402,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     user.resetTokenHash = hashToken(token);
     user.resetTokenExpires = Date.now() + 24 * 60 * 60 * 1000;
     db.persist();
+    auditLog(req, 'generate_reset_token', { targetUserId: user.id });
     res.json({ token, email: user.email, expiresInHours: 24 });
   });
 
@@ -453,8 +476,12 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       ...(companyName !== undefined && { companyName: companyName.trim() }),
       ...(assessmentId !== undefined && { assessmentId }),
       ...(memberIds !== undefined && { memberIds: Array.isArray(memberIds) ? memberIds : [] }),
-      ...(groupComment !== undefined && { groupComment }),
-      ...(groupTips !== undefined && { groupTips: Array.isArray(groupTips) ? groupTips : [] }),
+      ...(groupComment !== undefined && { groupComment: String(groupComment).slice(0, 10000) }),
+      ...(groupTips !== undefined && {
+        groupTips: Array.isArray(groupTips)
+          ? groupTips.slice(0, 100).map((t) => String(t ?? '').slice(0, 1000))
+          : [],
+      }),
       ...(focusDimensionIds !== undefined && { focusDimensionIds: sanitizeFocusDimensionIds(focusDimensionIds) }),
       ...(targetHeadcount !== undefined && { targetHeadcount: sanitizeTargetHeadcount(targetHeadcount) }),
       ...(dimensionNotes !== undefined && { dimensionNotes: sanitizeDimensionNotes(dimensionNotes) }),
@@ -464,7 +491,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     res.json({ group: groups[idx] });
   });
 
-  // 批量匯入名單：以 email 比對現有用戶；未註冊者列入待加入名單，註冊後自動入班。
+  // 批量匯入名單。
   app.post('/api/coach/groups/:id/roster', requireAuth, requireCoach, (req, res) => {
     const groups = db.data.groups ?? [];
     const group = groups.find((g) => g.id === req.params.id);
@@ -509,7 +536,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   });
 
   // ── 評語（每位教練對每份作答只留一則，POST = upsert）────────
-  app.post('/api/submissions/:id/comment', requireAuth, requireCoach, (req, res) => {
+  app.post('/api/submissions/:id/comment', requireAuth, requireCoach, asyncHandler(async (req, res) => {
     const submission = db.data.submissions.find((s) => s.id === req.params.id);
     if (!submission) return res.status(404).json({ error: '作答記錄不存在' });
     const { text, tips } = req.body ?? {};
@@ -521,8 +548,10 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       id: existingIdx >= 0 ? submission.comments[existingIdx].id : randomUUID(),
       coachId: req.user.id,
       coachName: req.user.name,
-      text: text.trim(),
-      tips: Array.isArray(tips) ? tips.map((t) => t?.trim()).filter(Boolean) : [],
+      text: text.trim().slice(0, 10000),
+      tips: Array.isArray(tips)
+        ? tips.slice(0, 20).map((t) => String(t ?? '').trim().slice(0, 500)).filter(Boolean)
+        : [],
       createdAt: existingIdx >= 0 ? submission.comments[existingIdx].createdAt : now,
       updatedAt: now,
     };
@@ -530,7 +559,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     else submission.comments.push(comment);
     db.persist();
     res.json({ comment });
-  });
+  }));
 
   app.delete('/api/submissions/:id/comment/:commentId', requireAuth, requireCoach, (req, res) => {
     const submission = db.data.submissions.find((s) => s.id === req.params.id);
@@ -552,7 +581,6 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     res.json({ groups: myGroups });
   });
 
-  // 回傳使用者在所有班別中的同儕成員（不含自己），供 360° 選人介面使用。
   app.get('/api/groups/mine/members', requireAuth, (req, res) => {
     const myGroups = (db.data.groups ?? []).filter((g) => g.memberIds.includes(req.user.id));
     const memberIds = [...new Set(myGroups.flatMap((g) => g.memberIds))].filter((id) => id !== req.user.id);
@@ -563,6 +591,14 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       })
       .filter(Boolean);
     res.json({ members });
+  });
+
+  // ── 全域錯誤處理 ───────────────────────────────────────────
+  // eslint-disable-next-line no-unused-vars
+  app.use((err, req, res, next) => {
+    console.error('[error]', err.stack ?? err.message ?? err);
+    const status = err.status || err.statusCode || 500;
+    res.status(status).json({ error: err.message || '伺服器錯誤' });
   });
 
   return app;

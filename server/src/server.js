@@ -13,6 +13,10 @@ if (!JWT_SECRET) {
   console.error('✗ 缺少必要環境變數 JWT_SECRET（請設定一段夠長的隨機字串）');
   process.exit(1);
 }
+if (JWT_SECRET.length < 32) {
+  console.error('✗ JWT_SECRET 長度不足（至少需 32 個字元）');
+  process.exit(1);
+}
 
 const db = createDb(DB_PATH);
 

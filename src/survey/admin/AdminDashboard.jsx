@@ -2,34 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
+import { exportAdminCsv } from '../utils/csvExport';
+import { useAssessmentFilter } from '../hooks/useAssessmentFilter';
 import RadarChart from '../components/RadarChart';
 import BarList from '../components/charts/BarList';
 import LevelDistribution from '../components/charts/LevelDistribution';
 import { formatDate } from '../utils/format';
-
-function exportCsv(rows, activeConfig, assessmentName) {
-  if (!rows.length) return;
-  const dimHeaders = (activeConfig?.DIMENSIONS ?? []).map((d) => d.subtitle);
-  const header = ['姓名', 'Email', '作答時間', '總分', '達成率', '落點等級', '作答次數', ...dimHeaders];
-  const data = rows.map((r) => {
-    const sub = r._latestSub;
-    const dimScores = sub ? (activeConfig?.DIMENSIONS ?? []).map((d) => {
-      const found = sub.result?.dimensions?.find((x) => x.id === d.id);
-      return found ? found.score : '';
-    }) : dimHeaders.map(() => '');
-    return [r.name, r.email, formatDate(r.when), r.total, `${r.percent}%`, r.level.badge, r.attempts, ...dimScores];
-  });
-  const csv = [header, ...data]
-    .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
-    .join('\n');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${assessmentName ?? 'assessment'}-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 function Kpi({ label, value, suffix }) {
   return (
@@ -46,7 +24,6 @@ function Kpi({ label, value, suffix }) {
 export default function AdminDashboard() {
   const [overview, setOverview] = useState(null);
   const [adminAssessments, setAdminAssessments] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
   const [toggling, setToggling] = useState(false);
   const [error, setError] = useState('');
   const [roleChanging, setRoleChanging] = useState(null);
@@ -59,36 +36,20 @@ export default function AdminDashboard() {
         if (!active) return;
         setOverview(ov);
         setAdminAssessments(al);
-        if (al.length > 0) setSelectedId((prev) => prev ?? al[0].id);
       })
       .catch((e) => active && setError(e.message || '載入失敗'));
     return () => { active = false; };
   }, []);
 
-  const handleToggle = async (assessment) => {
-    setToggling(true);
-    try {
-      const updated = await api.toggleAssessment(assessment.id, !assessment.enabled);
-      setAdminAssessments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-    } catch (e) {
-      alert(e.message || '操作失敗');
-    } finally {
-      setToggling(false);
-    }
-  };
-
   const submissions = useMemo(() => overview?.submissions ?? [], [overview]);
   const users = useMemo(() => overview?.users ?? [], [overview]);
 
-  const activeConfig = useMemo(
-    () => (selectedId ? getAssessment(selectedId) : null),
-    [selectedId],
-  );
+  const initialId = adminAssessments[0]?.id ?? null;
+  const { assessmentIds: _ids, activeId: selectedId, setSelectedId, filtered: filteredSubs } =
+    useAssessmentFilter(submissions, initialId);
 
-  const filteredSubs = useMemo(
-    () => submissions.filter((s) => (s.assessmentId ?? 'ai-competency') === selectedId),
-    [submissions, selectedId],
-  );
+  // Keep adminAssessments as the canonical list for the toggle UI
+  const activeConfig = useMemo(() => (selectedId ? getAssessment(selectedId) : null), [selectedId]);
 
   const stats = useMemo(
     () => (activeConfig ? aggregateStats(filteredSubs, activeConfig) : null),
@@ -120,15 +81,24 @@ export default function AdminDashboard() {
       .sort((a, b) => b.total - a.total);
   }, [filteredSubs, users, stats]);
 
+  const handleToggle = async (assessment) => {
+    setToggling(true);
+    setError('');
+    try {
+      const updated = await api.toggleAssessment(assessment.id, !assessment.enabled);
+      setAdminAssessments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+    } catch (e) {
+      setError(e.message || '操作失敗');
+    } finally {
+      setToggling(false);
+    }
+  };
+
   const memberCount = users.filter((u) => u.role !== 'admin').length;
   const dimCount = activeConfig?.DIMENSIONS?.length ?? 0;
 
   if (!overview && !error) {
     return <p className="py-20 text-center text-slate-400">載入中…</p>;
-  }
-
-  if (error) {
-    return <p className="py-20 text-center text-red-500">{error}</p>;
   }
 
   return (
@@ -139,6 +109,12 @@ export default function AdminDashboard() {
           以每位填答者「最新一筆」作答為母體，依題庫分別彙整能力落點。
         </p>
       </header>
+
+      {error && (
+        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       {adminAssessments.length > 0 && (
         <section className="mb-5 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-100">
@@ -223,7 +199,7 @@ export default function AdminDashboard() {
               <h3 className="text-base font-bold text-slate-700">填答者明細</h3>
               <button
                 type="button"
-                onClick={() => exportCsv(rows, activeConfig, activeConfig?.NAME)}
+                onClick={() => exportAdminCsv(rows, activeConfig, activeConfig?.NAME)}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
               >
                 ⬇ 匯出 CSV
@@ -301,6 +277,7 @@ export default function AdminDashboard() {
                         disabled={roleChanging === u.id}
                         onClick={async () => {
                           setRoleChanging(u.id);
+                          setError('');
                           try {
                             const newRole = u.role === 'coach' ? 'user' : 'coach';
                             const updated = await api.setUserRole(u.id, newRole);
@@ -309,7 +286,7 @@ export default function AdminDashboard() {
                               users: prev.users.map((x) => (x.id === updated.id ? updated : x)),
                             }));
                           } catch (e) {
-                            alert(e.message || '操作失敗');
+                            setError(e.message || '操作失敗');
                           } finally {
                             setRoleChanging(null);
                           }
@@ -325,12 +302,13 @@ export default function AdminDashboard() {
                       <button
                         type="button"
                         onClick={async () => {
+                          setError('');
                           try {
                             const info = await api.generateResetToken(u.id);
                             const url = `${window.location.origin}${window.location.pathname}?reset=${info.token}`;
                             setResetInfo({ name: u.name, email: u.email, url, hours: info.expiresInHours });
                           } catch (e) {
-                            alert(e.message || '產生失敗');
+                            setError(e.message || '產生失敗');
                           }
                         }}
                         className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
@@ -347,9 +325,18 @@ export default function AdminDashboard() {
       </section>
 
       {resetInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setResetInfo(null)}>
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-slate-800">密碼重設連結</h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setResetInfo(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-dialog-title"
+            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="reset-dialog-title" className="text-lg font-bold text-slate-800">密碼重設連結</h3>
             <p className="mt-1 text-sm text-slate-500">
               給 <span className="font-semibold">{resetInfo.name}</span>（{resetInfo.email}）。
               此連結 {resetInfo.hours} 小時內有效，請複製後私下交給該使用者，他可自行設定新密碼。
