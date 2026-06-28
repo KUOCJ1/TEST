@@ -205,6 +205,7 @@ export default function AdminDashboard() {
                 ⬇ 匯出 CSV
               </button>
             </div>
+            <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整欄位</p>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -246,6 +247,7 @@ export default function AdminDashboard() {
 
       <section className="mt-5 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60">
         <h3 className="mb-4 text-base font-bold text-slate-700">用戶角色管理</h3>
+        <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整欄位</p>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>

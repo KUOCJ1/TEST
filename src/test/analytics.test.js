@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aggregateStats, latestPerUser } from '../survey/utils/analytics';
+import { aggregateStats, computePercentile, latestPerUser } from '../survey/utils/analytics';
 import { buildResult } from '../survey/utils/scoring';
 import { getAssessment } from '../survey/data/assessments/index.js';
 
@@ -58,5 +58,28 @@ describe('aggregateStats', () => {
     expect(dist.catalyst).toBe(1);
     expect(dist.practitioner).toBe(1);
     expect(dist.novice).toBe(0); // u1 的舊紀錄不計入
+  });
+});
+
+describe('computePercentile', () => {
+  it('returns null when population has fewer than 2 members', () => {
+    expect(computePercentile(50, [])).toBeNull();
+    expect(computePercentile(50, [50])).toBeNull();
+  });
+
+  it('returns 0 when value is lowest in population', () => {
+    expect(computePercentile(10, [10, 20, 30, 40])).toBe(0);
+  });
+
+  it('returns 75 when value beats 3 out of 4 members', () => {
+    expect(computePercentile(40, [10, 20, 30, 40])).toBe(75);
+  });
+
+  it('returns 100 when value exceeds entire population', () => {
+    expect(computePercentile(99, [10, 20, 30])).toBe(100);
+  });
+
+  it('counts strictly-below values (ties do not count)', () => {
+    expect(computePercentile(20, [10, 20, 20, 30])).toBe(25);
   });
 });

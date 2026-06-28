@@ -82,19 +82,19 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
 
   function requireAuth(req, res, next) {
     const user = currentUser(req);
-    if (!user) return res.status(401).json({ error: '尚未登入' });
+    if (!user) return res.status(401).json({ code: 'UNAUTHORIZED', error: '尚未登入' });
     req.user = user;
     next();
   }
 
   function requireAdmin(req, res, next) {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: '需要管理員權限' });
+    if (req.user.role !== 'admin') return res.status(403).json({ code: 'FORBIDDEN', error: '需要管理員權限' });
     next();
   }
 
   function requireCoach(req, res, next) {
     if (req.user.role !== 'coach' && req.user.role !== 'admin') {
-      return res.status(403).json({ error: '需要教練或管理員權限' });
+      return res.status(403).json({ code: 'FORBIDDEN', error: '需要教練或管理員權限' });
     }
     next();
   }
@@ -188,12 +188,12 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     try {
       validateRegistration({ name, email, password });
     } catch (e) {
-      return res.status(400).json({ error: e.message });
+      return res.status(400).json({ code: 'VALIDATION_ERROR', error: e.message });
     }
     const normEmail = email.trim().toLowerCase();
     const passwordHash = await hashPassword(password);
     if (db.data.users.some((u) => u.email === normEmail)) {
-      return res.status(409).json({ error: '此 Email 已被註冊' });
+      return res.status(409).json({ code: 'EMAIL_TAKEN', error: '此 Email 已被註冊' });
     }
     const user = {
       id: randomUUID(),
@@ -214,7 +214,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     const { email, password } = req.body || {};
     const user = db.data.users.find((u) => u.email === (email || '').trim().toLowerCase());
     if (!user || !(await verifyPassword(password || '', user.passwordHash))) {
-      return res.status(401).json({ error: 'Email 或密碼錯誤' });
+      return res.status(401).json({ code: 'INVALID_CREDENTIALS', error: 'Email 或密碼錯誤' });
     }
     claimPendingGroups(user);
     setAuthCookie(res, user);
@@ -259,13 +259,13 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   app.post('/api/auth/reset-password', asyncHandler(async (req, res) => {
     const { token, newPassword } = req.body ?? {};
     if (!token || (newPassword || '').length < 6) {
-      return res.status(400).json({ error: '重設連結或新密碼不正確（密碼至少 6 碼）' });
+      return res.status(400).json({ code: 'VALIDATION_ERROR', error: '重設連結或新密碼不正確（密碼至少 6 碼）' });
     }
     const h = hashToken(token);
     const user = db.data.users.find(
       (u) => u.resetTokenHash === h && (u.resetTokenExpires || 0) > Date.now(),
     );
-    if (!user) return res.status(400).json({ error: '重設連結無效或已過期，請向管理員重新索取' });
+    if (!user) return res.status(400).json({ code: 'INVALID_RESET_TOKEN', error: '重設連結無效或已過期，請向管理員重新索取' });
     user.passwordHash = await hashPassword(newPassword);
     delete user.resetTokenHash;
     delete user.resetTokenExpires;
@@ -598,7 +598,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   app.use((err, req, res, next) => {
     console.error('[error]', err.stack ?? err.message ?? err);
     const status = err.status || err.statusCode || 500;
-    res.status(status).json({ error: err.message || '伺服器錯誤' });
+    res.status(status).json({ code: err.code || 'SERVER_ERROR', error: err.message || '伺服器錯誤' });
   });
 
   return app;

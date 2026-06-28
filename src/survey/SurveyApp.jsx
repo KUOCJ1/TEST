@@ -9,7 +9,7 @@ import QuestionCard from './components/QuestionCard';
 import ResultPanel from './components/ResultPanel';
 
 const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
-const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmentId}`;
+const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmentId}_v2`;
 
 export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, assessmentId = 'ai-competency', rateeId, raterType, rateeName, onSubmitted }) {
   const config = useMemo(() => getAssessment(assessmentId), [assessmentId]);

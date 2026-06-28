@@ -1,11 +1,30 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
+import { readJSON, writeJSON } from '../utils/storage';
+
+const draftKey = (id) => `aiassess_comment_draft_${id}_v1`;
 
 export default function CommentEditor({ submission, existingComment, onSaved, onCancel }) {
-  const [text, setText] = useState(existingComment?.text ?? '');
-  const [tips, setTips] = useState(existingComment?.tips?.length ? existingComment.tips : ['']);
+  const [text, setText] = useState(() => {
+    if (existingComment?.text) return existingComment.text;
+    return readJSON(draftKey(submission.id), {}).text ?? '';
+  });
+  const [tips, setTips] = useState(() => {
+    if (existingComment?.tips?.length) return existingComment.tips;
+    const d = readJSON(draftKey(submission.id), {});
+    return d.tips?.length ? d.tips : [''];
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const timerRef = useRef(null);
+  useEffect(() => {
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      writeJSON(draftKey(submission.id), { text, tips });
+    }, 500);
+    return () => clearTimeout(timerRef.current);
+  }, [text, tips, submission.id]);
 
   const setTip = (i, v) => setTips((prev) => prev.map((t, j) => (j === i ? v : t)));
   const addTip = () => setTips((prev) => [...prev, '']);
@@ -20,6 +39,7 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
         text: text.trim(),
         tips: tips.filter((t) => t.trim()),
       });
+      try { localStorage.removeItem(draftKey(submission.id)); } catch { /* ignore */ }
       onSaved(comment);
     } catch (e) {
       setError(e.message || '儲存失敗');

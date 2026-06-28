@@ -59,7 +59,7 @@ describe('SurveyApp', () => {
   it('作答內容會持久化到 localStorage（依使用者與題庫分開）', () => {
     render(<SurveyApp />);
     fireEvent.click(document.querySelectorAll('input[name="q1"]')[3]); // 4 分
-    expect(JSON.parse(localStorage.getItem('aiassess_draft_guest_ai-competency')).q1).toBe(4);
+    expect(JSON.parse(localStorage.getItem('aiassess_draft_guest_ai-competency_v2')).q1).toBe(4);
   });
 
   it('送出後會呼叫 API 建立紀錄並回呼 onSubmitted', async () => {
