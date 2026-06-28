@@ -51,9 +51,9 @@ const browser = await chromium.launch({
 const page = await browser.newPage();
 await page.setContent(html, { waitUntil: 'load' });
 await page.pdf({
-  path: 'docs/user-manual.pdf',
+  path: 'public/user-manual.pdf',
   format: 'A4',
   printBackground: true,
 });
 await browser.close();
-console.log('PDF generated: docs/user-manual.pdf');
+console.log('PDF generated: public/user-manual.pdf');

@@ -168,6 +168,13 @@ export default function AppShell() {
             >
               說明
             </button>
+            <a
+              href={`${import.meta.env.BASE_URL}user-manual.pdf`}
+              download="職能評測平台使用手冊.pdf"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100"
+            >
+              說明書
+            </a>
             <button
               type="button"
               onClick={logout}
