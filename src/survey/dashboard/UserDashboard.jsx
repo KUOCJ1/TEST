@@ -209,7 +209,34 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
         </div>
       )}
 
-      {show360 && (
+      {show360 && myGroupForActive && myGroupForActive.phase !== 'published' && (
+        <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-lg shadow-slate-200/60">
+          {myGroupForActive.phase === 'closed' ? (
+            <>
+              <p className="text-4xl">🔍</p>
+              <p className="mt-4 text-lg font-bold text-slate-700">教練審閱中</p>
+              <p className="mt-2 text-sm text-slate-500">
+                評測已結束，教練正在審閱整體成果。發佈後即可查看 360° 多元視角報告。
+              </p>
+            </>
+          ) : myGroupForActive.phase === 'in_progress' ? (
+            <>
+              <p className="text-4xl">📝</p>
+              <p className="mt-4 text-lg font-bold text-slate-700">評測進行中</p>
+              <p className="mt-2 text-sm text-slate-500">
+                評測尚未結束，360° 多元視角報告將於教練發佈後開放。
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-4xl">📅</p>
+              <p className="mt-4 text-lg font-bold text-slate-700">評測尚未開始</p>
+              <p className="mt-2 text-sm text-slate-500">評測開始後方可查看 360° 多元視角報告。</p>
+            </>
+          )}
+        </div>
+      )}
+      {show360 && (!myGroupForActive || myGroupForActive.phase === 'published') && (
         <MultiRaterDashboard
           rateeId={user.id}
           rateeName={user.name}

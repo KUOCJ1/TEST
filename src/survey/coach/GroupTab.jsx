@@ -7,6 +7,7 @@ import { exportGroupCsv } from '../utils/csvExport';
 import RadarChart from '../components/RadarChart';
 import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import InfoTip from '../components/InfoTip';
+import PhaseBadge from '../components/PhaseBadge';
 
 function parseRoster(text) {
   return text
@@ -39,6 +40,9 @@ export default function GroupTab({ users, submissions }) {
   const [focusDims, setFocusDims] = useState([]);
   const [dimNotes, setDimNotes] = useState({});
   const [error, setError] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [publishing, setPublishing] = useState(false);
   const [rosterText, setRosterText] = useState('');
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
@@ -61,6 +65,8 @@ export default function GroupTab({ users, submissions }) {
       setTargetHeadcount(group.targetHeadcount == null ? '' : String(group.targetHeadcount));
       setFocusDims(group.focusDimensionIds ?? []);
       setDimNotes(group.dimensionNotes ?? {});
+      setStartDate(group.startDate ? group.startDate.slice(0, 10) : '');
+      setEndDate(group.endDate ? group.endDate.slice(0, 10) : '');
     } catch (e) {
       setError(e.message || '載入失敗');
     }
@@ -105,6 +111,8 @@ export default function GroupTab({ users, submissions }) {
         targetHeadcount: targetHeadcount === '' ? null : Number(targetHeadcount),
         focusDimensionIds: focusDims,
         dimensionNotes: Object.fromEntries(focusDims.map((id) => [id, (dimNotes[id] ?? '').trim()]).filter(([, v]) => v)),
+        startDate: startDate || null,
+        endDate: endDate || null,
       });
       setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
       setGroupDetail((prev) => prev ? { ...prev, group: updated } : prev);
@@ -112,6 +120,36 @@ export default function GroupTab({ users, submissions }) {
       setError(e.message || '儲存失敗');
     } finally {
       setSavingGroup(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!selectedGroupId) return;
+    setPublishing(true);
+    setError('');
+    try {
+      const updated = await api.publishGroup(selectedGroupId);
+      setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+      setGroupDetail((prev) => prev ? { ...prev, group: updated } : prev);
+    } catch (e) {
+      setError(e.message || '發佈失敗');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!selectedGroupId) return;
+    setPublishing(true);
+    setError('');
+    try {
+      const updated = await api.unpublishGroup(selectedGroupId);
+      setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+      setGroupDetail((prev) => prev ? { ...prev, group: updated } : prev);
+    } catch (e) {
+      setError(e.message || '取消發佈失敗');
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -266,6 +304,9 @@ export default function GroupTab({ users, submissions }) {
                   <p className="mt-0.5 text-xs text-slate-400">
                     {getAssessment(g.assessmentId)?.NAME ?? g.assessmentId} · {g.memberIds.length} 人
                   </p>
+                  <div className="mt-1.5">
+                    <PhaseBadge phase={g.phase} />
+                  </div>
                 </div>
                 <button type="button" onClick={(e) => { e.stopPropagation(); handleDeleteGroup(g.id); }}
                   className="text-slate-300 hover:text-red-400 text-xs">✕</button>
@@ -283,6 +324,60 @@ export default function GroupTab({ users, submissions }) {
           </div>
         ) : (
           <div className="space-y-5">
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-semibold text-slate-700">施測時間軸</h3>
+                <PhaseBadge phase={groupDetail.group.phase} />
+              </div>
+              <div className="mb-3 grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">開始日期</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">截止日期</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                  />
+                </div>
+              </div>
+              <p className="mb-3 text-xs text-slate-400">設定開始/截止日期後，請點下方「儲存班級設定」生效。</p>
+              <div className="flex items-center gap-2">
+                {groupDetail.group.publishedAt ? (
+                  <button
+                    type="button"
+                    onClick={handleUnpublish}
+                    disabled={publishing}
+                    className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                  >
+                    {publishing ? '處理中…' : '取消發佈'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handlePublish}
+                    disabled={publishing}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {publishing ? '發佈中…' : '發佈成果（開放閱覽）'}
+                  </button>
+                )}
+                {groupDetail.group.publishedAt && (
+                  <span className="text-xs text-slate-400">
+                    發佈於 {new Date(groupDetail.group.publishedAt).toLocaleDateString('zh-TW')}
+                  </span>
+                )}
+              </div>
+            </div>
+
             <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4">
               <h3 className="mb-3 font-semibold text-brand-700">🎯 評量設定</h3>
 

@@ -9,6 +9,7 @@ import BarList from '../components/charts/BarList';
 import LevelDistribution from '../components/charts/LevelDistribution';
 import { formatDate } from '../utils/format';
 import InfoTip from '../components/InfoTip';
+import PhaseBadge from '../components/PhaseBadge';
 
 function Kpi({ label, value, suffix, tip }) {
   return (
@@ -32,14 +33,22 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
   const [roleChanging, setRoleChanging] = useState(null);
   const [resetInfo, setResetInfo] = useState(null);
+  const [adminGroups, setAdminGroups] = useState([]);
+  const [adminGroupDates, setAdminGroupDates] = useState({});
+  const [adminSaving, setAdminSaving] = useState(null);
 
   useEffect(() => {
     let active = true;
-    Promise.all([api.adminOverview(), api.adminAssessments()])
-      .then(([ov, al]) => {
+    Promise.all([api.adminOverview(), api.adminAssessments(), api.coachGroups()])
+      .then(([ov, al, gs]) => {
         if (!active) return;
         setOverview(ov);
         setAdminAssessments(al);
+        setAdminGroups(gs);
+        setAdminGroupDates(Object.fromEntries(gs.map((g) => [g.id, {
+          startDate: g.startDate ? g.startDate.slice(0, 10) : '',
+          endDate: g.endDate ? g.endDate.slice(0, 10) : '',
+        }])));
       })
       .catch((e) => active && setError(e.message || '載入失敗'));
     return () => { active = false; };
@@ -95,6 +104,50 @@ export default function AdminDashboard() {
       setError(e.message || '操作失敗');
     } finally {
       setToggling(false);
+    }
+  };
+
+  const handleGroupDateChange = (id, field, value) => {
+    setAdminGroupDates((prev) => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  };
+
+  const handleGroupSaveTimeline = async (id) => {
+    setAdminSaving(id);
+    setError('');
+    try {
+      const { startDate, endDate } = adminGroupDates[id] ?? {};
+      const updated = await api.updateGroup(id, { startDate: startDate || null, endDate: endDate || null });
+      setAdminGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    } catch (e) {
+      setError(e.message || '儲存失敗');
+    } finally {
+      setAdminSaving(null);
+    }
+  };
+
+  const handleGroupPublish = async (id) => {
+    setAdminSaving(id);
+    setError('');
+    try {
+      const updated = await api.publishGroup(id);
+      setAdminGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    } catch (e) {
+      setError(e.message || '發佈失敗');
+    } finally {
+      setAdminSaving(null);
+    }
+  };
+
+  const handleGroupUnpublish = async (id) => {
+    setAdminSaving(id);
+    setError('');
+    try {
+      const updated = await api.unpublishGroup(id);
+      setAdminGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    } catch (e) {
+      setError(e.message || '取消發佈失敗');
+    } finally {
+      setAdminSaving(null);
     }
   };
 
@@ -329,6 +382,81 @@ export default function AdminDashboard() {
           </table>
         </div>
       </section>
+
+      {adminGroups.length > 0 && (
+        <section className="mb-5 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-100">
+          <h3 className="mb-3 text-sm font-semibold text-slate-500">班別時間軸與發佈管理</h3>
+          <div className="space-y-3">
+            {adminGroups.map((g) => {
+              const dates = adminGroupDates[g.id] ?? { startDate: '', endDate: '' };
+              const saving = adminSaving === g.id;
+              return (
+                <div key={g.id} className="rounded-xl border border-slate-200 p-4">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-slate-700">{g.name}</span>
+                    {g.companyName && <span className="text-xs text-slate-400">{g.companyName}</span>}
+                    <PhaseBadge phase={g.phase} />
+                  </div>
+                  <div className="mb-3 grid grid-cols-2 gap-3 sm:max-w-sm">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-500">開始日期</label>
+                      <input
+                        type="date"
+                        value={dates.startDate}
+                        onChange={(e) => handleGroupDateChange(g.id, 'startDate', e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-500">截止日期</label>
+                      <input
+                        type="date"
+                        value={dates.endDate}
+                        onChange={(e) => handleGroupDateChange(g.id, 'endDate', e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleGroupSaveTimeline(g.id)}
+                      disabled={saving}
+                      className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      {saving ? '儲存中…' : '儲存日期'}
+                    </button>
+                    {g.publishedAt ? (
+                      <button
+                        type="button"
+                        onClick={() => handleGroupUnpublish(g.id)}
+                        disabled={saving}
+                        className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                      >
+                        取消發佈
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleGroupPublish(g.id)}
+                        disabled={saving}
+                        className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        發佈成果
+                      </button>
+                    )}
+                    {g.publishedAt && (
+                      <span className="text-xs text-slate-400">
+                        發佈於 {new Date(g.publishedAt).toLocaleDateString('zh-TW')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {resetInfo && (
         <div

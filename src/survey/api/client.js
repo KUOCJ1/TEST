@@ -61,6 +61,8 @@ export const api = {
   deleteGroup: (id) => request(`/coach/groups/${id}`, { method: 'DELETE' }),
   importRoster: (id, entries) =>
     request(`/coach/groups/${id}/roster`, { method: 'POST', body: { entries } }),
+  publishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'POST' }).then((d) => d.group),
+  unpublishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'DELETE' }).then((d) => d.group),
 
   upsertComment: (submissionId, payload) =>
     request(`/submissions/${submissionId}/comment`, { method: 'POST', body: payload }).then((d) => d.comment),

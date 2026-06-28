@@ -21,17 +21,24 @@ function DashboardFallback() {
 function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
   const [assessments, setAssessments] = useState([]);
   const [mySubmissions, setMySubmissions] = useState([]);
+  const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.assessments(), api.mySubmissions()])
-      .then(([aList, sList]) => { setAssessments(aList); setMySubmissions(sList); })
+    Promise.all([api.assessments(), api.mySubmissions(), api.myGroups()])
+      .then(([aList, sList, gList]) => { setAssessments(aList); setMySubmissions(sList); setMyGroups(gList); })
       .finally(() => setLoading(false));
   }, [refreshKey]);
 
   const latestByAssessment = mySubmissions.reduce((m, s) => {
     const id = s.assessmentId ?? 'ai-competency';
     if (!m[id] || new Date(s.createdAt) > new Date(m[id].createdAt)) m[id] = s;
+    return m;
+  }, {});
+
+  const groupPhaseByAssessmentId = myGroups.reduce((m, g) => {
+    const id = g.assessmentId ?? 'ai-competency';
+    if (!m[id]) m[id] = g.phase;
     return m;
   }, {});
 
@@ -55,6 +62,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
               key={a.id}
               assessment={a}
               latestSubmission={latestByAssessment[a.id] ?? null}
+              groupPhase={groupPhaseByAssessmentId[a.id] ?? null}
               onStart={onStartSurvey}
               onViewAnalysis={onViewAnalysis}
             />

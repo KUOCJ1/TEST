@@ -295,6 +295,27 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       : req.user.id;
     const effectiveRaterType = VALID_RATER_TYPES.has(raterType) ? raterType : 'self';
     const finalRateeId = effectiveRaterType === 'self' ? req.user.id : effectiveRateeId;
+    const effectiveAssessmentId = typeof assessmentId === 'string' ? assessmentId : 'ai-competency';
+
+    // Phase guard：若受測者屬於某班級，需在 in_progress 期間才可提交。
+    const userGroup = (db.data.groups ?? []).find(
+      (g) => g.memberIds.includes(req.user.id) &&
+             (g.assessmentId ?? 'ai-competency') === effectiveAssessmentId,
+    );
+    if (userGroup && getGroupPhase(userGroup) !== 'in_progress') {
+      return res.status(403).json({ code: 'PHASE_LOCKED', error: '目前不在開放作答期間' });
+    }
+
+    // 唯一性檢查：同一 rater → 同一 ratee → 同一 assessmentId → 同一 raterType 只能提交一次。
+    const duplicate = db.data.submissions.some(
+      (s) => s.userId === req.user.id &&
+             (s.assessmentId ?? 'ai-competency') === effectiveAssessmentId &&
+             (s.raterType ?? 'self') === effectiveRaterType &&
+             (s.rateeId ?? s.userId) === finalRateeId,
+    );
+    if (duplicate) {
+      return res.status(409).json({ code: 'ALREADY_SUBMITTED', error: '已完成作答，不可重複提交' });
+    }
 
     const record = {
       id: randomUUID(),
@@ -302,7 +323,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       userName: req.user.name,
       rateeId: finalRateeId,
       raterType: effectiveRaterType,
-      assessmentId: typeof assessmentId === 'string' ? assessmentId : 'ai-competency',
+      assessmentId: effectiveAssessmentId,
       phase: phase === 'pre' || phase === 'post' ? phase : null,
       createdAt: new Date().toISOString(),
       answers: answers && typeof answers === 'object' ? answers : {},
@@ -341,7 +362,19 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     if (!isSelf && !isCoachOfRatee && !isAdmin) {
       return res.status(403).json({ error: '無權限查看此評測資料' });
     }
-    const canDeanonymize = isAdmin || isCoachOfRatee || (isSelf && deanonymize === '1');
+    const canDeanonymize = isAdmin || isCoachOfRatee;
+
+    // 找受測者所屬班級（依 assessmentId 過濾）。
+    const rateeGroup = (db.data.groups ?? []).find(
+      (g) => g.memberIds.includes(rateeId) &&
+             (!assessmentId || (g.assessmentId ?? 'ai-competency') === assessmentId),
+    );
+    const groupPhase = rateeGroup ? getGroupPhase(rateeGroup) : 'published';
+
+    // 使用者本人：班級尚未 published 時擋掉（返回空陣列讓前端顯示等待提示）。
+    if (isSelf && !isAdmin && groupPhase !== 'published') {
+      return res.json({ submissions: [], phase: groupPhase });
+    }
 
     const subs = db.data.submissions
       .filter((s) => {
@@ -353,13 +386,14 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .map((s) => {
         const n = normalizeSubmission(s);
-        if (!canDeanonymize && (n.raterType === 'peer' || n.raterType === 'subordinate')) {
+        // Coach/Admin 可看真實身份（含 manager）；使用者本人看到的他評一律匿名。
+        if (!canDeanonymize && n.raterType !== 'self') {
           return { ...n, userId: 'anonymous', userName: '匿名', answers: undefined };
         }
         return { ...n, answers: undefined };
       });
 
-    res.json({ submissions: subs });
+    res.json({ submissions: subs, phase: groupPhase });
   });
 
   // ── 管理後台 ────────────────────────────────────────────
@@ -427,10 +461,18 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
   });
 
   // ── 班別 CRUD ─────────────────────────────────────────────
+  function getGroupPhase(group) {
+    const now = new Date();
+    if (!group.startDate || now < new Date(group.startDate)) return 'not_started';
+    if (!group.endDate || now <= new Date(group.endDate)) return 'in_progress';
+    if (!group.publishedAt) return 'closed';
+    return 'published';
+  }
+
   app.get('/api/coach/groups', requireAuth, requireCoach, (req, res) => {
-    const groups = (db.data.groups ?? []).filter(
-      (g) => g.coachId === req.user.id || req.user.role === 'admin',
-    );
+    const groups = (db.data.groups ?? [])
+      .filter((g) => g.coachId === req.user.id || req.user.role === 'admin')
+      .map((g) => ({ ...g, phase: getGroupPhase(g) }));
     res.json({ groups });
   });
 
@@ -450,6 +492,9 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       dimensionNotes: sanitizeDimensionNotes(dimensionNotes),
       groupComment: '',
       groupTips: [],
+      startDate: null,
+      endDate: null,
+      publishedAt: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -468,7 +513,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     const memberSubs = db.data.submissions
       .filter((s) => group.memberIds.includes(s.userId) && (s.assessmentId ?? 'ai-competency') === group.assessmentId)
       .map((s) => ({ ...normalizeSubmission(s), answers: undefined }));
-    res.json({ group, submissions: memberSubs });
+    res.json({ group: { ...group, phase: getGroupPhase(group) }, submissions: memberSubs });
   });
 
   app.put('/api/coach/groups/:id', requireAuth, requireCoach, (req, res) => {
@@ -478,7 +523,8 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: '無權限' });
     }
-    const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes } = req.body ?? {};
+    const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes, startDate, endDate } = req.body ?? {};
+    const isISODate = (v) => v === null || (typeof v === 'string' && !isNaN(Date.parse(v)));
     groups[idx] = {
       ...groups[idx],
       ...(name !== undefined && { name: name.trim() }),
@@ -494,10 +540,42 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
       ...(focusDimensionIds !== undefined && { focusDimensionIds: sanitizeFocusDimensionIds(focusDimensionIds) }),
       ...(targetHeadcount !== undefined && { targetHeadcount: sanitizeTargetHeadcount(targetHeadcount) }),
       ...(dimensionNotes !== undefined && { dimensionNotes: sanitizeDimensionNotes(dimensionNotes) }),
+      ...(startDate !== undefined && isISODate(startDate) && { startDate: startDate ?? null }),
+      ...(endDate !== undefined && isISODate(endDate) && { endDate: endDate ?? null }),
       updatedAt: new Date().toISOString(),
     };
     db.persist();
-    res.json({ group: groups[idx] });
+    res.json({ group: { ...groups[idx], phase: getGroupPhase(groups[idx]) } });
+  });
+
+  // 發布班級報告（admin 或該班 coach 皆可）。
+  app.post('/api/coach/groups/:id/publish', requireAuth, requireCoach, (req, res) => {
+    const groups = db.data.groups ?? [];
+    const idx = groups.findIndex((g) => g.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: '班別不存在' });
+    if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '無權限' });
+    }
+    groups[idx].publishedAt = new Date().toISOString();
+    groups[idx].updatedAt = new Date().toISOString();
+    db.persist();
+    auditLog(req, 'publish_group', { groupId: groups[idx].id, groupName: groups[idx].name });
+    res.json({ group: { ...groups[idx], phase: getGroupPhase(groups[idx]) } });
+  });
+
+  // 取消發布（可逆，admin 或該班 coach 皆可）。
+  app.delete('/api/coach/groups/:id/publish', requireAuth, requireCoach, (req, res) => {
+    const groups = db.data.groups ?? [];
+    const idx = groups.findIndex((g) => g.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: '班別不存在' });
+    if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '無權限' });
+    }
+    groups[idx].publishedAt = null;
+    groups[idx].updatedAt = new Date().toISOString();
+    db.persist();
+    auditLog(req, 'unpublish_group', { groupId: groups[idx].id, groupName: groups[idx].name });
+    res.json({ group: { ...groups[idx], phase: getGroupPhase(groups[idx]) } });
   });
 
   // 批量匯入名單。
@@ -586,7 +664,9 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
 
   // ── 用戶：查看自己所在的班別 ──────────────────────────────
   app.get('/api/groups/mine', requireAuth, (req, res) => {
-    const myGroups = (db.data.groups ?? []).filter((g) => g.memberIds.includes(req.user.id));
+    const myGroups = (db.data.groups ?? [])
+      .filter((g) => g.memberIds.includes(req.user.id))
+      .map((g) => ({ ...g, phase: getGroupPhase(g) }));
     res.json({ groups: myGroups });
   });
 
