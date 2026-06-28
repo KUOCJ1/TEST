@@ -642,7 +642,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
         'X-Title': 'AI Assessment Platform',
       },
       body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat',
+        model: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash',
         messages: [{ role: 'system', content: buildChatSystemPrompt(req.user, context) }, ...messages],
         stream: true,
         max_tokens: 1024,
