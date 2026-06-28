@@ -650,8 +650,14 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
     });
 
     if (!orRes.ok) {
-      const errText = await orRes.text().catch(() => '');
-      console.error('[chat] OpenRouter error', orRes.status, errText);
+      const errBody = await orRes.json().catch(() => ({}));
+      console.error('[chat] OpenRouter error', orRes.status, JSON.stringify(errBody));
+      if (orRes.status === 401)
+        return res.status(502).json({ code: 'AI_AUTH_ERROR', error: 'AI 服務授權失敗，請聯絡管理員。' });
+      if (orRes.status === 402)
+        return res.status(502).json({ code: 'AI_CREDITS_ERROR', error: 'AI 服務帳戶餘額不足，請聯絡管理員。' });
+      if (orRes.status === 429)
+        return res.status(429).json({ code: 'AI_RATE_LIMIT', error: 'AI 服務請求過於頻繁，請稍後再試。' });
       return res.status(502).json({ code: 'AI_ERROR', error: 'AI 服務暫時無法使用，請稍後再試。' });
     }
 
