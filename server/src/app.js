@@ -642,7 +642,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
         'X-Title': 'AI Assessment Platform',
       },
       body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-haiku',
+        model: process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-haiku-20241022',
         messages: [{ role: 'system', content: buildChatSystemPrompt(req.user, context) }, ...messages],
         stream: true,
         max_tokens: 1024,
