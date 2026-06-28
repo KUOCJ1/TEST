@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useAuth } from './auth/useAuth';
 import { api } from './api/client';
 import { getAssessment } from './data/assessments/index.js';
@@ -9,6 +9,7 @@ import UserDashboard from './dashboard/UserDashboard';
 import ProfilePage from './profile/ProfilePage';
 import HelpModal from './components/HelpModal';
 import OnboardingBanner from './components/OnboardingBanner';
+import ChatBot from './components/ChatBot';
 
 const CoachDashboard = lazy(() => import('./coach/CoachDashboard'));
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard'));
@@ -72,8 +73,11 @@ export default function AppShell() {
   const [raterConfig, setRaterConfig] = useState(null); // { rateeId, raterType }
   const [refreshKey, setRefreshKey] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [chatContext, setChatContext] = useState(null);
 
   const helpRole = isAdmin ? 'admin' : (isCoach ? 'coach' : 'user');
+
+  const handleResultLoad = useCallback((result) => setChatContext({ result }), []);
 
   const tabs = [
     { id: 'home', label: '我的評量' },
@@ -210,6 +214,7 @@ export default function AppShell() {
           user={user}
           initialAssessmentId={activeAssessmentId}
           onTakeSurvey={handleStartSurvey}
+          onResultLoad={handleResultLoad}
         />
       )}
 
@@ -228,6 +233,8 @@ export default function AppShell() {
       {view === 'profile' && <ProfilePage />}
 
       {helpOpen && <HelpModal role={helpRole} onClose={() => setHelpOpen(false)} />}
+
+      <ChatBot context={chatContext} />
     </div>
   );
 }

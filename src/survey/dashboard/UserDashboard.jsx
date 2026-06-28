@@ -9,7 +9,7 @@ import { computePercentile } from '../utils/analytics';
 import { resultSummaryText, copyToClipboard, formatDate, formatDateShort } from '../utils/format';
 import InfoTip from '../components/InfoTip';
 
-export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey }) {
+export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey, onResultLoad }) {
   const [subs, setSubs] = useState(null);
   const [myGroups, setMyGroups] = useState([]);
   const [benchmark, setBenchmark] = useState(null);
@@ -35,6 +35,14 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
       .catch((e) => active && (setError(e.message || '載入失敗'), setSubs([])));
     return () => { active = false; };
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Notify parent of the currently displayed result for ChatBot context.
+  useEffect(() => {
+    if (!subs?.length || !onResultLoad) return;
+    const activeId = selectedId ?? [...new Set(subs.map((s) => s.assessmentId ?? 'ai-competency'))][0];
+    const latest = subs.filter((s) => (s.assessmentId ?? 'ai-competency') === activeId)[0];
+    if (latest?.result) onResultLoad(latest.result);
+  }, [subs, selectedId, onResultLoad]);
 
   // Benchmark fetch with in-memory cache per assessment id.
   useEffect(() => {
