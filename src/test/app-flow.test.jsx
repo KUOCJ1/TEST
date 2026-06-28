@@ -101,6 +101,11 @@ function fillLogin(email, password) {
   fireEvent.change(screen.getByPlaceholderText('至少 6 碼'), { target: { value: password } });
 }
 
+async function navigateToLogin() {
+  const btns = await screen.findAllByRole('button', { name: '登入平台' });
+  fireEvent.click(btns[0]);
+}
+
 async function registerUser(name, email, password) {
   fireEvent.click(screen.getByRole('button', { name: '註冊' }));
   fireEvent.change(screen.getByPlaceholderText('您的姓名'), { target: { value: name } });
@@ -111,13 +116,14 @@ async function registerUser(name, email, password) {
 describe('App 流程', () => {
   it('未登入時顯示登入頁', async () => {
     render(<App />);
+    await navigateToLogin();
     expect(await screen.findByRole('button', { name: '登入帳號' })).toBeInTheDocument();
     expect(screen.getByPlaceholderText('you@example.com')).toBeInTheDocument();
   });
 
   it('註冊後進入評測，且一般使用者看不到管理後台', async () => {
     render(<App />);
-    await screen.findByRole('button', { name: '登入帳號' });
+    await navigateToLogin();
     await registerUser('小明', 'ming@example.com', 'abcdef');
 
     // After registration, AssessmentHome loads — click to start the survey.
@@ -134,7 +140,7 @@ describe('App 流程', () => {
 
   it('管理員登入後可見管理後台儀表板', async () => {
     render(<App />);
-    await screen.findByRole('button', { name: '登入帳號' });
+    await navigateToLogin();
     fillLogin('admin@demo.tw', 'admin1234');
     fireEvent.click(screen.getByRole('button', { name: '登入帳號' }));
 
@@ -146,7 +152,7 @@ describe('App 流程', () => {
 
   it('完成評測後我的分析顯示總分與雷達圖', async () => {
     render(<App />);
-    await screen.findByRole('button', { name: '登入帳號' });
+    await navigateToLogin();
     await registerUser('小美', 'mei@example.com', 'abcdef');
 
     // Start survey from AssessmentHome.
