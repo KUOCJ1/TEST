@@ -10,7 +10,7 @@ function readUrlParams() {
   };
 }
 
-export default function LoginPage() {
+export default function LoginPage({ onBack }) {
   const { login, register } = useAuth();
   const [{ fromAI, name: prefillName, email: prefillEmail }] = useState(readUrlParams);
   const [mode, setMode] = useState(fromAI ? 'register' : 'login');
@@ -37,6 +37,14 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="mb-4 flex items-center gap-1 text-sm text-slate-400 hover:text-brand-600 transition-colors"
+          >
+            ← 返回首頁
+          </button>
+        )}
         <header className="mb-7 text-center">
           <img
             src={`${import.meta.env.BASE_URL}favicon.svg`}

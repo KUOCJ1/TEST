@@ -27,7 +27,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['**/*.config.js'],
+    files: ['**/*.config.js', 'scripts/**/*.js'],
     languageOptions: {
       globals: globals.node,
     },
