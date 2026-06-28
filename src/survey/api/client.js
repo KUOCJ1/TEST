@@ -48,6 +48,7 @@ export const api = {
   },
 
   adminOverview: () => request('/admin/overview'),
+  batchImport: (payload) => request('/admin/batch-import', { method: 'POST', body: payload }),
   setUserRole: (userId, role) =>
     request(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role } }).then((d) => d.user),
   generateResetToken: (userId) =>

@@ -10,6 +10,7 @@ import LevelDistribution from '../components/charts/LevelDistribution';
 import { formatDate } from '../utils/format';
 import InfoTip from '../components/InfoTip';
 import PhaseBadge from '../components/PhaseBadge';
+import BatchUploadSection from './BatchUploadSection';
 
 function Kpi({ label, value, suffix, tip }) {
   return (
@@ -382,6 +383,8 @@ export default function AdminDashboard() {
           </table>
         </div>
       </section>
+
+      <BatchUploadSection />
 
       {adminGroups.length > 0 && (
         <section className="mb-5 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-100">
