@@ -3,6 +3,7 @@ import RadarChart from './RadarChart';
 import NarrativeReport from './NarrativeReport';
 import { getAssessment } from '../data/assessments/index.js';
 import { buildSuggestions } from '../utils/suggestions';
+import InfoTip from './InfoTip';
 
 const ResultPanel = forwardRef(function ResultPanel(
   { result, onRetake, onCopy, copied, percentile = null, benchmarkDims = null },
@@ -33,8 +34,9 @@ const ResultPanel = forwardRef(function ResultPanel(
         </span>
         <p className="mt-2 text-sm text-brand-100">能力達成率 {percent}%</p>
         {percentile !== null && (
-          <p className="mt-2 inline-block rounded-full bg-brand-700/60 px-3 py-1 text-sm font-semibold text-white">
-            🏆 您的總分超越了 {percentile}% 的填答者
+          <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-700/60 px-3 py-1 text-sm font-semibold text-white">
+            您的總分超越了 {percentile}% 的填答者
+            <InfoTip text="百分位表示你的分數在所有填答者中的相對位置。70% 代表超越了 70% 的填答者。母體隨填答人數增加而更新。" className="text-brand-200" />
           </p>
         )}
       </div>

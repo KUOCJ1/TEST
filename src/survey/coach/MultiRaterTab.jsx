@@ -2,9 +2,14 @@ import { useMemo, useState } from 'react';
 import { getAssessment } from '../data/assessments/index.js';
 import { useAssessmentFilter } from '../hooks/useAssessmentFilter';
 import MultiRaterDashboard from '../analysis/MultiRaterDashboard';
+import InfoTip from '../components/InfoTip';
 
 const RATER_TYPES = ['self', 'manager', 'peer', 'subordinate'];
 const RATER_LABELS = { self: '自評', manager: '主管', peer: '同儕', subordinate: '部屬' };
+const RATER_TIPS = {
+  peer: '同儕與部屬評分在被評者端以匿名方式呈現，保護填答者隱私。',
+  subordinate: '同儕與部屬評分在被評者端以匿名方式呈現，保護填答者隱私。',
+};
 
 export default function MultiRaterTab({ users, submissions }) {
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -63,7 +68,10 @@ export default function MultiRaterTab({ users, submissions }) {
                 <tr className="border-b border-slate-200 text-slate-500">
                   <th className="py-2 pr-4 text-left font-medium">學員</th>
                   {RATER_TYPES.map((t) => (
-                    <th key={t} className="py-2 px-2 text-center font-medium">{RATER_LABELS[t]}</th>
+                    <th key={t} className="py-2 px-2 text-center font-medium">
+                      {RATER_LABELS[t]}
+                      {RATER_TIPS[t] && <InfoTip text={RATER_TIPS[t]} />}
+                    </th>
                   ))}
                   <th className="py-2 pl-4 text-center font-medium">查看分析</th>
                 </tr>

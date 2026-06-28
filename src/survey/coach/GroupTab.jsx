@@ -6,6 +6,7 @@ import { latestPerUser } from '../utils/analytics';
 import { exportGroupCsv } from '../utils/csvExport';
 import RadarChart from '../components/RadarChart';
 import GroupNarrativeReport from '../components/GroupNarrativeReport';
+import InfoTip from '../components/InfoTip';
 
 function parseRoster(text) {
   return text
@@ -372,7 +373,10 @@ export default function GroupTab({ users, submissions }) {
 
               {groupDetail.group.pendingMembers?.length > 0 && (
                 <div className="mt-3 border-t border-slate-100 pt-3">
-                  <p className="mb-1.5 text-xs font-semibold text-amber-600">待加入（尚未註冊）</p>
+                  <p className="mb-1.5 flex items-center text-xs font-semibold text-amber-600">
+                    待加入（尚未註冊）
+                    <InfoTip text="Email 已登錄於班別，但該用戶尚未完成帳號註冊。待其註冊後自動加入本班，無需手動操作。" />
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
                     {groupDetail.group.pendingMembers.map((p) => (
                       <span key={p.email} className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">

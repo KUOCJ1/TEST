@@ -8,11 +8,15 @@ import RadarChart from '../components/RadarChart';
 import BarList from '../components/charts/BarList';
 import LevelDistribution from '../components/charts/LevelDistribution';
 import { formatDate } from '../utils/format';
+import InfoTip from '../components/InfoTip';
 
-function Kpi({ label, value, suffix }) {
+function Kpi({ label, value, suffix, tip }) {
   return (
     <div className="rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-100">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="flex items-center text-xs font-medium uppercase tracking-wide text-slate-400">
+        {label}
+        {tip && <InfoTip text={tip} />}
+      </p>
       <p className="mt-1 text-3xl font-extrabold text-slate-800">
         {value}
         {suffix && <span className="ml-1 text-base font-semibold text-slate-400">{suffix}</span>}
@@ -154,9 +158,9 @@ export default function AdminDashboard() {
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Kpi label="註冊人數" value={memberCount} suffix="人" />
-        <Kpi label="已填答人數" value={stats?.respondents ?? 0} suffix="人" />
+        <Kpi label="已填答人數" value={stats?.respondents ?? 0} suffix="人" tip="依每位用戶最新一筆作答計算，重複作答只計算最新一次，避免數據失真。" />
         <Kpi label="總作答次數" value={stats?.totalSubmissions ?? 0} suffix="次" />
-        <Kpi label="平均達成率" value={stats?.avgPercent ?? 0} suffix="%" />
+        <Kpi label="平均達成率" value={stats?.avgPercent ?? 0} suffix="%" tip="所有填答者最新一筆作答的達成率平均值（總分 / 滿分）。" />
       </section>
 
       {!stats || stats.respondents === 0 ? (

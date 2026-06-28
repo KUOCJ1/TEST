@@ -7,6 +7,8 @@ import RaterSetup from './components/RaterSetup';
 import SurveyApp from './SurveyApp';
 import UserDashboard from './dashboard/UserDashboard';
 import ProfilePage from './profile/ProfilePage';
+import HelpModal from './components/HelpModal';
+import OnboardingBanner from './components/OnboardingBanner';
 
 const CoachDashboard = lazy(() => import('./coach/CoachDashboard'));
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard'));
@@ -36,6 +38,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
+      <OnboardingBanner role="user" />
       <header className="mb-6">
         <h2 className="text-2xl font-extrabold text-slate-800">選擇評量</h2>
         <p className="mt-1 text-sm text-slate-500">選擇一個題庫開始作答，或點擊「查看分析」瀏覽歷次結果。</p>
@@ -68,6 +71,9 @@ export default function AppShell() {
   const [activeAssessmentId, setActiveAssessmentId] = useState(defaultAid);
   const [raterConfig, setRaterConfig] = useState(null); // { rateeId, raterType }
   const [refreshKey, setRefreshKey] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  const helpRole = isAdmin ? 'admin' : (isCoach ? 'coach' : 'user');
 
   const tabs = [
     { id: 'home', label: '我的評量' },
@@ -153,6 +159,13 @@ export default function AppShell() {
             </span>
             <button
               type="button"
+              onClick={() => setHelpOpen(true)}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100"
+            >
+              說明
+            </button>
+            <button
+              type="button"
               onClick={logout}
               className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100"
             >
@@ -213,6 +226,8 @@ export default function AppShell() {
       )}
 
       {view === 'profile' && <ProfilePage />}
+
+      {helpOpen && <HelpModal role={helpRole} onClose={() => setHelpOpen(false)} />}
     </div>
   );
 }

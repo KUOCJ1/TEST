@@ -7,6 +7,7 @@ import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachComment
 import MultiRaterDashboard from '../analysis/MultiRaterDashboard';
 import { computePercentile } from '../utils/analytics';
 import { resultSummaryText, copyToClipboard, formatDate, formatDateShort } from '../utils/format';
+import InfoTip from '../components/InfoTip';
 
 export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey }) {
   const [subs, setSubs] = useState(null);
@@ -227,7 +228,10 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
 
           {gain && (
             <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
-              <h3 className="mb-1 text-base font-bold text-slate-700">學習增益</h3>
+              <h3 className="mb-1 flex items-center text-base font-bold text-slate-700">
+                學習增益
+                <InfoTip text="第一次作答為「課前」基準，最新一次為「課後」，兩者相減即為學習成長幅度。可多次重測持續追蹤。" />
+              </h3>
               <p className="mb-4 text-xs text-slate-400">
                 {labelledPhase ? '課前評測' : '首次'} → {labelledPhase ? '課後複測' : '最新'}
                 （{formatDateShort(preSub.createdAt)} → {formatDateShort(postSub.createdAt)}）
@@ -333,7 +337,10 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey 
                     <th className="py-2 pr-3 font-medium">時間</th>
                     <th className="py-2 pr-3 font-medium">總分</th>
                     <th className="py-2 pr-3 font-medium">達成率</th>
-                    <th className="py-2 font-medium">落點等級</th>
+                    <th className="py-2 font-medium">
+                      落點等級
+                      <InfoTip text="共 4 個落點：探索期 / 發展期 / 精熟期 / 卓越，由總分決定整體能力成熟度。" />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
