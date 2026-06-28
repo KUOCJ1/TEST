@@ -639,7 +639,7 @@ export function createApp({ db, jwtSecret, secureCookies = false }) {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.APP_URL || 'https://assess.rong-rise.com',
-        'X-Title': '職能評測平台',
+        'X-Title': 'AI Assessment Platform',
       },
       body: JSON.stringify({
         model: process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-haiku',
