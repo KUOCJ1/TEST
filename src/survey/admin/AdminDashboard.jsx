@@ -4,8 +4,10 @@ import AnalyticsTab from './AnalyticsTab';
 import UsersTab from './UsersTab';
 import GroupsTab from './GroupsTab';
 import BatchUploadSection from './BatchUploadSection';
+import QuickAnalysisTab from '../analysis/QuickAnalysisTab';
 
 const TABS = [
+  { id: 'quickAnalysis', label: '快速分析' },
   { id: 'analytics', label: '數據分析' },
   { id: 'users', label: '用戶管理' },
   { id: 'groups', label: '班別與發佈' },
@@ -81,6 +83,9 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {tab === 'quickAnalysis' && (
+        <QuickAnalysisTab users={users} />
+      )}
       {tab === 'analytics' && (
         <AnalyticsTab
           submissions={submissions}

@@ -7,7 +7,7 @@ import { buildSuggestions } from '../utils/suggestions';
 import InfoTip from './InfoTip';
 
 const ResultPanel = forwardRef(function ResultPanel(
-  { result, onRetake, onCopy, copied, percentile = null, benchmarkDims = null },
+  { result, onRetake, onCopy, copied, percentile = null, benchmarkDims = null, readOnly = false, focusDimensionIds = [] },
   ref,
 ) {
   const { total, maxScore, percent, level, dimensions, strongest, weakest, assessmentName } = result;
@@ -148,24 +148,26 @@ const ResultPanel = forwardRef(function ResultPanel(
           </div>
         )}
 
-        <NarrativeReport result={result} />
+        <NarrativeReport result={result} focusDimensionIds={focusDimensionIds} />
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row print:hidden">
-          <button
-            type="button"
-            onClick={onCopy}
-            className="btn-secondary flex-1"
-          >
-            {copied ? <><Check className="h-4 w-4" /> 已複製結果摘要</> : <><Copy className="h-4 w-4" /> 複製結果摘要</>}
-          </button>
-          <button
-            type="button"
-            onClick={onRetake}
-            className="btn flex-1 bg-slate-700 text-white hover:bg-slate-800"
-          >
-            <RotateCcw className="h-4 w-4" /> 重新評測
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row print:hidden">
+            <button
+              type="button"
+              onClick={onCopy}
+              className="btn-secondary flex-1"
+            >
+              {copied ? <><Check className="h-4 w-4" /> 已複製結果摘要</> : <><Copy className="h-4 w-4" /> 複製結果摘要</>}
+            </button>
+            <button
+              type="button"
+              onClick={onRetake}
+              className="btn flex-1 bg-slate-700 text-white hover:bg-slate-800"
+            >
+              <RotateCcw className="h-4 w-4" /> 重新評測
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

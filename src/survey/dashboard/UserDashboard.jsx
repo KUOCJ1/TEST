@@ -159,6 +159,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
         benchmark={benchmarkForActive}
         user={user}
         submittedAt={latest.createdAt}
+        comments={latest.comments}
         onClose={() => setShowReport(false)}
       />
     )}

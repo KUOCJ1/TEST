@@ -4,11 +4,12 @@ import { useAuth } from '../auth/useAuth';
 import IndividualTab from './IndividualTab';
 import GroupTab from './GroupTab';
 import MultiRaterTab from './MultiRaterTab';
+import QuickAnalysisTab from '../analysis/QuickAnalysisTab';
 import OnboardingBanner from '../components/OnboardingBanner';
 
 export default function CoachDashboard() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('individual');
+  const [tab, setTab] = useState('quickAnalysis');
   const [overview, setOverview] = useState(null);
   const [error, setError] = useState('');
 
@@ -22,6 +23,7 @@ export default function CoachDashboard() {
   if (error) return <p className="py-20 text-center text-red-500">{error}</p>;
 
   const TABS = [
+    { id: 'quickAnalysis', label: '快速分析' },
     { id: 'individual', label: '個人評語' },
     { id: 'group', label: '班別管理' },
     { id: 'multirater', label: '360° 進度' },
@@ -54,6 +56,9 @@ export default function CoachDashboard() {
       </div>
 
       <div className="rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
+        {tab === 'quickAnalysis' && (
+          <QuickAnalysisTab users={overview.users} />
+        )}
         {tab === 'individual' && (
           <IndividualTab users={overview.users} submissions={overview.submissions} currentUserId={user.id} />
         )}

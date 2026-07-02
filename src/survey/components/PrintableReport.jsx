@@ -863,14 +863,50 @@ function LayerPage({ layer, result, benchmark, config, user, date }) {
 }
 
 // ─── Page 8: Coach narrative ────────────────────────────────────
-function CoachPage({ result, config, user, date }) {
+function CoachFeedbackBlock({ comments }) {
+  if (!comments?.length) return null;
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+        指導教練回饋
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {comments.map((c) => (
+          <div key={c.id} style={{
+            background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10,
+            padding: '14px 16px', fontSize: 11.5, color: '#3b0764', lineHeight: 1.85,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 9, color: '#7c3aed', fontWeight: 700 }}>
+              <span>{c.coachName ?? '教練'}</span>
+              {c.updatedAt && <span style={{ opacity: 0.7 }}>{formatDate(c.updatedAt)}</span>}
+            </div>
+            <div>{c.text}</div>
+            {c.tips?.length > 0 && (
+              <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {c.tips.map((t, i) => (
+                  <li key={i} style={{ display: 'flex', gap: 6, fontSize: 10.5 }}>
+                    <span style={{ color: '#7c3aed' }}>・</span>{t}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CoachPage({ result, config, user, date, comments = [] }) {
   const seedBase = result.total;
-  const coachText = buildCoachNarrative(result, config, seedBase);
+  const coachText = config ? buildCoachNarrative(result, config, seedBase) : null;
 
   return (
     <div style={{ pageBreakBefore: 'always', padding: '32px 52px' }}>
       <PageMeta name={user?.name ?? '—'} section="教練視角" date={date} />
       <SectionTitle sub="以教練視角分析您的領導行為模式，提供個人化發展方向">教練視角 · Coach Perspective</SectionTitle>
+
+      <CoachFeedbackBlock comments={comments} />
 
       {coachText && (
         <div style={{
@@ -882,6 +918,8 @@ function CoachPage({ result, config, user, date }) {
         </div>
       )}
 
+      {config && (
+      <>
       <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>各構面教練評語</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         {result.dimensions.map((dim) => {
@@ -905,6 +943,8 @@ function CoachPage({ result, config, user, date }) {
           );
         }).filter(Boolean)}
       </div>
+      </>
+      )}
 
       <PageFooter />
     </div>
@@ -972,7 +1012,7 @@ function DevPlanPage({ result, config, user, date }) {
 }
 
 // ─── Main export ───────────────────────────────────────────────
-export default function PrintableReport({ result, benchmark, user, submittedAt, onClose }) {
+export default function PrintableReport({ result, benchmark, user, submittedAt, onClose, comments = [] }) {
   const config = getAssessment(result.assessmentId);
   const percentile = benchmark?.totals?.length >= 2
     ? computePercentile(result.total, benchmark.totals)
@@ -1033,7 +1073,7 @@ export default function PrintableReport({ result, benchmark, user, submittedAt, 
             ))
           : <LayerPage layer={{ id: 'all', name: '構面詳細分析', desc: '', dimensions: result.dimensions.map((d) => d.id) }} result={result} benchmark={benchmark} config={config} user={user} date={date} />
         }
-        {showNarrative && <CoachPage result={result} config={config} user={user} date={date} />}
+        {(showNarrative || comments.length > 0) && <CoachPage result={result} config={config} user={user} date={date} comments={comments} />}
         {showNarrative && <DevPlanPage result={result} config={config} user={user} date={date} />}
       </div>
     </>,
