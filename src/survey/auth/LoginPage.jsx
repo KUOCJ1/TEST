@@ -110,7 +110,7 @@ export default function LoginPage({ onBack }) {
                 placeholder="you@example.com"
               />
             </Field>
-            <Field label="密碼">
+            <Field label="密碼" hint={mode === 'register' ? '至少 6 碼' : undefined}>
               <input
                 type="password"
                 value={form.password}
@@ -135,7 +135,7 @@ export default function LoginPage({ onBack }) {
           <p className="mt-5 rounded-xl bg-slate-50 px-3 py-2.5 text-center text-xs leading-relaxed text-slate-400">
             第一次使用請先「註冊」建立帳號。
             <br />
-            管理員請使用部署時設定的帳號密碼登入。
+            忘記密碼？請聯絡您的教練或管理員協助重設。
           </p>
         </div>
       </div>
@@ -143,11 +143,12 @@ export default function LoginPage({ onBack }) {
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, hint, children }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium text-slate-600">{label}</span>
       {children}
+      {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
     </label>
   );
 }

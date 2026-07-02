@@ -184,10 +184,14 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
             </p>
           )}
 
+          <p className="mt-4 text-center text-xs text-slate-400">
+            將以「{phase === 'post' ? '課後複測' : '課前評測'}」身份送出，如需變更請至上方調整。
+          </p>
+
           <button
             type="submit"
             disabled={submitting}
-            className="btn-primary mt-6 w-full py-3.5 text-lg"
+            className="btn-primary mt-2 w-full py-3.5 text-lg"
           >
             {submitting ? '送出中…' : '送出評測，立即查看落點分析'}
           </button>

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { BarChart3, FileText, Search, PenLine, CalendarClock } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BarChart3, FileText, Search, PenLine, CalendarClock, AlertCircle } from 'lucide-react';
 import { api } from '../api/client';
 import ResultPanel from '../components/ResultPanel';
 import PrintableReport from '../components/PrintableReport';
@@ -21,6 +21,8 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
   const [showReport, setShowReport] = useState(false);
   const [show360, setShow360] = useState(false);
   const benchmarkCache = useRef({});
+  const [retryKey, setRetryKey] = useState(0);
+  const loadData = useCallback(() => { setError(''); setRetryKey((k) => k + 1); }, []);
 
   useEffect(() => {
     let active = true;
@@ -33,9 +35,9 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
           setSelectedId(list[0].assessmentId ?? 'ai-competency');
         }
       })
-      .catch((e) => active && (setError(e.message || '載入失敗'), setSubs([])));
+      .catch((e) => active && setError(e.message || '載入失敗'));
     return () => { active = false; };
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [retryKey]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Notify parent of the currently displayed result for ChatBot context.
   useEffect(() => {
@@ -70,6 +72,21 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
 
   if (subs === null && !error) return <p className="py-20 text-center text-slate-400">載入中…</p>;
 
+  if (subs === null && error) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+        <div className="rounded-2xl bg-white px-6 py-12 shadow-lg shadow-slate-200/60">
+          <AlertCircle className="mx-auto h-12 w-12 text-red-300" />
+          <h2 className="mt-4 text-xl font-bold text-slate-800">載入失敗</h2>
+          <p className="mt-2 text-slate-500">{error}</p>
+          <button type="button" onClick={loadData} className="btn-secondary mt-4">
+            重試
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!subs?.length) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
@@ -77,7 +94,6 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
           <BarChart3 className="mx-auto h-12 w-12 text-brand-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-800">尚無評測紀錄</h2>
           <p className="mt-2 text-slate-500">完成一次評測後，這裡就會顯示您的能力落點與構面分析。</p>
-          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
         </div>
       </div>
     );

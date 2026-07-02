@@ -13,6 +13,7 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
   const [loading, setLoading] = useState(true);
   const [rateeId, setRateeId] = useState(user.id);
   const [raterType, setRaterType] = useState('self');
+  const [confirmError, setConfirmError] = useState('');
 
   useEffect(() => {
     api.groupMembers()
@@ -26,10 +27,15 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
 
   const handleRateeChange = (id) => {
     setRateeId(id);
-    setRaterType(id === user.id ? 'self' : 'peer');
+    setRaterType(id === user.id ? 'self' : '');
+    setConfirmError('');
   };
 
   const handleConfirm = () => {
+    if (!isSelf && !raterType) {
+      setConfirmError('請先選擇「你與對方的關係」');
+      return;
+    }
     const finalRaterType = isSelf ? 'self' : raterType;
     const rateeName = isSelf ? user.name : (members.find((m) => m.id === rateeId)?.name ?? '');
     onConfirm(rateeId, finalRaterType, rateeName);
@@ -112,7 +118,7 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
                     key={t.id}
                     type="button"
                     aria-pressed={raterType === t.id}
-                    onClick={() => setRaterType(t.id)}
+                    onClick={() => { setRaterType(t.id); setConfirmError(''); }}
                     className={`rounded-xl border px-3 py-2.5 text-center text-sm transition-colors ${
                       raterType === t.id
                         ? 'border-brand-500 bg-brand-50 font-semibold text-brand-700 ring-1 ring-brand-300'
@@ -131,6 +137,12 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
             <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
               選擇自評時，評測對象為您自己，評測者角色固定為「自評」。
             </div>
+          )}
+
+          {confirmError && (
+            <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
+              {confirmError}
+            </p>
           )}
 
           <div className="flex gap-3 pt-1">
