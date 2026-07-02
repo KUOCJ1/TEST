@@ -9,6 +9,7 @@ import RadarChart from '../components/RadarChart';
 import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import InfoTip from '../components/InfoTip';
 import PhaseBadge from '../components/PhaseBadge';
+import GroupTimelineCard from '../components/GroupTimelineCard';
 import { useToast } from '../components/useToast';
 
 function parseRoster(text) {
@@ -42,10 +43,12 @@ export default function GroupTab({ users, submissions }) {
   const [focusDims, setFocusDims] = useState([]);
   const [dimNotes, setDimNotes] = useState({});
   const [error, setError] = useState('');
-  const [detailError, setDetailError] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [publishing, setPublishing] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState('');
+  const [savingMembers, setSavingMembers] = useState(false);
+  const [membersError, setMembersError] = useState('');
+  const [savingComment, setSavingComment] = useState(false);
+  const [commentError, setCommentError] = useState('');
   const [rosterText, setRosterText] = useState('');
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
@@ -60,7 +63,9 @@ export default function GroupTab({ users, submissions }) {
   const loadGroup = async (id) => {
     setSelectedGroupId(id);
     setError('');
-    setDetailError('');
+    setSettingsError('');
+    setMembersError('');
+    setCommentError('');
     try {
       const { group, submissions: subs } = await api.getGroup(id);
       setGroupDetail({ group, submissions: subs });
@@ -70,8 +75,6 @@ export default function GroupTab({ users, submissions }) {
       setTargetHeadcount(group.targetHeadcount == null ? '' : String(group.targetHeadcount));
       setFocusDims(group.focusDimensionIds ?? []);
       setDimNotes(group.dimensionNotes ?? {});
-      setStartDate(group.startDate ? group.startDate.slice(0, 10) : '');
-      setEndDate(group.endDate ? group.endDate.slice(0, 10) : '');
     } catch (e) {
       setError(e.message || '載入失敗');
     }
@@ -105,60 +108,60 @@ export default function GroupTab({ users, submissions }) {
     }
   };
 
-  const handleSaveGroup = async () => {
+  const handleGroupUpdated = (updated) => {
+    setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    setGroupDetail((prev) => (prev ? { ...prev, group: updated } : prev));
+  };
+
+  const handleSaveSettings = async () => {
     if (!selectedGroupId) return;
-    setSavingGroup(true);
-    setDetailError('');
+    setSavingSettings(true);
+    setSettingsError('');
     try {
       const updated = await api.updateGroup(selectedGroupId, {
-        memberIds: selectedMembers,
-        groupComment: groupComment.trim(),
-        groupTips: groupTips.filter((t) => t.trim()),
         targetHeadcount: targetHeadcount === '' ? null : Number(targetHeadcount),
         focusDimensionIds: focusDims,
         dimensionNotes: Object.fromEntries(focusDims.map((id) => [id, (dimNotes[id] ?? '').trim()]).filter(([, v]) => v)),
-        startDate: startDate || null,
-        endDate: endDate || null,
       });
-      setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
-      setGroupDetail((prev) => prev ? { ...prev, group: updated } : prev);
-      showToast('已儲存班級設定');
+      handleGroupUpdated(updated);
+      showToast('已儲存評量設定');
     } catch (e) {
-      setDetailError(e.message || '儲存失敗');
+      setSettingsError(e.message || '儲存失敗');
     } finally {
-      setSavingGroup(false);
+      setSavingSettings(false);
     }
   };
 
-  const handlePublish = async () => {
+  const handleSaveMembers = async () => {
     if (!selectedGroupId) return;
-    setPublishing(true);
-    setDetailError('');
+    setSavingMembers(true);
+    setMembersError('');
     try {
-      const updated = await api.publishGroup(selectedGroupId);
-      setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
-      setGroupDetail((prev) => prev ? { ...prev, group: updated } : prev);
-      showToast('已發佈成果，用戶現可查看報告');
+      const updated = await api.updateGroup(selectedGroupId, { memberIds: selectedMembers });
+      handleGroupUpdated(updated);
+      showToast('已儲存成員名單');
     } catch (e) {
-      setDetailError(e.message || '發佈失敗');
+      setMembersError(e.message || '儲存失敗');
     } finally {
-      setPublishing(false);
+      setSavingMembers(false);
     }
   };
 
-  const handleUnpublish = async () => {
+  const handleSaveComment = async () => {
     if (!selectedGroupId) return;
-    setPublishing(true);
-    setDetailError('');
+    setSavingComment(true);
+    setCommentError('');
     try {
-      const updated = await api.unpublishGroup(selectedGroupId);
-      setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
-      setGroupDetail((prev) => prev ? { ...prev, group: updated } : prev);
-      showToast('已取消發佈');
+      const updated = await api.updateGroup(selectedGroupId, {
+        groupComment: groupComment.trim(),
+        groupTips: groupTips.filter((t) => t.trim()),
+      });
+      handleGroupUpdated(updated);
+      showToast('已儲存評語與建議');
     } catch (e) {
-      setDetailError(e.message || '取消發佈失敗');
+      setCommentError(e.message || '儲存失敗');
     } finally {
-      setPublishing(false);
+      setSavingComment(false);
     }
   };
 
@@ -195,8 +198,7 @@ export default function GroupTab({ users, submissions }) {
     setImportResult(null);
     try {
       const { group, result } = await api.importRoster(selectedGroupId, entries);
-      setGroups((prev) => prev.map((g) => (g.id === group.id ? group : g)));
-      setGroupDetail((prev) => prev ? { ...prev, group } : prev);
+      handleGroupUpdated(group);
       setSelectedMembers(group.memberIds ?? []);
       setImportResult(result);
       setRosterText('');
@@ -338,69 +340,18 @@ export default function GroupTab({ users, submissions }) {
           </div>
         ) : (
           <div className="space-y-5">
-            {detailError && (
-              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-                {detailError}
-              </p>
-            )}
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-semibold text-slate-700">施測時間軸</h3>
-                <PhaseBadge phase={groupDetail.group.phase} />
-              </div>
-              <div className="mb-3 grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-500">開始日期</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="input"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-500">截止日期</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="input"
-                  />
-                </div>
-              </div>
-              <p className="mb-3 text-xs text-slate-400">設定開始/截止日期後，請點下方「儲存班級設定」生效。</p>
-              <div className="flex items-center gap-2">
-                {groupDetail.group.publishedAt ? (
-                  <button
-                    type="button"
-                    onClick={handleUnpublish}
-                    disabled={publishing}
-                    className="btn-warning"
-                  >
-                    {publishing ? '處理中…' : '取消發佈'}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handlePublish}
-                    disabled={publishing}
-                    className="btn bg-blue-600 text-white hover:bg-blue-700"
-                  >
-                    {publishing ? '發佈中…' : '發佈成果（開放閱覽）'}
-                  </button>
-                )}
-                {groupDetail.group.publishedAt && (
-                  <span className="text-xs text-slate-400">
-                    發佈於 {new Date(groupDetail.group.publishedAt).toLocaleDateString('zh-TW')}
-                  </span>
-                )}
-              </div>
-            </div>
+            <GroupTimelineCard key={groupDetail.group.id} group={groupDetail.group} onUpdated={handleGroupUpdated} />
 
             <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4">
               <h3 className="mb-3 flex items-center gap-1.5 font-semibold text-brand-700">
                 <Target className="h-4 w-4" /> 評量設定
               </h3>
+
+              {settingsError && (
+                <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                  {settingsError}
+                </p>
+              )}
 
               <div className="mb-3 flex flex-wrap items-center gap-3">
                 <label className="text-sm font-medium text-slate-600">目標人數</label>
@@ -467,7 +418,11 @@ export default function GroupTab({ users, submissions }) {
                   </>
                 );
               })()}
-              <p className="mt-2 text-xs text-slate-400">設定變更後，請點最下方「儲存班級設定」一併儲存。</p>
+
+              <button type="button" onClick={handleSaveSettings} disabled={savingSettings}
+                className="btn-primary btn-sm mt-3">
+                {savingSettings ? '儲存中…' : '儲存評量設定'}
+              </button>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -479,6 +434,13 @@ export default function GroupTab({ users, submissions }) {
                   <Download className="h-3.5 w-3.5" /> 匯出班級成績 CSV
                 </button>
               </div>
+
+              {membersError && (
+                <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                  {membersError}
+                </p>
+              )}
+
               <div className="max-h-40 overflow-y-auto space-y-1">
                 {nonAdminUsers.map((u) => (
                   <label key={u.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-50">
@@ -505,6 +467,11 @@ export default function GroupTab({ users, submissions }) {
                   </div>
                 </div>
               )}
+
+              <button type="button" onClick={handleSaveMembers} disabled={savingMembers}
+                className="btn-primary btn-sm mt-3">
+                {savingMembers ? '儲存中…' : '儲存成員名單'}
+              </button>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -560,6 +527,13 @@ export default function GroupTab({ users, submissions }) {
 
             <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
               <h3 className="mb-2 font-semibold text-brand-700">班級整體評語</h3>
+
+              {commentError && (
+                <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                  {commentError}
+                </p>
+              )}
+
               <textarea value={groupComment} onChange={(e) => setGroupComment(e.target.value)} rows={4}
                 placeholder="針對本班整體觀察與評語…"
                 className="input"
@@ -591,9 +565,9 @@ export default function GroupTab({ users, submissions }) {
                 )}
               </div>
 
-              <button type="button" onClick={handleSaveGroup} disabled={savingGroup}
+              <button type="button" onClick={handleSaveComment} disabled={savingComment}
                 className="btn-primary mt-4">
-                {savingGroup ? '儲存中…' : '儲存班級設定'}
+                {savingComment ? '儲存中…' : '儲存評語與建議'}
               </button>
             </div>
           </div>

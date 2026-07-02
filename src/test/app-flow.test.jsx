@@ -146,7 +146,7 @@ describe('App 流程', () => {
 
     const adminTab = await screen.findByRole('button', { name: '管理後台' });
     fireEvent.click(adminTab);
-    expect(await screen.findByText(/資料分析儀表板/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '管理後台' })).toBeInTheDocument();
     expect(screen.getByText('註冊人數')).toBeInTheDocument();
   });
 
