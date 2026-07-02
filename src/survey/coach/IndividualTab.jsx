@@ -63,9 +63,9 @@ export default function IndividualTab({ users, submissions, currentUserId }) {
   return (
     <div>
       {assessmentIds.length > 1 && (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div role="tablist" aria-label="選擇評量" className="mb-4 flex flex-wrap gap-2">
           {assessmentIds.map((id) => (
-            <button key={id} type="button" onClick={() => setSelectedId(id)}
+            <button key={id} type="button" role="tab" aria-selected={selectedAssessmentId === id} onClick={() => setSelectedId(id)}
               className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                 selectedAssessmentId === id ? 'bg-brand-600 text-white' : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}

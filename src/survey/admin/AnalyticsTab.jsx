@@ -98,6 +98,7 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, onA
               <div key={a.id} className="flex items-center gap-2">
                 <button
                   type="button"
+                  aria-pressed={selectedId === a.id}
                   onClick={() => setSelectedId(a.id)}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                     selectedId === a.id

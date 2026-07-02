@@ -23,7 +23,7 @@ export default function ProgressBar({ answered, total }) {
       >
         <div
           className={`h-full rounded-full transition-all duration-500 ${
-            done ? 'bg-brand-500' : 'bg-gradient-to-r from-blue-500 to-brand-500'
+            done ? 'bg-brand-500' : 'bg-gradient-to-r from-indigo-500 to-brand-500'
           }`}
           style={{ width: `${percent}%` }}
         />

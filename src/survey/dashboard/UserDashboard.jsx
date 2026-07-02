@@ -168,11 +168,13 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
       </header>
 
       {assessmentIds.length > 1 && (
-        <div className="mb-5 flex flex-wrap gap-2 print:hidden">
+        <div role="tablist" aria-label="選擇評量" className="mb-5 flex flex-wrap gap-2 print:hidden">
           {assessmentIds.map((id) => (
             <button
               key={id}
               type="button"
+              role="tab"
+              aria-selected={activeId === id && !show360}
               onClick={() => { setSelectedId(id); setShow360(false); }}
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                 activeId === id && !show360
@@ -188,9 +190,11 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
 
       {/* 360° tab button — shown when at least one L9D submission exists */}
       {filtered.some((s) => s.assessmentId === 'leadership-9d') && (
-        <div className="mb-5 flex gap-2 print:hidden">
+        <div role="tablist" aria-label="個人分析或 360 度視角" className="mb-5 flex gap-2 print:hidden">
           <button
             type="button"
+            role="tab"
+            aria-selected={!show360}
             onClick={() => setShow360(false)}
             className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
               !show360 ? 'bg-brand-600 text-white' : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
@@ -200,6 +204,8 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={show360}
             onClick={() => setShow360(true)}
             className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
               show360 ? 'bg-brand-600 text-white' : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'

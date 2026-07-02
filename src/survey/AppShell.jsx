@@ -137,14 +137,14 @@ export default function AppShell() {
               <ArrowLeft className="h-4 w-4" /> 返回評量列表
             </button>
           ) : (
-            <nav className="flex flex-1 flex-wrap gap-1">
+            <nav className="no-scrollbar flex flex-1 flex-nowrap gap-1 overflow-x-auto sm:flex-wrap sm:overflow-visible">
               {tabs.map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   aria-current={view === t.id ? 'page' : undefined}
                   onClick={() => handleTabClick(t.id)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                     view === t.id
                       ? 'bg-brand-600 text-white shadow-sm'
                       : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
@@ -156,8 +156,8 @@ export default function AppShell() {
             </nav>
           )}
 
-          <div className="flex items-center gap-3 text-sm">
-            <span className="text-slate-500">
+          <div className="flex items-center gap-2 text-sm sm:gap-3">
+            <span className="hidden text-slate-500 sm:inline">
               {user.name}
               {isAdmin && (
                 <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-700">
@@ -173,24 +173,27 @@ export default function AppShell() {
             <button
               type="button"
               onClick={() => setHelpOpen(true)}
+              aria-label="使用說明"
               className="btn-secondary btn-sm"
             >
-              <CircleHelp className="h-4 w-4" /> 使用說明
+              <CircleHelp className="h-4 w-4" /> <span className="hidden sm:inline">使用說明</span>
             </button>
             <a
               href={`${import.meta.env.BASE_URL}user-manual.pdf`}
               download="職能評測平台使用手冊.pdf"
               title="下載 PDF 使用手冊"
+              aria-label="下載 PDF 使用手冊"
               className="btn-secondary btn-sm"
             >
-              <Download className="h-4 w-4" /> 手冊下載
+              <Download className="h-4 w-4" /> <span className="hidden sm:inline">手冊下載</span>
             </a>
             <button
               type="button"
               onClick={logout}
+              aria-label="登出"
               className="btn-ghost btn-sm"
             >
-              <LogOut className="h-4 w-4" /> 登出
+              <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">登出</span>
             </button>
           </div>
         </div>

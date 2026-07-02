@@ -174,12 +174,12 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           ))}
 
           {invalidIds.length > 0 && (
-            <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+            <p role="alert" className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
               還有 {invalidIds.length} 題尚未作答，已為您標示並捲動至第一題，請補齊後再送出。
             </p>
           )}
           {submitError && (
-            <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+            <p role="alert" className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
               {submitError}
             </p>
           )}

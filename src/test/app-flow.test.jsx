@@ -107,7 +107,7 @@ async function navigateToLogin() {
 }
 
 async function registerUser(name, email, password) {
-  fireEvent.click(screen.getByRole('button', { name: '註冊' }));
+  fireEvent.click(screen.getByRole('tab', { name: '註冊' }));
   fireEvent.change(screen.getByPlaceholderText('您的姓名'), { target: { value: name } });
   fillLogin(email, password);
   fireEvent.click(screen.getByRole('button', { name: /建立帳號/ }));

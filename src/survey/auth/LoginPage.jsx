@@ -67,7 +67,7 @@ export default function LoginPage({ onBack }) {
         )}
 
         <div className="rounded-3xl bg-white px-6 py-7 shadow-card ring-1 ring-slate-100">
-          <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 text-sm font-semibold">
+          <div role="tablist" aria-label="登入或註冊" className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 text-sm font-semibold">
             {[
               ['login', '登入'],
               ['register', '註冊'],
@@ -75,6 +75,8 @@ export default function LoginPage({ onBack }) {
               <button
                 key={key}
                 type="button"
+                role="tab"
+                aria-selected={mode === key}
                 onClick={() => { setMode(key); setError(''); }}
                 className={`rounded-md py-2 transition-colors ${
                   mode === key ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
@@ -120,7 +122,7 @@ export default function LoginPage({ onBack }) {
             </Field>
 
             {error && (
-              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
+              <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
                 {error}
               </p>
             )}

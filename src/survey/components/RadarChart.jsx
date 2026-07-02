@@ -51,8 +51,8 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
     >
       <defs>
         <radialGradient id={gradientId} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#319795" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#2b6cb0" stopOpacity="0.35" />
+          <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.32" />
         </radialGradient>
       </defs>
 
@@ -79,7 +79,7 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
       )}
 
       {/* 資料區塊 */}
-      <path d={dataPath} fill={`url(#${gradientId})`} stroke="#2c7a7b" strokeWidth="2" />
+      <path d={dataPath} fill={`url(#${gradientId})`} stroke="#7c3aed" strokeWidth="2" />
 
       {/* 圖例 */}
       {compare && (

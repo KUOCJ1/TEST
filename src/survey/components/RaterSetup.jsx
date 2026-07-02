@@ -55,6 +55,7 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
               {/* Self option */}
               <button
                 type="button"
+                aria-pressed={isSelf}
                 onClick={() => handleRateeChange(user.id)}
                 className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
                   isSelf
@@ -84,6 +85,7 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
                 <button
                   key={m.id}
                   type="button"
+                  aria-pressed={rateeId === m.id}
                   onClick={() => handleRateeChange(m.id)}
                   className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
                     rateeId === m.id
@@ -109,6 +111,7 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
                   <button
                     key={t.id}
                     type="button"
+                    aria-pressed={raterType === t.id}
                     onClick={() => setRaterType(t.id)}
                     className={`rounded-xl border px-3 py-2.5 text-center text-sm transition-colors ${
                       raterType === t.id

@@ -67,7 +67,14 @@ const ResultPanel = forwardRef(function ResultPanel(
                   </span>
                 </span>
               </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100"
+                role="progressbar"
+                aria-valuenow={d.score}
+                aria-valuemin={0}
+                aria-valuemax={d.max}
+                aria-label={`${d.subtitle} ${d.name}`}
+              >
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${d.percent}%`, background: d.color }}
