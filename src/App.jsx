@@ -5,6 +5,7 @@ import LoginPage from './survey/auth/LoginPage';
 import ResetPasswordPage from './survey/auth/ResetPasswordPage';
 import AppShell from './survey/AppShell';
 import LandingPage from './survey/LandingPage';
+import { ToastProvider } from './survey/components/Toast';
 
 function readResetToken() {
   const params = new URLSearchParams(window.location.search);
@@ -37,7 +38,9 @@ function Routes() {
 export default function App() {
   return (
     <AuthProvider>
-      <Routes />
+      <ToastProvider>
+        <Routes />
+      </ToastProvider>
     </AuthProvider>
   );
 }

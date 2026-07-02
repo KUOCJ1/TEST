@@ -105,6 +105,7 @@ export default function ChatBot({ context = null }) {
   };
 
   const clearMessages = () => {
+    if (!window.confirm('確定要清除所有對話紀錄嗎？此操作無法復原。')) return;
     removeKey(STORAGE_KEY);
     setMessages([makeWelcome()]);
     setError('');

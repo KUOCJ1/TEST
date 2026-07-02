@@ -174,14 +174,15 @@ export default function AppShell() {
               onClick={() => setHelpOpen(true)}
               className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100"
             >
-              說明
+              使用說明
             </button>
             <a
               href={`${import.meta.env.BASE_URL}user-manual.pdf`}
               download="職能評測平台使用手冊.pdf"
+              title="下載 PDF 使用手冊"
               className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100"
             >
-              說明書
+              ⬇ 手冊下載
             </a>
             <button
               type="button"

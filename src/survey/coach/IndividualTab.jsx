@@ -5,8 +5,10 @@ import { latestPerUser } from '../utils/analytics';
 import { useAssessmentFilter } from '../hooks/useAssessmentFilter';
 import { formatDate } from '../utils/format';
 import CommentEditor from './CommentEditor';
+import { useToast } from '../components/useToast';
 
 export default function IndividualTab({ users, submissions, currentUserId }) {
+  const showToast = useToast();
   const [editingSubId, setEditingSubId] = useState(null);
   const [commentPatch, setCommentPatch] = useState({});
   const [deleteError, setDeleteError] = useState('');
@@ -42,14 +44,16 @@ export default function IndividualTab({ users, submissions, currentUserId }) {
       return [comment, ...others];
     });
     setEditingSubId(null);
+    showToast('已儲存評語');
   };
 
   const handleDelete = async (subId, commentId) => {
-    if (!window.confirm('確定刪除此評語？')) return;
+    if (!window.confirm('確定刪除此評語？此操作無法復原。')) return;
     setDeleteError('');
     try {
       await api.deleteComment(subId, commentId);
       patchComments(subId, (prev) => prev.filter((c) => c.id !== commentId));
+      showToast('已刪除評語');
     } catch (e) {
       setDeleteError(e.message || '刪除失敗');
     }

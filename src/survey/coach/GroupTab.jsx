@@ -8,6 +8,7 @@ import RadarChart from '../components/RadarChart';
 import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import InfoTip from '../components/InfoTip';
 import PhaseBadge from '../components/PhaseBadge';
+import { useToast } from '../components/useToast';
 
 function parseRoster(text) {
   return text
@@ -40,12 +41,14 @@ export default function GroupTab({ users, submissions }) {
   const [focusDims, setFocusDims] = useState([]);
   const [dimNotes, setDimNotes] = useState({});
   const [error, setError] = useState('');
+  const [detailError, setDetailError] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [rosterText, setRosterText] = useState('');
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+  const showToast = useToast();
 
   const assessmentIds = [...new Set(submissions.map((s) => s.assessmentId ?? 'ai-competency'))];
 
@@ -56,6 +59,7 @@ export default function GroupTab({ users, submissions }) {
   const loadGroup = async (id) => {
     setSelectedGroupId(id);
     setError('');
+    setDetailError('');
     try {
       const { group, submissions: subs } = await api.getGroup(id);
       setGroupDetail({ group, submissions: subs });
@@ -92,6 +96,7 @@ export default function GroupTab({ users, submissions }) {
       setNewTarget('');
       setNewFocusDims([]);
       loadGroup(group.id);
+      showToast('已建立班別');
     } catch (e) {
       setError(e.message || '建立失敗');
     } finally {
@@ -102,7 +107,7 @@ export default function GroupTab({ users, submissions }) {
   const handleSaveGroup = async () => {
     if (!selectedGroupId) return;
     setSavingGroup(true);
-    setError('');
+    setDetailError('');
     try {
       const updated = await api.updateGroup(selectedGroupId, {
         memberIds: selectedMembers,
@@ -116,8 +121,9 @@ export default function GroupTab({ users, submissions }) {
       });
       setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
       setGroupDetail((prev) => prev ? { ...prev, group: updated } : prev);
+      showToast('已儲存班級設定');
     } catch (e) {
-      setError(e.message || '儲存失敗');
+      setDetailError(e.message || '儲存失敗');
     } finally {
       setSavingGroup(false);
     }
@@ -126,13 +132,14 @@ export default function GroupTab({ users, submissions }) {
   const handlePublish = async () => {
     if (!selectedGroupId) return;
     setPublishing(true);
-    setError('');
+    setDetailError('');
     try {
       const updated = await api.publishGroup(selectedGroupId);
       setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
       setGroupDetail((prev) => prev ? { ...prev, group: updated } : prev);
+      showToast('已發佈成果，用戶現可查看報告');
     } catch (e) {
-      setError(e.message || '發佈失敗');
+      setDetailError(e.message || '發佈失敗');
     } finally {
       setPublishing(false);
     }
@@ -141,25 +148,27 @@ export default function GroupTab({ users, submissions }) {
   const handleUnpublish = async () => {
     if (!selectedGroupId) return;
     setPublishing(true);
-    setError('');
+    setDetailError('');
     try {
       const updated = await api.unpublishGroup(selectedGroupId);
       setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
       setGroupDetail((prev) => prev ? { ...prev, group: updated } : prev);
+      showToast('已取消發佈');
     } catch (e) {
-      setError(e.message || '取消發佈失敗');
+      setDetailError(e.message || '取消發佈失敗');
     } finally {
       setPublishing(false);
     }
   };
 
   const handleDeleteGroup = async (id) => {
-    if (!window.confirm('確定刪除此班別？')) return;
+    if (!window.confirm('確定刪除此班別？此操作無法復原。')) return;
     setError('');
     try {
       await api.deleteGroup(id);
       setGroups((prev) => prev.filter((g) => g.id !== id));
       if (selectedGroupId === id) { setSelectedGroupId(null); setGroupDetail(null); }
+      showToast('已刪除班別');
     } catch (e) {
       setError(e.message || '刪除失敗');
     }
@@ -324,6 +333,11 @@ export default function GroupTab({ users, submissions }) {
           </div>
         ) : (
           <div className="space-y-5">
+            {detailError && (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {detailError}
+              </p>
+            )}
             <div className="rounded-xl border border-slate-200 bg-white p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-700">施測時間軸</h3>

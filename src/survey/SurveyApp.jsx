@@ -66,6 +66,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
   }, [answers, config, assessmentId, phase, rateeId, raterType, onSubmitted, user.id]);
 
   const handleRetake = useCallback(() => {
+    if (!window.confirm('確定要重新作答嗎？目前畫面上的作答內容將被清空（先前已送出的紀錄不受影響）。')) return;
     setAnswers({});
     writeJSON(storageKey, {});
     setResult(null);
@@ -137,6 +138,9 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
         </div>
 
         <ProgressBar answered={answered} total={TOTAL_QUESTIONS} />
+        {answered > 0 && !result && (
+          <p className="mt-1 text-right text-xs text-slate-400">✓ 作答進度已自動儲存於本機，離開後可繼續填寫</p>
+        )}
 
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
           {DIMENSIONS.map((dim, di) => (

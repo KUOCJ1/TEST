@@ -11,6 +11,7 @@ import { formatDate } from '../utils/format';
 import InfoTip from '../components/InfoTip';
 import PhaseBadge from '../components/PhaseBadge';
 import BatchUploadSection from './BatchUploadSection';
+import { useToast } from '../components/useToast';
 
 function Kpi({ label, value, suffix, tip }) {
   return (
@@ -37,6 +38,9 @@ export default function AdminDashboard() {
   const [adminGroups, setAdminGroups] = useState([]);
   const [adminGroupDates, setAdminGroupDates] = useState({});
   const [adminSaving, setAdminSaving] = useState(null);
+  const [resetGenerating, setResetGenerating] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const showToast = useToast();
 
   useEffect(() => {
     let active = true;
@@ -119,6 +123,7 @@ export default function AdminDashboard() {
       const { startDate, endDate } = adminGroupDates[id] ?? {};
       const updated = await api.updateGroup(id, { startDate: startDate || null, endDate: endDate || null });
       setAdminGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+      showToast('已儲存日期');
     } catch (e) {
       setError(e.message || '儲存失敗');
     } finally {
@@ -132,6 +137,7 @@ export default function AdminDashboard() {
     try {
       const updated = await api.publishGroup(id);
       setAdminGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+      showToast('已發佈成果，用戶現可查看報告');
     } catch (e) {
       setError(e.message || '發佈失敗');
     } finally {
@@ -145,6 +151,7 @@ export default function AdminDashboard() {
     try {
       const updated = await api.unpublishGroup(id);
       setAdminGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+      showToast('已取消發佈');
     } catch (e) {
       setError(e.message || '取消發佈失敗');
     } finally {
@@ -345,6 +352,7 @@ export default function AdminDashboard() {
                               ...prev,
                               users: prev.users.map((x) => (x.id === updated.id ? updated : x)),
                             }));
+                            showToast(newRole === 'coach' ? `已將 ${u.name} 設為教練` : `已取消 ${u.name} 的教練身份`);
                           } catch (e) {
                             setError(e.message || '操作失敗');
                           } finally {
@@ -361,19 +369,24 @@ export default function AdminDashboard() {
                       </button>
                       <button
                         type="button"
+                        disabled={resetGenerating === u.id}
                         onClick={async () => {
+                          setResetGenerating(u.id);
                           setError('');
                           try {
                             const info = await api.generateResetToken(u.id);
                             const url = `${window.location.origin}${window.location.pathname}?reset=${info.token}`;
                             setResetInfo({ name: u.name, email: u.email, url, hours: info.expiresInHours });
+                            setCopied(false);
                           } catch (e) {
                             setError(e.message || '產生失敗');
+                          } finally {
+                            setResetGenerating(null);
                           }
                         }}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                       >
-                        產生重設連結
+                        {resetGenerating === u.id ? '產生中…' : '產生重設連結'}
                       </button>
                     </div>
                   </td>
@@ -488,10 +501,18 @@ export default function AdminDashboard() {
             <div className="mt-3 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => navigator.clipboard?.writeText(resetInfo.url)}
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard?.writeText(resetInfo.url);
+                    setCopied(true);
+                    showToast('已複製連結');
+                  } catch {
+                    setCopied(false);
+                  }
+                }}
                 className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
               >
-                複製連結
+                {copied ? '✓ 已複製' : '複製連結'}
               </button>
               <button
                 type="button"
