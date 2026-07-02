@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
+import { Check } from 'lucide-react';
 import { getAssessment } from '../data/assessments/index.js';
 import { useAssessmentFilter } from '../hooks/useAssessmentFilter';
 import MultiRaterDashboard from '../analysis/MultiRaterDashboard';
 import InfoTip from '../components/InfoTip';
+import { RATER_TYPES, RATER_LABELS } from '../constants/raterTypes';
 
-const RATER_TYPES = ['self', 'manager', 'peer', 'subordinate'];
-const RATER_LABELS = { self: '自評', manager: '主管', peer: '同儕', subordinate: '部屬' };
 const RATER_TIPS = {
   peer: '同儕與部屬評分在被評者端以匿名方式呈現，保護填答者隱私。',
   subordinate: '同儕與部屬評分在被評者端以匿名方式呈現，保護填答者隱私。',
@@ -62,6 +62,7 @@ export default function MultiRaterTab({ users, submissions }) {
 
       {getAssessment(assessmentId)?.SUPPORTS_360 && (
         <>
+          <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整欄位</p>
           <div className="mb-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -85,7 +86,7 @@ export default function MultiRaterTab({ users, submissions }) {
                       {RATER_TYPES.map((t) => (
                         <td key={t} className="py-2.5 px-2 text-center">
                           {types.has(t) ? (
-                            <span className="text-emerald-500 font-bold">✓</span>
+                            <Check className="mx-auto h-4 w-4 text-emerald-500" />
                           ) : (
                             <span className="text-slate-300">—</span>
                           )}
@@ -95,10 +96,10 @@ export default function MultiRaterTab({ users, submissions }) {
                         <button
                           type="button"
                           onClick={() => setSelectedUserId(selectedUserId === u.id ? null : u.id)}
-                          className={`rounded-lg px-3 py-1 text-xs font-semibold transition-colors ${
+                          className={`btn-sm ${
                             selectedUserId === u.id
-                              ? 'bg-brand-600 text-white'
-                              : 'border border-brand-300 bg-brand-50 text-brand-700 hover:bg-brand-100'
+                              ? 'btn bg-brand-600 text-white hover:bg-brand-700'
+                              : 'btn-secondary'
                           }`}
                         >
                           {selectedUserId === u.id ? '收起' : '查看'}

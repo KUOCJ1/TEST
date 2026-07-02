@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { BarChart3, FileText, Search, PenLine, CalendarClock } from 'lucide-react';
 import { api } from '../api/client';
 import ResultPanel from '../components/ResultPanel';
 import PrintableReport from '../components/PrintableReport';
@@ -73,7 +74,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <div className="rounded-2xl bg-white px-6 py-12 shadow-lg shadow-slate-200/60">
-          <p className="text-5xl">📊</p>
+          <BarChart3 className="mx-auto h-12 w-12 text-brand-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-800">尚無評測紀錄</h2>
           <p className="mt-2 text-slate-500">完成一次評測後，這裡就會顯示您的能力落點與構面分析。</p>
           {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
@@ -159,9 +160,9 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
           <button
             type="button"
             onClick={() => { setShow360(false); setShowReport(true); }}
-            className="rounded-lg border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition-colors hover:bg-brand-50"
+            className="btn-secondary"
           >
-            📄 產出 PDF 報告
+            <FileText className="h-4 w-4" /> 產出 PDF 報告
           </button>
         </div>
       </header>
@@ -213,7 +214,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
         <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-lg shadow-slate-200/60">
           {myGroupForActive.phase === 'closed' ? (
             <>
-              <p className="text-4xl">🔍</p>
+              <Search className="mx-auto h-10 w-10 text-brand-300" />
               <p className="mt-4 text-lg font-bold text-slate-700">教練審閱中</p>
               <p className="mt-2 text-sm text-slate-500">
                 評測已結束，教練正在審閱整體成果。發佈後即可查看 360° 多元視角報告。
@@ -221,7 +222,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
             </>
           ) : myGroupForActive.phase === 'in_progress' ? (
             <>
-              <p className="text-4xl">📝</p>
+              <PenLine className="mx-auto h-10 w-10 text-brand-300" />
               <p className="mt-4 text-lg font-bold text-slate-700">評測進行中</p>
               <p className="mt-2 text-sm text-slate-500">
                 評測尚未結束，360° 多元視角報告將於教練發佈後開放。
@@ -229,7 +230,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
             </>
           ) : (
             <>
-              <p className="text-4xl">📅</p>
+              <CalendarClock className="mx-auto h-10 w-10 text-brand-300" />
               <p className="mt-4 text-lg font-bold text-slate-700">評測尚未開始</p>
               <p className="mt-2 text-sm text-slate-500">評測開始後方可查看 360° 多元視角報告。</p>
             </>

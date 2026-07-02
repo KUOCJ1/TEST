@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { X, MessageCircle, Send } from 'lucide-react';
 import { useAuth } from '../auth/useAuth';
 import { readJSON, writeJSON, removeKey } from '../utils/storage';
 
@@ -114,7 +115,7 @@ export default function ChatBot({ context = null }) {
   return (
     <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end print:hidden">
       {open && (
-        <div className="mb-3 flex h-[520px] w-80 flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl sm:w-96">
+        <div className="mb-3 flex h-[min(520px,80dvh)] w-80 flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl sm:w-96">
           <div className="flex items-center justify-between rounded-t-2xl bg-brand-600 px-4 py-3">
             <span className="text-sm font-semibold text-white">AI 評測小幫手</span>
             <div className="flex items-center gap-2">
@@ -131,7 +132,7 @@ export default function ChatBot({ context = null }) {
                 onClick={() => setOpen(false)}
                 className="rounded p-0.5 text-brand-200 hover:bg-brand-700 hover:text-white"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -182,15 +183,16 @@ export default function ChatBot({ context = null }) {
                 onKeyDown={handleKeyDown}
                 disabled={streaming}
                 placeholder="輸入問題…（Enter 送出，Shift+Enter 換行）"
-                className="flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 disabled:opacity-50"
+                className="input flex-1 resize-none disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={send}
                 disabled={!input.trim() || streaming}
-                className="self-end rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-40"
+                aria-label="送出"
+                className="btn-primary self-end px-3"
               >
-                送出
+                <Send className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -203,12 +205,7 @@ export default function ChatBot({ context = null }) {
         onClick={() => setOpen((v) => !v)}
         className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          {open
-            ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            : <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-          }
-        </svg>
+        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
       </button>
     </div>
   );

@@ -4,7 +4,7 @@ import { useAuth } from '../auth/useAuth';
 
 function Card({ title, desc, children }) {
   return (
-    <section className="rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
+    <section className="card">
       <h3 className="text-base font-bold text-slate-700">{title}</h3>
       {desc && <p className="mt-0.5 text-sm text-slate-500">{desc}</p>}
       <div className="mt-4">{children}</div>
@@ -109,7 +109,7 @@ export default function ProfilePage() {
         <div className="mt-1.5 flex gap-2">
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
           <button type="button" onClick={saveName} disabled={savingName}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
+            className="btn-primary">
             {savingName ? '儲存中…' : '儲存'}
           </button>
         </div>
@@ -177,7 +177,7 @@ export default function ProfilePage() {
             <p className={`text-sm ${pwMsg.type === 'err' ? 'text-red-500' : 'text-brand-600'}`}>{pwMsg.text}</p>
           )}
           <button type="button" onClick={changePassword} disabled={savingPw}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
+            className="btn-primary">
             {savingPw ? '處理中…' : '變更密碼'}
           </button>
         </div>

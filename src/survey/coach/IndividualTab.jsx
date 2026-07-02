@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
 import { latestPerUser } from '../utils/analytics';
@@ -82,7 +83,7 @@ export default function IndividualTab({ users, submissions, currentUserId }) {
       )}
 
       {rows.length === 0 ? (
-        <p className="py-8 text-center text-slate-400">此評量尚無作答資料。</p>
+        <p className="py-8 text-center text-slate-400">此評量尚無作答資料，待學員完成評測後即會顯示於此。</p>
       ) : (
         <div className="space-y-3">
           {rows.map(({ sub, user, myComment, otherComments }) => (
@@ -102,18 +103,18 @@ export default function IndividualTab({ users, submissions, currentUserId }) {
                   {myComment ? (
                     <>
                       <button type="button" onClick={() => setEditingSubId(editingSubId === sub.id ? null : sub.id)}
-                        className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100">
-                        ✏ 編輯評語
+                        className="btn-secondary btn-sm">
+                        <Pencil className="h-3.5 w-3.5" /> 編輯評語
                       </button>
                       <button type="button" onClick={() => handleDelete(sub.id, myComment.id)}
-                        className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-500 hover:bg-red-100">
-                        刪除
+                        className="btn-danger btn-sm">
+                        <Trash2 className="h-3.5 w-3.5" /> 刪除
                       </button>
                     </>
                   ) : (
                     <button type="button" onClick={() => setEditingSubId(editingSubId === sub.id ? null : sub.id)}
-                      className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100">
-                      + 新增評語
+                      className="btn-secondary btn-sm">
+                      <Plus className="h-3.5 w-3.5" /> 新增評語
                     </button>
                   )}
                 </div>

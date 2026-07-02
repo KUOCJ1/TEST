@@ -104,7 +104,7 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
           {!isSelf && (
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">你與對方的關係？</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {availableTypes.map((t) => (
                   <button
                     key={t.id}
@@ -142,7 +142,7 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
               <button
                 type="button"
                 onClick={onCancel}
-                className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                className="btn-secondary px-5 py-3 text-sm"
               >
                 取消
               </button>

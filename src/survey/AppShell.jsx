@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { ArrowLeft, Download, LogOut, CircleHelp } from 'lucide-react';
 import { useAuth } from './auth/useAuth';
 import { api } from './api/client';
 import { getAssessment } from './data/assessments/index.js';
@@ -131,9 +132,9 @@ export default function AppShell() {
             <button
               type="button"
               onClick={() => setView('home')}
-              className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-500 hover:bg-slate-100"
+              className="btn-ghost btn-sm"
             >
-              ← 返回評量列表
+              <ArrowLeft className="h-4 w-4" /> 返回評量列表
             </button>
           ) : (
             <nav className="flex flex-1 flex-wrap gap-1">
@@ -172,24 +173,24 @@ export default function AppShell() {
             <button
               type="button"
               onClick={() => setHelpOpen(true)}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100"
+              className="btn-secondary btn-sm"
             >
-              使用說明
+              <CircleHelp className="h-4 w-4" /> 使用說明
             </button>
             <a
               href={`${import.meta.env.BASE_URL}user-manual.pdf`}
               download="職能評測平台使用手冊.pdf"
               title="下載 PDF 使用手冊"
-              className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100"
+              className="btn-secondary btn-sm"
             >
-              ⬇ 手冊下載
+              <Download className="h-4 w-4" /> 手冊下載
             </a>
             <button
               type="button"
               onClick={logout}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100"
+              className="btn-ghost btn-sm"
             >
-              登出
+              <LogOut className="h-4 w-4" /> 登出
             </button>
           </div>
         </div>

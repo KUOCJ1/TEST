@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Download, Check } from 'lucide-react';
 import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
@@ -265,9 +266,9 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => exportAdminCsv(rows, activeConfig, activeConfig?.NAME)}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                className="btn-secondary btn-sm"
               >
-                ⬇ 匯出 CSV
+                <Download className="h-3.5 w-3.5" /> 匯出 CSV
               </button>
             </div>
             <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整欄位</p>
@@ -359,11 +360,7 @@ export default function AdminDashboard() {
                             setRoleChanging(null);
                           }
                         }}
-                        className={`rounded-lg px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
-                          u.role === 'coach'
-                            ? 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
-                            : 'bg-brand-100 text-brand-700 hover:bg-brand-200'
-                        }`}
+                        className={`btn-sm ${u.role === 'coach' ? 'btn-secondary' : 'btn bg-brand-100 text-brand-700 hover:bg-brand-200'}`}
                       >
                         {roleChanging === u.id ? '…' : u.role === 'coach' ? '取消教練身份' : '設為教練'}
                       </button>
@@ -384,7 +381,7 @@ export default function AdminDashboard() {
                             setResetGenerating(null);
                           }
                         }}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                        className="btn-secondary btn-sm"
                       >
                         {resetGenerating === u.id ? '產生中…' : '產生重設連結'}
                       </button>
@@ -420,7 +417,7 @@ export default function AdminDashboard() {
                         type="date"
                         value={dates.startDate}
                         onChange={(e) => handleGroupDateChange(g.id, 'startDate', e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                        className="input"
                       />
                     </div>
                     <div>
@@ -429,7 +426,7 @@ export default function AdminDashboard() {
                         type="date"
                         value={dates.endDate}
                         onChange={(e) => handleGroupDateChange(g.id, 'endDate', e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                        className="input"
                       />
                     </div>
                   </div>
@@ -438,7 +435,7 @@ export default function AdminDashboard() {
                       type="button"
                       onClick={() => handleGroupSaveTimeline(g.id)}
                       disabled={saving}
-                      className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                      className="btn-secondary btn-sm"
                     >
                       {saving ? '儲存中…' : '儲存日期'}
                     </button>
@@ -447,7 +444,7 @@ export default function AdminDashboard() {
                         type="button"
                         onClick={() => handleGroupUnpublish(g.id)}
                         disabled={saving}
-                        className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                        className="btn-warning btn-sm"
                       >
                         取消發佈
                       </button>
@@ -456,7 +453,7 @@ export default function AdminDashboard() {
                         type="button"
                         onClick={() => handleGroupPublish(g.id)}
                         disabled={saving}
-                        className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                        className="btn btn-sm bg-blue-600 text-white hover:bg-blue-700"
                       >
                         發佈成果
                       </button>
@@ -495,7 +492,7 @@ export default function AdminDashboard() {
               readOnly
               value={resetInfo.url}
               onFocus={(e) => e.target.select()}
-              className="mt-3 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+              className="input mt-3 bg-slate-50"
               rows={3}
             />
             <div className="mt-3 flex justify-end gap-2">
@@ -510,14 +507,14 @@ export default function AdminDashboard() {
                     setCopied(false);
                   }
                 }}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                className="btn-primary"
               >
-                {copied ? '✓ 已複製' : '複製連結'}
+                {copied ? <><Check className="h-4 w-4" /> 已複製</> : '複製連結'}
               </button>
               <button
                 type="button"
                 onClick={() => setResetInfo(null)}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                className="btn-ghost"
               >
                 關閉
               </button>

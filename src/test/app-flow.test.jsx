@@ -133,7 +133,7 @@ describe('App 流程', () => {
     expect(screen.queryByRole('button', { name: '管理後台' })).not.toBeInTheDocument();
 
     // 返回首頁後點「我的分析」確認無紀錄訊息。
-    fireEvent.click(screen.getByRole('button', { name: '← 返回評量列表' }));
+    fireEvent.click(screen.getByRole('button', { name: '返回評量列表' }));
     fireEvent.click(await screen.findByRole('button', { name: '我的分析' }));
     expect(await screen.findByText('尚無評測紀錄')).toBeInTheDocument();
   });

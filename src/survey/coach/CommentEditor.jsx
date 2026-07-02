@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { X, Plus } from 'lucide-react';
 import { api } from '../api/client';
 import { readJSON, writeJSON } from '../utils/storage';
 
@@ -59,7 +60,7 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
         onChange={(e) => setText(e.target.value)}
         rows={4}
         placeholder="針對此學員的整體觀察與評語…"
-        className="w-full rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+        className="input"
       />
 
       <p className="mt-3 mb-1.5 text-xs font-semibold text-brand-600 uppercase tracking-wide">精進建議（最多 5 條）</p>
@@ -72,16 +73,18 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
               value={tip}
               onChange={(e) => setTip(i, e.target.value)}
               placeholder={`建議 ${i + 1}`}
-              className="flex-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+              className="input flex-1"
             />
             {tips.length > 1 && (
-              <button type="button" onClick={() => removeTip(i)} className="text-slate-400 hover:text-red-500">✕</button>
+              <button type="button" onClick={() => removeTip(i)} aria-label="移除此建議" className="btn-icon">
+                <X className="h-4 w-4" />
+              </button>
             )}
           </div>
         ))}
         {tips.length < 5 && (
-          <button type="button" onClick={addTip} className="text-xs font-semibold text-brand-600 hover:text-brand-800">
-            + 新增建議
+          <button type="button" onClick={addTip} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800">
+            <Plus className="h-3.5 w-3.5" /> 新增建議
           </button>
         )}
       </div>
@@ -93,11 +96,11 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
+          className="btn-primary btn-sm"
         >
           {saving ? '儲存中…' : '儲存評語'}
         </button>
-        <button type="button" onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+        <button type="button" onClick={onCancel} className="btn-ghost btn-sm">
           取消
         </button>
       </div>

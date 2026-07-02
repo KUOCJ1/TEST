@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { RefreshCw, Check } from 'lucide-react';
 import { getAssessment } from './data/assessments/index.js';
 import { answeredCount, buildResult, isComplete, unansweredQuestionIds } from './utils/scoring';
 import { readJSON, writeJSON } from './utils/storage';
@@ -102,7 +103,9 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           <span className="mt-1 inline-block font-medium text-slate-700">
             評分標準：1 分（非常不同意）～ 5 分（非常同意）
             {DIMENSIONS.some((d) => d.questions.some((q) => q.reversed)) && (
-              <span className="ml-2 text-amber-600">· 🔄 標示題目為反向計分</span>
+              <span className="ml-2 inline-flex items-center gap-1 text-amber-600">
+                · <RefreshCw className="h-3 w-3" /> 標示題目為反向計分
+              </span>
             )}
           </span>
         </div>
@@ -139,7 +142,9 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
 
         <ProgressBar answered={answered} total={TOTAL_QUESTIONS} />
         {answered > 0 && !result && (
-          <p className="mt-1 text-right text-xs text-slate-400">✓ 作答進度已自動儲存於本機，離開後可繼續填寫</p>
+          <p className="mt-1 flex items-center justify-end gap-1 text-xs text-slate-400">
+            <Check className="h-3 w-3" /> 作答進度已自動儲存於本機，離開後可繼續填寫
+          </p>
         )}
 
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
@@ -182,7 +187,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           <button
             type="submit"
             disabled={submitting}
-            className="mt-6 w-full rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-3.5 text-lg font-bold text-white shadow-md transition-all hover:from-brand-600 hover:to-brand-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-primary mt-6 w-full py-3.5 text-lg"
           >
             {submitting ? '送出中…' : '送出評測，立即查看落點分析'}
           </button>

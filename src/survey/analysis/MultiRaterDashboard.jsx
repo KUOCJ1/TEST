@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Users } from 'lucide-react';
 import { api } from '../api/client';
 import RadarChart from '../components/RadarChart';
+import { RATER_LABELS } from '../constants/raterTypes';
 
-const RATER_LABELS = {
-  self: '自評',
-  manager: '主管評',
-  peer: '同儕評',
-  subordinate: '部屬評',
-};
 const RATER_COLORS = {
   self: '#7c3aed',
   manager: '#2563eb',
@@ -316,7 +312,7 @@ export default function MultiRaterDashboard({ rateeId, rateeName, assessmentId, 
   if (!selfSubs.length && !hasOthers) {
     return (
       <div className="py-16 text-center text-slate-400">
-        <p className="text-4xl">📊</p>
+        <Users className="mx-auto h-10 w-10 text-brand-300" />
         <p className="mt-3 font-semibold text-slate-600">尚無 360° 評測資料</p>
         <p className="mt-1 text-sm">請邀請主管、同儕或部屬完成評測後再查看。</p>
       </div>

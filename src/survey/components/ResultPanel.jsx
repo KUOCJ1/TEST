@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import { Lightbulb, Target, Copy, Check, RotateCcw } from 'lucide-react';
 import RadarChart from './RadarChart';
 import NarrativeReport from './NarrativeReport';
 import { getAssessment } from '../data/assessments/index.js';
@@ -98,7 +99,9 @@ const ResultPanel = forwardRef(function ResultPanel(
         </div>
 
         <div className="mt-4">
-          <p className="mb-2 font-semibold text-slate-700">💡 學習修煉建議</p>
+          <p className="mb-2 flex items-center gap-1.5 font-semibold text-slate-700">
+            <Lightbulb className="h-4 w-4 text-brand-500" /> 學習修煉建議
+          </p>
           <p className="rounded-r-lg border-l-4 border-brand-500 bg-white p-4 leading-relaxed text-slate-700 shadow-sm">
             {level.advice}
           </p>
@@ -106,7 +109,9 @@ const ResultPanel = forwardRef(function ResultPanel(
 
         {suggestions && (
           <div className="mt-4 rounded-xl border border-brand-100 bg-white p-4 shadow-sm">
-            <p className="mb-3 font-semibold text-slate-700">🎯 為您客製的行動建議</p>
+            <p className="mb-3 flex items-center gap-1.5 font-semibold text-slate-700">
+              <Target className="h-4 w-4 text-brand-500" /> 為您客製的行動建議
+            </p>
             {suggestions.develop.length > 0 && (
               <div className="mb-3">
                 <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">優先強化</p>
@@ -142,16 +147,16 @@ const ResultPanel = forwardRef(function ResultPanel(
           <button
             type="button"
             onClick={onCopy}
-            className="flex-1 rounded-lg border border-brand-500 bg-white px-4 py-2.5 font-semibold text-brand-600 transition-colors hover:bg-brand-50"
+            className="btn-secondary flex-1"
           >
-            {copied ? '✓ 已複製結果摘要' : '📋 複製結果摘要'}
+            {copied ? <><Check className="h-4 w-4" /> 已複製結果摘要</> : <><Copy className="h-4 w-4" /> 複製結果摘要</>}
           </button>
           <button
             type="button"
             onClick={onRetake}
-            className="flex-1 rounded-lg bg-slate-700 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-slate-800"
+            className="btn flex-1 bg-slate-700 text-white hover:bg-slate-800"
           >
-            ↻ 重新評測
+            <RotateCcw className="h-4 w-4" /> 重新評測
           </button>
         </div>
       </div>

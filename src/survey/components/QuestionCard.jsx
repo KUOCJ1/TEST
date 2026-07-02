@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { SCALE_LABELS } from '../data/questions';
 
 function QuestionCard({ number, question, value, onChange, invalid, inputRef }) {
@@ -11,14 +12,15 @@ function QuestionCard({ number, question, value, onChange, invalid, inputRef }) 
       }`}
     >
       <legend className="mb-3 block text-[15px] font-medium leading-relaxed text-slate-800">
-        <span className="mr-1.5 font-semibold text-blue-600">{number}.</span>
+        <span className="mr-1.5 font-semibold text-brand-600">{number}.</span>
         {question.text}
         {question.reversed && (
           <span
-            className="ml-1.5 align-middle text-xs font-semibold text-amber-600"
+            className="ml-1.5 inline-flex align-middle text-amber-600"
             title="反向計分題：分數會反轉計算"
           >
-            🔄
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span className="sr-only">反向計分題：分數會反轉計算</span>
           </span>
         )}
         {invalid && <span className="ml-2 text-sm font-medium text-red-500">（尚未作答）</span>}

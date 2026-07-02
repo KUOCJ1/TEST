@@ -24,6 +24,19 @@
   .btn-ghost {
     @apply btn text-slate-500 hover:bg-slate-100 hover:text-slate-700;
   }
+  .btn-danger {
+    @apply btn border border-red-200 bg-red-50 text-red-600 hover:bg-red-100;
+  }
+  .btn-warning {
+    @apply btn border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  .btn-icon {
+    @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors;
+    @apply hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200;
+  }
 
   /* 卡片 */
   .card {

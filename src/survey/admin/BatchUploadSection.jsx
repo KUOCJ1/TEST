@@ -1,24 +1,19 @@
 import { useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
+import { ChevronUp, ChevronDown, Download, Check, X } from 'lucide-react';
 import { api } from '../api/client';
 import { REGISTRY } from '../data/assessments/index.js';
 import { buildResult } from '../utils/scoring.js';
+import { RATER_LABELS, RATER_COLORS as RATER_COLOR } from '../constants/raterTypes';
 
 const RATER_TYPE_OPTIONS = [
-  { value: 'self',        label: '自評',   en: 'self',        desc: '由受測者本人填寫，rater_email 可留空（系統自動填入受測者 Email）' },
-  { value: 'manager',     label: '主管',   en: 'manager',     desc: '由受測者的直屬主管填寫，需填寫主管的 rater_email' },
-  { value: 'peer',        label: '同儕',   en: 'peer',        desc: '由同階同事或橫向協作夥伴填寫，需填寫同事的 rater_email' },
-  { value: 'subordinate', label: '部屬',   en: 'subordinate', desc: '由受測者的直屬部屬填寫，需填寫部屬的 rater_email' },
-];
+  { value: 'self',        en: 'self',        desc: '由受測者本人填寫，rater_email 可留空（系統自動填入受測者 Email）' },
+  { value: 'manager',     en: 'manager',     desc: '由受測者的直屬主管填寫，需填寫主管的 rater_email' },
+  { value: 'peer',        en: 'peer',        desc: '由同階同事或橫向協作夥伴填寫，需填寫同事的 rater_email' },
+  { value: 'subordinate', en: 'subordinate', desc: '由受測者的直屬部屬填寫，需填寫部屬的 rater_email' },
+].map((o) => ({ ...o, label: RATER_LABELS[o.value] }));
 
 const RATER_TYPE_SET = new Set(RATER_TYPE_OPTIONS.map((o) => o.value));
-
-const RATER_COLOR = {
-  self:        'bg-brand-50 text-brand-700 ring-brand-200',
-  manager:     'bg-blue-50 text-blue-700 ring-blue-200',
-  peer:        'bg-green-50 text-green-700 ring-green-200',
-  subordinate: 'bg-purple-50 text-purple-700 ring-purple-200',
-};
 
 function generateTemplateCsv(config) {
   const allQIds = config.ALL_QUESTIONS.map((q) => q.id);
@@ -203,9 +198,9 @@ export default function BatchUploadSection() {
           <button
             type="button"
             onClick={() => setGuideOpen((v) => !v)}
-            className="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+            className="btn-ghost btn-sm border border-slate-200"
           >
-            {guideOpen ? '收起說明 ▲' : '查看詳細說明 ▼'}
+            {guideOpen ? <>收起說明 <ChevronUp className="h-3.5 w-3.5" /></> : <>查看詳細說明 <ChevronDown className="h-3.5 w-3.5" /></>}
           </button>
         </div>
       </div>
@@ -378,7 +373,7 @@ export default function BatchUploadSection() {
               <select
                 value={assessmentId}
                 onChange={(e) => { setAssessmentId(e.target.value); handleClear(); }}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                className="input w-auto"
               >
                 {Object.entries(REGISTRY).map(([id, cfg]) => (
                   <option key={id} value={id}>{cfg.NAME}（{cfg.TOTAL_QUESTIONS} 題）</option>
@@ -388,9 +383,9 @@ export default function BatchUploadSection() {
             <button
               type="button"
               onClick={handleTemplate}
-              className="rounded-lg border border-brand-300 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-100"
+              className="btn-secondary"
             >
-              ⬇ 下載範本 CSV
+              <Download className="h-4 w-4" /> 下載範本 CSV
             </button>
           </div>
           <p className="mt-1.5 text-xs text-slate-400">
@@ -402,14 +397,16 @@ export default function BatchUploadSection() {
         <div>
           <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">步驟 2 — 上傳填寫完成的檔案</p>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="cursor-pointer rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+            <label className="btn-secondary cursor-pointer">
               {fileName
-                ? <><span className="text-brand-600">✓</span> {fileName}</>
+                ? <><Check className="h-4 w-4 text-brand-600" /> {fileName}</>
                 : '選擇 CSV / Excel 檔案'}
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" />
             </label>
             {fileName && (
-              <button type="button" onClick={handleClear} className="text-xs text-slate-400 hover:text-red-500">✕ 重新選擇</button>
+              <button type="button" onClick={handleClear} className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-red-500">
+                <X className="h-3.5 w-3.5" /> 重新選擇
+              </button>
             )}
           </div>
           <p className="mt-1 text-xs text-slate-400">支援 .csv 及 .xlsx（Excel）格式，單次最多 2,000 筆資料列。</p>
@@ -458,6 +455,7 @@ export default function BatchUploadSection() {
               )}
             </div>
 
+            <p className="mb-1 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整欄位</p>
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50">
@@ -510,12 +508,12 @@ export default function BatchUploadSection() {
                 type="button"
                 onClick={handleUpload}
                 disabled={uploading}
-                className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+                className="btn-primary"
               >
                 {uploading ? '上傳中…' : `確認匯入 ${parsedRows.length} 筆`}
               </button>
               <button type="button" onClick={handleClear}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-500 hover:bg-slate-50">
+                className="btn-ghost">
                 取消
               </button>
             </div>
