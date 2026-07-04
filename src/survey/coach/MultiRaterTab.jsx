@@ -15,7 +15,7 @@ export default function MultiRaterTab({ users, submissions }) {
   const [selectedUserId, setSelectedUserId] = useState(null);
 
   const { assessmentIds, activeId: assessmentId, setSelectedId } =
-    useAssessmentFilter(submissions, 'leadership-9d');
+    useAssessmentFilter(submissions);
 
   const filteredSubs = useMemo(
     () => submissions.filter((s) => (s.assessmentId ?? 'ai-competency') === assessmentId),

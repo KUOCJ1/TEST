@@ -20,7 +20,7 @@ export default function IndividualTab({ users, submissions, currentUserId }) {
   );
 
   const { assessmentIds, activeId: selectedAssessmentId, setSelectedId, filtered: filteredSubs } =
-    useAssessmentFilter(localSubs, 'ai-competency');
+    useAssessmentFilter(localSubs);
 
   const latestByUser = latestPerUser(filteredSubs);
 
