@@ -15,6 +15,11 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
   const labelRadius = radius + 26;
   const n = dimensions.length;
   const rings = [0.25, 0.5, 0.75, 1];
+  // 標籤（如 "Succession Readiness"）以 start/end 錨點向外延伸，
+  // 這段寬度不在畫布邊界內，需另外留白避免被 SVG 邊界裁切。
+  const padX = 130;
+  const padY = 40;
+  const viewBox = `${-padX} ${-padY} ${size + padX * 2} ${size + padY * 2}`;
 
   // 由 12 點鐘方向起算的各軸角度。
   const angleFor = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / n;
@@ -43,9 +48,9 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
 
   return (
     <svg
-      viewBox={`0 0 ${size} ${size}`}
+      viewBox={viewBox}
       width="100%"
-      style={{ maxWidth: size, height: 'auto' }}
+      style={{ maxWidth: size + padX * 2, height: 'auto' }}
       role="img"
       aria-label={`${dimensions.length} 大構面能力雷達圖`}
     >
