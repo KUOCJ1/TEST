@@ -40,7 +40,7 @@ function PageMeta({ groupName, section, date }) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between',
-      fontSize: 8, color: '#94a3b8', letterSpacing: '0.04em',
+      fontSize: 9, color: '#64748b', letterSpacing: '0.04em',
       borderBottom: '0.5px solid #e2e8f0', paddingBottom: 7, marginBottom: 18,
     }}>
       <span style={{ fontWeight: 600 }}>{groupName} · 班級整體分析報告</span>
@@ -53,7 +53,7 @@ function PageFooter({ label = '本報告屬機密文件，僅限授權教練及�
   return (
     <div style={{
       borderTop: '0.5px solid #e2e8f0', marginTop: 20, paddingTop: 7,
-      fontSize: 8, color: '#94a3b8', letterSpacing: '0.03em', textAlign: 'center',
+      fontSize: 9, color: '#64748b', letterSpacing: '0.03em', textAlign: 'center',
     }}>
       {label}
     </div>
@@ -95,10 +95,10 @@ function CoverPage({ group, stats, config, memberCount }) {
 
       <div style={{ padding: '28px 52px 0' }}>
         <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: 22, marginBottom: 22 }}>
-          <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5 }}>班級</div>
+          <div style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5 }}>班級</div>
           <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a' }}>{group.name}</div>
           {group.companyName && <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>{group.companyName}</div>}
-          <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 6 }}>施測期間：{period}</div>
+          <div style={{ fontSize: 10, color: '#64748b', marginTop: 6 }}>施測期間：{period}</div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 22 }}>
@@ -112,7 +112,7 @@ function CoverPage({ group, stats, config, memberCount }) {
               background: bg ?? '#f8fafc', borderRadius: 10, padding: '13px 16px',
               border: `1px solid ${bg ? 'transparent' : '#e2e8f0'}`,
             }}>
-              <div style={{ fontSize: 9, color: white ? 'rgba(255,255,255,0.7)' : '#94a3b8', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 5 }}>{label}</div>
+              <div style={{ fontSize: 9, color: white ? 'rgba(255,255,255,0.7)' : '#64748b', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 5 }}>{label}</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: white ? '#fff' : '#0f172a', lineHeight: 1.1 }}>
                 {value}
                 {suffix && <span style={{ fontSize: 11, fontWeight: 400, opacity: 0.5 }}>{suffix}</span>}
@@ -156,18 +156,18 @@ function OverviewPage({ group, stats, date }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 32, alignItems: 'start', marginBottom: 24 }}>
         <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>全班平均雷達圖</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>全班平均雷達圖</div>
           <RadarChart dimensions={stats.dimensionAverages} size={260} />
         </div>
         <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>構面平均達成率</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>構面平均達成率</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[...stats.dimensionAverages].sort((a, b) => b.percent - a.percent).map((d) => {
               const tone = toneOf((d.percent / 100) * 5);
               return (
                 <div key={d.id}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: '#334155' }}>{d.subtitle}<span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: 6 }}>{d.name}</span></span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: '#334155' }}>{d.subtitle}<span style={{ color: '#64748b', fontWeight: 400, marginLeft: 6 }}>{d.name}</span></span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: TONE_COLOR[tone] }}>{d.percent}%</span>
                   </div>
                   <HBar userPct={d.percent} color={TONE_COLOR[tone]} height={10} />
@@ -179,7 +179,7 @@ function OverviewPage({ group, stats, date }) {
       </div>
 
       <div>
-        <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>落點等級人數分佈</div>
+        <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>落點等級人數分佈</div>
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${stats.levelDistribution.length}, 1fr)`, gap: 8 }}>
           {stats.levelDistribution.map((l) => (
             <div key={l.id} style={{ borderRadius: 9, border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center' }}>
@@ -252,7 +252,7 @@ function RankingPage({ group, rows, date }) {
         <tbody>
           {rows.map((r, i) => (
             <tr key={r.userId} style={{ borderBottom: '0.5px solid #f1f5f9' }}>
-              <td style={{ padding: '7px 8px', color: '#94a3b8', fontWeight: 700 }}>{i + 1}</td>
+              <td style={{ padding: '7px 8px', color: '#64748b', fontWeight: 700 }}>{i + 1}</td>
               <td style={{ padding: '7px 8px', color: '#0f172a', fontWeight: 600 }}>{r.name}</td>
               <td style={{ padding: '7px 8px', color: '#64748b' }}>{r.email}</td>
               <td style={{ padding: '7px 8px', color: '#0f172a', fontWeight: 700 }}>{r.total}</td>
@@ -290,13 +290,13 @@ function MemberSummaryPage({ group, row, stats, config, date, rank, total }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid #f1f5f9' }}>
         <div>
-          <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>成員 #{rank}</div>
+          <div style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>成員 #{rank}</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a' }}>{row.name}</div>
           <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{row.email}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: '#0f172a' }}>
-            {result.total}<span style={{ fontSize: 11, fontWeight: 400, color: '#94a3b8' }}> / {result.maxScore}</span>
+            {result.total}<span style={{ fontSize: 11, fontWeight: 400, color: '#64748b' }}> / {result.maxScore}</span>
           </div>
           <span style={{ display: 'inline-block', marginTop: 4, padding: '3px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700, color: '#fff', background: result.level.color }}>
             {result.level.badge}
@@ -342,7 +342,7 @@ function MemberSummaryPage({ group, row, stats, config, date, rank, total }) {
 
       {comments.length > 0 && (
         <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>指導教練回饋</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>指導教練回饋</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {comments.map((c) => (
               <div key={c.id} style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 9, padding: '10px 13px' }}>

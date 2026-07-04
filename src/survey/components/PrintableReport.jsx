@@ -152,7 +152,7 @@ function PageMeta({ name, section, date }) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between',
-      fontSize: 8, color: '#94a3b8', letterSpacing: '0.04em',
+      fontSize: 9, color: '#64748b', letterSpacing: '0.04em',
       borderBottom: '0.5px solid #e2e8f0', paddingBottom: 7, marginBottom: 18,
     }}>
       <span style={{ fontWeight: 600 }}>{name} · L9D 領導力評量 · 個人評測報告</span>
@@ -165,7 +165,7 @@ function PageFooter({ label = '本報告屬機密文件，僅限受測者及授�
   return (
     <div style={{
       borderTop: '0.5px solid #e2e8f0', marginTop: 20, paddingTop: 7,
-      fontSize: 8, color: '#94a3b8', letterSpacing: '0.03em', textAlign: 'center',
+      fontSize: 9, color: '#64748b', letterSpacing: '0.03em', textAlign: 'center',
     }}>
       {label}
     </div>
@@ -210,11 +210,11 @@ function CoverPage({ result, user, submittedAt, benchmark, percentile }) {
       <div style={{ padding: '28px 52px 0' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'start', borderBottom: '1px solid #e2e8f0', paddingBottom: 22, marginBottom: 22 }}>
           <div>
-            <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5 }}>受測者</div>
+            <div style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5 }}>受測者</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a' }}>{user?.name ?? '—'}</div>
           </div>
           {benchmark && (
-            <div style={{ textAlign: 'right', fontSize: 10, color: '#94a3b8' }}>
+            <div style={{ textAlign: 'right', fontSize: 10, color: '#64748b' }}>
               <div>常模樣本：{benchmark.count} 人</div>
               <div style={{ marginTop: 2 }}>報告產出：{formatDate(new Date().toISOString())}</div>
             </div>
@@ -233,12 +233,12 @@ function CoverPage({ result, user, submittedAt, benchmark, percentile }) {
               background: bg ?? '#f8fafc', borderRadius: 10, padding: '13px 16px',
               border: `1px solid ${bg ? 'transparent' : '#e2e8f0'}`,
             }}>
-              <div style={{ fontSize: 9, color: white ? 'rgba(255,255,255,0.7)' : '#94a3b8', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 5 }}>{label}</div>
+              <div style={{ fontSize: 9, color: white ? 'rgba(255,255,255,0.7)' : '#64748b', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 5 }}>{label}</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: white ? '#fff' : '#0f172a', lineHeight: 1.1 }}>
                 {value}
                 {suffix && <span style={{ fontSize: 11, fontWeight: 400, opacity: 0.5 }}>{suffix}</span>}
               </div>
-              {sub && <div style={{ fontSize: 9, color: white ? 'rgba(255,255,255,0.65)' : '#94a3b8', marginTop: 3 }}>{sub}</div>}
+              {sub && <div style={{ fontSize: 9, color: white ? 'rgba(255,255,255,0.65)' : '#64748b', marginTop: 3 }}>{sub}</div>}
             </div>
           ))}
         </div>
@@ -250,7 +250,7 @@ function CoverPage({ result, user, submittedAt, benchmark, percentile }) {
 
         {/* 9-dim grid */}
         <div style={{ marginBottom: 32 }}>
-          <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>九大構面落點概覽</div>
+          <div style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>九大構面落點概覽</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {dimensions.map((d) => {
               const tone = toneOf(d.average);
@@ -260,12 +260,12 @@ function CoverPage({ result, user, submittedAt, benchmark, percentile }) {
                 <div key={d.id} style={{ borderRadius: 9, border: `1px solid ${TONE_BORDER[tone]}`, padding: '10px 12px', background: TONE_BG[tone] }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
                     <span style={{ fontSize: 10, fontWeight: 700, color: '#334155' }}>{d.subtitle}</span>
-                    {marker && <span style={{ fontSize: 8, color: marker.color, fontWeight: 700 }}>{marker.symbol}</span>}
+                    {marker && <span style={{ fontSize: 9, color: marker.color, fontWeight: 700 }}>{marker.symbol}</span>}
                   </div>
                   <HBar userPct={d.percent} benchPct={bd?.percent ?? null} color={TONE_COLOR[tone]} height={7} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 }}>
                     <span style={{ fontSize: 12, fontWeight: 800, color: '#0f172a' }}>
-                      {d.average.toFixed(1)}<span style={{ fontSize: 8, color: '#94a3b8', fontWeight: 400 }}> / 5</span>
+                      {d.average.toFixed(1)}<span style={{ fontSize: 9, color: '#64748b', fontWeight: 400 }}> / 5</span>
                     </span>
                     <RatingPill label={d.rating.label} tone={tone} size={9} />
                   </div>
@@ -414,7 +414,7 @@ function ExecutiveSummaryPage({ result, benchmark, config, user, date }) {
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <span style={{ fontSize: 14, fontWeight: 800, color: '#059669' }}>{d.average.toFixed(1)}</span>
-                      <span style={{ fontSize: 9, color: '#94a3b8' }}> / 5</span>
+                      <span style={{ fontSize: 9, color: '#64748b' }}> / 5</span>
                     </div>
                   </div>
                   {marker?.color === '#059669' && (
@@ -454,7 +454,7 @@ function ExecutiveSummaryPage({ result, benchmark, config, user, date }) {
                     </div>
                     <div>
                       <span style={{ fontSize: 14, fontWeight: 800, color: TONE_COLOR[tone] }}>{d.average.toFixed(1)}</span>
-                      <span style={{ fontSize: 9, color: '#94a3b8' }}> / 5</span>
+                      <span style={{ fontSize: 9, color: '#64748b' }}> / 5</span>
                     </div>
                   </div>
                   {/* Score bar */}
@@ -468,11 +468,11 @@ function ExecutiveSummaryPage({ result, benchmark, config, user, date }) {
                   {devInfo && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                       <div style={{ background: 'rgba(220,38,38,0.07)', borderRadius: 6, padding: '7px 9px' }}>
-                        <div style={{ fontSize: 8, fontWeight: 700, color: '#b91c1c', letterSpacing: '0.05em', marginBottom: 4 }}>⚠ 影響</div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: '#b91c1c', letterSpacing: '0.05em', marginBottom: 4 }}>⚠ 影響</div>
                         <div style={{ fontSize: 9.5, color: '#475569', lineHeight: 1.65 }}>{devInfo.impact}</div>
                       </div>
                       <div style={{ background: 'rgba(5,150,105,0.07)', borderRadius: 6, padding: '7px 9px' }}>
-                        <div style={{ fontSize: 8, fontWeight: 700, color: '#065f46', letterSpacing: '0.05em', marginBottom: 4 }}>💡 建議行動</div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: '#065f46', letterSpacing: '0.05em', marginBottom: 4 }}>💡 建議行動</div>
                         <div style={{ fontSize: 9.5, color: '#475569', lineHeight: 1.65 }}>{devInfo.action}</div>
                       </div>
                     </div>
@@ -496,7 +496,7 @@ function ExecutiveSummaryPage({ result, benchmark, config, user, date }) {
                 <div key={l.id} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 100px', alignItems: 'center', gap: 12 }}>
                   <div>
                     <div style={{ fontSize: 10, fontWeight: 700, color: '#334155' }}>{l.name}</div>
-                    <div style={{ fontSize: 8, color: '#94a3b8' }}>{l.desc}</div>
+                    <div style={{ fontSize: 9, color: '#64748b' }}>{l.desc}</div>
                   </div>
                   <HBar
                     userPct={(l.userAvg / 5) * 100}
@@ -505,7 +505,7 @@ function ExecutiveSummaryPage({ result, benchmark, config, user, date }) {
                   />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontSize: 12, fontWeight: 800, color: '#0f172a' }}>{l.userAvg.toFixed(1)}</span>
-                    {benchStr && <span style={{ fontSize: 9, color: '#94a3b8' }}>{benchStr}</span>}
+                    {benchStr && <span style={{ fontSize: 9, color: '#64748b' }}>{benchStr}</span>}
                   </div>
                 </div>
               );
@@ -542,7 +542,7 @@ function OverviewPage({ result, benchmark, user, date }) {
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 32, alignItems: 'start' }}>
         {/* Radar */}
         <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>雷達圖</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>雷達圖</div>
           <RadarChart dimensions={dimensions} compare={radarCompare} compareLabel="全體平均" size={260} />
           {radarCompare && (
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 8, fontSize: 9, color: '#64748b' }}>
@@ -554,7 +554,7 @@ function OverviewPage({ result, benchmark, user, date }) {
 
         {/* Bar table */}
         <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>構面得分對照表</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>構面得分對照表</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {dimensions.map((d) => {
               const bd = getBench(d.id);
@@ -569,7 +569,7 @@ function OverviewPage({ result, benchmark, user, date }) {
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: TONE_COLOR[tone], flexShrink: 0, display: 'inline-block' }} />
                       <span style={{ fontSize: 11, fontWeight: 600, color: '#334155' }}>{d.subtitle}</span>
                       {marker && (
-                        <span style={{ fontSize: 8, fontWeight: 700, color: marker.color, background: marker.color + '15', borderRadius: 4, padding: '1px 5px' }}>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: marker.color, background: marker.color + '15', borderRadius: 4, padding: '1px 5px' }}>
                           {marker.symbol} {marker.label}
                         </span>
                       )}
@@ -578,7 +578,7 @@ function OverviewPage({ result, benchmark, user, date }) {
                       <RatingPill label={d.rating.label} tone={tone} size={9} />
                       <span style={{ fontWeight: 700, color: '#0f172a' }}>{d.average.toFixed(1)}</span>
                       {benchAvg != null && (
-                        <span style={{ color: '#94a3b8', fontSize: 9 }}>
+                        <span style={{ color: '#64748b', fontSize: 9 }}>
                           均 {benchAvg.toFixed(1)}
                           {pctDiff != null && (
                             <span style={{ color: Number(pctDiff) >= 0 ? '#059669' : '#ef4444', marginLeft: 3 }}>
@@ -595,7 +595,7 @@ function OverviewPage({ result, benchmark, user, date }) {
             })}
           </div>
           {dimAvgs && (
-            <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 10 }}>
+            <div style={{ fontSize: 9, color: '#64748b', marginTop: 10 }}>
               常模樣本：{benchmark?.count ?? '?'} 人 · | 代表常模基準線
             </div>
           )}
@@ -682,7 +682,7 @@ function QuadrantPage({ result, benchmark, user, date }) {
           {[1, 2, 3, 4, 5].map((v) => (
             <g key={v}>
               <line x1={xPx(v)} y1={H - P.b} x2={xPx(v)} y2={H - P.b + 4} stroke="#cbd5e1" strokeWidth="1" />
-              <text x={xPx(v)} y={H - P.b + 13} fontSize="7.5" fill={v === 3 || v === 4 ? '#475569' : '#94a3b8'} textAnchor="middle">{v}.0</text>
+              <text x={xPx(v)} y={H - P.b + 13} fontSize="7.5" fill={v === 3 || v === 4 ? '#475569' : '#64748b'} textAnchor="middle">{v}.0</text>
             </g>
           ))}
           <text x={xMid} y={H - P.b + 13} fontSize="7.5" fill="#dc2626" fontWeight="700" textAnchor="middle">3.5</text>
@@ -694,7 +694,7 @@ function QuadrantPage({ result, benchmark, user, date }) {
           {[-0.5, 0, 0.5].map((g) => (
             <g key={g}>
               <line x1={P.l - 4} y1={yPx(g)} x2={P.l} y2={yPx(g)} stroke="#cbd5e1" strokeWidth="1" />
-              <text x={P.l - 6} y={yPx(g) + 3} fontSize="7" fill="#94a3b8" textAnchor="end">
+              <text x={P.l - 6} y={yPx(g) + 3} fontSize="7" fill="#64748b" textAnchor="end">
                 {g === 0 ? '0' : (g > 0 ? '+' : '') + g.toFixed(1)}
               </text>
             </g>
@@ -741,7 +741,7 @@ function QuadrantPage({ result, benchmark, user, date }) {
         }).filter(Boolean)}
       </div>
 
-      <div style={{ marginTop: 12, fontSize: 9, color: '#94a3b8', lineHeight: 1.6 }}>
+      <div style={{ marginTop: 12, fontSize: 9, color: '#64748b', lineHeight: 1.6 }}>
         * X 軸為子能力得分（分界線 3.5 = 熟練基準）；Y 軸為{yLabel}差距，正值代表超越基準、負值代表低於基準。{hasBench ? `常模樣本 ${benchmark?.count ?? '?'} 人。` : ''}
       </div>
 
@@ -788,7 +788,7 @@ function DimBlock({ dim, benchPct, config }) {
 
         {/* Score bar vs benchmark */}
         <div style={{ marginBottom: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 8, color: '#94a3b8', marginBottom: 3 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#64748b', marginBottom: 3 }}>
             <span>您的得分（滿分 5.0）</span>
             {benchAvg != null && <span>| 常模均值 {benchAvg.toFixed(1)}</span>}
           </div>
@@ -798,13 +798,13 @@ function DimBlock({ dim, benchPct, config }) {
         {/* Sub-dimension ranking */}
         {sortedSubs.length > 0 && (
           <div style={{ marginBottom: narrative ? 10 : 0 }}>
-            <div style={{ fontSize: 8, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 7 }}>子能力分析（由高到低）</div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 7 }}>子能力分析（由高到低）</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               {sortedSubs.map((sub, i) => {
                 const subTone = sub.average >= 4.5 ? 'strong' : sub.average >= 3.5 ? 'good' : 'mid';
                 return (
                   <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '24px 80px 1fr 42px', alignItems: 'center', gap: 7 }}>
-                    <span style={{ fontSize: 8, fontWeight: 700, color: '#94a3b8', textAlign: 'right' }}>#{i + 1}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>#{i + 1}</span>
                     <span style={{ fontSize: 10, color: '#475569', fontWeight: 500 }}>{sub.name}</span>
                     <HBar userPct={(sub.average / 5) * 100} color={TONE_COLOR[subTone]} height={8} />
                     <div style={{ textAlign: 'right' }}>
@@ -843,7 +843,7 @@ function LayerPage({ layer, result, benchmark, config, user, date }) {
       <PageMeta name={user?.name ?? '—'} section={layer.name} date={date} />
       {/* Layer header */}
       <div style={{ marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid #f1f5f9' }}>
-        <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>
+        <div style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>
           構面詳細分析 · {layer.name}
         </div>
         <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>{layer.name}</div>
@@ -867,7 +867,7 @@ function CoachFeedbackBlock({ comments }) {
   if (!comments?.length) return null;
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+      <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
         指導教練回饋
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -920,7 +920,7 @@ function CoachPage({ result, config, user, date, comments = [] }) {
 
       {config && (
       <>
-      <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>各構面教練評語</div>
+      <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>各構面教練評語</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         {result.dimensions.map((dim) => {
           const tone = toneOf(dim.average);

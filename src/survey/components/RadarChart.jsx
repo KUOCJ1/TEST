@@ -67,7 +67,7 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
           key={r}
           points={dimensions.map((_, i) => point(i, r).join(',')).join(' ')}
           fill="none"
-          stroke="#cbd5e1"
+          stroke="#b6c2d1"
           strokeWidth="1"
         />
       ))}
@@ -75,29 +75,32 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
       {/* 軸線 */}
       {dimensions.map((_, i) => {
         const [x, y] = point(i, 1);
-        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e2e8f0" strokeWidth="1" />;
+        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#cbd5e1" strokeWidth="1" />;
       })}
-
-      {/* 對照數列（虛線，置於資料區塊之下） */}
-      {comparePath && (
-        <path d={comparePath} fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeDasharray="5 4" />
-      )}
 
       {/* 資料區塊 */}
       <path d={dataPath} fill={`url(#${gradientId})`} stroke="#7c3aed" strokeWidth="2" />
 
+      {/* 對照數列（虛線，疊加於資料區塊之上，並加白色描邊以維持可視度） */}
+      {comparePath && (
+        <path d={comparePath} fill="none" stroke="#fff" strokeWidth="4" strokeDasharray="5 4" strokeOpacity="0.9" />
+      )}
+      {comparePath && (
+        <path d={comparePath} fill="none" stroke="#475569" strokeWidth="2" strokeDasharray="5 4" />
+      )}
+
       {/* 圖例 */}
       {compare && (
         <g>
-          <line x1={12} y1={size - 14} x2={32} y2={size - 14} stroke="#94a3b8" strokeWidth="1.8" strokeDasharray="5 4" />
-          <text x={36} y={size - 10} fontSize="11" fill="#64748b">{compareLabel}</text>
+          <line x1={12} y1={size - 14} x2={32} y2={size - 14} stroke="#475569" strokeWidth="2" strokeDasharray="5 4" />
+          <text x={36} y={size - 10} fontSize="11" fill="#475569" fontWeight="600">{compareLabel}</text>
         </g>
       )}
 
       {/* 資料頂點 */}
       {dimensions.map((d, i) => {
         const [x, y] = point(i, Math.max(0, Math.min(1, d.percent / 100)));
-        return <circle key={i} cx={x} cy={y} r="3.5" fill={d.color} stroke="#fff" strokeWidth="1.5" />;
+        return <circle key={i} cx={x} cy={y} r="4.5" fill={d.color} stroke="#fff" strokeWidth="1.75" />;
       })}
 
       {/* 構面標籤 */}
