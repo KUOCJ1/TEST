@@ -2,17 +2,16 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 
 const RATER_TYPES = [
-  { id: 'self', label: '自評', desc: '評估自己的表現' },
   { id: 'manager', label: '主管評', desc: '我是對方的直屬主管' },
   { id: 'peer', label: '同儕評', desc: '我與對方是同等職級的同事' },
   { id: 'subordinate', label: '部屬評', desc: '我是對方的下屬' },
 ];
 
-export default function RaterSetup({ user, onConfirm, onCancel }) {
+export default function RaterSetup({ onConfirm, onCancel, initialRateeId = null, initialRaterType = '' }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [rateeId, setRateeId] = useState(user.id);
-  const [raterType, setRaterType] = useState('self');
+  const [rateeId, setRateeId] = useState(initialRateeId);
+  const [raterType, setRaterType] = useState(initialRaterType);
   const [confirmError, setConfirmError] = useState('');
 
   useEffect(() => {
@@ -22,23 +21,23 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const isSelf = rateeId === user.id;
-  const availableTypes = isSelf ? RATER_TYPES.filter((t) => t.id === 'self') : RATER_TYPES.filter((t) => t.id !== 'self');
-
   const handleRateeChange = (id) => {
     setRateeId(id);
-    setRaterType(id === user.id ? 'self' : '');
+    setRaterType('');
     setConfirmError('');
   };
 
   const handleConfirm = () => {
-    if (!isSelf && !raterType) {
+    if (!rateeId) {
+      setConfirmError('請先選擇要評測的對象');
+      return;
+    }
+    if (!raterType) {
       setConfirmError('請先選擇「你與對方的關係」');
       return;
     }
-    const finalRaterType = isSelf ? 'self' : raterType;
-    const rateeName = isSelf ? user.name : (members.find((m) => m.id === rateeId)?.name ?? '');
-    onConfirm(rateeId, finalRaterType, rateeName);
+    const rateeName = members.find((m) => m.id === rateeId)?.name ?? '';
+    onConfirm(rateeId, raterType, rateeName);
   };
 
   return (
@@ -48,8 +47,8 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-2xl shadow-lg shadow-brand-500/30">
             360°
           </div>
-          <h1 className="text-xl font-extrabold text-slate-800">360° 多元評測</h1>
-          <p className="mt-1 text-sm text-slate-500">請先選擇「你在評誰」及「你的角色」</p>
+          <h1 className="text-xl font-extrabold text-slate-800">評測其他成員</h1>
+          <p className="mt-1 text-sm text-slate-500">請選擇要評測的對象與您的角色關係</p>
         </header>
 
         <div className="rounded-3xl bg-white px-6 py-7 shadow-card ring-1 ring-slate-100 space-y-6">
@@ -58,33 +57,12 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">你在評誰？</label>
             <div className="space-y-2">
-              {/* Self option */}
-              <button
-                type="button"
-                aria-pressed={isSelf}
-                onClick={() => handleRateeChange(user.id)}
-                className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
-                  isSelf
-                    ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-300'
-                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                }`}
-              >
-                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isSelf ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
-                  我
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-800">{user.name}（自己）</p>
-                  <p className="text-xs text-slate-400">評估自己的行為表現</p>
-                </div>
-              </button>
-
-              {/* Group members */}
               {loading && (
                 <p className="py-2 text-center text-sm text-slate-400">載入同組成員…</p>
               )}
               {!loading && members.length === 0 && (
                 <p className="rounded-lg bg-slate-50 px-4 py-3 text-center text-sm text-slate-400">
-                  目前尚未加入任何班別，只能進行自評。
+                  目前尚未加入任何班別，沒有可以評測的成員。
                 </p>
               )}
               {members.map((m) => (
@@ -109,11 +87,11 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
           </div>
 
           {/* Rater type */}
-          {!isSelf && (
+          {rateeId && (
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">你與對方的關係？</label>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {availableTypes.map((t) => (
+                {RATER_TYPES.map((t) => (
                   <button
                     key={t.id}
                     type="button"
@@ -130,12 +108,6 @@ export default function RaterSetup({ user, onConfirm, onCancel }) {
                   </button>
                 ))}
               </div>
-            </div>
-          )}
-
-          {isSelf && (
-            <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
-              選擇自評時，評測對象為您自己，評測者角色固定為「自評」。
             </div>
           )}
 

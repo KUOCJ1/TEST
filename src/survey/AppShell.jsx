@@ -2,11 +2,11 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, Download, LogOut, CircleHelp } from 'lucide-react';
 import { useAuth } from './auth/useAuth';
 import { api } from './api/client';
-import { getAssessment } from './data/assessments/index.js';
 import AssessmentCard from './components/AssessmentCard';
 import RaterSetup from './components/RaterSetup';
 import SurveyApp from './SurveyApp';
 import UserDashboard from './dashboard/UserDashboard';
+import MultiRaterHome from './analysis/MultiRaterHome';
 import ProfilePage from './profile/ProfilePage';
 import HelpModal from './components/HelpModal';
 import OnboardingBanner from './components/OnboardingBanner';
@@ -19,7 +19,7 @@ function DashboardFallback() {
   return <p className="py-20 text-center text-slate-400">載入中…</p>;
 }
 
-function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
+function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }) {
   const [assessments, setAssessments] = useState([]);
   const [mySubmissions, setMySubmissions] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
@@ -66,6 +66,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, refreshKey }) {
               groupPhase={groupPhaseByAssessmentId[a.id] ?? null}
               onStart={onStartSurvey}
               onViewAnalysis={onViewAnalysis}
+              onGoTo360={onGoTo360}
             />
           ))}
         </div>
@@ -80,6 +81,7 @@ export default function AppShell() {
   const [view, setView] = useState(defaultAid ? 'survey' : 'home');
   const [activeAssessmentId, setActiveAssessmentId] = useState(defaultAid);
   const [raterConfig, setRaterConfig] = useState(null); // { rateeId, raterType }
+  const [rateOthersPreset, setRateOthersPreset] = useState(null); // { rateeId, raterType }
   const [refreshKey, setRefreshKey] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
   const [chatContext, setChatContext] = useState(null);
@@ -91,32 +93,40 @@ export default function AppShell() {
   const tabs = [
     { id: 'home', label: '我的評量' },
     { id: 'analysis', label: '我的分析' },
+    { id: '360', label: '360° 評測' },
     ...(isCoach && !isAdmin ? [{ id: 'coach', label: '教練後台' }] : []),
     ...(isAdmin ? [{ id: 'coach', label: '教練後台' }, { id: 'admin', label: '管理後台' }] : []),
     { id: 'profile', label: '個人設定' },
   ];
 
+  // 自評一律直接作答；「評測他人」的返回/提交完成目的地則是 360° 分頁。
+  const returnViewFor = (raterType) => (raterType && raterType !== 'self' ? '360' : 'home');
+
   const handleStartSurvey = (id) => {
     setActiveAssessmentId(id);
-    const config = getAssessment(id);
-    if (config?.SUPPORTS_360) {
-      setRaterConfig(null);
-      setView('rater-setup');
-    } else {
-      setRaterConfig({ rateeId: user.id, raterType: 'self' });
-      setView('survey');
-    }
+    setRaterConfig({ rateeId: user.id, raterType: 'self' });
+    setView('survey');
+  };
+  const handleRateOthers = (id, presetRateeId = null, presetRaterType = '') => {
+    setActiveAssessmentId(id);
+    setRaterConfig(null);
+    setRateOthersPreset(presetRateeId ? { rateeId: presetRateeId, raterType: presetRaterType } : null);
+    setView('rater-setup');
   };
   const handleRaterConfirm = (rateeId, raterType, rateeName) => {
     setRaterConfig({ rateeId, raterType, rateeName });
     setView('survey');
   };
   const handleViewAnalysis = (id) => { setActiveAssessmentId(id); setView('analysis'); };
-  const handleSubmitted = () => { setRefreshKey((k) => k + 1); setView('home'); };
+  const handleGoTo360 = (id) => { setActiveAssessmentId(id); setView('360'); };
+  const handleSubmitted = () => {
+    setRefreshKey((k) => k + 1);
+    setView(returnViewFor(raterConfig?.raterType));
+  };
 
   const handleTabClick = (id) => {
     setView(id);
-    if (id !== 'analysis') setActiveAssessmentId(null);
+    if (id !== 'analysis' && id !== '360') setActiveAssessmentId(null);
   };
 
   return (
@@ -131,10 +141,11 @@ export default function AppShell() {
           {(view === 'survey' || view === 'rater-setup') ? (
             <button
               type="button"
-              onClick={() => setView('home')}
+              onClick={() => setView(view === 'rater-setup' ? '360' : returnViewFor(raterConfig?.raterType))}
               className="btn-ghost btn-sm"
             >
-              <ArrowLeft className="h-4 w-4" /> 返回評量列表
+              <ArrowLeft className="h-4 w-4" />
+              {view === 'rater-setup' || returnViewFor(raterConfig?.raterType) === '360' ? '返回 360° 評測' : '返回評量列表'}
             </button>
           ) : (
             <nav className="no-scrollbar flex flex-1 flex-nowrap gap-1 overflow-x-auto sm:flex-wrap sm:overflow-visible">
@@ -205,14 +216,16 @@ export default function AppShell() {
           refreshKey={refreshKey}
           onStartSurvey={handleStartSurvey}
           onViewAnalysis={handleViewAnalysis}
+          onGoTo360={handleGoTo360}
         />
       )}
 
       {view === 'rater-setup' && activeAssessmentId && (
         <RaterSetup
-          user={user}
           onConfirm={handleRaterConfirm}
-          onCancel={() => setView('home')}
+          onCancel={() => setView('360')}
+          initialRateeId={rateOthersPreset?.rateeId ?? null}
+          initialRaterType={rateOthersPreset?.raterType ?? ''}
         />
       )}
 
@@ -235,6 +248,15 @@ export default function AppShell() {
           initialAssessmentId={activeAssessmentId}
           onTakeSurvey={handleStartSurvey}
           onResultLoad={handleResultLoad}
+        />
+      )}
+
+      {view === '360' && (
+        <MultiRaterHome
+          key={`${refreshKey}-${activeAssessmentId}`}
+          user={user}
+          initialAssessmentId={activeAssessmentId}
+          onRateOthers={handleRateOthers}
         />
       )}
 

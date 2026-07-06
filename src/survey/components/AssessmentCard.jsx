@@ -2,12 +2,13 @@ import { getAssessment } from '../data/assessments/index.js';
 import { formatDate } from '../utils/format';
 import PhaseBadge from './PhaseBadge';
 
-export default function AssessmentCard({ assessment, latestSubmission, groupPhase, onStart, onViewAnalysis }) {
+export default function AssessmentCard({ assessment, latestSubmission, groupPhase, onStart, onViewAnalysis, onGoTo360 }) {
   const config = getAssessment(assessment.id);
   const hasResult = !!latestSubmission;
   const inGroup = groupPhase != null;
   const canStart = !inGroup || groupPhase === 'in_progress';
   const alreadySubmitted = hasResult && inGroup;
+  const supports360 = !!config?.SUPPORTS_360;
 
   let startLabel = hasResult ? '重新作答' : '開始作答';
   if (alreadySubmitted) startLabel = '已完成作答';
@@ -25,6 +26,9 @@ export default function AssessmentCard({ assessment, latestSubmission, groupPhas
           <p className="mt-1 text-xs text-slate-400">
             {config.TOTAL_QUESTIONS} 題 · {config.DIMENSIONS.length} 大構面
           </p>
+        )}
+        {supports360 && (
+          <span className="chip mt-2 bg-brand-50 text-brand-700">支援 360° 多元評測</span>
         )}
 
         {hasResult && (
@@ -63,6 +67,15 @@ export default function AssessmentCard({ assessment, latestSubmission, groupPhas
           </button>
         )}
       </div>
+      {supports360 && onGoTo360 && (
+        <button
+          type="button"
+          onClick={() => onGoTo360(assessment.id)}
+          className="mt-3 text-left text-sm font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+        >
+          前往 360° 評測 →
+        </button>
+      )}
     </div>
   );
 }

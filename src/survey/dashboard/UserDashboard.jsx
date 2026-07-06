@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BarChart3, FileText, Search, PenLine, CalendarClock, AlertCircle } from 'lucide-react';
+import { BarChart3, FileText, AlertCircle } from 'lucide-react';
 import { api } from '../api/client';
 import ResultPanel from '../components/ResultPanel';
 import PrintableReport from '../components/PrintableReport';
 import TrendChart from '../components/charts/TrendChart';
 import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachCommentPanel';
-import MultiRaterDashboard from '../analysis/MultiRaterDashboard';
 import { computePercentile } from '../utils/analytics';
 import { resultSummaryText, copyToClipboard, formatDate, formatDateShort } from '../utils/format';
 import InfoTip from '../components/InfoTip';
@@ -19,7 +18,6 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
   const [copied, setCopied] = useState(false);
   const [selectedId, setSelectedId] = useState(initialAssessmentId ?? null);
   const [showReport, setShowReport] = useState(false);
-  const [show360, setShow360] = useState(false);
   const benchmarkCache = useRef({});
   const [retryKey, setRetryKey] = useState(0);
   const loadData = useCallback(() => { setError(''); setRetryKey((k) => k + 1); }, []);
@@ -176,7 +174,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => { setShow360(false); setShowReport(true); }}
+            onClick={() => setShowReport(true)}
             className="btn-secondary"
           >
             <FileText className="h-4 w-4" /> 產出 PDF 報告
@@ -191,10 +189,10 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
               key={id}
               type="button"
               role="tab"
-              aria-selected={activeId === id && !show360}
-              onClick={() => { setSelectedId(id); setShow360(false); }}
+              aria-selected={activeId === id}
+              onClick={() => setSelectedId(id)}
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                activeId === id && !show360
+                activeId === id
                   ? 'bg-brand-600 text-white'
                   : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}
@@ -205,70 +203,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
         </div>
       )}
 
-      {/* 360° tab button — shown when at least one L9D submission exists */}
-      {filtered.some((s) => s.assessmentId === 'leadership-9d') && (
-        <div role="tablist" aria-label="個人分析或 360 度視角" className="mb-5 flex gap-2 print:hidden">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!show360}
-            onClick={() => setShow360(false)}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-              !show360 ? 'bg-brand-600 text-white' : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            個人分析
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={show360}
-            onClick={() => setShow360(true)}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-              show360 ? 'bg-brand-600 text-white' : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            360° 多元視角
-          </button>
-        </div>
-      )}
-
-      {show360 && myGroupForActive && myGroupForActive.phase !== 'published' && (
-        <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-lg shadow-slate-200/60">
-          {myGroupForActive.phase === 'closed' ? (
-            <>
-              <Search className="mx-auto h-10 w-10 text-brand-300" />
-              <p className="mt-4 text-lg font-bold text-slate-700">教練審閱中</p>
-              <p className="mt-2 text-sm text-slate-500">
-                評測已結束，教練正在審閱整體成果。發佈後即可查看 360° 多元視角報告。
-              </p>
-            </>
-          ) : myGroupForActive.phase === 'in_progress' ? (
-            <>
-              <PenLine className="mx-auto h-10 w-10 text-brand-300" />
-              <p className="mt-4 text-lg font-bold text-slate-700">評測進行中</p>
-              <p className="mt-2 text-sm text-slate-500">
-                評測尚未結束，360° 多元視角報告將於教練發佈後開放。
-              </p>
-            </>
-          ) : (
-            <>
-              <CalendarClock className="mx-auto h-10 w-10 text-brand-300" />
-              <p className="mt-4 text-lg font-bold text-slate-700">評測尚未開始</p>
-              <p className="mt-2 text-sm text-slate-500">評測開始後方可查看 360° 多元視角報告。</p>
-            </>
-          )}
-        </div>
-      )}
-      {show360 && (!myGroupForActive || myGroupForActive.phase === 'published') && (
-        <MultiRaterDashboard
-          rateeId={user.id}
-          rateeName={user.name}
-          assessmentId={activeId}
-        />
-      )}
-
-      {!show360 && latest && (
+      {latest && (
         <>
           {isBenchmarkLoading && (
             <p className="mb-3 text-center text-xs text-slate-400">正在載入母體基準…</p>
