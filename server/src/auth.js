@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+export const MIN_PASSWORD_LENGTH = 8;
+
 export function hashPassword(pw) {
   return bcrypt.hash(pw, 10);
 }
@@ -27,7 +29,7 @@ export function validateRegistration({ name, email, password }) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((email || '').trim().toLowerCase())) {
     throw new Error('Email 格式不正確');
   }
-  if ((password || '').length < 6) throw new Error('密碼至少需 6 碼');
+  if ((password || '').length < MIN_PASSWORD_LENGTH) throw new Error(`密碼至少需 ${MIN_PASSWORD_LENGTH} 碼`);
 }
 
 /** 移除敏感欄位（密碼雜湊）後的使用者物件。 */

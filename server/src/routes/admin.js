@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { publicUser } from '../auth.js';
-import { asyncHandler, normalizeSubmission, auditLog, hashToken } from '../lib/helpers.js';
+import { asyncHandler, normalizeSubmission, auditLog, hashToken, revokeUserTokens } from '../lib/helpers.js';
 
 const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
 
@@ -46,6 +46,9 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
     if (user.role === 'admin') return res.status(400).json({ error: '不能修改管理員角色' });
     const prevRole = user.role;
     user.role = role;
+    // 角色（權限）變了，該帳號現有的登入 session 一併撤銷，下次請求會被要求重新登入
+    // 以取得反映新角色的 token；避免降級後舊 token 仍帶著舊權限繼續有效。
+    revokeUserTokens(user);
     db.persist();
     auditLog(req, 'change_role', { targetUserId: user.id, from: prevRole, to: role });
     res.json({ user: publicUser(user) });

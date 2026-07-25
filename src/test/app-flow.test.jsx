@@ -20,7 +20,7 @@ vi.mock('../survey/api/client', () => {
       async register({ name, email, password }) {
         if (!name?.trim()) throw new Error('請輸入姓名');
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((email || '').toLowerCase())) throw new Error('Email 格式不正確');
-        if ((password || '').length < 6) throw new Error('密碼至少需 6 碼');
+        if ((password || '').length < 8) throw new Error('密碼至少需 8 碼');
         const e = email.toLowerCase();
         if (state.users.some((u) => u.email === e)) throw new Error('此 Email 已被註冊');
         const u = { id: `u${state.users.length + 1}`, name: name.trim(), email: e, role: 'user' };
@@ -103,7 +103,7 @@ beforeEach(() => {
 
 function fillLogin(email, password) {
   fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: email } });
-  fireEvent.change(screen.getByPlaceholderText('至少 6 碼'), { target: { value: password } });
+  fireEvent.change(screen.getByPlaceholderText('至少 8 碼'), { target: { value: password } });
 }
 
 async function navigateToLogin() {
@@ -129,7 +129,7 @@ describe('App 流程', () => {
   it('註冊後進入評測，且一般使用者看不到管理後台', async () => {
     renderApp();
     await navigateToLogin();
-    await registerUser('小明', 'ming@example.com', 'abcdef');
+    await registerUser('小明', 'ming@example.com', 'abcdef12');
 
     // After registration, AssessmentHome loads — click to start the survey.
     fireEvent.click(await screen.findByRole('button', { name: '開始作答' }));
@@ -158,7 +158,7 @@ describe('App 流程', () => {
   it('完成評測後我的分析顯示總分與雷達圖', async () => {
     renderApp();
     await navigateToLogin();
-    await registerUser('小美', 'mei@example.com', 'abcdef');
+    await registerUser('小美', 'mei@example.com', 'abcdef12');
 
     // Start survey from AssessmentHome.
     fireEvent.click(await screen.findByRole('button', { name: '開始作答' }));

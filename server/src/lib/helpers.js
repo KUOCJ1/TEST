@@ -26,6 +26,12 @@ export function getGroupPhase(group) {
 
 export const hashToken = (t) => createHash('sha256').update(t).digest('hex');
 
+// 讓該使用者現有的所有已簽發 JWT 立即失效（下次請求時 authContext.currentUser
+// 比對 tokenVersion 會不符）。密碼變更、密碼重設、角色變更等安全敏感操作後呼叫。
+export function revokeUserTokens(user) {
+  user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+}
+
 export function auditLog(req, action, extra = {}) {
   console.log(JSON.stringify({
     ts: new Date().toISOString(),

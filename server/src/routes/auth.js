@@ -6,8 +6,9 @@ import {
   verifyPassword,
   validateRegistration,
   publicUser,
+  MIN_PASSWORD_LENGTH,
 } from '../auth.js';
-import { asyncHandler, hashToken } from '../lib/helpers.js';
+import { asyncHandler, hashToken, revokeUserTokens } from '../lib/helpers.js';
 
 // 將使用者 email 比對各班別的待加入名單；命中則自動轉為正式成員。
 function claimPendingGroups(db, user) {
@@ -104,21 +105,25 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }
 
   router.post('/auth/password', requireAuth, asyncHandler(async (req, res) => {
     const { currentPassword, newPassword } = req.body ?? {};
-    if ((newPassword || '').length < 6) {
-      return res.status(400).json({ error: '新密碼至少需 6 碼' });
+    if ((newPassword || '').length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ error: `新密碼至少需 ${MIN_PASSWORD_LENGTH} 碼` });
     }
     if (!(await verifyPassword(currentPassword || '', req.user.passwordHash))) {
       return res.status(401).json({ error: '目前密碼不正確' });
     }
     req.user.passwordHash = await hashPassword(newPassword);
+    // 撤銷這個帳號目前所有已簽發的登入 token（例如外流的舊 cookie），
+    // 再馬上為「這次請求本身」重發一份新 cookie，使用者不會被自己的操作登出。
+    revokeUserTokens(req.user);
     db.persist();
+    setAuthCookie(res, req.user);
     res.json({ ok: true });
   }));
 
   router.post('/auth/reset-password', asyncHandler(async (req, res) => {
     const { token, newPassword } = req.body ?? {};
-    if (!token || (newPassword || '').length < 6) {
-      return res.status(400).json({ code: 'VALIDATION_ERROR', error: '重設連結或新密碼不正確（密碼至少 6 碼）' });
+    if (!token || (newPassword || '').length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ code: 'VALIDATION_ERROR', error: `重設連結或新密碼不正確（密碼至少 ${MIN_PASSWORD_LENGTH} 碼）` });
     }
     const h = hashToken(token);
     const user = db.data.users.find(
@@ -128,6 +133,8 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }
     user.passwordHash = await hashPassword(newPassword);
     delete user.resetTokenHash;
     delete user.resetTokenExpires;
+    // 重設密碼代表原密碼可能已外洩，順便撤銷這個帳號現有的所有登入 session。
+    revokeUserTokens(user);
     db.persist();
     res.json({ ok: true });
   }));

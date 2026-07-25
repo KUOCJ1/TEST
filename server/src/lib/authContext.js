@@ -9,7 +9,7 @@ const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 天
  */
 export function createAuthContext({ db, jwtSecret, secureCookies = false }) {
   function setAuthCookie(res, user) {
-    res.cookie(COOKIE_NAME, signToken({ sub: user.id }, jwtSecret), {
+    res.cookie(COOKIE_NAME, signToken({ sub: user.id, v: user.tokenVersion ?? 0 }, jwtSecret), {
       httpOnly: true,
       sameSite: 'lax',
       secure: secureCookies,
@@ -22,7 +22,13 @@ export function createAuthContext({ db, jwtSecret, secureCookies = false }) {
     if (!token) return null;
     const payload = verifyToken(token, jwtSecret);
     if (!payload) return null;
-    return db.data.users.find((u) => u.id === payload.sub) || null;
+    const user = db.data.users.find((u) => u.id === payload.sub) || null;
+    if (!user) return null;
+    // tokenVersion 不符：這支 token 是在密碼或角色變更「之前」簽發的，視為已撤銷。
+    // 兩邊都用 ?? 0 是為了與尚未帶 tokenVersion 欄位的舊使用者／舊 token 相容，
+    // 部署當下不會讓所有人被迫重新登入，只有實際被撤銷過的帳號才會生效。
+    if ((payload.v ?? 0) !== (user.tokenVersion ?? 0)) return null;
+    return user;
   }
 
   function requireAuth(req, res, next) {

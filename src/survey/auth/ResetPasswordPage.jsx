@@ -8,7 +8,7 @@ export default function ResetPasswordPage({ token, onDone }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (pw.next.length < 6) { setMsg({ type: 'err', text: '新密碼至少需 6 碼' }); return; }
+    if (pw.next.length < 8) { setMsg({ type: 'err', text: '新密碼至少需 8 碼' }); return; }
     if (pw.next !== pw.confirm) { setMsg({ type: 'err', text: '兩次輸入的新密碼不一致' }); return; }
     setBusy(true);
     setMsg({ type: '', text: '' });
@@ -35,7 +35,7 @@ export default function ResetPasswordPage({ token, onDone }) {
           <form onSubmit={submit} className="space-y-4">
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-slate-600">新密碼</span>
-              <input type="password" className="input" autoComplete="new-password" placeholder="至少 6 碼"
+              <input type="password" className="input" autoComplete="new-password" placeholder="至少 8 碼"
                 value={pw.next} onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))} />
             </label>
             <label className="block">

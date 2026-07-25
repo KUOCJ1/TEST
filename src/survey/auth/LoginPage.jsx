@@ -110,14 +110,14 @@ export default function LoginPage({ onBack }) {
                 placeholder="you@example.com"
               />
             </Field>
-            <Field label="密碼" hint={mode === 'register' ? '至少 6 碼' : undefined}>
+            <Field label="密碼" hint={mode === 'register' ? '至少 8 碼' : undefined}>
               <input
                 type="password"
                 value={form.password}
                 onChange={update('password')}
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                 className="input"
-                placeholder="至少 6 碼"
+                placeholder="至少 8 碼"
               />
             </Field>
 

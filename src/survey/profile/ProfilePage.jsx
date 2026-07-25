@@ -82,7 +82,7 @@ export default function ProfilePage() {
   };
 
   const changePassword = async () => {
-    if (pw.next.length < 6) { setPwMsg({ type: 'err', text: '新密碼至少需 6 碼' }); return; }
+    if (pw.next.length < 8) { setPwMsg({ type: 'err', text: '新密碼至少需 8 碼' }); return; }
     if (pw.next !== pw.confirm) { setPwMsg({ type: 'err', text: '兩次輸入的新密碼不一致' }); return; }
     setSavingPw(true);
     setPwMsg({ type: '', text: '' });
@@ -165,7 +165,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-600">新密碼</label>
-            <input type="password" className="input mt-1.5" autoComplete="new-password" placeholder="至少 6 碼"
+            <input type="password" className="input mt-1.5" autoComplete="new-password" placeholder="至少 8 碼"
               value={pw.next} onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))} />
           </div>
           <div>
