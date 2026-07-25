@@ -7,7 +7,7 @@
 | 前端 | Vite 打包的靜態檔（`dist/`） | `/`（由 Nginx 直接提供） |
 | 後端 | Node/Express API（常駐 systemd 服務，監聽 `127.0.0.1:3001`） | `/api`（由 Nginx 反向代理） |
 
-資料以單一 JSON 檔保存（`/var/lib/ai-assessment/db.json`），備份只要複製這個檔即可。
+資料以 SQLite 保存（`/var/lib/ai-assessment/db.json.sqlite3`），備份只要複製這個檔即可。若是從舊版純 JSON 儲存升級上來，服務啟動時會自動偵測 `db.json` 並一次性遷移進 SQLite，原始 JSON 檔不會被刪除，可留著當作遷移前的快照。
 
 > 本指南已套用你的網域。以下指令把網域設成變數，先執行一次再往下貼即可：
 > ```bash
@@ -169,13 +169,17 @@ curl -s localhost:3101/api/health      # 應回 {"ok":true}（本站後端埠為
 出現「🏢 整體組織評語」區塊。
 
 ## 備份與還原
+資料庫是 SQLite（WAL 模式），服務執行中直接 `cp` 主檔案可能漏掉尚未 checkpoint
+的 WAL 內容；用 `sqlite3` CLI 的線上備份指令才能在服務不停機的情況下拿到一致的
+快照（Ubuntu/Debian 沒有內建的話先 `sudo apt install -y sqlite3`）。
 ```bash
-# 備份（建議排程 cron 每日）
-cp /var/lib/ai-assessment/db.json ~/backup-$(date +%F).json
+# 備份（建議排程 cron 每日，服務可以繼續跑）
+sqlite3 /var/lib/ai-assessment/db.json.sqlite3 ".backup '$HOME/backup-$(date +%F).sqlite3'"
 # 還原：停服務 → 覆蓋檔案 → 起服務
 sudo systemctl stop ai-assessment-api
-sudo cp ~/backup-YYYY-MM-DD.json /var/lib/ai-assessment/db.json
-sudo chown www-data:www-data /var/lib/ai-assessment/db.json
+sudo cp ~/backup-YYYY-MM-DD.sqlite3 /var/lib/ai-assessment/db.json.sqlite3
+sudo rm -f /var/lib/ai-assessment/db.json.sqlite3-wal /var/lib/ai-assessment/db.json.sqlite3-shm
+sudo chown www-data:www-data /var/lib/ai-assessment/db.json.sqlite3
 sudo systemctl start ai-assessment-api
 ```
 

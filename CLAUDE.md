@@ -15,7 +15,7 @@
 | 前端 | React 19 + Vite 8 + Tailwind CSS 3 |
 | 後端 | Node.js (≥20) + Express 4 |
 | 認證 | JWT（httpOnly cookie）+ bcryptjs |
-| 儲存 | 單一 JSON 檔（`DB_PATH`，預設 `/var/lib/ai-assessment/db.json`） |
+| 儲存 | SQLite（`better-sqlite3`），檔案路徑為 `${DB_PATH}.sqlite3`；`DB_PATH` 預設 `/var/lib/ai-assessment/db.json`。舊版純 JSON 檔開機時會自動偵測並遷移，原檔保留不動 |
 | 測試 | Vitest（前端）、`node --test`（後端） |
 
 ## 常用指令
@@ -94,7 +94,7 @@ Traefik (host 網路, 80/443, Cloudflare DNS challenge 自動簽 TLS)
 - 前端原始碼：`/opt/ai-assessment/app`（git clone，checkout 功能分支）
 - 後端程式：`/opt/ai-assessment/server`（由 `deploy.sh` rsync 同步）
 - 前端靜態檔：`/var/www/ai-assessment`
-- 資料檔：`/var/lib/ai-assessment/db.json`（擁有者 `www-data`）
+- 資料檔：`/var/lib/ai-assessment/db.json.sqlite3`（SQLite，擁有者 `www-data`）；同目錄下的 `db.json`（若存在）是遷移前的舊檔快照，僅供備援參考，程式不會再讀寫它
 - 後端埠 `PORT=3101`（3001 已被佔用）、Nginx 用 `8090`（8080 已被佔用）
 - systemd 服務：`ai-assessment-api`
 
@@ -141,4 +141,4 @@ GitHub Actions `deploy.yml`：在功能分支 push 時 `npm ci` → `npm run bui
 - Nginx 錯誤：`sudo tail -f /var/log/nginx/error.log`
 - `502 Bad Gateway`：後端未啟動或埠不符 → 檢查服務與 `.env` 的 `PORT`。
 - 登入後一直登出：確認 HTTPS 已啟用且 `NODE_ENV=production`（Secure cookie 需 HTTPS）。
-- 備份：`cp /var/lib/ai-assessment/db.json ~/backup-$(date +%F).json`
+- 備份：`cp /var/lib/ai-assessment/db.json.sqlite3 ~/backup-$(date +%F).sqlite3`
