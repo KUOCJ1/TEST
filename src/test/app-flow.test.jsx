@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
+
+function renderApp() {
+  return render(<MemoryRouter><App /></MemoryRouter>);
+}
 
 // 以記憶體假後端取代真實 API client，模擬註冊/登入/作答/後台流程。
 const h = vi.hoisted(() => ({
@@ -115,14 +120,14 @@ async function registerUser(name, email, password) {
 
 describe('App 流程', () => {
   it('未登入時顯示登入頁', async () => {
-    render(<App />);
+    renderApp();
     await navigateToLogin();
     expect(await screen.findByRole('button', { name: '登入帳號' })).toBeInTheDocument();
     expect(screen.getByPlaceholderText('you@example.com')).toBeInTheDocument();
   });
 
   it('註冊後進入評測，且一般使用者看不到管理後台', async () => {
-    render(<App />);
+    renderApp();
     await navigateToLogin();
     await registerUser('小明', 'ming@example.com', 'abcdef');
 
@@ -139,7 +144,7 @@ describe('App 流程', () => {
   });
 
   it('管理員登入後可見管理後台儀表板', async () => {
-    render(<App />);
+    renderApp();
     await navigateToLogin();
     fillLogin('admin@demo.tw', 'admin1234');
     fireEvent.click(screen.getByRole('button', { name: '登入帳號' }));
@@ -151,7 +156,7 @@ describe('App 流程', () => {
   });
 
   it('完成評測後我的分析顯示總分與雷達圖', async () => {
-    render(<App />);
+    renderApp();
     await navigateToLogin();
     await registerUser('小美', 'mei@example.com', 'abcdef');
 

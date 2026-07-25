@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft, Download, LogOut, CircleHelp } from 'lucide-react';
 import { useAuth } from './auth/useAuth';
 import { api } from './api/client';
@@ -75,13 +76,74 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
   );
 }
 
+// 自評一律直接作答；「評測他人」的返回/提交完成目的地則是 360° 分頁。
+function returnPathFor(raterType) {
+  return raterType && raterType !== 'self' ? '/360' : '/home';
+}
+
+function AnalysisRoute({ user, refreshKey, onTakeSurvey, onResultLoad }) {
+  const { assessmentId = null } = useParams();
+  return (
+    <UserDashboard
+      key={`${refreshKey}-${assessmentId ?? ''}`}
+      user={user}
+      initialAssessmentId={assessmentId}
+      onTakeSurvey={onTakeSurvey}
+      onResultLoad={onResultLoad}
+    />
+  );
+}
+
+function MultiRaterRoute({ user, refreshKey, onRateOthers }) {
+  const { assessmentId = null } = useParams();
+  return (
+    <MultiRaterHome
+      key={`${refreshKey}-${assessmentId ?? ''}`}
+      user={user}
+      initialAssessmentId={assessmentId}
+      onRateOthers={onRateOthers}
+    />
+  );
+}
+
+function SurveyRoute({ user, onSubmitted }) {
+  const { assessmentId } = useParams();
+  const location = useLocation();
+  const rateeId = location.state?.rateeId ?? user.id;
+  const raterType = location.state?.raterType ?? 'self';
+  const rateeName = location.state?.rateeName;
+  return (
+    <SurveyApp
+      key={`${assessmentId}-${rateeId}-${raterType}`}
+      user={user}
+      assessmentId={assessmentId}
+      rateeId={rateeId}
+      raterType={raterType}
+      rateeName={rateeName}
+      onSubmitted={() => onSubmitted(raterType)}
+    />
+  );
+}
+
+function RaterSetupRoute({ onConfirm, onCancel }) {
+  const { assessmentId } = useParams();
+  const location = useLocation();
+  const preset = location.state ?? null;
+  return (
+    <RaterSetup
+      onConfirm={(rateeId, raterType, rateeName) => onConfirm(assessmentId, rateeId, raterType, rateeName)}
+      onCancel={onCancel}
+      initialRateeId={preset?.rateeId ?? null}
+      initialRaterType={preset?.raterType ?? ''}
+    />
+  );
+}
+
 export default function AppShell() {
   const { user, isAdmin, isCoach, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const defaultAid = user?.preferences?.defaultAssessmentId || null;
-  const [view, setView] = useState(defaultAid ? 'survey' : 'home');
-  const [activeAssessmentId, setActiveAssessmentId] = useState(defaultAid);
-  const [raterConfig, setRaterConfig] = useState(null); // { rateeId, raterType }
-  const [rateOthersPreset, setRateOthersPreset] = useState(null); // { rateeId, raterType }
   const [refreshKey, setRefreshKey] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
   const [chatContext, setChatContext] = useState(null);
@@ -91,43 +153,34 @@ export default function AppShell() {
   const handleResultLoad = useCallback((result) => setChatContext({ result }), []);
 
   const tabs = [
-    { id: 'home', label: '我的評量' },
-    { id: 'analysis', label: '我的分析' },
-    { id: '360', label: '360° 評測' },
-    ...(isCoach && !isAdmin ? [{ id: 'coach', label: '教練後台' }] : []),
-    ...(isAdmin ? [{ id: 'coach', label: '教練後台' }, { id: 'admin', label: '管理後台' }] : []),
-    { id: 'profile', label: '個人設定' },
+    { id: 'home', label: '我的評量', path: '/home' },
+    { id: 'analysis', label: '我的分析', path: '/analysis' },
+    { id: '360', label: '360° 評測', path: '/360' },
+    ...(isCoach && !isAdmin ? [{ id: 'coach', label: '教練後台', path: '/coach' }] : []),
+    ...(isAdmin ? [{ id: 'coach', label: '教練後台', path: '/coach' }, { id: 'admin', label: '管理後台', path: '/admin' }] : []),
+    { id: 'profile', label: '個人設定', path: '/profile' },
   ];
 
-  // 自評一律直接作答；「評測他人」的返回/提交完成目的地則是 360° 分頁。
-  const returnViewFor = (raterType) => (raterType && raterType !== 'self' ? '360' : 'home');
-
   const handleStartSurvey = (id) => {
-    setActiveAssessmentId(id);
-    setRaterConfig({ rateeId: user.id, raterType: 'self' });
-    setView('survey');
+    navigate(`/survey/${id}`, { state: { rateeId: user.id, raterType: 'self' } });
   };
   const handleRateOthers = (id, presetRateeId = null, presetRaterType = '') => {
-    setActiveAssessmentId(id);
-    setRaterConfig(null);
-    setRateOthersPreset(presetRateeId ? { rateeId: presetRateeId, raterType: presetRaterType } : null);
-    setView('rater-setup');
+    navigate(`/rater-setup/${id}`, presetRateeId ? { state: { rateeId: presetRateeId, raterType: presetRaterType } } : undefined);
   };
-  const handleRaterConfirm = (rateeId, raterType, rateeName) => {
-    setRaterConfig({ rateeId, raterType, rateeName });
-    setView('survey');
+  const handleRaterConfirm = (assessmentId, rateeId, raterType, rateeName) => {
+    navigate(`/survey/${assessmentId}`, { state: { rateeId, raterType, rateeName } });
   };
-  const handleViewAnalysis = (id) => { setActiveAssessmentId(id); setView('analysis'); };
-  const handleGoTo360 = (id) => { setActiveAssessmentId(id); setView('360'); };
-  const handleSubmitted = () => {
+  const handleViewAnalysis = (id) => navigate(`/analysis/${id}`);
+  const handleGoTo360 = (id) => navigate(`/360/${id}`);
+  const handleSubmitted = (raterType) => {
     setRefreshKey((k) => k + 1);
-    setView(returnViewFor(raterConfig?.raterType));
+    navigate(returnPathFor(raterType));
   };
 
-  const handleTabClick = (id) => {
-    setView(id);
-    if (id !== 'analysis' && id !== '360') setActiveAssessmentId(null);
-  };
+  const isSurveyOrRaterSetup = location.pathname.startsWith('/survey') || location.pathname.startsWith('/rater-setup');
+  const isRaterSetup = location.pathname.startsWith('/rater-setup');
+  const backTarget = isRaterSetup ? '/360' : returnPathFor(location.state?.raterType);
+  const isTabActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   return (
     <div className="min-h-screen">
@@ -138,14 +191,14 @@ export default function AppShell() {
             全方位職能評測
           </span>
 
-          {(view === 'survey' || view === 'rater-setup') ? (
+          {isSurveyOrRaterSetup ? (
             <button
               type="button"
-              onClick={() => setView(view === 'rater-setup' ? '360' : returnViewFor(raterConfig?.raterType))}
+              onClick={() => navigate(backTarget)}
               className="btn-ghost btn-sm"
             >
               <ArrowLeft className="h-4 w-4" />
-              {view === 'rater-setup' || returnViewFor(raterConfig?.raterType) === '360' ? '返回 360° 評測' : '返回評量列表'}
+              {backTarget === '/360' ? '返回 360° 評測' : '返回評量列表'}
             </button>
           ) : (
             <nav className="no-scrollbar flex flex-1 flex-nowrap gap-1 overflow-x-auto sm:flex-wrap sm:overflow-visible">
@@ -153,10 +206,10 @@ export default function AppShell() {
                 <button
                   key={t.id}
                   type="button"
-                  aria-current={view === t.id ? 'page' : undefined}
-                  onClick={() => handleTabClick(t.id)}
+                  aria-current={isTabActive(t.path) ? 'page' : undefined}
+                  onClick={() => navigate(t.path)}
                   className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-                    view === t.id
+                    isTabActive(t.path)
                       ? 'bg-brand-600 text-white shadow-sm'
                       : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
                   }`}
@@ -210,69 +263,75 @@ export default function AppShell() {
         </div>
       </header>
 
-      {view === 'home' && (
-        <AssessmentHome
-          key={refreshKey}
-          refreshKey={refreshKey}
-          onStartSurvey={handleStartSurvey}
-          onViewAnalysis={handleViewAnalysis}
-          onGoTo360={handleGoTo360}
+      <Routes>
+        <Route path="/" element={<Navigate to={defaultAid ? `/survey/${defaultAid}` : '/home'} replace />} />
+
+        <Route
+          path="/home"
+          element={
+            <AssessmentHome
+              key={refreshKey}
+              refreshKey={refreshKey}
+              onStartSurvey={handleStartSurvey}
+              onViewAnalysis={handleViewAnalysis}
+              onGoTo360={handleGoTo360}
+            />
+          }
         />
-      )}
 
-      {view === 'rater-setup' && activeAssessmentId && (
-        <RaterSetup
-          onConfirm={handleRaterConfirm}
-          onCancel={() => setView('360')}
-          initialRateeId={rateOthersPreset?.rateeId ?? null}
-          initialRaterType={rateOthersPreset?.raterType ?? ''}
+        <Route
+          path="/analysis/:assessmentId?"
+          element={
+            <AnalysisRoute
+              user={user}
+              refreshKey={refreshKey}
+              onTakeSurvey={handleStartSurvey}
+              onResultLoad={handleResultLoad}
+            />
+          }
         />
-      )}
 
-      {view === 'survey' && activeAssessmentId && (
-        <SurveyApp
-          key={`${activeAssessmentId}-${raterConfig?.rateeId}-${raterConfig?.raterType}`}
-          user={user}
-          assessmentId={activeAssessmentId}
-          rateeId={raterConfig?.rateeId}
-          raterType={raterConfig?.raterType}
-          rateeName={raterConfig?.rateeName}
-          onSubmitted={handleSubmitted}
+        <Route
+          path="/360/:assessmentId?"
+          element={<MultiRaterRoute user={user} refreshKey={refreshKey} onRateOthers={handleRateOthers} />}
         />
-      )}
 
-      {view === 'analysis' && (
-        <UserDashboard
-          key={`${refreshKey}-${activeAssessmentId}`}
-          user={user}
-          initialAssessmentId={activeAssessmentId}
-          onTakeSurvey={handleStartSurvey}
-          onResultLoad={handleResultLoad}
+        <Route
+          path="/rater-setup/:assessmentId"
+          element={<RaterSetupRoute onConfirm={handleRaterConfirm} onCancel={() => navigate('/360')} />}
         />
-      )}
 
-      {view === '360' && (
-        <MultiRaterHome
-          key={`${refreshKey}-${activeAssessmentId}`}
-          user={user}
-          initialAssessmentId={activeAssessmentId}
-          onRateOthers={handleRateOthers}
+        <Route
+          path="/survey/:assessmentId"
+          element={<SurveyRoute user={user} onSubmitted={handleSubmitted} />}
         />
-      )}
 
-      {view === 'coach' && isCoach && (
-        <Suspense fallback={<DashboardFallback />}>
-          <CoachDashboard key={refreshKey} />
-        </Suspense>
-      )}
+        {isCoach && (
+          <Route
+            path="/coach"
+            element={(
+              <Suspense fallback={<DashboardFallback />}>
+                <CoachDashboard key={refreshKey} />
+              </Suspense>
+            )}
+          />
+        )}
 
-      {view === 'admin' && isAdmin && (
-        <Suspense fallback={<DashboardFallback />}>
-          <AdminDashboard key={refreshKey} />
-        </Suspense>
-      )}
+        {isAdmin && (
+          <Route
+            path="/admin"
+            element={(
+              <Suspense fallback={<DashboardFallback />}>
+                <AdminDashboard key={refreshKey} />
+              </Suspense>
+            )}
+          />
+        )}
 
-      {view === 'profile' && <ProfilePage />}
+        <Route path="/profile" element={<ProfilePage />} />
+
+        <Route path="*" element={<Navigate to="/home" replace />} />
+      </Routes>
 
       {helpOpen && <HelpModal role={helpRole} onClose={() => setHelpOpen(false)} />}
 
