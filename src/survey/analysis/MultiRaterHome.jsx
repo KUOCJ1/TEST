@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
 import MultiRaterDashboard from './MultiRaterDashboard';
 import { RATER_LABELS } from '../constants/raterTypes';
+import { resolveActiveAssessmentId } from '../utils/multiRaterHome';
 
 const OTHER_RATER_TYPES = ['manager', 'peer', 'subordinate'];
 
@@ -36,12 +37,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
     [assessments],
   );
 
-  // initialAssessmentId／selectedId 可能承接自其他頁面（如「我的評量」當時選的評量），
-  // 必須確認該評量確實支援 360，否則一律退回第一個支援 360 的評量，避免對不支援 360 的
-  // 評量誤發起評測他人的流程。
-  const activeId = (selectedId && supported.some((a) => a.id === selectedId))
-    ? selectedId
-    : supported[0]?.id ?? null;
+  const activeId = resolveActiveAssessmentId(selectedId, supported);
   const myGroupForActive = myGroups.find((g) => g.assessmentId === activeId);
 
   // 已對哪些（受評者、關係）組合提交過評測（自己身為評分者）

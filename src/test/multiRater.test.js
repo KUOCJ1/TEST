@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { resolveActiveAssessmentId } from '../survey/utils/multiRaterHome';
 
 // Helper: build a minimal submission object
 function makeSub(overrides = {}) {
@@ -185,5 +186,44 @@ describe('access control logic', () => {
 
   it('denies regular user access to another user\'s ratee data', () => {
     expect(canAccess({ id: 'user-b', role: 'user' }, 'user-a')).toBe(false);
+  });
+});
+
+describe('resolveActiveAssessmentId (360° 分頁的評量選擇回退邏輯)', () => {
+  const supported = [
+    { id: 'leadership-9d', name: '經贏® 領導力九大構面行為評量' },
+  ];
+
+  it('accepts a selectedId that is in the supported list', () => {
+    expect(resolveActiveAssessmentId('leadership-9d', supported)).toBe('leadership-9d');
+  });
+
+  it('falls back to the first supported assessment when selectedId is null', () => {
+    expect(resolveActiveAssessmentId(null, supported)).toBe('leadership-9d');
+  });
+
+  // 迴歸測試：2026-07 曾發生的 bug — 使用者先瀏覽了不支援 360 的評量（如 AI 問卷），
+  // AppShell 把該 assessmentId 沿用到「360° 評測」分頁，MultiRaterHome 未驗證就直接
+  // 採用，導致「評測他人」對著不支援 360 的評量誤發起評測流程。
+  it('ignores a selectedId that does not support 360 and falls back instead', () => {
+    expect(resolveActiveAssessmentId('ai-competency', supported)).toBe('leadership-9d');
+  });
+
+  it('ignores an unknown/stale selectedId not present in supported list at all', () => {
+    expect(resolveActiveAssessmentId('some-deleted-assessment', supported)).toBe('leadership-9d');
+  });
+
+  it('returns null when nothing supports 360 and there is nothing to fall back to', () => {
+    expect(resolveActiveAssessmentId('ai-competency', [])).toBeNull();
+    expect(resolveActiveAssessmentId(null, [])).toBeNull();
+  });
+
+  it('respects selectedId when multiple assessments support 360', () => {
+    const multi = [
+      { id: 'leadership-9d', name: 'L9D' },
+      { id: 'another-360-assessment', name: 'Another' },
+    ];
+    expect(resolveActiveAssessmentId('another-360-assessment', multi)).toBe('another-360-assessment');
+    expect(resolveActiveAssessmentId(null, multi)).toBe('leadership-9d');
   });
 });
