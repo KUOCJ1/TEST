@@ -159,6 +159,31 @@ describe('母體基準 / 百分位', () => {
     assert.equal(res.body.count, 3);
     assert.deepEqual(res.body.totals, [80, 124, 155]); // 已排序
   });
+
+  test('benchmark 有快取：重複查詢命中快取，新增作答後立即反映最新資料', async () => {
+    const app = await setup();
+    const a = request.agent(app);
+    await a.post('/api/auth/register').send({ name: 'a', email: 'a@b.co', password: 'abcdef' });
+    await a.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(80) });
+
+    const q = request.agent(app);
+    await q.post('/api/auth/register').send({ name: 'q', email: 'q@b.co', password: 'abcdef' });
+
+    const first = await q.get('/api/assessments/ai-competency/benchmark');
+    assert.equal(first.body.count, 1);
+    // 未新增作答時重複查詢應命中快取，回傳一致的結果。
+    const second = await q.get('/api/assessments/ai-competency/benchmark');
+    assert.deepEqual(second.body, first.body);
+
+    const b = request.agent(app);
+    await b.post('/api/auth/register').send({ name: 'b', email: 'b@b.co', password: 'abcdef' });
+    await b.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(150) });
+
+    // 新增作答後，快取應失效並反映最新總數，而非沿用舊快取。
+    const third = await q.get('/api/assessments/ai-competency/benchmark');
+    assert.equal(third.body.count, 2);
+    assert.deepEqual(third.body.totals, [80, 150]);
+  });
 });
 
 describe('教練 / 班別 / 名單', () => {
