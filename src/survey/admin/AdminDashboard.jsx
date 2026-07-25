@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import AnalyticsTab from './AnalyticsTab';
 import UsersTab from './UsersTab';
 import GroupsTab from './GroupsTab';
-import BatchUploadSection from './BatchUploadSection';
 import QuickAnalysisTab from '../analysis/QuickAnalysisTab';
+
+// 內含 xlsx（體積較大），只有點開「批次上傳」分頁才需要，獨立拆成自己的 chunk。
+const BatchUploadSection = lazy(() => import('./BatchUploadSection'));
 
 const TABS = [
   { id: 'quickAnalysis', label: '快速分析' },
@@ -100,7 +102,11 @@ export default function AdminDashboard() {
       {tab === 'groups' && (
         <GroupsTab groups={adminGroups} onGroupUpdated={handleGroupUpdated} />
       )}
-      {tab === 'import' && <BatchUploadSection />}
+      {tab === 'import' && (
+        <Suspense fallback={<p className="py-20 text-center text-slate-400">載入中…</p>}>
+          <BatchUploadSection />
+        </Suspense>
+      )}
     </main>
   );
 }
