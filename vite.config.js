@@ -1,8 +1,41 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'icons.svg'],
+      manifest: {
+        name: '全方位職能評測',
+        short_name: '職能評測',
+        description: '線上自動計分與多構面落點分析',
+        lang: 'zh-TW',
+        theme_color: '#7c3aed',
+        background_color: '#ffffff',
+        display: 'standalone',
+        orientation: 'portrait',
+        // 相對路徑：VPS 正式站（base '/'）與 GitHub Pages 預覽（base '/TEST/'）都能正確解析。
+        start_url: '.',
+        scope: '.',
+        icons: [
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+      },
+      workbox: {
+        // 只快取打包後的靜態檔（JS/CSS/HTML/圖示）做為 App Shell；/api 一律不快取
+        // ——評測資料、登入狀態都是動態且與身分相關，快取到就是回傳錯誤/過期資料。
+        globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        navigateFallbackDenylist: [/^\/api\//],
+      },
+      // 開發模式（vite dev）不啟用 service worker，避免開發時被舊快取干擾。
+      devOptions: { enabled: false },
+    }),
+  ],
   base: process.env.VITE_BASE_URL || '/',
   // 本機開發時將 /api 轉發到後端服務，前端統一以相對路徑呼叫 API。
   server: {
