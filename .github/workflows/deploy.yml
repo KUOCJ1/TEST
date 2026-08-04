@@ -24,10 +24,14 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_BASE_URL: /TEST/
+          VITE_BASE_URL: /TEST/calendar/
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
+          # Confines this deploy to its own subdirectory of gh-pages so it
+          # can't be clobbered by other projects in this repo (e.g. the
+          # ai-assessment-survey branch) that also publish to gh-pages root.
+          destination_dir: calendar
