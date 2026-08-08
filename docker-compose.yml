@@ -1,9 +1,0 @@
-services:
-  shared-calendar:
-    image: ghcr.io/kuocj1/test:latest
-    container_name: shared-calendar
-    restart: unless-stopped
-    ports:
-      # Host:Container — change the host port if 8080 is already in use,
-      # or if you later put this behind a reverse proxy that owns :80/:443
-      - "8080:80"
