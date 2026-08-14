@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
-import { asyncHandler, normalizeSubmission, getGroupPhase } from '../lib/helpers.js';
+import { asyncHandler, normalizeSubmission, getGroupPhase, validateResultShape } from '../lib/helpers.js';
 
 const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
 
@@ -10,8 +10,9 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
 
   router.post('/submissions', requireAuth, (req, res) => {
     const { answers, result, assessmentId, phase, rateeId, raterType } = req.body || {};
-    if (!result || typeof result.total !== 'number' || !Array.isArray(result.dimensions)) {
-      return res.status(400).json({ error: '作答結果格式不正確' });
+    const shapeError = validateResultShape(result);
+    if (shapeError) {
+      return res.status(400).json({ code: 'INVALID_RESULT', error: `作答結果格式不正確：${shapeError}` });
     }
     const effectiveRateeId = typeof rateeId === 'string' && rateeId.trim()
       ? rateeId.trim()

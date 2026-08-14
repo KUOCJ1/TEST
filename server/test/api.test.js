@@ -23,13 +23,19 @@ async function setup({ withAdmin = false } = {}) {
   return createApp({ db, jwtSecret: JWT_SECRET });
 }
 
+// 形狀需與前端 buildResult() 的輸出一致（含 dimension.score/max/rating），
+// 後端會驗證這些欄位——缺欄位的結果前端渲染時會 crash，因此寫入前就擋。
 function sampleResult(total = 124) {
   return {
     total,
     maxScore: 155,
     percent: Math.round((total / 155) * 100),
     level: { id: 'advanced', badge: '🚀 AI 數位高潛力股', color: '#805ad5' },
-    dimensions: [{ id: 'foundation', subtitle: '基礎力', name: '工具認知', color: '#2b6cb0', percent: 80 }],
+    dimensions: [{
+      id: 'foundation', subtitle: '基礎力', name: '工具認知', color: '#2b6cb0',
+      score: 20, max: 25, average: 4, percent: 80,
+      rating: { label: '熟練', tone: 'good' },
+    }],
     strongest: { subtitle: '基礎力' },
     weakest: { subtitle: '基礎力' },
   };
@@ -184,6 +190,38 @@ describe('作答', () => {
     await agent.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef12' });
     assert.equal((await agent.post('/api/submissions').send({ result: { total: 'x' } })).status, 400);
   });
+
+  test('構面缺少欄位的結果會被擋下（避免寫入後讓分析頁 crash）', async () => {
+    const app = await setup();
+    const agent = request.agent(app);
+    await agent.post('/api/auth/register').send({ name: 'u', email: 'shape@b.co', password: 'abcdef12' });
+
+    // 前端報告會讀 dimension.rating.label / score / max，缺任一都應在寫入前擋下。
+    const cases = [
+      [{ id: 'a', score: 1, max: 2 }, '缺 rating'],
+      [{ id: 'a', score: 1, max: 2, rating: {} }, 'rating 缺 label'],
+      [{ id: 'a', max: 2, rating: { label: '熟練' } }, '缺 score'],
+      [{ score: 1, max: 2, rating: { label: '熟練' } }, '缺 id'],
+    ];
+    for (const [dim, why] of cases) {
+      const res = await agent.post('/api/submissions')
+        .send({ assessmentId: 'ai-competency', result: { total: 10, dimensions: [dim] } });
+      assert.equal(res.status, 400, `${why} 應回 400，實際 ${res.status}`);
+    }
+
+    // 構面陣列為空也不合法。
+    assert.equal(
+      (await agent.post('/api/submissions').send({ result: { total: 10, dimensions: [] } })).status,
+      400,
+    );
+
+    // 完整形狀仍可正常寫入。
+    assert.equal(
+      (await agent.post('/api/submissions')
+        .send({ assessmentId: 'ai-competency', result: sampleResult(120) })).status,
+      201,
+    );
+  });
 });
 
 describe('母體基準 / 百分位', () => {
@@ -243,6 +281,54 @@ describe('教練 / 班別 / 名單', () => {
     const user = request.agent(app);
     await user.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef12' });
     assert.equal((await user.get('/api/coach/overview')).status, 403);
+  });
+
+  test('/coach/overview 只回傳自己班級成員的資料，看不到其他教練的學員成績', async () => {
+    const app = await setup({ withAdmin: true });
+    const admin = request.agent(app);
+    await admin.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
+
+    // 兩位教練，各帶一位學員。
+    const mk = async (name, email) => {
+      const a = request.agent(app);
+      const r = await a.post('/api/auth/register').send({ name, email, password: 'abcdef12' });
+      return { agent: a, id: r.body.user.id };
+    };
+    const coachA = await mk('教練A', 'ca@b.co');
+    const coachB = await mk('教練B', 'cb@b.co');
+    const stuA = await mk('學員A', 'sa@b.co');
+    const stuB = await mk('學員B', 'sb@b.co');
+    for (const c of [coachA, coachB]) {
+      await admin.patch(`/api/admin/users/${c.id}/role`).send({ role: 'coach' });
+      await c.agent.post('/api/auth/login').send({
+        email: c === coachA ? 'ca@b.co' : 'cb@b.co', password: 'abcdef12',
+      });
+    }
+    await coachA.agent.post('/api/coach/groups').send({ name: 'A 班', assessmentId: 'ai-competency', memberIds: [stuA.id] });
+    await coachB.agent.post('/api/coach/groups').send({ name: 'B 班', assessmentId: 'ai-competency', memberIds: [stuB.id] });
+
+    // 兩位學員各交一份作答。
+    await stuA.agent.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(100) });
+    await stuB.agent.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(150) });
+
+    const ovA = await coachA.agent.get('/api/coach/overview');
+    const idsA = ovA.body.users.map((u) => u.id);
+    assert.ok(idsA.includes(stuA.id), '教練A 應看得到自己的學員');
+    assert.ok(!idsA.includes(stuB.id), '教練A 不應看到教練B 的學員');
+    const rateeIdsA = ovA.body.submissions.map((s) => s.rateeId);
+    assert.ok(!rateeIdsA.includes(stuB.id), '教練A 不應拿到教練B 學員的作答');
+
+    // admin 仍看得到全部。
+    const ovAdmin = await admin.get('/api/coach/overview');
+    const idsAdmin = ovAdmin.body.users.map((u) => u.id);
+    assert.ok(idsAdmin.includes(stuA.id) && idsAdmin.includes(stuB.id), 'admin 應看得到所有學員');
+
+    // 名冊（僅姓名/Email、不含成績）仍給完整清單，教練才能把新成員加進班別。
+    const dir = await coachA.agent.get('/api/coach/directory');
+    assert.equal(dir.status, 200);
+    const dirIds = dir.body.users.map((u) => u.id);
+    assert.ok(dirIds.includes(stuB.id), '名冊應包含尚未加入自己班級的使用者');
+    assert.ok(dir.body.users.every((u) => u.result === undefined), '名冊不應帶任何成績欄位');
   });
 
   test('教練可建立班別、寫評語', async () => {

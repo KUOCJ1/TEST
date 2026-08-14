@@ -16,6 +16,25 @@ export function normalizeSubmission(s) {
   };
 }
 
+/**
+ * 驗證作答結果的形狀。前端報告會直接讀取這些欄位（例如 dimension.rating.label），
+ * 缺欄位會讓分析頁渲染時整個 crash，且資料一旦寫入就無法從 UI 修復——所以在寫入
+ * 前擋住，而不是等到讀取時才爆。回傳錯誤訊息字串，通過則回傳 null。
+ */
+export function validateResultShape(result) {
+  if (!result || typeof result !== 'object') return '缺少作答結果';
+  if (typeof result.total !== 'number' || !Number.isFinite(result.total)) return '總分格式不正確';
+  if (!Array.isArray(result.dimensions) || result.dimensions.length === 0) return '缺少構面分數';
+  for (const d of result.dimensions) {
+    if (!d || typeof d !== 'object') return '構面資料格式不正確';
+    if (typeof d.id !== 'string' || !d.id) return '構面缺少 id';
+    if (typeof d.score !== 'number' || !Number.isFinite(d.score)) return `構面 ${d.id} 缺少分數`;
+    if (typeof d.max !== 'number' || !Number.isFinite(d.max)) return `構面 ${d.id} 缺少滿分`;
+    if (!d.rating || typeof d.rating.label !== 'string') return `構面 ${d.id} 缺少等級資訊`;
+  }
+  return null;
+}
+
 export function getGroupPhase(group) {
   const now = new Date();
   if (!group.startDate || now < new Date(group.startDate)) return 'not_started';

@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { publicUser } from '../auth.js';
-import { asyncHandler, normalizeSubmission, auditLog, hashToken, revokeUserTokens } from '../lib/helpers.js';
+import {
+  asyncHandler, normalizeSubmission, auditLog, hashToken, revokeUserTokens, validateResultShape,
+} from '../lib/helpers.js';
 
 const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
 
@@ -112,8 +114,9 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
           errors.push({ row: i + 2, message: '缺少答題資料' });
           continue;
         }
-        if (!result) {
-          errors.push({ row: i + 2, message: '缺少計算結果' });
+        const shapeError = validateResultShape(result);
+        if (shapeError) {
+          errors.push({ row: i + 2, message: `計算結果不正確：${shapeError}` });
           continue;
         }
 
