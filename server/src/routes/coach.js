@@ -15,13 +15,41 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
   const router = Router();
   router.use(requireAuth, requireCoach);
 
-  router.get('/overview', (_req, res) => {
+  // 這位教練「看得到成績」的對象：自己名下班別的所有成員。admin 不受限。
+  // 評測分數屬敏感資料，教練不應看到別的教練所帶學員的成績。
+  function visibleUserIds(reqUser) {
+    if (reqUser.role === 'admin') return null; // null = 不設限
+    const ids = new Set();
+    for (const g of db.data.groups ?? []) {
+      if (g.coachId !== reqUser.id) continue;
+      for (const id of g.memberIds ?? []) ids.add(id);
+    }
+    return ids;
+  }
+
+  router.get('/overview', (req, res) => {
+    const allow = visibleUserIds(req.user);
+    const canSee = (userId) => allow === null || allow.has(userId);
+
     res.json({
-      users: db.data.users.filter((u) => u.role !== 'admin').map(publicUser),
-      submissions: db.data.submissions.map((s) => ({
-        ...normalizeSubmission(s),
-        answers: undefined,
-      })),
+      users: db.data.users
+        .filter((u) => u.role !== 'admin' && canSee(u.id))
+        .map(publicUser),
+      // 受評者或評分者其中一方在可見範圍內才回傳，360 他評才不會漏掉。
+      submissions: db.data.submissions
+        .map(normalizeSubmission)
+        .filter((s) => canSee(s.rateeId) || canSee(s.userId))
+        .map((s) => ({ ...s, answers: undefined })),
+    });
+  });
+
+  // 建立／編輯班別時的「可加入成員」名冊。只有姓名與 Email，不含任何成績，
+  // 因此不受上面的成績可見範圍限制——否則教練無從把新成員加進自己的班別。
+  router.get('/directory', (_req, res) => {
+    res.json({
+      users: db.data.users
+        .filter((u) => u.role !== 'admin')
+        .map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role })),
     });
   });
 

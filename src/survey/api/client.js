@@ -55,6 +55,7 @@ export const api = {
     request(`/admin/users/${userId}/reset-token`, { method: 'POST' }),
 
   coachOverview: () => request('/coach/overview'),
+  coachDirectory: () => request('/coach/directory').then((d) => d.users),
   coachGroups: () => request('/coach/groups').then((d) => d.groups),
   createGroup: (payload) => request('/coach/groups', { method: 'POST', body: payload }).then((d) => d.group),
   getGroup: (id) => request(`/coach/groups/${id}`),

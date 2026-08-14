@@ -26,6 +26,10 @@ function parseRoster(text) {
 }
 
 export default function GroupTab({ users, submissions }) {
+  // 「加入成員」的可選名單來自 /coach/directory（僅姓名與 Email，不含成績），
+  // 與 users（僅自己班級成員，含成績）分開，才能在收斂成績可見範圍的同時
+  // 仍讓教練把尚未加入的人加進班別。
+  const [directory, setDirectory] = useState([]);
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [groupDetail, setGroupDetail] = useState(null);
@@ -58,6 +62,7 @@ export default function GroupTab({ users, submissions }) {
 
   useEffect(() => {
     api.coachGroups().then(setGroups).catch(() => {});
+    api.coachDirectory().then(setDirectory).catch(() => setDirectory([]));
   }, []);
 
   const loadGroup = async (id) => {
@@ -225,7 +230,7 @@ export default function GroupTab({ users, submissions }) {
     return aggregateStats(groupDetail.submissions, config);
   }, [groupDetail]);
 
-  const nonAdminUsers = users.filter((u) => u.role !== 'admin');
+  const nonAdminUsers = directory.filter((u) => u.role !== 'admin');
 
   return (
     <div className="grid gap-5 lg:grid-cols-5">
