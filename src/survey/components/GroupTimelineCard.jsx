@@ -30,7 +30,11 @@ export default function GroupTimelineCard({ group, onUpdated, showHeader = false
     try {
       const updated = await api.publishGroup(group.id);
       onUpdated(updated);
-      showToast('已發佈成果，用戶現可查看報告');
+      // 落點是 published 才代表學員真的看得到；施測還沒截止時發佈只是「預約」，
+      // 必須講清楚，否則教練會以為按了沒反應。
+      showToast(updated.phase === 'published'
+        ? '已發佈成果，學員現在可查看報告'
+        : '已設定發佈，將於施測截止後自動開放給學員');
     } catch (e) {
       setError(e.message || '發佈失敗');
     } finally {
@@ -112,6 +116,18 @@ export default function GroupTimelineCard({ group, onUpdated, showHeader = false
           </span>
         )}
       </div>
+
+      {/* 發佈只有在施測截止後才生效（phase 由日期與 publishedAt 共同決定）。
+          已按發佈但尚未截止時，若不說明，教練會誤以為發佈失敗。 */}
+      {group.publishedAt && group.phase !== 'published' && (
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          已設定發佈，但施測尚未截止，學員目前仍看不到報告。
+          {group.endDate
+            ? `將於截止日（${new Date(group.endDate).toLocaleDateString('zh-TW')}）之後自動開放。`
+            : '請先設定截止日期，否則不會開放。'}
+          若要立即開放，請將截止日期改為今天之前。
+        </p>
+      )}
     </div>
   );
 }
