@@ -1,6 +1,9 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
-import { ArrowLeft, Download, LogOut, CircleHelp } from 'lucide-react';
+import {
+  ArrowLeft, Download, LogOut, CircleHelp,
+  ClipboardList, ChartColumn, UsersRound, GraduationCap, Shield, User,
+} from 'lucide-react';
 import { useAuth } from './auth/useAuth';
 import { api } from './api/client';
 import AssessmentCard from './components/AssessmentCard';
@@ -12,6 +15,7 @@ import ProfilePage from './profile/ProfilePage';
 import HelpModal from './components/HelpModal';
 import OnboardingBanner from './components/OnboardingBanner';
 import ChatBot from './components/ChatBot';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const CoachDashboard = lazy(() => import('./coach/CoachDashboard'));
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard'));
@@ -152,13 +156,17 @@ export default function AppShell() {
 
   const handleResultLoad = useCallback((result) => setChatContext({ result }), []);
 
+  // shortLabel 供手機底部導覽使用（寬度有限，取最短可辨識的字樣）。
   const tabs = [
-    { id: 'home', label: '我的評量', path: '/home' },
-    { id: 'analysis', label: '我的分析', path: '/analysis' },
-    { id: '360', label: '360° 評測', path: '/360' },
-    ...(isCoach && !isAdmin ? [{ id: 'coach', label: '教練後台', path: '/coach' }] : []),
-    ...(isAdmin ? [{ id: 'coach', label: '教練後台', path: '/coach' }, { id: 'admin', label: '管理後台', path: '/admin' }] : []),
-    { id: 'profile', label: '個人設定', path: '/profile' },
+    { id: 'home', label: '我的評量', shortLabel: '評量', path: '/home', Icon: ClipboardList },
+    { id: 'analysis', label: '我的分析', shortLabel: '分析', path: '/analysis', Icon: ChartColumn },
+    { id: '360', label: '360° 評測', shortLabel: '360°', path: '/360', Icon: UsersRound },
+    ...(isCoach && !isAdmin ? [{ id: 'coach', label: '教練後台', shortLabel: '教練', path: '/coach', Icon: GraduationCap }] : []),
+    ...(isAdmin ? [
+      { id: 'coach', label: '教練後台', shortLabel: '教練', path: '/coach', Icon: GraduationCap },
+      { id: 'admin', label: '管理後台', shortLabel: '管理', path: '/admin', Icon: Shield },
+    ] : []),
+    { id: 'profile', label: '個人設定', shortLabel: '設定', path: '/profile', Icon: User },
   ];
 
   const handleStartSurvey = (id) => {
@@ -181,9 +189,11 @@ export default function AppShell() {
   const isRaterSetup = location.pathname.startsWith('/rater-setup');
   const backTarget = isRaterSetup ? '/360' : returnPathFor(location.state?.raterType);
   const isTabActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
+  const showBottomNav = !isSurveyOrRaterSetup;
 
   return (
-    <div className="min-h-screen">
+    // 底部導覽是 fixed，手機需保留等高的內距，否則會蓋住頁面最後一段內容。
+    <div className={`min-h-screen ${showBottomNav ? 'pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0' : ''}`}>
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
           <span className="flex items-center gap-2 text-base font-extrabold tracking-tight text-slate-800">
@@ -201,7 +211,9 @@ export default function AppShell() {
               {backTarget === '/360' ? '返回 360° 評測' : '返回評量列表'}
             </button>
           ) : (
-            <nav className="no-scrollbar flex flex-1 flex-nowrap gap-1 overflow-x-auto sm:flex-wrap sm:overflow-visible">
+            /* 手機改用畫面底部的 tab bar（見下方 <nav>），這裡只在 sm 以上顯示，
+               避免窄螢幕時 logo 與右側按鈕把分頁列擠成無法點擊的細條。 */
+            <nav className="hidden flex-1 flex-wrap gap-1 sm:flex">
               {tabs.map((t) => (
                 <button
                   key={t.id}
@@ -263,6 +275,9 @@ export default function AppShell() {
         </div>
       </header>
 
+      {/* 只包住路由內容，不含頁首與底部導覽——單一頁面出錯時，使用者仍能切換到
+          其他分頁自救，而不是整個 App 變白畫面。resetKey 用路徑，換頁即自動復原。 */}
+      <ErrorBoundary resetKey={location.pathname}>
       <Routes>
         <Route path="/" element={<Navigate to={defaultAid ? `/survey/${defaultAid}` : '/home'} replace />} />
 
@@ -332,10 +347,40 @@ export default function AppShell() {
 
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
+      </ErrorBoundary>
+
+      {/* 手機底部導覽：桌機（sm 以上）隱藏，改用頁首的分頁列。作答／選擇受評者
+          時隱藏，讓使用者專注填答，也與頁首「返回」的行為一致。 */}
+      {showBottomNav && (
+        <nav
+          aria-label="主要導覽"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden print:hidden"
+        >
+          <div className="flex items-stretch justify-around">
+            {tabs.map((t) => {
+              const active = isTabActive(t.path);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => navigate(t.path)}
+                  className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold transition-colors ${
+                    active ? 'text-brand-600' : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <t.Icon className={`h-5 w-5 ${active ? 'stroke-[2.5]' : ''}`} />
+                  {t.shortLabel}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
 
       {helpOpen && <HelpModal role={helpRole} onClose={() => setHelpOpen(false)} />}
 
-      <ChatBot context={chatContext} />
+      <ChatBot context={chatContext} liftForBottomNav={showBottomNav} />
     </div>
   );
 }

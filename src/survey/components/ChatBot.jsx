@@ -11,7 +11,12 @@ function getWelcomeContent(role) {
   return '你好！我是評測小幫手。有任何關於評測結果或學習方向的問題，歡迎直接問我。';
 }
 
-export default function ChatBot({ context = null }) {
+/**
+ * @param {object}  props
+ * @param {object?} props.context            目前頁面的評測結果，供 AI 參考。
+ * @param {boolean} props.liftForBottomNav   手機有底部導覽時，浮動按鈕需上移避免重疊。
+ */
+export default function ChatBot({ context = null, liftForBottomNav = false }) {
   const { isAdmin, isCoach } = useAuth();
   const role = isAdmin ? 'admin' : isCoach ? 'coach' : 'user';
 
@@ -113,7 +118,13 @@ export default function ChatBot({ context = null }) {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end print:hidden">
+    <div
+      className={`fixed right-4 z-40 flex flex-col items-end print:hidden ${
+        liftForBottomNav
+          ? 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] sm:bottom-4'
+          : 'bottom-4'
+      }`}
+    >
       {open && (
         <div className="mb-3 flex h-[min(520px,80dvh)] w-80 flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl sm:w-96">
           <div className="flex items-center justify-between rounded-t-2xl bg-brand-600 px-4 py-3">
