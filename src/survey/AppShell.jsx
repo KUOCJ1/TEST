@@ -42,9 +42,24 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
     return m;
   }, {});
 
-  const groupPhaseByAssessmentId = myGroups.reduce((m, g) => {
+  const groupByAssessmentId = myGroups.reduce((m, g) => {
     const id = g.assessmentId ?? 'ai-competency';
-    if (!m[id]) m[id] = g.phase;
+    if (!m[id]) m[id] = g;
+    return m;
+  }, {});
+  const groupPhaseByAssessmentId = Object.fromEntries(
+    Object.entries(groupByAssessmentId).map(([id, g]) => [id, g.phase]),
+  );
+
+  // 該評量、該班級「已作答過的階段」（課前／課後）。用來判斷卡片是否該完全鎖住——
+  // 後端已改成同班同階段才擋重複（例如課前做過仍可再做課後），卡片這邊若只看
+  // 「有沒有任何一次作答」就整個鎖死，使用者會連課後複測的入口都點不到。
+  const submittedPhasesByAssessment = mySubmissions.reduce((m, s) => {
+    if ((s.raterType ?? 'self') !== 'self') return m; // 只算自評，不算 360 他評
+    const id = s.assessmentId ?? 'ai-competency';
+    const group = groupByAssessmentId[id];
+    if (!group || s.groupId !== group.id) return m; // 不屬於目前這個班的舊資料不計
+    (m[id] ??= new Set()).add(s.phase ?? 'pre');
     return m;
   }, {});
 
@@ -69,6 +84,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
               assessment={a}
               latestSubmission={latestByAssessment[a.id] ?? null}
               groupPhase={groupPhaseByAssessmentId[a.id] ?? null}
+              submittedPhases={submittedPhasesByAssessment[a.id] ?? null}
               onStart={onStartSurvey}
               onViewAnalysis={onViewAnalysis}
               onGoTo360={onGoTo360}

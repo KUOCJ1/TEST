@@ -222,6 +222,82 @@ describe('作答', () => {
       201,
     );
   });
+
+  test('不屬於任何班級時可重複作答（重新作答／歷次趨勢不受阻擋）', async () => {
+    const app = await setup();
+    const agent = request.agent(app);
+    await agent.post('/api/auth/register').send({ name: 'u', email: 'retake@b.co', password: 'abcdef12' });
+
+    const first = await agent.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(100) });
+    assert.equal(first.status, 201);
+    const second = await agent.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(120) });
+    assert.equal(second.status, 201, '不在班級內時應可無限次重新作答');
+
+    const mine = await agent.get('/api/submissions/me');
+    assert.equal(mine.body.submissions.length, 2);
+  });
+
+  test('班級內：同班同階段重複作答擋 409；課前→課後、不同梯次、退班後皆放行', async () => {
+    const app = await setup({ withAdmin: true });
+    const admin = request.agent(app);
+    await admin.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
+    const coach = request.agent(app);
+    const creg = await coach.post('/api/auth/register').send({ name: '教練', email: 'dedup-coach@b.co', password: 'abcdef12' });
+    await admin.patch(`/api/admin/users/${creg.body.user.id}/role`).send({ role: 'coach' });
+    await coach.post('/api/auth/login').send({ email: 'dedup-coach@b.co', password: 'abcdef12' });
+
+    const student = request.agent(app);
+    const sreg = await student.post('/api/auth/register').send({ name: '學員', email: 'dedup-stu@b.co', password: 'abcdef12' });
+
+    const openWindow = () => ({
+      startDate: new Date(Date.now() - 864e5).toISOString(),
+      endDate: new Date(Date.now() + 864e5).toISOString(),
+    });
+
+    const g1 = await coach.post('/api/coach/groups')
+      .send({ name: '第一梯', assessmentId: 'ai-competency', memberIds: [sreg.body.user.id] });
+    await coach.put(`/api/coach/groups/${g1.body.group.id}`).send(openWindow());
+
+    // 課前：第一次送出成功。
+    const pre = await student.post('/api/submissions')
+      .send({ assessmentId: 'ai-competency', phase: 'pre', result: sampleResult(100) });
+    assert.equal(pre.status, 201);
+    assert.equal(pre.body.submission.groupId, g1.body.group.id, '作答應寫入所屬班級的 groupId');
+
+    // 同班同階段（課前）重複送出 → 409。
+    const dupe = await student.post('/api/submissions')
+      .send({ assessmentId: 'ai-competency', phase: 'pre', result: sampleResult(105) });
+    assert.equal(dupe.status, 409);
+
+    // 同班「課前 → 課後」→ 放行（原本被卡死的 bug）。
+    const post = await student.post('/api/submissions')
+      .send({ assessmentId: 'ai-competency', phase: 'post', result: sampleResult(130) });
+    assert.equal(post.status, 201);
+    assert.equal(post.body.submission.groupId, g1.body.group.id);
+
+    // 開第二梯，同一位學員再參加一次 → 不同 groupId，應放行，且各自歸屬正確梯次。
+    const g2 = await coach.post('/api/coach/groups')
+      .send({ name: '第二梯', assessmentId: 'ai-competency', memberIds: [sreg.body.user.id] });
+    await coach.put(`/api/coach/groups/${g2.body.group.id}`).send(openWindow());
+    const secondCohort = await student.post('/api/submissions')
+      .send({ assessmentId: 'ai-competency', phase: 'pre', result: sampleResult(140) });
+    assert.equal(secondCohort.status, 201, '不同梯次（不同班）應可再次作答');
+    assert.equal(secondCohort.body.submission.groupId, g2.body.group.id);
+
+    // 班級報告依 groupId 精準歸屬：第一梯報告應只看到第一梯的兩筆（pre+post），
+    // 不會把第二梯的作答也算進去。
+    const g1Detail = await coach.get(`/api/coach/groups/${g1.body.group.id}`);
+    assert.equal(g1Detail.body.submissions.length, 2, '第一梯報告只應含第一梯自己的作答');
+    assert.ok(g1Detail.body.submissions.every((s) => s.groupId === g1.body.group.id));
+
+    const g2Detail = await coach.get(`/api/coach/groups/${g2.body.group.id}`);
+    assert.equal(g2Detail.body.submissions.length, 1);
+
+    // 把學員移出第一梯後，第一梯報告仍看得到他的歷史成績（不因成員異動而消失）。
+    await coach.put(`/api/coach/groups/${g1.body.group.id}`).send({ memberIds: [] });
+    const g1AfterRemoval = await coach.get(`/api/coach/groups/${g1.body.group.id}`);
+    assert.equal(g1AfterRemoval.body.submissions.length, 2, '退班不應讓歷史成績從班級報告消失');
+  });
 });
 
 describe('母體基準 / 百分位', () => {

@@ -95,9 +95,15 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     if (group.coachId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: '無權限' });
     }
+    // 新資料在送出時就已寫死 groupId，精準對應「這一梯」；舊資料（groupId 為 null）
+    // 沒有這個歸屬，退回原本「用當下成員名單反查」的方式相容，確保既有正式站資料
+    // 不會從報告中消失。兩者擇一，不會重複計入。
     const memberSubs = db.data.submissions
-      .filter((s) => group.memberIds.includes(s.userId) && (s.assessmentId ?? 'ai-competency') === group.assessmentId)
-      .map((s) => ({ ...normalizeSubmission(s), answers: undefined }));
+      .map(normalizeSubmission)
+      .filter((n) => (n.groupId
+        ? n.groupId === group.id
+        : group.memberIds.includes(n.userId) && n.assessmentId === group.assessmentId))
+      .map((n) => ({ ...n, answers: undefined }));
     res.json({ group: { ...group, phase: getGroupPhase(group) }, submissions: memberSubs });
   });
 

@@ -13,6 +13,9 @@ export function normalizeSubmission(s) {
     phase: s.phase ?? null,
     rateeId: s.rateeId ?? s.userId,
     raterType: s.raterType ?? 'self',
+    // 舊資料沒有 groupId（班級歸屬在當時是靠當下成員名單反查的），一律補 null；
+    // 讀取端（班級報告）遇到 null 時會退回舊的 memberIds 反查方式相容既有資料。
+    groupId: s.groupId ?? null,
   };
 }
 

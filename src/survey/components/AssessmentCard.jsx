@@ -2,12 +2,16 @@ import { getAssessment } from '../data/assessments/index.js';
 import { formatDate } from '../utils/format';
 import PhaseBadge from './PhaseBadge';
 
-export default function AssessmentCard({ assessment, latestSubmission, groupPhase, onStart, onViewAnalysis, onGoTo360 }) {
+export default function AssessmentCard({
+  assessment, latestSubmission, groupPhase, submittedPhases, onStart, onViewAnalysis, onGoTo360,
+}) {
   const config = getAssessment(assessment.id);
   const hasResult = !!latestSubmission;
   const inGroup = groupPhase != null;
   const canStart = !inGroup || groupPhase === 'in_progress';
-  const alreadySubmitted = hasResult && inGroup;
+  // 課前、課後都做過才算「這個班真的沒有可以再做的了」；只做過課前的話，
+  // 按鈕仍要能點——使用者要靠它才能進去選「課後複測」。
+  const alreadySubmitted = inGroup && !!submittedPhases?.has('pre') && !!submittedPhases?.has('post');
   const supports360 = !!config?.SUPPORTS_360;
 
   let startLabel = hasResult ? '重新作答' : '開始作答';

@@ -21,23 +21,37 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
     const finalRateeId = effectiveRaterType === 'self' ? req.user.id : effectiveRateeId;
     const effectiveAssessmentId = typeof assessmentId === 'string' ? assessmentId : 'ai-competency';
 
-    // Phase guard：若受測者屬於某班級，需在 in_progress 期間才可提交。
-    const userGroup = (db.data.groups ?? []).find(
+    const effectivePhase = phase === 'pre' || phase === 'post' ? phase : null;
+
+    // 這位使用者、這個評量底下所有他所屬的班級（可能不只一個——例如重複開班、
+    // 同一學員報名下一梯，教練也可能忘了把他從舊班移除）。
+    const matchingGroups = (db.data.groups ?? []).filter(
       (g) => g.memberIds.includes(req.user.id) &&
              (g.assessmentId ?? 'ai-competency') === effectiveAssessmentId,
     );
+    const hasSubmittedTo = (groupId) => db.data.submissions.some((s) => {
+      const n = normalizeSubmission(s);
+      return n.userId === req.user.id &&
+             n.raterType === effectiveRaterType &&
+             n.rateeId === finalRateeId &&
+             n.groupId === groupId &&
+             n.phase === effectivePhase;
+    });
+    // 只屬於一個班級時就是它；同時屬於多個班級時，優先選「這個階段還沒作答過」
+    // 的那一個——這樣同一學員參加下一梯課程（新班還沒交、舊班已經交過）才能
+    // 正確歸到新班，而不是被舊班的重複檢查卡住。都做過或都沒做時退回第一個，
+    // 純粹當作 phase guard 用（見下方 403）。
+    const userGroup = matchingGroups.find((g) => !hasSubmittedTo(g.id)) ?? matchingGroups[0];
+
     if (userGroup && getGroupPhase(userGroup) !== 'in_progress') {
       return res.status(403).json({ code: 'PHASE_LOCKED', error: '目前不在開放作答期間' });
     }
 
-    // 唯一性檢查：同一 rater → 同一 ratee → 同一 assessmentId → 同一 raterType 只能提交一次。
-    const duplicate = db.data.submissions.some(
-      (s) => s.userId === req.user.id &&
-             (s.assessmentId ?? 'ai-competency') === effectiveAssessmentId &&
-             (s.raterType ?? 'self') === effectiveRaterType &&
-             (s.rateeId ?? s.userId) === finalRateeId,
-    );
-    if (duplicate) {
+    // 唯一性檢查：只在有班級歸屬時才擋——同班同階段重複送出才算重複；同班
+    // 「課前→課後」、不同梯次（不同班）、或完全不屬於任何班級（自主重測）皆
+    // 放行。不設班級限制時完全不擋，讓「重新作答」與歷次趨勢這類本來就支援
+    // 多次作答的功能正常運作。
+    if (userGroup && hasSubmittedTo(userGroup.id)) {
       return res.status(409).json({ code: 'ALREADY_SUBMITTED', error: '已完成作答，不可重複提交' });
     }
 
@@ -48,7 +62,8 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
       rateeId: finalRateeId,
       raterType: effectiveRaterType,
       assessmentId: effectiveAssessmentId,
-      phase: phase === 'pre' || phase === 'post' ? phase : null,
+      groupId: userGroup?.id ?? null,
+      phase: effectivePhase,
       createdAt: new Date().toISOString(),
       answers: answers && typeof answers === 'object' ? answers : {},
       result,
