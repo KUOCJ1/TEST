@@ -26,13 +26,13 @@ vi.mock('../survey/api/client', () => {
         const u = { id: `u${state.users.length + 1}`, name: name.trim(), email: e, role: 'user' };
         state.users.push(u);
         state.user = u;
-        return pub(u);
+        return { user: pub(u), joinedGroup: null };
       },
       async login({ email }) {
         const u = state.users.find((x) => x.email === (email || '').toLowerCase());
         if (!u) throw new Error('Email 或密碼錯誤');
         state.user = u;
-        return pub(u);
+        return { user: pub(u), joinedGroup: null };
       },
       async logout() {
         state.user = null;
@@ -91,6 +91,8 @@ vi.mock('../survey/api/client', () => {
       },
       async coachOverview() { return { users: state.users.map(pub), submissions: [] }; },
       async coachGroups() { return []; },
+      async publicJoinInfo() { throw new Error('無此代碼'); },
+      async joinGroup() { throw new Error('無此代碼'); },
     },
   };
 });

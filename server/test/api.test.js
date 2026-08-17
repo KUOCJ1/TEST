@@ -648,6 +648,31 @@ describe('教練 / 班別 / 名單', () => {
     assert.equal(regBad.status, 201);
     assert.equal(regBad.body.joinedGroup, null);
   });
+
+  test('已登入使用者可用 POST /api/groups/join 直接加入另一個班級（免重新登入）', async () => {
+    const app = await setup({ withAdmin: true });
+    const { coach } = await makeCoach(app);
+    await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef12' });
+    const g = await coach.post('/api/coach/groups').send({ name: '現場加開班', assessmentId: 'ai-competency' });
+    const code = (await coach.post(`/api/coach/groups/${g.body.group.id}/join-code`)).body.group.joinCode;
+
+    const stu = request.agent(app);
+    await stu.post('/api/auth/register').send({ name: '學員', email: 'walkin@b.co', password: 'abcdef12' });
+
+    const unauth = await request(app).post('/api/groups/join').send({ joinCode: code });
+    assert.equal(unauth.status, 401, '未登入應被拒絕');
+
+    const join = await stu.post('/api/groups/join').send({ joinCode: code });
+    assert.equal(join.status, 200);
+    assert.equal(join.body.joinedGroup.id, g.body.group.id);
+
+    const myGroups = await stu.get('/api/groups/mine');
+    assert.equal(myGroups.body.groups.length, 1);
+    assert.equal(myGroups.body.groups[0].id, g.body.group.id);
+
+    const bad = await stu.post('/api/groups/join').send({ joinCode: 'NOSUCHCODE' });
+    assert.equal(bad.status, 404);
+  });
 });
 
 describe('360° 多元評測', () => {

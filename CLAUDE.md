@@ -72,6 +72,33 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - 三圈層：foundation / interpersonal / organizational（見 `leadership-9d.js` 的 `LAYERS`）。
 - 設定驅動、向後相容：題庫有 `COMMENTARY` 才顯示敘事報告，無則不顯示也不報錯。
 
+## 班級管理與 QR Code 報到
+
+- 每筆作答提交都會寫入 `groupId`，精準對應提交當下所屬的班級（同一梯次）。班級報告
+  （`GET /api/coach/groups/:id`）優先以 `groupId` 歸屬；`groupId` 為 `null` 的舊資料
+  才退回「用當下成員名單反查」的相容邏輯，讓既有正式站資料不會從報告中消失。
+  這個設計讓同一學員可重複參加多梯課程而不互相污染成績，也讓移出班級成員不會抹掉
+  他當時的作答紀錄。
+- 重複提交檢查以「班級 + 階段（課前/課後）」為鍵：同班同階段擋 409、同班課前→課後
+  放行、不同梯次放行；不屬於任何班級時不擋（供「重新作答」與歷次趨勢功能使用）。
+- QR Code 報到：班別多了 `joinCode`／`joinCodeCreatedAt` 欄位（單一代碼，重新產生會
+  讓舊代碼立即失效；撤銷＝設為 `null`，可逆）。
+  - `POST /api/coach/groups/:id/join-code`　產生／重新產生（限本班教練或 admin）。
+    若班級尚未設定 `startDate` 會自動設為現在，避免學員掃碼後看到「尚未開放作答」。
+  - `DELETE /api/coach/groups/:id/join-code`　撤銷。
+  - `GET /api/public/join/:code`　**免登入**查詢班級／評量顯示資訊（不含成員或成績），
+    代碼無效回 404，有獨立 rate limit。
+  - `POST /api/groups/join`（需登入）　已登入使用者掃到另一個班級的 QR 時直接加入，
+    不必重新註冊/登入。
+  - `POST /api/auth/register`、`POST /api/auth/login` 可帶 `joinCode`，成功後自動加入
+    對應班級，回應內含 `joinedGroup` 供前端導向該評量的作答頁。
+  - 前端：`App.jsx` 讀取 `?join=CODE` 導向對應流程；`LoginPage.jsx` 顯示班級橫幅並把
+    `joinCode` 併入註冊/登入請求；教練端 `GroupTab.jsx` → `QrCodeCard.jsx` 提供
+    產生／重新產生／撤銷、複製連結、全螢幕投影（`qrcode` 套件以 `await import()`
+    動態載入，避免灌進教練後台共用 chunk）。
+- 帶有效 `joinCode` 的註冊/登入請求，rate limit 會放寬（預設每 5 分鐘 10 次 → 100 次），
+  讓整班同時掃碼註冊不會被擋；額度仍有界，且綁定「持有教練發出的代碼」。
+
 ## Git 開發慣例
 
 - 開發分支：`claude/ai-assessment-survey-4vhjun`（功能分支）。
@@ -127,6 +154,12 @@ curl -s localhost:3101/api/health     # 應回 {"ok":true}
 必填鍵：`JWT_SECRET`、`PORT`（本站 3101）、`DB_PATH`、`ADMIN_EMAIL`、
 `ADMIN_PASSWORD`、`NODE_ENV=production`。`.env` 已列入 `.gitignore`，不進版控。
 
+選填鍵 `TRUST_PROXY`：本站架構 Traefik → Nginx → 這支 API 有兩層反向代理，且兩層都走
+loopback，不設定的話 Express 會把所有請求都當成同一個 IP（Nginx 自己的位址），導致
+註冊/登入 rate limit 形同全站共用一份額度。本站應設為 `2`，但**務必在部署後從外部
+網路實際驗證** `req.ip` 讀到的是使用者真實 IP，不能只憑推論設定——設太高會讓偽造的
+`X-Forwarded-For` 被當真、形同繞過限流，設太低則限流仍然全站共用。
+
 > ⚠️ 安全守則：絕不在程式碼、提交訊息、文件或對話中索取或重現密碼、JWT 密鑰、
 > SSH 金鑰等任何憑證。`.env` 僅在 VPS 上以實際值存在。
 
@@ -141,4 +174,7 @@ GitHub Actions `deploy.yml`：在功能分支 push 時 `npm ci` → `npm run bui
 - Nginx 錯誤：`sudo tail -f /var/log/nginx/error.log`
 - `502 Bad Gateway`：後端未啟動或埠不符 → 檢查服務與 `.env` 的 `PORT`。
 - 登入後一直登出：確認 HTTPS 已啟用且 `NODE_ENV=production`（Secure cookie 需 HTTPS）。
+- 整班掃 QR 註冊時出現「請求過於頻繁」：檢查 `.env` 的 `TRUST_PROXY` 是否已設定
+  （見上方「後端環境變數」），未設定時所有使用者的請求都會被 rate limiter 當成同一
+  個 IP。
 - 備份：`cp /var/lib/ai-assessment/db.json.sqlite3 ~/backup-$(date +%F).sqlite3`

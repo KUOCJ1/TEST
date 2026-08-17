@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from './useAuth';
+import JoinClassBanner from '../components/JoinClassBanner';
 
 function readUrlParams() {
   const p = new URLSearchParams(window.location.search);
@@ -10,23 +11,27 @@ function readUrlParams() {
   };
 }
 
-export default function LoginPage({ onBack }) {
+export default function LoginPage({ onBack, joinCode, joinInfo }) {
   const { login, register } = useAuth();
   const [{ fromAI, name: prefillName, email: prefillEmail }] = useState(readUrlParams);
-  const [mode, setMode] = useState(fromAI ? 'register' : 'login');
+  const [mode, setMode] = useState(fromAI || joinCode ? 'register' : 'login');
   const [form, setForm] = useState({ name: prefillName, email: prefillEmail, password: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  // 登入/註冊成功後要導去哪一頁，統一交給 App.jsx 的 effect 處理（它會等網址真的
+  // 換到目標評量頁之後才掛載 AppShell），這裡不自己 navigate——否則會跟 AppShell
+  // 自己的預設路由（對尚未换成目標路徑的網址做重導）互相搶跑，導致頁面被搶先導去
+  // /home。
   const submit = async (e) => {
     e.preventDefault();
     setError('');
     setBusy(true);
     try {
-      if (mode === 'register') await register(form);
-      else await login({ email: form.email, password: form.password });
+      if (mode === 'register') await register(joinCode ? { ...form, joinCode } : form);
+      else await login(joinCode ? { email: form.email, password: form.password, joinCode } : { email: form.email, password: form.password });
     } catch (err) {
       setError(err.message || '發生錯誤，請稍後再試');
     } finally {
@@ -57,13 +62,17 @@ export default function LoginPage({ onBack }) {
           <p className="mt-2 text-sm text-slate-500">登入後即可作答並查看您的專屬能力分析</p>
         </header>
 
-        {fromAI && (
-          <div className="mb-5 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 px-5 py-4 text-white shadow-lg shadow-brand-500/25">
-            <div className="text-sm font-bold mb-1">👋 歡迎來自 AI 轉型評估！</div>
-            <div className="text-xs opacity-80 leading-relaxed">
-              建立免費帳號，立即開始 AI 職能評測，取得個人化能力分析報告。
+        {joinCode ? (
+          <JoinClassBanner info={joinInfo} />
+        ) : (
+          fromAI && (
+            <div className="mb-5 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 px-5 py-4 text-white shadow-lg shadow-brand-500/25">
+              <div className="text-sm font-bold mb-1">👋 歡迎來自 AI 轉型評估！</div>
+              <div className="text-xs opacity-80 leading-relaxed">
+                建立免費帳號，立即開始 AI 職能評測，取得個人化能力分析報告。
+              </div>
             </div>
-          </div>
+          )
         )}
 
         <div className="rounded-3xl bg-white px-6 py-7 shadow-card ring-1 ring-slate-100">

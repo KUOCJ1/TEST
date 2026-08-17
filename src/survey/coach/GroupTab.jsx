@@ -10,6 +10,7 @@ import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import InfoTip from '../components/InfoTip';
 import PhaseBadge from '../components/PhaseBadge';
 import GroupTimelineCard from '../components/GroupTimelineCard';
+import QrCodeCard from '../components/QrCodeCard';
 import { useToast } from '../components/useToast';
 
 function parseRoster(text) {
@@ -346,6 +347,8 @@ export default function GroupTab({ users, submissions }) {
         ) : (
           <div className="space-y-5">
             <GroupTimelineCard key={groupDetail.group.id} group={groupDetail.group} onUpdated={handleGroupUpdated} />
+
+            <QrCodeCard key={groupDetail.group.id} group={groupDetail.group} onUpdated={handleGroupUpdated} />
 
             <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4">
               <h3 className="mb-3 flex items-center gap-1.5 font-semibold text-brand-700">

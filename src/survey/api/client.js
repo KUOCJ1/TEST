@@ -25,8 +25,10 @@ async function request(path, { method = 'GET', body } = {}) {
 }
 
 export const api = {
-  register: (payload) => request('/auth/register', { method: 'POST', body: payload }).then((d) => d.user),
-  login: (payload) => request('/auth/login', { method: 'POST', body: payload }).then((d) => d.user),
+  // 回傳完整 { user, joinedGroup }：joinedGroup 只有帶了有效報到代碼時才會有值，
+  // 供呼叫端（AuthContext）判斷要不要直接導去對應的評量。
+  register: (payload) => request('/auth/register', { method: 'POST', body: payload }),
+  login: (payload) => request('/auth/login', { method: 'POST', body: payload }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me').then((d) => d.user),
   updateProfile: (payload) => request('/auth/profile', { method: 'PATCH', body: payload }).then((d) => d.user),
@@ -73,4 +75,13 @@ export const api = {
 
   myGroups: () => request('/groups/mine').then((d) => d.groups),
   groupMembers: () => request('/groups/mine/members').then((d) => d.members),
+  // 已登入使用者掃到（另一個）班級的 QR：直接加入，不需重新註冊/登入。
+  joinGroup: (joinCode) => request('/groups/join', { method: 'POST', body: { joinCode } }).then((d) => d.joinedGroup),
+  // 完全公開、免登入：QR 報到連結在使用者登入前就要能顯示班級資訊。
+  publicJoinInfo: (code) => request(`/public/join/${encodeURIComponent(code)}`),
+
+  generateJoinCode: (groupId) =>
+    request(`/coach/groups/${groupId}/join-code`, { method: 'POST' }),
+  revokeJoinCode: (groupId) =>
+    request(`/coach/groups/${groupId}/join-code`, { method: 'DELETE' }).then((d) => d.group),
 };

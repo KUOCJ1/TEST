@@ -20,15 +20,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = useCallback(async (payload) => {
-    const u = await api.register(payload);
+    const { user: u, joinedGroup } = await api.register(payload);
     setUser(u);
-    return u;
+    return { user: u, joinedGroup: joinedGroup ?? null };
   }, []);
 
   const login = useCallback(async (payload) => {
-    const u = await api.login(payload);
+    const { user: u, joinedGroup } = await api.login(payload);
     setUser(u);
-    return u;
+    return { user: u, joinedGroup: joinedGroup ?? null };
   }, []);
 
   const logout = useCallback(async () => {
