@@ -19,10 +19,25 @@ export {
  * 建立 Express app（不啟動監聽），方便測試直接以 supertest 注入。
  * @param {{db, jwtSecret:string, secureCookies?:boolean}} opts
  */
-export function createApp({ db, jwtSecret, secureCookies = false }) {
+/**
+ * @param {{db, jwtSecret:string, secureCookies?:boolean, trustProxy?:number}} opts
+ */
+export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0 }) {
   if (!jwtSecret) throw new Error('createApp 需要 jwtSecret');
 
   const app = express();
+
+  // 本站架構為 Traefik → Nginx → 這支 Express（VPS 上兩層反向代理，皆走 loopback，
+  // Nginx 用 $proxy_add_x_forwarded_for 把自己的位址「附加」在 X-Forwarded-For 後面）。
+  // Express 預設完全不信任代理標頭，req.ip 會固定拿到 Nginx 自己的位址（127.0.0.1），
+  // 讓所有請求在 rate limiter 眼中都是「同一個 IP」——註冊/登入的限流因此形同全站
+  // 共用一份額度，而非每人一份。設成正確的信任層數，req.ip 才會是真實使用者位址。
+  // 本機開發／測試沒有代理，預設 0（完全不信任，維持 Express 內建安全預設值）；
+  // VPS 部署務必用 TRUST_PROXY 環境變數明確設定，且部署後要從外部網路實際驗證
+  // 讀到的是使用者真實 IP——設太高會讓偽造的 X-Forwarded-For 被當真、形同繞過限流，
+  // 設太低則限流仍然全站共用，兩者都不能單憑猜測層數就上線。
+  app.set('trust proxy', trustProxy);
+
   app.use(express.json({ limit: '512kb' }));
   app.use(cookieParser());
 

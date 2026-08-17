@@ -9,6 +9,7 @@ import {
   MIN_PASSWORD_LENGTH,
 } from '../auth.js';
 import { asyncHandler, hashToken, revokeUserTokens } from '../lib/helpers.js';
+import { findGroupByJoinCode } from '../lib/joinCode.js';
 
 // 將使用者 email 比對各班別的待加入名單；命中則自動轉為正式成員。
 function claimPendingGroups(db, user) {
@@ -30,12 +31,16 @@ function claimPendingGroups(db, user) {
 export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }) {
   const router = Router();
 
-  // Rate limit for auth endpoints — 10 attempts per 5 minutes per IP.
+  // Rate limit for auth endpoints — 10 attempts per 5 minutes per IP, or 100 when
+  // the request carries a joinCode that actually matches an open class (QR報到情境：
+  // 一整班學員很可能共用同一個 NAT/Wi-Fi 出口 IP，10 次的額度第 11 個人就會卡住)。
+  // 放寬額度仍是有界的，且只有「持有教練發出、尚未撤銷的代碼」才適用，而代碼本身
+  // 隨時可由教練撤銷。
   // Created fresh per router instance (not module-level) so each createApp()
   // call — notably each test's own app — gets an independent counter.
   const authLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,
-    max: 10,
+    limit: (req) => (findGroupByJoinCode(db, req.body?.joinCode) ? 100 : 10),
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: '請求過於頻繁，請稍後再試' },

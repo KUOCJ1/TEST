@@ -8,7 +8,7 @@ import { hashPassword } from '../src/auth.js';
 
 const JWT_SECRET = 'test-secret-please-change';
 
-async function setup({ withAdmin = false } = {}) {
+async function setupWithDb({ withAdmin = false, trustProxy = 0 } = {}) {
   const db = createDb(':memory:');
   if (withAdmin) {
     db.data.users.push({
@@ -20,7 +20,11 @@ async function setup({ withAdmin = false } = {}) {
       createdAt: new Date().toISOString(),
     });
   }
-  return createApp({ db, jwtSecret: JWT_SECRET });
+  return { app: createApp({ db, jwtSecret: JWT_SECRET, trustProxy }), db };
+}
+
+async function setup(opts) {
+  return (await setupWithDb(opts)).app;
 }
 
 // 形狀需與前端 buildResult() 的輸出一致（含 dimension.score/max/rating），
@@ -81,6 +85,34 @@ describe('認證', () => {
     assert.equal((await agent.get('/api/auth/me')).status, 200);
     await agent.post('/api/auth/logout');
     assert.equal((await agent.get('/api/auth/me')).status, 401);
+  });
+
+  test('註冊/登入的頻率限制：預設每 5 分鐘 10 次，帶有效報到代碼時放寬到 100 次', async () => {
+    const { app, db } = await setupWithDb();
+    // 一整班學員很可能共用同一個出口 IP（同一個 Wi-Fi/NAT）；沒帶代碼時，
+    // 第 11 次應該被擋下——這是「一般情況下限流仍然有效」的基本保證。
+    for (let i = 0; i < 10; i++) {
+      const res = await request(app).post('/api/auth/register')
+        .send({ name: 'u', email: `nolimit-${i}@b.co`, password: 'abcdef12' });
+      assert.equal(res.status, 201, `第 ${i + 1} 次註冊不應被擋`);
+    }
+    const eleventh = await request(app).post('/api/auth/register')
+      .send({ name: 'u', email: 'nolimit-11@b.co', password: 'abcdef12' });
+    assert.equal(eleventh.status, 429, '沒有代碼時，第 11 次應被限流擋下');
+
+    // 帶一組真實存在的報到代碼，額度應放寬到 100 次（用另一組 email 起算，
+    // 避免與上面已經用掉的 10 次額度算在同一個限流視窗裡相互干擾）。
+    db.data.groups.push({ id: 'g1', joinCode: 'TESTCODE1', memberIds: [] });
+    for (let i = 0; i < 15; i++) {
+      const res = await request(app).post('/api/auth/register')
+        .send({ name: 'u', email: `withcode-${i}@b.co`, password: 'abcdef12', joinCode: 'testcode1' });
+      assert.equal(res.status, 201, `帶有效代碼時，第 ${i + 1} 次不應被擋（大小寫應被正規化）`);
+    }
+
+    // 代碼錯誤／不存在時，仍套用一般的 10 次額度（此時已用完，直接擋下）。
+    const badCode = await request(app).post('/api/auth/register')
+      .send({ name: 'u', email: 'badcode@b.co', password: 'abcdef12', joinCode: 'NOSUCHCODE' });
+    assert.equal(badCode.status, 429, '代碼不存在時不應享有放寬額度');
   });
 });
 

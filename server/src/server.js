@@ -37,12 +37,20 @@ if (!db.data.users.some((u) => u.role === 'admin')) {
   }
 }
 
+const TRUST_PROXY = Number(process.env.TRUST_PROXY) || 0;
+
 const app = createApp({
   db,
   jwtSecret: JWT_SECRET,
   secureCookies: process.env.NODE_ENV === 'production',
+  trustProxy: TRUST_PROXY,
 });
 
 app.listen(PORT, () => {
   console.log(`✓ AI 評測 API 已啟動，監聽 :${PORT}（資料檔：${DB_PATH}）`);
+  if (TRUST_PROXY === 0) {
+    console.warn('⚠️  TRUST_PROXY 未設定（目前為 0，不信任任何代理標頭）。若部署在 Nginx/Traefik 等反向代理' +
+      '之後，registration/login 的 rate limit 會把所有使用者算成同一個來源 IP。請在 .env 設定 TRUST_PROXY' +
+      '（本站 Traefik→Nginx 兩層皆走 loopback，經確認應為 2），並於部署後從外部網路實測 req.ip 確為使用者真實位址。');
+  }
 });
