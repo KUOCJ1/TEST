@@ -31,3 +31,19 @@ export function findGroupByJoinCode(db, raw) {
   if (!code) return null;
   return (db.data.groups ?? []).find((g) => g.joinCode === code) ?? null;
 }
+
+/**
+ * 用代碼把使用者加入班級（冪等——已經是成員就不重複加入）。
+ * 代碼無效時回傳 null；成功（含「本來就已經是成員」）回傳該班別物件，
+ * 供呼叫端知道要把使用者導去哪個評量。
+ */
+export function joinGroupByCode(db, user, raw) {
+  const group = findGroupByJoinCode(db, raw);
+  if (!group) return null;
+  if (!group.memberIds.includes(user.id)) {
+    group.memberIds.push(user.id);
+    group.updatedAt = new Date().toISOString();
+    db.persist();
+  }
+  return group;
+}

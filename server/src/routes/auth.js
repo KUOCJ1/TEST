@@ -9,7 +9,14 @@ import {
   MIN_PASSWORD_LENGTH,
 } from '../auth.js';
 import { asyncHandler, hashToken, revokeUserTokens } from '../lib/helpers.js';
-import { findGroupByJoinCode } from '../lib/joinCode.js';
+import { findGroupByJoinCode, joinGroupByCode } from '../lib/joinCode.js';
+
+// register/login 回傳的「剛加入的班級」只給前端導頁需要的最小資訊，不含成員、
+// 成績或其他班級設定——這支 API 在使用者剛登入的當下就會被讀到。
+function joinedGroupInfo(group) {
+  if (!group) return null;
+  return { id: group.id, name: group.name, companyName: group.companyName || '', assessmentId: group.assessmentId };
+}
 
 // 將使用者 email 比對各班別的待加入名單；命中則自動轉為正式成員。
 function claimPendingGroups(db, user) {
@@ -49,7 +56,7 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }
   // Hash password BEFORE checking for duplicate email so the synchronous
   // check+push+persist block has no await (atomic under Node.js single thread).
   router.post('/auth/register', authLimiter, asyncHandler(async (req, res) => {
-    const { name, email, password } = req.body || {};
+    const { name, email, password, joinCode } = req.body || {};
     try {
       validateRegistration({ name, email, password });
     } catch (e) {
@@ -71,19 +78,23 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }
     db.data.users.push(user);
     db.persist();
     claimPendingGroups(db, user);
+    // QR 報到：帶著有效代碼註冊時，直接加入該班級，前端才能立刻導去對應的評量。
+    const joinedGroup = joinCode ? joinGroupByCode(db, user, joinCode) : null;
     setAuthCookie(res, user);
-    res.status(201).json({ user: publicUser(user) });
+    res.status(201).json({ user: publicUser(user), joinedGroup: joinedGroupInfo(joinedGroup) });
   }));
 
   router.post('/auth/login', authLimiter, asyncHandler(async (req, res) => {
-    const { email, password } = req.body || {};
+    const { email, password, joinCode } = req.body || {};
     const user = db.data.users.find((u) => u.email === (email || '').trim().toLowerCase());
     if (!user || !(await verifyPassword(password || '', user.passwordHash))) {
       return res.status(401).json({ code: 'INVALID_CREDENTIALS', error: 'Email 或密碼錯誤' });
     }
     claimPendingGroups(db, user);
+    // 既有學員重新掃碼加入新的一梯（例如回鍋上下一期課程）同樣適用。
+    const joinedGroup = joinCode ? joinGroupByCode(db, user, joinCode) : null;
     setAuthCookie(res, user);
-    res.json({ user: publicUser(user) });
+    res.json({ user: publicUser(user), joinedGroup: joinedGroupInfo(joinedGroup) });
   }));
 
   router.post('/auth/logout', (_req, res) => {

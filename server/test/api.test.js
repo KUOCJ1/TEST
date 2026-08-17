@@ -535,6 +535,119 @@ describe('教練 / 班別 / 名單', () => {
     assert.equal(g.body.group.targetHeadcount, null);
     assert.deepEqual(g.body.group.dimensionNotes, {});
   });
+
+  test('報到 QR Code：只有本班教練能產生／撤銷；未設施測日期時產生代碼會自動開啟', async () => {
+    const app = await setup({ withAdmin: true });
+    const { coach } = await makeCoach(app);
+    await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef12' });
+    const g = await coach.post('/api/coach/groups').send({ name: 'QR 班', assessmentId: 'ai-competency' });
+    assert.equal(g.body.group.startDate, null, '一開始不應有施測日期');
+
+    // 別班教練不能動這個班。
+    const other = request.agent(app);
+    await other.post('/api/auth/register').send({ name: '別班教練', email: 'other-coach@b.co', password: 'abcdef12' });
+    const admin2 = request.agent(app);
+    await admin2.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
+    const otherReg = await admin2.get('/api/coach/directory').then((r) => r.body.users.find((u) => u.email === 'other-coach@b.co'));
+    await admin2.patch(`/api/admin/users/${otherReg.id}/role`).send({ role: 'coach' });
+    await other.post('/api/auth/login').send({ email: 'other-coach@b.co', password: 'abcdef12' });
+    assert.equal((await other.post(`/api/coach/groups/${g.body.group.id}/join-code`)).status, 403);
+
+    // 本班教練產生代碼：因為還沒設定施測日期，應自動開啟（startDate 補上現在）。
+    const gen = await coach.post(`/api/coach/groups/${g.body.group.id}/join-code`);
+    assert.equal(gen.status, 200);
+    assert.equal(gen.body.autoOpened, true);
+    assert.match(gen.body.group.joinCode, /^[23-9A-HJ-NP-TV-Z]{8}$/);
+    assert.ok(gen.body.group.startDate, '未設定施測日期時，產生代碼應自動補上開始時間');
+    assert.equal(gen.body.group.phase, 'in_progress');
+
+    // 已經有施測日期的班別，產生代碼不應覆蓋原本的日期設定。
+    const future = new Date(Date.now() + 10 * 864e5).toISOString();
+    await coach.put(`/api/coach/groups/${g.body.group.id}`).send({ startDate: future });
+    const gen2 = await coach.post(`/api/coach/groups/${g.body.group.id}/join-code`);
+    assert.equal(gen2.body.autoOpened, false);
+    assert.equal(gen2.body.group.startDate, future, '已設定過的施測日期不應被覆蓋');
+    const firstCode = gen2.body.group.joinCode;
+
+    // 重新產生會讓舊代碼失效。
+    const regen = await coach.post(`/api/coach/groups/${g.body.group.id}/join-code`);
+    assert.notEqual(regen.body.group.joinCode, firstCode);
+
+    // 撤銷後代碼消失。
+    const revoke = await coach.delete(`/api/coach/groups/${g.body.group.id}/join-code`);
+    assert.equal(revoke.status, 200);
+    assert.equal(revoke.body.group.joinCode, null);
+  });
+
+  test('公開查詢端點只回傳班級／評量的顯示資訊，不含成員或成績；代碼無效回 404', async () => {
+    const app = await setup({ withAdmin: true });
+    const { coach } = await makeCoach(app);
+    await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef12' });
+    const g = await coach.post('/api/coach/groups')
+      .send({ name: '公開查詢班', companyName: '榕耀顧問', assessmentId: 'ai-competency' });
+    const gen = await coach.post(`/api/coach/groups/${g.body.group.id}/join-code`);
+    const code = gen.body.group.joinCode;
+
+    // 未登入也查得到。
+    const lookup = await request(app).get(`/api/public/join/${code}`);
+    assert.equal(lookup.status, 200);
+    assert.equal(lookup.body.groupName, '公開查詢班');
+    assert.equal(lookup.body.companyName, '榕耀顧問');
+    assert.equal(lookup.body.assessmentId, 'ai-competency');
+    assert.ok(lookup.body.assessmentName, '應回傳評量的顯示名稱');
+    assert.equal(lookup.body.phase, 'in_progress');
+    // 不應洩漏成員名單或成績。
+    assert.equal(lookup.body.memberIds, undefined);
+    assert.equal(lookup.body.members, undefined);
+    assert.equal(lookup.body.submissions, undefined);
+
+    // 代碼不分大小寫。
+    const lower = await request(app).get(`/api/public/join/${code.toLowerCase()}`);
+    assert.equal(lower.status, 200);
+
+    // 查無代碼、或代碼已撤銷。
+    assert.equal((await request(app).get('/api/public/join/NOSUCHCODE')).status, 404);
+    await coach.delete(`/api/coach/groups/${g.body.group.id}/join-code`);
+    assert.equal((await request(app).get(`/api/public/join/${code}`)).status, 404, '撤銷後應查無此代碼');
+  });
+
+  test('帶報到代碼註冊／登入會自動加入對應班級', async () => {
+    const app = await setup({ withAdmin: true });
+    const { coach } = await makeCoach(app);
+    await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef12' });
+    const g1 = await coach.post('/api/coach/groups').send({ name: '第一梯', assessmentId: 'ai-competency' });
+    const code1 = (await coach.post(`/api/coach/groups/${g1.body.group.id}/join-code`)).body.group.joinCode;
+
+    // 新學員帶代碼註冊：一次到位（建立帳號 + 加入班級），回應要帶班級資訊供前端導頁。
+    const stu = request.agent(app);
+    const reg = await stu.post('/api/auth/register')
+      .send({ name: '學員', email: 'qr-stu@b.co', password: 'abcdef12', joinCode: code1 });
+    assert.equal(reg.status, 201);
+    assert.equal(reg.body.joinedGroup.id, g1.body.group.id);
+    assert.equal(reg.body.joinedGroup.assessmentId, 'ai-competency');
+
+    const myGroups1 = await stu.get('/api/groups/mine');
+    assert.equal(myGroups1.body.groups.length, 1);
+    assert.equal(myGroups1.body.groups[0].id, g1.body.group.id);
+
+    // 同一位學員之後又報名第二梯，用登入帶代碼的方式加入。
+    const g2 = await coach.post('/api/coach/groups').send({ name: '第二梯', assessmentId: 'ai-competency' });
+    const code2 = (await coach.post(`/api/coach/groups/${g2.body.group.id}/join-code`)).body.group.joinCode;
+    const relogin = await stu.post('/api/auth/login')
+      .send({ email: 'qr-stu@b.co', password: 'abcdef12', joinCode: code2 });
+    assert.equal(relogin.status, 200);
+    assert.equal(relogin.body.joinedGroup.id, g2.body.group.id);
+
+    const myGroups2 = await stu.get('/api/groups/mine');
+    assert.equal(myGroups2.body.groups.length, 2, '應同時保留第一梯與第二梯的班級成員身份');
+
+    // 代碼無效時不阻擋正常註冊／登入，只是不會加入任何班級。
+    const noGroup = request.agent(app);
+    const regBad = await noGroup.post('/api/auth/register')
+      .send({ name: '無代碼', email: 'no-code@b.co', password: 'abcdef12', joinCode: 'BADCODE1' });
+    assert.equal(regBad.status, 201);
+    assert.equal(regBad.body.joinedGroup, null);
+  });
 });
 
 describe('360° 多元評測', () => {

@@ -9,6 +9,7 @@ import {
   sanitizeTargetHeadcount,
   sanitizeDimensionNotes,
 } from '../lib/helpers.js';
+import { generateJoinCode } from '../lib/joinCode.js';
 
 /** @param {{db, requireAuth, requireCoach}} deps */
 export function createCoachRouter({ db, requireAuth, requireCoach }) {
@@ -80,6 +81,8 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       startDate: null,
       endDate: null,
       publishedAt: null,
+      joinCode: null,
+      joinCodeCreatedAt: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -151,6 +154,46 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     groups[idx].updatedAt = new Date().toISOString();
     db.persist();
     auditLog(req, 'publish_group', { groupId: groups[idx].id, groupName: groups[idx].name });
+    res.json({ group: { ...groups[idx], phase: getGroupPhase(groups[idx]) } });
+  });
+
+  // ── 報到 QR Code ──────────────────────────────────────────
+  // 產生／重新產生報到代碼。重新產生會讓舊代碼立即失效（單一代碼欄位，非多代碼列表）。
+  router.post('/groups/:id/join-code', (req, res) => {
+    const groups = db.data.groups ?? [];
+    const idx = groups.findIndex((g) => g.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: '班別不存在' });
+    if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '無權限' });
+    }
+    groups[idx].joinCode = generateJoinCode(db);
+    groups[idx].joinCodeCreatedAt = new Date().toISOString();
+    // 產生報到 QR 的目的就是讓學員現場掃碼馬上作答；若還沒設定開始時間，
+    // 直接開啟，避免學員到現場掃了碼卻看到「尚未開放作答」而卡住。
+    let autoOpened = false;
+    if (!groups[idx].startDate) {
+      groups[idx].startDate = new Date().toISOString();
+      autoOpened = true;
+    }
+    groups[idx].updatedAt = new Date().toISOString();
+    db.persist();
+    auditLog(req, 'generate_join_code', { groupId: groups[idx].id, groupName: groups[idx].name, autoOpened });
+    res.json({ group: { ...groups[idx], phase: getGroupPhase(groups[idx]) }, autoOpened });
+  });
+
+  // 撤銷報到代碼（可逆——之後仍可重新產生新的代碼）。
+  router.delete('/groups/:id/join-code', (req, res) => {
+    const groups = db.data.groups ?? [];
+    const idx = groups.findIndex((g) => g.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: '班別不存在' });
+    if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '無權限' });
+    }
+    groups[idx].joinCode = null;
+    groups[idx].joinCodeCreatedAt = null;
+    groups[idx].updatedAt = new Date().toISOString();
+    db.persist();
+    auditLog(req, 'revoke_join_code', { groupId: groups[idx].id, groupName: groups[idx].name });
     res.json({ group: { ...groups[idx], phase: getGroupPhase(groups[idx]) } });
   });
 

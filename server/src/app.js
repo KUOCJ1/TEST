@@ -8,6 +8,7 @@ import { createAdminRouter } from './routes/admin.js';
 import { createCoachRouter } from './routes/coach.js';
 import { createGroupsRouter } from './routes/groups.js';
 import { createChatRouter } from './routes/chat.js';
+import { createPublicRouter } from './routes/public.js';
 
 export {
   sanitizeFocusDimensionIds,
@@ -17,9 +18,6 @@ export {
 
 /**
  * 建立 Express app（不啟動監聽），方便測試直接以 supertest 注入。
- * @param {{db, jwtSecret:string, secureCookies?:boolean}} opts
- */
-/**
  * @param {{db, jwtSecret:string, secureCookies?:boolean, trustProxy?:number}} opts
  */
 export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0 }) {
@@ -45,6 +43,10 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
     createAuthContext({ db, jwtSecret, secureCookies });
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+  // 完全公開、不需登入的查詢端點（QR 報到連結的落地頁要用）。掛在自己的前綴下，
+  // 原因與 admin/coach 相同：避免路由順序意外影響其他 /api 路徑。
+  app.use('/api/public', createPublicRouter({ db }));
 
   app.use('/api', createAssessmentsRouter({ db, requireAuth }));
   app.use('/api', createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }));
