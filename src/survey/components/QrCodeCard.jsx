@@ -9,6 +9,13 @@ function buildJoinUrl(joinCode) {
   return `${window.location.origin}${window.location.pathname}?join=${joinCode}`;
 }
 
+// 全螢幕投影時給學員看的操作步驟，字級刻意放大方便從座位上閱讀。
+const JOIN_STEPS = [
+  { num: '1', text: '用手機掃描 QR Code，或開啟下方連結' },
+  { num: '2', text: '註冊新帳號，或用原有帳號登入' },
+  { num: '3', text: '系統會自動加入本班，直接開始作答' },
+];
+
 export default function QrCodeCard({ group, onUpdated }) {
   const [qrSvg, setQrSvg] = useState('');
   const [qrError, setQrError] = useState('');
@@ -132,7 +139,7 @@ export default function QrCodeCard({ group, onUpdated }) {
       )}
 
       {fullscreen && joinCode && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-white p-8">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-white p-8">
           <button
             type="button"
             onClick={() => setFullscreen(false)}
@@ -141,14 +148,32 @@ export default function QrCodeCard({ group, onUpdated }) {
           >
             <XIcon className="h-6 w-6" />
           </button>
-          <h2 className="text-2xl font-bold text-slate-800">{group.name} 報到</h2>
-          {group.companyName && <p className="-mt-4 text-sm text-slate-400">{group.companyName}</p>}
-          <div className="[&_svg]:h-72 [&_svg]:w-72 rounded-2xl border border-slate-200 p-4">
-            {/* qrcode 套件自產的 SVG，非使用者輸入 */}
-            <div dangerouslySetInnerHTML={{ __html: qrSvg }} />
+          <div className="flex min-h-full flex-col items-center justify-center gap-6">
+            <h2 className="text-center text-2xl font-bold text-slate-800 sm:text-3xl">{group.name} 報到</h2>
+            {group.companyName && <p className="-mt-4 text-sm text-slate-400">{group.companyName}</p>}
+
+            <div className="flex flex-col items-center gap-10 lg:flex-row lg:items-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="[&_svg]:h-64 [&_svg]:w-64 sm:[&_svg]:h-72 sm:[&_svg]:w-72 rounded-2xl border border-slate-200 p-4">
+                  {/* qrcode 套件自產的 SVG，非使用者輸入 */}
+                  <div dangerouslySetInnerHTML={{ __html: qrSvg }} />
+                </div>
+                <p className="text-sm text-slate-500">請用手機掃描 QR Code，或前往：</p>
+                <p className="break-all text-center text-lg font-semibold text-brand-700">{joinUrl}</p>
+              </div>
+
+              <ol className="w-full max-w-sm space-y-5 lg:max-w-xs">
+                {JOIN_STEPS.map((s) => (
+                  <li key={s.num} className="flex items-start gap-4">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-base font-bold text-white">
+                      {s.num}
+                    </span>
+                    <p className="pt-1 text-lg font-semibold text-slate-700">{s.text}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
           </div>
-          <p className="text-sm text-slate-500">請用手機掃描 QR Code，或前往：</p>
-          <p className="break-all text-center text-lg font-semibold text-brand-700">{joinUrl}</p>
         </div>
       )}
     </div>
