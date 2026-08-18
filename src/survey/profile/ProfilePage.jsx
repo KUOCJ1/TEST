@@ -24,7 +24,7 @@ function Toggle({ checked, onChange, label, hint }) {
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative mt-0.5 h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-ink-700' : 'bg-slate-300'}`}
+        className={`relative mt-0.5 h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-brass-500' : 'bg-slate-300'}`}
       >
         <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
       </button>
