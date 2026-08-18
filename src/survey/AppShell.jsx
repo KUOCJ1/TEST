@@ -236,9 +236,9 @@ export default function AppShell() {
                   type="button"
                   aria-current={isTabActive(t.path) ? 'page' : undefined}
                   onClick={() => navigate(t.path)}
-                  className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  className={`shrink-0 rounded-sm px-3 py-1.5 text-sm font-semibold transition-colors ${
                     isTabActive(t.path)
-                      ? 'bg-brand-600 text-white shadow-sm'
+                      ? 'bg-ink-700 text-paper-50'
                       : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
                   }`}
                 >
@@ -257,7 +257,7 @@ export default function AppShell() {
                 </span>
               )}
               {!isAdmin && user.role === 'coach' && (
-                <span className="ml-1.5 rounded bg-brand-100 px-1.5 py-0.5 text-xs font-semibold text-brand-700">
+                <span className="ml-1.5 rounded bg-paper-200 px-1.5 py-0.5 text-xs font-semibold text-ink-600">
                   教練
                 </span>
               )}
@@ -382,7 +382,7 @@ export default function AppShell() {
                   aria-current={active ? 'page' : undefined}
                   onClick={() => navigate(t.path)}
                   className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold transition-colors ${
-                    active ? 'text-brand-600' : 'text-slate-400 hover:text-slate-600'
+                    active ? 'text-ink-700' : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   <t.Icon className={`h-5 w-5 ${active ? 'stroke-[2.5]' : ''}`} />

@@ -13,8 +13,8 @@ export default defineConfig({
         short_name: '職能評測',
         description: '線上自動計分與多構面落點分析',
         lang: 'zh-TW',
-        theme_color: '#7c3aed',
-        background_color: '#ffffff',
+        theme_color: '#241f18',
+        background_color: '#f6f1e7',
         display: 'standalone',
         orientation: 'portrait',
         // 相對路徑：VPS 正式站（base '/'）與 GitHub Pages 預覽（base '/TEST/'）都能正確解析。

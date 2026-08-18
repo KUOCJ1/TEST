@@ -8,7 +8,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        // 品牌主色：紫羅蘭（與 logo 一致）。元件以 brand-* 或 violet-* 使用。
+        // 舊品牌色（紫羅蘭）。尚未逐一改版的畫面（後台徽章、標籤等）仍會用到，
+        // 保留供漸進遷移；新畫面請改用下面的 ink / paper / brass。
         brand: {
           50: '#f5f3ff',
           100: '#ede9fe',
@@ -21,13 +22,53 @@ export default {
           800: '#5b21b6',
           900: '#4c1d95',
         },
+        // 2024 版視覺系統（「顧問報告」方向）：暖白紙 + 墨色 + 黃銅點綴，
+        // 取代原本的紫色漸層。
+        paper: {
+          50: '#fefdfb',
+          100: '#f6f1e7',
+          200: '#efe6d4',
+          300: '#e3d5b8',
+        },
+        ink: {
+          50: '#8a8378',
+          100: '#6b5a4d',
+          400: '#4a4335',
+          600: '#33291f',
+          700: '#241f18',
+          900: '#17130e',
+        },
+        brass: {
+          50: '#f6ecd7',
+          100: '#e9d3a0',
+          400: '#a9752e',
+          500: '#8a6a2f',
+          600: '#6f5424',
+        },
+        // 全站絕大多數畫面都是直接用 slate-* 當中性色階（背景／文字／邊框），
+        // 把這組改成暖灰，既有元件不用逐一改 class 就能套上新的紙感視覺系統。
+        slate: {
+          50: '#fefdfb',
+          100: '#f6f1e7',
+          200: '#efe6d4',
+          300: '#ddd0ba',
+          400: '#b3a48c',
+          500: '#8a7d68',
+          600: '#6b5a4d',
+          700: '#4a4335',
+          800: '#33291f',
+          900: '#241f18',
+          950: '#17130e',
+        },
       },
       fontFamily: {
         sans: ['"Noto Sans TC"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+        serif: ['"Noto Serif TC"', 'Georgia', 'serif'],
+        display: ['"Newsreader"', '"Noto Serif TC"', 'Georgia', 'serif'],
       },
       boxShadow: {
-        card: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px -12px rgba(76,29,149,.18)',
-        'card-hover': '0 4px 12px rgba(15,23,42,.06), 0 16px 36px -14px rgba(76,29,149,.28)',
+        card: '0 1px 2px rgba(23,19,14,.04), 0 8px 24px -14px rgba(23,19,14,.16)',
+        'card-hover': '0 4px 12px rgba(23,19,14,.06), 0 16px 32px -16px rgba(23,19,14,.22)',
       },
       borderRadius: {
         '2xl': '1rem',

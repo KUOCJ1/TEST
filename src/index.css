@@ -5,24 +5,24 @@
 @layer components {
   /* 表單輸入 */
   .input {
-    @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 outline-none transition;
-    @apply placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100;
+    @apply w-full rounded-md border border-paper-300 bg-paper-50 px-3.5 py-2.5 text-ink-700 outline-none transition;
+    @apply placeholder:text-ink-50 focus:border-brass-400 focus:ring-4 focus:ring-brass-50;
   }
 
   /* 按鈕系統 */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all;
-    @apply focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-sm font-medium transition-all;
+    @apply focus:outline-none focus-visible:ring-4 focus-visible:ring-brass-100 disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-primary {
-    @apply btn bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-sm;
-    @apply hover:from-brand-700 hover:to-indigo-700 hover:shadow-md active:scale-[.99];
+    @apply btn bg-ink-700 text-paper-50;
+    @apply hover:bg-ink-900 active:scale-[.99];
   }
   .btn-secondary {
-    @apply btn border border-brand-300 bg-white text-brand-700 hover:bg-brand-50;
+    @apply btn border border-paper-300 bg-paper-50 text-ink-700 hover:bg-paper-200;
   }
   .btn-ghost {
-    @apply btn text-slate-500 hover:bg-slate-100 hover:text-slate-700;
+    @apply btn text-ink-50 hover:bg-paper-200 hover:text-ink-700;
   }
   .btn-danger {
     @apply btn border border-red-200 bg-red-50 text-red-600 hover:bg-red-100;
@@ -34,18 +34,18 @@
     @apply px-3 py-1.5 text-xs;
   }
   .btn-icon {
-    @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors;
-    @apply hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200;
+    @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-ink-50 transition-colors;
+    @apply hover:bg-paper-200 hover:text-ink-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-brass-100;
   }
 
   /* 卡片 */
   .card {
-    @apply rounded-2xl bg-white p-6 shadow-card ring-1 ring-slate-100;
+    @apply rounded-md bg-paper-50 p-6 shadow-card ring-1 ring-paper-300;
   }
 
   /* 區塊標題小標籤 */
   .chip {
-    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+    @apply inline-flex items-center rounded-sm px-2.5 py-1 text-xs font-semibold;
   }
 }
 
@@ -62,45 +62,72 @@ body {
   font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  color: #1e293b;
-  /* 柔和的品牌色微漸層背景，取代死白 */
-  background-color: #f6f5fb;
-  background-image:
-    radial-gradient(60rem 60rem at 110% -10%, rgba(124, 58, 237, .07), transparent 60%),
-    radial-gradient(50rem 50rem at -10% 0%, rgba(79, 70, 229, .06), transparent 55%);
-  background-attachment: fixed;
+  color: #241f18;
+  /* 暖白紙感的實色背景，取代原本的紫色漸層光暈 */
+  background-color: #f6f1e7;
 }
 
 /* ── 深色模式（以全域覆寫常用工具類，避免逐元件加 dark:）── */
 .dark body {
-  color: #eef2f9;
-  background-color: #0d1424;
-  background-image:
-    radial-gradient(60rem 60rem at 110% -10%, rgba(124, 58, 237, .14), transparent 60%),
-    radial-gradient(50rem 50rem at -10% 0%, rgba(79, 70, 229, .12), transparent 55%);
+  color: #f3ece0;
+  background-color: #17130e;
 }
-.dark .bg-white { background-color: #1a2236 !important; }
+.dark .bg-white { background-color: #231d15 !important; }
 .dark .bg-white\/95,
-.dark .bg-white\/90 { background-color: rgba(26, 34, 54, 0.92) !important; }
+.dark .bg-white\/90 { background-color: rgba(35, 29, 21, 0.92) !important; }
 .dark .bg-slate-50,
-.dark .bg-slate-100 { background-color: #131a2c !important; }
+.dark .bg-slate-100 { background-color: #1c1610 !important; }
 .dark .text-slate-900,
 .dark .text-slate-800,
 .dark .text-slate-700,
-.dark .text-slate-600 { color: #eef2f9 !important; }
+.dark .text-slate-600 { color: #f3ece0 !important; }
 .dark .text-slate-500,
-.dark .text-slate-400 { color: #aebbd0 !important; }
+.dark .text-slate-400 { color: #b8a892 !important; }
 .dark .border-slate-200,
 .dark .border-slate-300,
-.dark .border-slate-100 { border-color: #2a3350 !important; }
+.dark .border-slate-100 { border-color: #3a2f22 !important; }
 .dark .ring-slate-100,
-.dark .ring-slate-200 { --tw-ring-color: #2a3350 !important; }
-.dark .input { background: #161c2e; color: #e2e8f0; border-color: #2a3350; }
-.dark .card { background: #161c2e; --tw-ring-color: #2a3350; }
+.dark .ring-slate-200 { --tw-ring-color: #3a2f22 !important; }
+.dark .input { background: #1c1610; color: #f3ece0; border-color: #3a2f22; }
+.dark .card { background: #231d15; --tw-ring-color: #3a2f22; }
+/* .btn-primary／.btn-secondary／.btn-ghost／.btn-icon 是 @apply 出來的複合
+   class，class 屬性上不會留下 bg-ink-700 這類字面 class，下面幾條全站共用的
+   工具類覆寫吃不到它們，所以要另外直接覆寫。 */
+.dark .btn-primary { background-color: #f3ece0; color: #17130e; }
+.dark .btn-primary:hover { background-color: #e3d5b8; }
+.dark .btn-secondary { background-color: #231d15; color: #f3ece0; border-color: #3a2f22; }
+.dark .btn-secondary:hover { background-color: #1c1610; }
+.dark .btn-ghost,
+.dark .btn-icon { color: #b8a892; }
+.dark .btn-ghost:hover,
+.dark .btn-icon:hover { background-color: #1c1610; color: #f3ece0; }
+
+/* 「顧問報告」視覺系統（paper / ink / brass）的深色模式覆寫——目前用在
+   Landing／Login／JoinClassBanner，以及 AppShell 頁首少數幾處。 */
+.dark .bg-paper-50,
+.dark .bg-paper-100,
+.dark .bg-paper-100\/95 { background-color: #231d15 !important; }
+.dark .bg-paper-200 { background-color: #1c1610 !important; }
+.dark .text-ink-700,
+.dark .text-ink-600,
+.dark .text-ink-400 { color: #f3ece0 !important; }
+.dark .text-ink-100,
+.dark .text-ink-50 { color: #b8a892 !important; }
+.dark .border-ink-700,
+.dark .border-ink-700\/10,
+.dark .border-ink-700\/40,
+.dark .border-ink-700\/50,
+.dark .divide-ink-700\/10 { border-color: #3a2f22 !important; }
+.dark .ring-paper-300 { --tw-ring-color: #3a2f22 !important; }
+/* 墨色實心區塊（CTA 色塊）在深色模式下反轉為淺色，維持對比。 */
+.dark .bg-ink-700 { background-color: #f3ece0 !important; }
+.dark .text-paper-50 { color: #17130e !important; }
+.dark .text-paper-50\/75,
+.dark .text-paper-50\/80 { color: #4a4335 !important; }
 .dark .shadow-lg,
 .dark .shadow-md,
 .dark .shadow-sm,
-.dark .shadow-card { --tw-shadow-color: rgba(0, 0, 0, 0.5); }
+.dark .shadow-card { --tw-shadow-color: rgba(0, 0, 0, 0.6); }
 
 #root {
   min-height: 100vh;
@@ -109,9 +136,9 @@ body {
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #a78bfa; }
-.dark ::-webkit-scrollbar-thumb { background: #334155; }
+::-webkit-scrollbar-thumb { background: #ddd0ba; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #a9752e; }
+.dark ::-webkit-scrollbar-thumb { background: #3a2f22; }
 
 /* Hide scrollbar but keep scrollable */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
