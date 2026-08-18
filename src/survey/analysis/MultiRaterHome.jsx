@@ -65,7 +65,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <div className="rounded-2xl bg-white px-6 py-12 shadow-lg shadow-slate-200/60">
-          <UserPlus className="mx-auto h-12 w-12 text-brand-300" />
+          <UserPlus className="mx-auto h-12 w-12 text-brass-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-800">目前沒有支援 360° 的評量</h2>
           <p className="mt-2 text-slate-500">此功能需搭配支援 360° 多元評測的題庫（如經贏®領導力九大構面行為評量）。</p>
         </div>
@@ -93,7 +93,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
               onClick={() => setSelectedId(a.id)}
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                 activeId === a.id
-                  ? 'bg-brand-600 text-white'
+                  ? 'bg-ink-700 text-white'
                   : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -129,7 +129,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
                         className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                           done
                             ? 'cursor-not-allowed bg-emerald-50 text-emerald-600'
-                            : 'border border-slate-300 text-slate-600 hover:border-brand-400 hover:text-brand-700'
+                            : 'border border-slate-300 text-slate-600 hover:border-brass-400 hover:text-brass-600'
                         }`}
                       >
                         {done && <CheckCircle2 className="h-3.5 w-3.5" />}
@@ -151,7 +151,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
           <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-lg shadow-slate-200/60">
             {myGroupForActive.phase === 'closed' ? (
               <>
-                <Search className="mx-auto h-10 w-10 text-brand-300" />
+                <Search className="mx-auto h-10 w-10 text-brass-300" />
                 <p className="mt-4 text-lg font-bold text-slate-700">教練審閱中</p>
                 <p className="mt-2 text-sm text-slate-500">
                   評測已結束，教練正在審閱整體成果。發佈後即可查看 360° 多元視角報告。
@@ -159,7 +159,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
               </>
             ) : myGroupForActive.phase === 'in_progress' ? (
               <>
-                <PenLine className="mx-auto h-10 w-10 text-brand-300" />
+                <PenLine className="mx-auto h-10 w-10 text-brass-300" />
                 <p className="mt-4 text-lg font-bold text-slate-700">評測進行中</p>
                 <p className="mt-2 text-sm text-slate-500">
                   評測尚未結束，360° 多元視角報告將於教練發佈後開放。
@@ -167,7 +167,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
               </>
             ) : (
               <>
-                <CalendarClock className="mx-auto h-10 w-10 text-brand-300" />
+                <CalendarClock className="mx-auto h-10 w-10 text-brass-300" />
                 <p className="mt-4 text-lg font-bold text-slate-700">評測尚未開始</p>
                 <p className="mt-2 text-sm text-slate-500">評測開始後方可查看 360° 多元視角報告。</p>
               </>

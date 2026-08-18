@@ -32,7 +32,7 @@ export default function AssessmentCard({
           </p>
         )}
         {supports360 && (
-          <span className="chip mt-2 bg-brand-50 text-brand-700">支援 360° 多元評測</span>
+          <span className="chip mt-2 bg-brass-50 text-brass-600">支援 360° 多元評測</span>
         )}
 
         {hasResult && (
@@ -75,7 +75,7 @@ export default function AssessmentCard({
         <button
           type="button"
           onClick={() => onGoTo360(assessment.id)}
-          className="mt-3 text-left text-sm font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+          className="mt-3 text-left text-sm font-semibold text-brass-600 hover:text-brass-600 hover:underline"
         >
           前往 360° 評測 →
         </button>

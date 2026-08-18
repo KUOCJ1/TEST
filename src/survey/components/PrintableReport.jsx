@@ -191,7 +191,7 @@ function CoverPage({ result, user, submittedAt, benchmark, percentile }) {
     <div style={{ pageBreakAfter: 'always' }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, #4c1d95 0%, #1e40af 100%)',
+        background: '#241f18',
         padding: '44px 52px 38px', color: '#fff',
       }}>
         <div style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>
@@ -244,7 +244,7 @@ function CoverPage({ result, user, submittedAt, benchmark, percentile }) {
         </div>
 
         {/* Level desc */}
-        <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 11, color: '#4c1d95', lineHeight: 1.7 }}>
+        <div style={{ background: '#f6ecd7', border: '1px solid #e9d3a0', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 11, color: '#584419', lineHeight: 1.7 }}>
           {level.desc}
         </div>
 
@@ -382,10 +382,10 @@ function ExecutiveSummaryPage({ result, benchmark, config, user, date }) {
       {/* Overall summary */}
       {overall && (
         <div style={{
-          background: 'linear-gradient(135deg, #faf5ff, #eff6ff)',
-          border: '1px solid #e9d5ff', borderRadius: 10,
+          background: 'linear-gradient(135deg, #f6ecd7, #eff6ff)',
+          border: '1px solid #e9d3a0', borderRadius: 10,
           padding: '14px 18px', marginBottom: 20,
-          fontSize: 12, color: '#3b0764', lineHeight: 1.8, fontStyle: 'italic',
+          fontSize: 12, color: '#584419', lineHeight: 1.8, fontStyle: 'italic',
         }}>
           {overall}
         </div>
@@ -873,10 +873,10 @@ function CoachFeedbackBlock({ comments }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {comments.map((c) => (
           <div key={c.id} style={{
-            background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10,
-            padding: '14px 16px', fontSize: 11.5, color: '#3b0764', lineHeight: 1.85,
+            background: '#f6ecd7', border: '1px solid #e9d3a0', borderRadius: 10,
+            padding: '14px 16px', fontSize: 11.5, color: '#584419', lineHeight: 1.85,
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 9, color: '#7c3aed', fontWeight: 700 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 9, color: '#8a6a2f', fontWeight: 700 }}>
               <span>{c.coachName ?? '教練'}</span>
               {c.updatedAt && <span style={{ opacity: 0.7 }}>{formatDate(c.updatedAt)}</span>}
             </div>
@@ -885,7 +885,7 @@ function CoachFeedbackBlock({ comments }) {
               <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {c.tips.map((t, i) => (
                   <li key={i} style={{ display: 'flex', gap: 6, fontSize: 10.5 }}>
-                    <span style={{ color: '#7c3aed' }}>・</span>{t}
+                    <span style={{ color: '#8a6a2f' }}>・</span>{t}
                   </li>
                 ))}
               </ul>
@@ -997,9 +997,9 @@ function DevPlanPage({ result, config, user, date }) {
 
       {/* Closing message */}
       <div style={{
-        background: 'linear-gradient(135deg, #faf5ff, #eff6ff)',
-        border: '1px solid #e9d5ff', borderRadius: 10, padding: '14px 18px',
-        fontSize: 11, color: '#4c1d95', lineHeight: 1.8,
+        background: 'linear-gradient(135deg, #f6ecd7, #eff6ff)',
+        border: '1px solid #e9d3a0', borderRadius: 10, padding: '14px 18px',
+        fontSize: 11, color: '#584419', lineHeight: 1.8,
       }}>
         <div style={{ fontWeight: 700, marginBottom: 4 }}>✦ 發展建議使用說明</div>
         本計畫由系統依您的構面得分自動生成，建議與您的直屬主管或教練共同討論，
@@ -1047,7 +1047,7 @@ export default function PrintableReport({ result, benchmark, user, submittedAt, 
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={() => window.print()}
-            style={{ background: '#7c3aed', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+            style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
           >
             🖨️ 列印 / 存為 PDF
           </button>

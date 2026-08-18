@@ -9,7 +9,7 @@ export default function ProgressBar({ answered, total }) {
     <div className="sticky top-0 z-20 -mx-6 mb-6 border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur sm:rounded-t-2xl">
       <div className="mb-1.5 flex items-center justify-between text-sm font-medium text-slate-600">
         <span>作答進度</span>
-        <span className={done ? 'text-brand-600' : 'text-slate-500'}>
+        <span className={done ? 'text-ink-700' : 'text-slate-500'}>
           {answered} / {total} 題{done && ' ✓ 已完成'}
         </span>
       </div>
@@ -23,7 +23,7 @@ export default function ProgressBar({ answered, total }) {
       >
         <div
           className={`h-full rounded-full transition-all duration-500 ${
-            done ? 'bg-brand-500' : 'bg-gradient-to-r from-indigo-500 to-brand-500'
+            done ? 'bg-ink-700' : 'bg-brass-400'
           }`}
           style={{ width: `${percent}%` }}
         />

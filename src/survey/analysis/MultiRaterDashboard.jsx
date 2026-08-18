@@ -312,7 +312,7 @@ export default function MultiRaterDashboard({ rateeId, rateeName, assessmentId, 
   if (!selfSubs.length && !hasOthers) {
     return (
       <div className="py-16 text-center text-slate-400">
-        <Users className="mx-auto h-10 w-10 text-brand-300" />
+        <Users className="mx-auto h-10 w-10 text-brass-300" />
         <p className="mt-3 font-semibold text-slate-600">尚無 360° 評測資料</p>
         <p className="mt-1 text-sm">請邀請主管、同儕或部屬完成評測後再查看。</p>
       </div>

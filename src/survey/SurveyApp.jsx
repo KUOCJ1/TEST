@@ -111,9 +111,9 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
         </div>
 
         {raterType && raterType !== 'self' && rateeName && (
-          <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm">
-            <span className="font-semibold text-brand-700">您正在評估「{rateeName}」</span>
-            <span className="ml-1 text-brand-600">的領導力行為表現</span>
+          <div className="mt-4 rounded-xl border border-brass-200 bg-brass-50 px-4 py-3 text-sm">
+            <span className="font-semibold text-brass-600">您正在評估「{rateeName}」</span>
+            <span className="ml-1 text-brass-600">的領導力行為表現</span>
           </div>
         )}
 
@@ -130,7 +130,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
               aria-pressed={phase === opt.id}
               className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
                 phase === opt.id
-                  ? 'bg-brand-600 text-white shadow-sm'
+                  ? 'bg-ink-700 text-white shadow-sm'
                   : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >

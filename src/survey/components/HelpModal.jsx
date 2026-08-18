@@ -163,7 +163,7 @@ export default function HelpModal({ role = 'user', onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
+            className="rounded-lg bg-ink-700 px-4 py-1.5 text-sm font-semibold text-white hover:bg-ink-900"
           >
             關閉
           </button>

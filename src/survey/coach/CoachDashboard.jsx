@@ -47,7 +47,7 @@ export default function CoachDashboard() {
             aria-current={tab === id ? 'page' : undefined}
             onClick={() => setTab(id)}
             className={`rounded-md px-4 py-1.5 transition-colors ${
-              tab === id ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              tab === id ? 'bg-white text-brass-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             {label}

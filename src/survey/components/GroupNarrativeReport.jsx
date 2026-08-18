@@ -63,13 +63,13 @@ export default function GroupNarrativeReport({ results, assessmentId, focusDimen
   if (!report) return null;
 
   return (
-    <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
-      <h3 className="text-base font-bold text-slate-700">🏢 整體組織評語</h3>
+    <section className="mt-6 rounded-md bg-paper-50 px-5 py-6 shadow-card ring-1 ring-paper-300 sm:px-7">
+      <h3 className="font-serif text-base font-bold text-ink-700">整體組織評語</h3>
       <p className="mb-4 mt-0.5 text-xs text-slate-400">
         依全體 {results.length} 位成員綜合表現自動生成，供教練規劃課程參考
       </p>
 
-      <div className="rounded-xl border-l-4 border-brand-500 bg-brand-50/60 p-4 leading-relaxed text-slate-700">
+      <div className="rounded-md bg-brass-50/60 p-4 leading-relaxed text-slate-700 ring-1 ring-brass-100">
         {report.overall}
       </div>
 
@@ -83,8 +83,8 @@ export default function GroupNarrativeReport({ results, assessmentId, focusDimen
 
       {consultantText && (
         <div className="mt-5">
-          <h4 className="mb-2 text-sm font-bold text-slate-600">🏛️ 顧問視角（組織人才佈局）</h4>
-          <div className="rounded-xl border-l-4 border-indigo-500 bg-indigo-50/60 p-4 leading-relaxed text-slate-700">
+          <h4 className="mb-2 text-sm font-bold text-slate-600">顧問視角（組織人才佈局）</h4>
+          <div className="rounded-md bg-paper-200 p-4 leading-relaxed text-slate-700 ring-1 ring-paper-300">
             {consultantText}
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function GroupNarrativeReport({ results, assessmentId, focusDimen
 
       {plan.length > 0 && (
         <div className="mt-5">
-          <h4 className="mb-2 text-sm font-bold text-slate-600">🧭 班級發展藍圖</h4>
+          <h4 className="mb-2 text-sm font-bold text-slate-600">班級發展藍圖</h4>
           <ol className="space-y-3">
             {plan.map((p) => (
               <li key={p.id + p.horizon} className="rounded-xl border border-slate-200 p-4">
@@ -103,7 +103,7 @@ export default function GroupNarrativeReport({ results, assessmentId, focusDimen
                 <ul className="mt-2 space-y-1.5">
                   {p.actions.map((a) => (
                     <li key={a} className="flex gap-2 text-sm leading-relaxed text-slate-600">
-                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-brand-500" />
+                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-brass-400" />
                       <span>{a}</span>
                     </li>
                   ))}

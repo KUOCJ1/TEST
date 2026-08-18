@@ -18,26 +18,26 @@ const ResultPanel = forwardRef(function ResultPanel(
     <section
       ref={ref}
       aria-live="polite"
-      className="mt-8 overflow-hidden rounded-3xl ring-1 ring-brand-100 bg-gradient-to-b from-brand-50/60 to-white shadow-card"
+      className="mt-8 overflow-hidden rounded-md ring-1 ring-paper-300 bg-paper-50 shadow-card"
     >
-      <div className="bg-gradient-to-br from-brand-600 to-indigo-600 px-6 py-7 text-center text-white">
-        <p className="text-sm font-medium text-brand-100">{assessmentName ?? '評測'} · 您的總得分</p>
-        <p className="mt-1 text-5xl font-extrabold tracking-tight">
+      <div className="bg-ink-700 px-6 py-7 text-center text-paper-50">
+        <p className="text-sm font-medium text-paper-50/75">{assessmentName ?? '評測'} · 您的總得分</p>
+        <p className="font-serif mt-1 text-5xl font-bold tracking-tight">
           {total}
-          <span className="ml-1 text-xl font-semibold text-brand-100">/ {maxScore}</span>
+          <span className="ml-1 text-xl font-semibold text-paper-50/75">/ {maxScore}</span>
         </p>
         <span
-          className="mt-3 inline-block rounded-full px-4 py-1.5 text-lg font-bold shadow"
+          className="mt-3 inline-block rounded-sm px-4 py-1.5 text-lg font-bold"
           style={{ background: level.color, color: '#fff' }}
         >
           {level.badge}
           {level.badgeEn && <span className="ml-2 text-sm font-normal opacity-80">{level.badgeEn}</span>}
         </span>
-        <p className="mt-2 text-sm text-brand-100">能力達成率 {percent}%</p>
+        <p className="mt-2 text-sm text-paper-50/75">能力達成率 {percent}%</p>
         {percentile !== null && (
-          <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-700/60 px-3 py-1 text-sm font-semibold text-white">
+          <p className="mt-2 inline-flex items-center gap-1 rounded-sm bg-paper-50/20 px-3 py-1 text-sm font-semibold text-paper-50">
             您的總分超越了 {percentile}% 的填答者
-            <InfoTip text="百分位表示你的分數在所有填答者中的相對位置。70% 代表超越了 70% 的填答者。母體隨填答人數增加而更新。" className="text-brand-200" />
+            <InfoTip text="百分位表示你的分數在所有填答者中的相對位置。70% 代表超越了 70% 的填答者。母體隨填答人數增加而更新。" className="text-paper-50/75" />
           </p>
         )}
       </div>
@@ -107,17 +107,17 @@ const ResultPanel = forwardRef(function ResultPanel(
 
         <div className="mt-4">
           <p className="mb-2 flex items-center gap-1.5 font-semibold text-slate-700">
-            <Lightbulb className="h-4 w-4 text-brand-500" /> 學習修煉建議
+            <Lightbulb className="h-4 w-4 text-brass-500" /> 學習修煉建議
           </p>
-          <p className="rounded-r-lg border-l-4 border-brand-500 bg-white p-4 leading-relaxed text-slate-700 shadow-sm">
+          <p className="rounded-md bg-paper-50 p-4 leading-relaxed text-slate-700 ring-1 ring-paper-300">
             {level.advice}
           </p>
         </div>
 
         {suggestions && (
-          <div className="mt-4 rounded-xl border border-brand-100 bg-white p-4 shadow-sm">
+          <div className="mt-4 rounded-md bg-paper-50 p-4 ring-1 ring-paper-300">
             <p className="mb-3 flex items-center gap-1.5 font-semibold text-slate-700">
-              <Target className="h-4 w-4 text-brand-500" /> 為您客製的行動建議
+              <Target className="h-4 w-4 text-brass-500" /> 為您客製的行動建議
             </p>
             {suggestions.develop.length > 0 && (
               <div className="mb-3">

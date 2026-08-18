@@ -16,9 +16,9 @@ const BAND_BADGE = {
 };
 
 const TABS = [
-  { id: 'coach', label: '🎯 教練視角' },
-  { id: 'consultant', label: '🏛️ 顧問視角' },
-  { id: 'plan', label: '🧭 發展建議' },
+  { id: 'coach', label: '教練視角' },
+  { id: 'consultant', label: '顧問視角' },
+  { id: 'plan', label: '發展建議' },
 ];
 
 function DimensionCard({ dim, config, seedBase, focus }) {
@@ -28,7 +28,7 @@ function DimensionCard({ dim, config, seedBase, focus }) {
   const badge = BAND_BADGE[bandOf(dim.average)];
 
   return (
-    <div className={`rounded-xl border ${focus ? 'border-brand-300 bg-brand-50/40' : 'border-slate-200'}`}>
+    <div className={`rounded-xl border ${focus ? 'border-brass-200 bg-brass-50/40' : 'border-slate-200'}`}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -75,12 +75,12 @@ export default function NarrativeReport({ result, focusDimensionIds = [] }) {
   const panelCls = (id) => `${tab === id ? 'block' : 'hidden'} print:block`;
 
   return (
-    <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
-      <h3 className="text-base font-bold text-slate-700">📝 綜合能力評語</h3>
+    <section className="mt-6 rounded-md bg-paper-50 px-5 py-6 shadow-card ring-1 ring-paper-300 sm:px-7">
+      <h3 className="font-serif text-base font-bold text-ink-700">綜合能力評語</h3>
       <p className="mb-4 mt-0.5 text-xs text-slate-400">系統依各構面與子能力得分自動生成，僅供參考</p>
 
       {overall && (
-        <div className="rounded-xl border-l-4 border-brand-500 bg-brand-50/60 p-4 leading-relaxed text-slate-700">
+        <div className="rounded-md bg-brass-50/60 p-4 leading-relaxed text-slate-700 ring-1 ring-brass-100">
           {overall}
         </div>
       )}
@@ -103,9 +103,9 @@ export default function NarrativeReport({ result, focusDimensionIds = [] }) {
 
       {/* 教練視角 */}
       <div className={`mt-4 ${panelCls('coach')}`}>
-        <p className="mb-2 hidden text-sm font-bold text-slate-600 print:block">🎯 教練視角</p>
+        <p className="mb-2 hidden text-sm font-bold text-slate-600 print:block">教練視角</p>
         {coachText && (
-          <div className="rounded-xl border-l-4 border-sky-500 bg-sky-50/60 p-4 leading-relaxed text-slate-700">
+          <div className="rounded-md bg-sky-50/60 p-4 leading-relaxed text-slate-700 ring-1 ring-sky-100">
             {coachText}
           </div>
         )}
@@ -124,9 +124,9 @@ export default function NarrativeReport({ result, focusDimensionIds = [] }) {
 
       {/* 顧問視角 */}
       <div className={`mt-4 ${panelCls('consultant')}`}>
-        <p className="mb-2 hidden text-sm font-bold text-slate-600 print:block">🏛️ 顧問視角</p>
+        <p className="mb-2 hidden text-sm font-bold text-slate-600 print:block">顧問視角</p>
         {consultantText ? (
-          <div className="rounded-xl border-l-4 border-brand-500 bg-brand-50/60 p-4 leading-relaxed text-slate-700">
+          <div className="rounded-md bg-paper-200 p-4 leading-relaxed text-slate-700 ring-1 ring-paper-300">
             {consultantText}
           </div>
         ) : (
@@ -136,7 +136,7 @@ export default function NarrativeReport({ result, focusDimensionIds = [] }) {
 
       {/* 發展建議 */}
       <div className={`mt-4 ${panelCls('plan')}`}>
-        <p className="mb-2 hidden text-sm font-bold text-slate-600 print:block">🧭 發展建議</p>
+        <p className="mb-2 hidden text-sm font-bold text-slate-600 print:block">發展建議</p>
         {plan.length > 0 ? (
           <ol className="space-y-3">
             {plan.map((p) => (
@@ -148,7 +148,7 @@ export default function NarrativeReport({ result, focusDimensionIds = [] }) {
                 <ul className="mt-2 space-y-1.5">
                   {p.actions.map((a) => (
                     <li key={a} className="flex gap-2 text-sm leading-relaxed text-slate-600">
-                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-brand-500" />
+                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-brass-400" />
                       <span>{a}</span>
                     </li>
                   ))}

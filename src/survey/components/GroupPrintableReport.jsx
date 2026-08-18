@@ -78,7 +78,7 @@ function CoverPage({ group, stats, config, memberCount }) {
   return (
     <div style={{ pageBreakAfter: 'always' }}>
       <div style={{
-        background: 'linear-gradient(135deg, #4c1d95 0%, #1e40af 100%)',
+        background: '#241f18',
         padding: '44px 52px 38px', color: '#fff',
       }}>
         <div style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>
@@ -122,18 +122,18 @@ function CoverPage({ group, stats, config, memberCount }) {
         </div>
 
         {(group.groupComment || group.groupTips?.length > 0) && (
-          <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: '14px 16px', marginBottom: 20 }}>
-            <div style={{ fontSize: 9, color: '#7c3aed', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>班級整體評語</div>
+          <div style={{ background: '#f6ecd7', border: '1px solid #e9d3a0', borderRadius: 10, padding: '14px 16px', marginBottom: 20 }}>
+            <div style={{ fontSize: 9, color: '#8a6a2f', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>班級整體評語</div>
             {group.groupComment && (
-              <div style={{ fontSize: 11.5, color: '#3b0764', lineHeight: 1.8, marginBottom: group.groupTips?.length ? 10 : 0 }}>
+              <div style={{ fontSize: 11.5, color: '#584419', lineHeight: 1.8, marginBottom: group.groupTips?.length ? 10 : 0 }}>
                 {group.groupComment}
               </div>
             )}
             {group.groupTips?.length > 0 && (
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {group.groupTips.map((tip, i) => (
-                  <li key={i} style={{ display: 'flex', gap: 6, fontSize: 10.5, color: '#3b0764' }}>
-                    <span style={{ color: '#7c3aed', fontWeight: 700 }}>{i + 1}.</span>{tip}
+                  <li key={i} style={{ display: 'flex', gap: 6, fontSize: 10.5, color: '#584419' }}>
+                    <span style={{ color: '#8a6a2f', fontWeight: 700 }}>{i + 1}.</span>{tip}
                   </li>
                 ))}
               </ul>
@@ -206,10 +206,10 @@ function NarrativePage({ group, results, config, date }) {
       <SectionTitle sub="系統依全班作答資料自動生成的群體敘事評語，供教練參考">群體敘事分析</SectionTitle>
 
       <div style={{
-        background: 'linear-gradient(135deg, #faf5ff, #eff6ff)',
-        border: '1px solid #e9d5ff', borderRadius: 10,
+        background: 'linear-gradient(135deg, #f6ecd7, #eff6ff)',
+        border: '1px solid #e9d3a0', borderRadius: 10,
         padding: '14px 18px', marginBottom: 20,
-        fontSize: 12, color: '#3b0764', lineHeight: 1.8, fontStyle: 'italic',
+        fontSize: 12, color: '#584419', lineHeight: 1.8, fontStyle: 'italic',
       }}>
         {narrative.overall}
       </div>
@@ -305,7 +305,7 @@ function MemberSummaryPage({ group, row, stats, config, date, rank, total }) {
       </div>
 
       {overall && (
-        <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: '12px 15px', marginBottom: 18, fontSize: 11, color: '#3b0764', lineHeight: 1.75, fontStyle: 'italic' }}>
+        <div style={{ background: '#f6ecd7', border: '1px solid #e9d3a0', borderRadius: 10, padding: '12px 15px', marginBottom: 18, fontSize: 11, color: '#584419', lineHeight: 1.75, fontStyle: 'italic' }}>
           {overall}
         </div>
       )}
@@ -403,7 +403,7 @@ export default function GroupPrintableReport({ group, submissions, users, onClos
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={() => window.print()}
-            style={{ background: '#7c3aed', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+            style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
           >
             🖨️ 列印 / 存為 PDF
           </button>

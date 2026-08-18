@@ -39,12 +39,12 @@ export default function TrendChart({ points, min = 31, max = 155 }) {
         </g>
       ))}
 
-      <path d={line} fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d={line} fill="none" stroke="#8a6a2f" strokeWidth="2.5" strokeLinejoin="round" />
 
       {points.map((p, i) => (
         <g key={i}>
-          <circle cx={x(i)} cy={y(p.value)} r="4" fill="#7c3aed" stroke="#fff" strokeWidth="1.5" />
-          <text x={x(i)} y={y(p.value) - 10} textAnchor="middle" fontSize="11" fontWeight="700" fill="#6d28d9">
+          <circle cx={x(i)} cy={y(p.value)} r="4" fill="#8a6a2f" stroke="#fff" strokeWidth="1.5" />
+          <text x={x(i)} y={y(p.value) - 10} textAnchor="middle" fontSize="11" fontWeight="700" fill="#6f5424">
             {p.value}
           </text>
           <text x={x(i)} y={height - 9} textAnchor="middle" fontSize="10" fill="#94a3b8">

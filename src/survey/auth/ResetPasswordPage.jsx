@@ -31,7 +31,7 @@ export default function ResetPasswordPage({ token, onDone }) {
           <p className="mt-2 text-sm text-slate-400">設定您的新密碼以重新登入</p>
         </header>
 
-        <div className="rounded-2xl bg-white px-6 py-7 shadow-lg shadow-slate-200/60">
+        <div className="rounded-md bg-paper-50 px-6 py-7 shadow-card ring-1 ring-paper-300">
           <form onSubmit={submit} className="space-y-4">
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-slate-600">新密碼</span>
@@ -46,12 +46,11 @@ export default function ResetPasswordPage({ token, onDone }) {
 
             {msg.text && (
               <p className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                msg.type === 'err' ? 'border border-red-200 bg-red-50 text-red-600' : 'border border-brand-200 bg-brand-50 text-brand-700'
+                msg.type === 'err' ? 'border border-red-200 bg-red-50 text-red-600' : 'border border-brass-100 bg-brass-50 text-brass-600'
               }`}>{msg.text}</p>
             )}
 
-            <button type="submit" disabled={busy}
-              className="w-full rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 font-bold text-white shadow-md transition-all hover:from-brand-600 hover:to-brand-700 disabled:opacity-60">
+            <button type="submit" disabled={busy} className="btn-primary w-full py-2.5">
               {busy ? '處理中…' : '重設密碼'}
             </button>
 

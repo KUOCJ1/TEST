@@ -108,7 +108,7 @@ function validateAndScore(rawRows, config) {
 }
 
 function ColTag({ children }) {
-  return <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-brand-700">{children}</code>;
+  return <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-brass-600">{children}</code>;
 }
 
 export default function BatchUploadSection() {
@@ -229,7 +229,7 @@ export default function BatchUploadSection() {
                 { n: '3', title: '確認匯入', body: '系統自動驗證與計分，顯示預覽後確認上傳，匯入結果將即時顯示。' },
               ].map(({ n, title, body }) => (
                 <div key={n} className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">{n}</span>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink-700 text-xs font-bold text-white">{n}</span>
                   <div>
                     <p className="text-xs font-bold text-slate-700">{title}</p>
                     <p className="mt-0.5 text-xs text-slate-500">{body}</p>
@@ -286,7 +286,7 @@ export default function BatchUploadSection() {
                     <td className="px-3 py-2 text-slate-600">評分者姓名。留空時使用 rater_email @ 前段作為名稱。</td>
                     <td className="px-3 py-2 text-slate-400">李經理</td>
                   </tr>
-                  <tr className="bg-brand-50/40">
+                  <tr className="bg-brass-50/40">
                     <td className="px-3 py-2"><ColTag>{firstQId}</ColTag> … <ColTag>{lastQId}</ColTag></td>
                     <td className="px-3 py-2"><span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-600">至少填一題</span></td>
                     <td className="px-3 py-2 text-slate-600">
@@ -324,7 +324,7 @@ export default function BatchUploadSection() {
             <div className="flex flex-wrap gap-2">
               {config.SCALE_LABELS?.map((s) => (
                 <div key={s.value} className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">{s.value}</span>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink-700 text-xs font-bold text-white">{s.value}</span>
                   <span className="text-xs text-slate-600">{s.label}</span>
                 </div>
               )) ?? (
@@ -399,7 +399,7 @@ export default function BatchUploadSection() {
           <div className="flex flex-wrap items-center gap-2">
             <label className="btn-secondary cursor-pointer">
               {fileName
-                ? <><Check className="h-4 w-4 text-brand-600" /> {fileName}</>
+                ? <><Check className="h-4 w-4 text-brass-600" /> {fileName}</>
                 : '選擇 CSV / Excel 檔案'}
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" />
             </label>

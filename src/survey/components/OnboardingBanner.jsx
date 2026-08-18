@@ -32,16 +32,16 @@ export default function OnboardingBanner({ role = 'user' }) {
   };
 
   return (
-    <div className="mb-6 rounded-2xl border border-brand-200 bg-brand-50 px-5 py-4">
+    <div className="mb-6 rounded-2xl border border-brass-200 bg-brass-50 px-5 py-4">
       <div className="flex items-start justify-between gap-4">
-        <p className="text-sm font-semibold text-brand-700">
+        <p className="text-sm font-semibold text-brass-600">
           {role === 'coach' ? '歡迎使用教練後台！以下是快速上手步驟：' : '歡迎使用全方位職能評測！以下是開始使用的步驟：'}
         </p>
         <button
           type="button"
           onClick={dismiss}
           aria-label="關閉引導"
-          className="shrink-0 text-brand-400 hover:text-brand-700"
+          className="shrink-0 text-brass-400 hover:text-brass-600"
         >
           ✕
         </button>
@@ -49,11 +49,11 @@ export default function OnboardingBanner({ role = 'user' }) {
       <ol className="mt-3 grid gap-2 sm:grid-cols-3">
         {steps.map((s) => (
           <li key={s.num} className="flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink-700 text-xs font-bold text-white">
               {s.num}
             </span>
             <div>
-              <p className="text-xs font-semibold text-brand-700">{s.title}</p>
+              <p className="text-xs font-semibold text-brass-600">{s.title}</p>
               <p className="text-xs text-slate-500">{s.desc}</p>
             </div>
           </li>
@@ -62,7 +62,7 @@ export default function OnboardingBanner({ role = 'user' }) {
       <button
         type="button"
         onClick={dismiss}
-        className="mt-3 text-xs font-semibold text-brand-600 hover:text-brand-800 underline"
+        className="mt-3 text-xs font-semibold text-brass-600 hover:text-brass-700 underline"
       >
         知道了，不再顯示
       </button>

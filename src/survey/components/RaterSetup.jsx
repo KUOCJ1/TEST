@@ -44,7 +44,7 @@ export default function RaterSetup({ onConfirm, onCancel, initialRateeId = null,
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <header className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-2xl shadow-lg shadow-brand-500/30">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-ink-700 text-2xl text-paper-50 shadow-lg">
             360°
           </div>
           <h1 className="text-xl font-extrabold text-slate-800">評測其他成員</h1>
@@ -73,11 +73,11 @@ export default function RaterSetup({ onConfirm, onCancel, initialRateeId = null,
                   onClick={() => handleRateeChange(m.id)}
                   className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
                     rateeId === m.id
-                      ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-300'
+                      ? 'border-brass-500 bg-brass-50 ring-1 ring-brass-300'
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
-                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${rateeId === m.id ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${rateeId === m.id ? 'bg-ink-700 text-white' : 'bg-slate-100 text-slate-600'}`}>
                     {m.name.charAt(0)}
                   </div>
                   <p className="font-semibold text-slate-800">{m.name}</p>
@@ -99,7 +99,7 @@ export default function RaterSetup({ onConfirm, onCancel, initialRateeId = null,
                     onClick={() => { setRaterType(t.id); setConfirmError(''); }}
                     className={`rounded-xl border px-3 py-2.5 text-center text-sm transition-colors ${
                       raterType === t.id
-                        ? 'border-brand-500 bg-brand-50 font-semibold text-brand-700 ring-1 ring-brand-300'
+                        ? 'border-brass-500 bg-brass-50 font-semibold text-brass-600 ring-1 ring-brass-300'
                         : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                     }`}
                   >

@@ -159,13 +159,13 @@ export default function QrCodeCard({ group, onUpdated }) {
                   <div dangerouslySetInnerHTML={{ __html: qrSvg }} />
                 </div>
                 <p className="text-sm text-slate-500">請用手機掃描 QR Code，或前往：</p>
-                <p className="break-all text-center text-lg font-semibold text-brand-700">{joinUrl}</p>
+                <p className="break-all text-center text-lg font-semibold text-brass-600">{joinUrl}</p>
               </div>
 
               <ol className="w-full max-w-sm space-y-5 lg:max-w-xs">
                 {JOIN_STEPS.map((s) => (
                   <li key={s.num} className="flex items-start gap-4">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-base font-bold text-white">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-700 text-base font-bold text-white">
                       {s.num}
                     </span>
                     <p className="pt-1 text-lg font-semibold text-slate-700">{s.text}</p>

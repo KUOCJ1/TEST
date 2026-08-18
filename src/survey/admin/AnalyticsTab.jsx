@@ -102,7 +102,7 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, onA
                   onClick={() => setSelectedId(a.id)}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                     selectedId === a.id
-                      ? 'bg-brand-600 text-white'
+                      ? 'bg-ink-700 text-white'
                       : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >

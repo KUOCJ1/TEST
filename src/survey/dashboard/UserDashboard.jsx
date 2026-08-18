@@ -89,7 +89,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <div className="rounded-2xl bg-white px-6 py-12 shadow-lg shadow-slate-200/60">
-          <BarChart3 className="mx-auto h-12 w-12 text-brand-300" />
+          <BarChart3 className="mx-auto h-12 w-12 text-brass-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-800">尚無評測紀錄</h2>
           <p className="mt-2 text-slate-500">完成一次評測後，這裡就會顯示您的能力落點與構面分析。</p>
         </div>
@@ -193,7 +193,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
               onClick={() => setSelectedId(id)}
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                 activeId === id
-                  ? 'bg-brand-600 text-white'
+                  ? 'bg-ink-700 text-white'
                   : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -346,7 +346,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
                           <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">課前</span>
                         )}
                         {s.phase === 'post' && (
-                          <span className="ml-2 rounded bg-brand-100 px-1.5 py-0.5 text-xs font-medium text-brand-700">課後</span>
+                          <span className="ml-2 rounded bg-brass-100 px-1.5 py-0.5 text-xs font-medium text-brass-600">課後</span>
                         )}
                       </td>
                       <td className="py-2.5 pr-3 font-semibold text-slate-700">{s.result.total}</td>

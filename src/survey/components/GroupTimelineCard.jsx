@@ -106,7 +106,7 @@ export default function GroupTimelineCard({ group, onUpdated, showHeader = false
             取消發佈
           </button>
         ) : (
-          <button type="button" onClick={handlePublish} disabled={saving} className="btn btn-sm bg-blue-600 text-white hover:bg-blue-700">
+          <button type="button" onClick={handlePublish} disabled={saving} className="btn-primary btn-sm">
             發佈成果（開放閱覽）
           </button>
         )}

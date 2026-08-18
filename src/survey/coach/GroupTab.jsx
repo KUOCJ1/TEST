@@ -252,7 +252,7 @@ export default function GroupTab({ users, submissions }) {
         )}
 
         {creating && (
-          <div className="mb-3 rounded-xl border border-brand-200 bg-brand-50 p-3 space-y-2">
+          <div className="mb-3 rounded-xl border border-brass-200 bg-brass-50 p-3 space-y-2">
             <input type="text" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)}
               placeholder="班別名稱（必填）"
               className="input"
@@ -273,14 +273,14 @@ export default function GroupTab({ users, submissions }) {
             />
             {newDims.length > 0 && (
               <div>
-                <p className="mb-1 text-xs font-semibold text-brand-600">重點構面（選填）</p>
+                <p className="mb-1 text-xs font-semibold text-brass-600">重點構面（選填）</p>
                 <div className="flex flex-wrap gap-1.5">
                   {newDims.map((d) => (
                     <button key={d.id} type="button" onClick={() => toggleNewFocus(d.id)}
                       className={`chip gap-1 transition-colors ${
                         newFocusDims.includes(d.id)
-                          ? 'bg-brand-600 text-white'
-                          : 'bg-white text-slate-500 ring-1 ring-brand-200 hover:bg-brand-100'
+                          ? 'bg-ink-700 text-white'
+                          : 'bg-white text-slate-500 ring-1 ring-brass-200 hover:bg-brass-100'
                       }`}>
                       <Star className="h-3 w-3" fill={newFocusDims.includes(d.id) ? 'currentColor' : 'none'} />
                       {d.name}
@@ -311,8 +311,8 @@ export default function GroupTab({ users, submissions }) {
             <div key={g.id}
               className={`cursor-pointer rounded-xl border px-4 py-3 transition-colors ${
                 selectedGroupId === g.id
-                  ? 'border-brand-400 bg-brand-50'
-                  : 'border-slate-200 bg-white hover:border-brand-200'
+                  ? 'border-brass-400 bg-brass-50'
+                  : 'border-slate-200 bg-white hover:border-brass-200'
               }`}
               onClick={() => loadGroup(g.id)}
             >
@@ -350,8 +350,8 @@ export default function GroupTab({ users, submissions }) {
 
             <QrCodeCard key={groupDetail.group.id} group={groupDetail.group} onUpdated={handleGroupUpdated} />
 
-            <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4">
-              <h3 className="mb-3 flex items-center gap-1.5 font-semibold text-brand-700">
+            <div className="rounded-xl border border-brass-200 bg-brass-50/50 p-4">
+              <h3 className="mb-3 flex items-center gap-1.5 font-semibold text-brass-600">
                 <Target className="h-4 w-4" /> 評量設定
               </h3>
 
@@ -368,7 +368,7 @@ export default function GroupTab({ users, submissions }) {
                   className="input w-28"
                 />
                 <span className="text-sm text-slate-500">
-                  已加入 <span className="font-bold text-brand-700">{selectedMembers.length}</span>
+                  已加入 <span className="font-bold text-brass-600">{selectedMembers.length}</span>
                   {targetHeadcount !== '' && Number(targetHeadcount) > 0 && (
                     <> / 目標 {targetHeadcount} 人
                       <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${
@@ -388,14 +388,14 @@ export default function GroupTab({ users, submissions }) {
                 if (dims.length === 0) return null;
                 return (
                   <>
-                    <p className="mb-1.5 text-xs font-semibold text-brand-600">重點構面（可複選）</p>
+                    <p className="mb-1.5 text-xs font-semibold text-brass-600">重點構面（可複選）</p>
                     <div className="mb-3 flex flex-wrap gap-1.5">
                       {dims.map((d) => (
                         <button key={d.id} type="button" onClick={() => toggleFocus(d.id)}
                           className={`chip gap-1 transition-colors ${
                             focusDims.includes(d.id)
-                              ? 'bg-brand-600 text-white'
-                              : 'bg-white text-slate-500 ring-1 ring-brand-200 hover:bg-brand-100'
+                              ? 'bg-ink-700 text-white'
+                              : 'bg-white text-slate-500 ring-1 ring-brass-200 hover:bg-brass-100'
                           }`}>
                           <Star className="h-3 w-3" fill={focusDims.includes(d.id) ? 'currentColor' : 'none'} />
                           {d.name}
@@ -404,7 +404,7 @@ export default function GroupTab({ users, submissions }) {
                     </div>
                     {focusDims.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-xs font-semibold text-brand-600">重點構面內容</p>
+                        <p className="text-xs font-semibold text-brass-600">重點構面內容</p>
                         {focusDims.map((id) => {
                           const dim = dims.find((d) => d.id === id);
                           if (!dim) return null;
@@ -453,7 +453,7 @@ export default function GroupTab({ users, submissions }) {
                 {nonAdminUsers.map((u) => (
                   <label key={u.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-50">
                     <input type="checkbox" checked={selectedMembers.includes(u.id)} onChange={() => toggleMember(u.id)}
-                      className="accent-brand-600" />
+                      className="accent-ink-700" />
                     <span className="text-sm font-medium text-slate-700">{u.name}</span>
                     <span className="text-xs text-slate-400">{u.email}</span>
                   </label>
@@ -533,8 +533,8 @@ export default function GroupTab({ users, submissions }) {
               />
             )}
 
-            <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
-              <h3 className="mb-2 font-semibold text-brand-700">班級整體評語</h3>
+            <div className="rounded-xl border border-brass-200 bg-brass-50 p-4">
+              <h3 className="mb-2 font-semibold text-brass-600">班級整體評語</h3>
 
               {commentError && (
                 <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
@@ -547,11 +547,11 @@ export default function GroupTab({ users, submissions }) {
                 className="input"
               />
 
-              <p className="mt-3 mb-1.5 text-xs font-semibold text-brand-600 uppercase tracking-wide">班級精進建議</p>
+              <p className="mt-3 mb-1.5 text-xs font-semibold text-brass-600 uppercase tracking-wide">班級精進建議</p>
               <div className="space-y-2">
                 {groupTips.map((tip, i) => (
                   <div key={i} className="flex gap-2">
-                    <span className="mt-2 text-xs font-bold text-brand-400">{i + 1}.</span>
+                    <span className="mt-2 text-xs font-bold text-brass-400">{i + 1}.</span>
                     <input type="text" value={tip} onChange={(e) => setGroupTips((prev) => prev.map((t, j) => j === i ? e.target.value : t))}
                       placeholder={`班級建議 ${i + 1}`}
                       className="input flex-1"
@@ -567,7 +567,7 @@ export default function GroupTab({ users, submissions }) {
                 ))}
                 {groupTips.length < 5 && (
                   <button type="button" onClick={() => setGroupTips((prev) => [...prev, ''])}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800">
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-brass-600 hover:text-brass-700">
                     <Plus className="h-3.5 w-3.5" /> 新增建議
                   </button>
                 )}

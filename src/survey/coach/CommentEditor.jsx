@@ -50,8 +50,8 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
   };
 
   return (
-    <div className="mt-3 rounded-xl border border-brand-200 bg-brand-50 p-4">
-      <p className="mb-2 text-sm font-semibold text-brand-700">
+    <div className="mt-3 rounded-xl border border-brass-200 bg-brass-50 p-4">
+      <p className="mb-2 text-sm font-semibold text-brass-600">
         {existingComment ? '編輯評語' : '新增評語'}
       </p>
 
@@ -63,11 +63,11 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
         className="input"
       />
 
-      <p className="mt-3 mb-1.5 text-xs font-semibold text-brand-600 uppercase tracking-wide">精進建議（最多 5 條）</p>
+      <p className="mt-3 mb-1.5 text-xs font-semibold text-brass-600 uppercase tracking-wide">精進建議（最多 5 條）</p>
       <div className="space-y-2">
         {tips.map((tip, i) => (
           <div key={i} className="flex gap-2">
-            <span className="mt-2 text-xs font-bold text-brand-400">{i + 1}.</span>
+            <span className="mt-2 text-xs font-bold text-brass-400">{i + 1}.</span>
             <input
               type="text"
               value={tip}
@@ -83,7 +83,7 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
           </div>
         ))}
         {tips.length < 5 && (
-          <button type="button" onClick={addTip} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800">
+          <button type="button" onClick={addTip} className="inline-flex items-center gap-1 text-xs font-semibold text-brass-600 hover:text-brass-700">
             <Plus className="h-3.5 w-3.5" /> 新增建議
           </button>
         )}

@@ -127,13 +127,13 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
     >
       {open && (
         <div className="mb-3 flex h-[min(520px,80dvh)] w-80 flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl sm:w-96">
-          <div className="flex items-center justify-between rounded-t-2xl bg-brand-600 px-4 py-3">
+          <div className="flex items-center justify-between rounded-t-2xl bg-ink-700 px-4 py-3">
             <span className="text-sm font-semibold text-white">AI 評測小幫手</span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={clearMessages}
-                className="rounded px-2 py-0.5 text-xs font-medium text-brand-200 hover:bg-brand-700 hover:text-white"
+                className="rounded px-2 py-0.5 text-xs font-medium text-brass-200 hover:bg-ink-900 hover:text-white"
               >
                 清除對話
               </button>
@@ -141,7 +141,7 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
                 type="button"
                 aria-label="關閉 AI 助手"
                 onClick={() => setOpen(false)}
-                className="rounded p-0.5 text-brand-200 hover:bg-brand-700 hover:text-white"
+                className="rounded p-0.5 text-brass-200 hover:bg-ink-900 hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -154,7 +154,7 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
                 <div
                   className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
                     m.role === 'user'
-                      ? 'bg-brand-600 text-white'
+                      ? 'bg-ink-700 text-white'
                       : 'bg-slate-100 text-slate-800'
                   }`}
                 >
@@ -214,7 +214,7 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
         type="button"
         aria-label={open ? '關閉 AI 助手' : '開啟 AI 助手'}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-ink-700 text-white shadow-lg hover:bg-ink-900 focus:outline-none focus:ring-2 focus:ring-brass-400 focus:ring-offset-2"
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
       </button>

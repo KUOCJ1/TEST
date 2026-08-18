@@ -46,7 +46,7 @@ export default function MultiRaterTab({ users, submissions }) {
           {assessmentIds.map((id) => (
             <button key={id} type="button" role="tab" aria-selected={assessmentId === id} onClick={() => setSelectedId(id)}
               className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-                assessmentId === id ? 'bg-brand-600 text-white' : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+                assessmentId === id ? 'bg-ink-700 text-white' : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}>
               {getAssessment(id)?.NAME ?? id}
             </button>
@@ -98,7 +98,7 @@ export default function MultiRaterTab({ users, submissions }) {
                           onClick={() => setSelectedUserId(selectedUserId === u.id ? null : u.id)}
                           className={`btn-sm ${
                             selectedUserId === u.id
-                              ? 'btn bg-brand-600 text-white hover:bg-brand-700'
+                              ? 'btn bg-ink-700 text-white hover:bg-ink-900'
                               : 'btn-secondary'
                           }`}
                         >

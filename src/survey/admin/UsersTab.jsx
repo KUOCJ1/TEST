@@ -70,7 +70,7 @@ export default function UsersTab({ users, onUserChanged }) {
                   <td className="py-2.5 pr-3">
                     <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                       u.role === 'coach'
-                        ? 'bg-brand-100 text-brand-700'
+                        ? 'bg-brass-100 text-brass-600'
                         : 'bg-slate-100 text-slate-500'
                     }`}>
                       {u.role === 'coach' ? '教練' : '一般用戶'}
@@ -82,7 +82,7 @@ export default function UsersTab({ users, onUserChanged }) {
                         type="button"
                         disabled={roleChanging === u.id}
                         onClick={() => handleRoleToggle(u)}
-                        className={`btn-sm ${u.role === 'coach' ? 'btn-secondary' : 'btn bg-brand-100 text-brand-700 hover:bg-brand-200'}`}
+                        className={`btn-sm ${u.role === 'coach' ? 'btn-secondary' : 'btn bg-brass-100 text-brass-600 hover:bg-brass-200'}`}
                       >
                         {roleChanging === u.id ? '…' : u.role === 'coach' ? '取消教練身份' : '設為教練'}
                       </button>

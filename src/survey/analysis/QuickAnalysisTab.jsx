@@ -106,8 +106,8 @@ export default function QuickAnalysisTab({ users }) {
               onClick={() => loadGroup(g.id)}
               className={`block w-full rounded-xl border px-4 py-3 text-left transition-colors ${
                 selectedGroupId === g.id
-                  ? 'border-brand-400 bg-brand-50'
-                  : 'border-slate-200 bg-white hover:border-brand-200'
+                  ? 'border-brass-400 bg-brass-50'
+                  : 'border-slate-200 bg-white hover:border-brass-200'
               }`}
             >
               <p className="font-semibold text-slate-800">{g.name}</p>
