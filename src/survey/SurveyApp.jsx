@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Check } from 'lucide-react';
 import { getAssessment } from './data/assessments/index.js';
 import { answeredCount, buildResult, isComplete, unansweredQuestionIds } from './utils/scoring';
@@ -14,6 +15,7 @@ const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmen
 
 export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, assessmentId = 'ai-competency', rateeId, raterType, rateeName, onSubmitted }) {
   const config = useMemo(() => getAssessment(assessmentId), [assessmentId]);
+  const navigate = useNavigate();
 
   const storageKey = useMemo(() => draftKey(user.id, assessmentId), [user.id, assessmentId]);
   const [answers, setAnswers] = useState(() => readJSON(storageKey, {}));
@@ -82,6 +84,13 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     setCopied(ok);
     if (ok) setTimeout(() => setCopied(false), 2500);
   }, [result]);
+
+  // 送出後先停在這頁看結果，使用者按下去才離開——不要一送出就被導頁，
+  // 讓自己的分數／落點連一眼都看不到。
+  const isRatingOthers = raterType && raterType !== 'self';
+  const handleContinue = useCallback(() => {
+    navigate(isRatingOthers ? '/360' : `/analysis/${assessmentId}`);
+  }, [navigate, isRatingOthers, assessmentId]);
 
   if (!config) {
     return <p className="py-20 text-center text-red-500">找不到評量設定（id: {assessmentId}）</p>;
@@ -198,13 +207,20 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
         </form>
 
         {result && (
-          <ResultPanel
-            ref={resultRef}
-            result={result}
-            onRetake={handleRetake}
-            onCopy={handleCopy}
-            copied={copied}
-          />
+          <>
+            <ResultPanel
+              ref={resultRef}
+              result={result}
+              onRetake={handleRetake}
+              onCopy={handleCopy}
+              copied={copied}
+            />
+            <div className="mt-6 flex justify-center">
+              <button type="button" onClick={handleContinue} className="btn-primary px-7 py-3 text-base">
+                {isRatingOthers ? '返回 360° 評測 →' : '查看完整分析 →'}
+              </button>
+            </div>
+          </>
         )}
       </div>
 

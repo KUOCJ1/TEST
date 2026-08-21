@@ -172,12 +172,17 @@ describe('App 流程', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /送出評測/ }));
 
-    // After submission, app returns to home; navigate to analysis tab.
-    fireEvent.click(await screen.findByRole('button', { name: '我的分析' }));
+    // 送出後應該「就地」看到結果，不會被直接導頁到別的畫面。
+    const inlineRegion = (await screen.findByText(/您的總得分/)).closest('section');
+    // 每題選最後一個選項（5 分）：31 正向題 ×5 + 6 反向題 ×1 = 161。
+    expect(within(inlineRegion).getByText('161')).toBeInTheDocument();
+    expect(within(inlineRegion).getByLabelText('6 大構面能力雷達圖')).toBeInTheDocument();
+
+    // 使用者按下「查看完整分析」才離開作答頁，前往我的分析。
+    fireEvent.click(screen.getByRole('button', { name: /查看完整分析/ }));
 
     expect(await screen.findByText('我的能力分析')).toBeInTheDocument();
     const region = (await screen.findByText(/您的總得分/)).closest('section');
-    // 每題選最後一個選項（5 分）：31 正向題 ×5 + 6 反向題 ×1 = 161。
     expect(within(region).getByText('161')).toBeInTheDocument();
     expect(within(region).getByLabelText('6 大構面能力雷達圖')).toBeInTheDocument();
   });

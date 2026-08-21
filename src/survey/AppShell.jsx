@@ -196,9 +196,10 @@ export default function AppShell() {
   };
   const handleViewAnalysis = (id) => navigate(`/analysis/${id}`);
   const handleGoTo360 = (id) => navigate(`/360/${id}`);
-  const handleSubmitted = (raterType) => {
+  // 送出後不再立刻導頁——讓 SurveyApp 先把結果就地顯示出來，使用者按下
+  // 「查看完整分析／返回 360° 評測」才離開，避免作答完連自己的分數都看不到。
+  const handleSubmitted = () => {
     setRefreshKey((k) => k + 1);
-    navigate(returnPathFor(raterType));
   };
 
   const isSurveyOrRaterSetup = location.pathname.startsWith('/survey') || location.pathname.startsWith('/rater-setup');
