@@ -1,3 +1,7 @@
+import MarketingNav from './marketing/MarketingNav';
+import MarketingFooter from './marketing/MarketingFooter';
+import CtaBanner from './marketing/CtaBanner';
+
 export default function LandingPage({ onEnter }) {
   const scrollToFeatures = () => {
     document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
@@ -51,20 +55,7 @@ export default function LandingPage({ onEnter }) {
 
   return (
     <div className="min-h-screen bg-paper-100 font-sans text-ink-700">
-      {/* Navbar */}
-      <nav className="sticky top-0 z-30 border-b border-ink-700/10 bg-paper-100/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div className="flex items-center gap-3">
-            <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
-            <span className="font-serif text-lg font-semibold tracking-tight text-ink-700">
-              全方位職能評測
-            </span>
-          </div>
-          <button onClick={onEnter} className="btn-primary px-5 py-2 text-sm">
-            登入平台
-          </button>
-        </div>
-      </nav>
+      <MarketingNav loggedIn={false} onEnter={onEnter} />
 
       {/* Hero — 報告式排版：左文右數據欄 */}
       <section className="px-6 pt-20 pb-4">
@@ -161,27 +152,9 @@ export default function LandingPage({ onEnter }) {
         </div>
       </section>
 
-      {/* CTA Banner */}
-      <section className="bg-ink-700 px-6 py-20 text-center text-paper-50">
-        <div className="mx-auto max-w-2xl">
-          <div className="font-display mb-4 text-[15px] italic text-brass-100">Get Started</div>
-          <h2 className="font-serif mb-5 text-3xl font-bold tracking-tight">立即開始使用</h2>
-          <p className="mb-9 text-base leading-relaxed text-paper-50/75">
-            加入已使用職能評測平台的組織，以科學數據驅動人才發展。
-          </p>
-          <button
-            onClick={onEnter}
-            className="inline-flex items-center justify-center gap-2 rounded-sm bg-paper-50 px-8 py-3.5 text-base font-semibold text-ink-700 transition-colors hover:bg-brass-100"
-          >
-            登入平台
-          </button>
-        </div>
-      </section>
+      <CtaBanner loggedIn={false} onEnter={onEnter} />
 
-      {/* Footer */}
-      <footer className="border-t border-ink-700/10 bg-paper-100 px-6 py-8 text-center text-sm text-ink-50">
-        <p>© {new Date().getFullYear()} 全方位職能評測平台．All rights reserved.</p>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './survey/auth/AuthContext';
 import { useAuth } from './survey/auth/useAuth';
 import { api } from './survey/api/client';
@@ -8,6 +8,20 @@ import ResetPasswordPage from './survey/auth/ResetPasswordPage';
 import AppShell from './survey/AppShell';
 import LandingPage from './survey/LandingPage';
 import { ToastProvider } from './survey/components/Toast';
+
+// 行銷頁不是首次進站的關鍵路徑（大多數訪客只會看到 LandingPage／登入頁），
+// 獨立拆成各自的 chunk，避免 ShowcasePage 引入的圖表元件（雷達圖／熱力圖）
+// 灌進每個人都要下載的主要 bundle。
+const AboutPage = lazy(() => import('./survey/marketing/AboutPage'));
+const HowItWorksPage = lazy(() => import('./survey/marketing/HowItWorksPage'));
+const ShowcasePage = lazy(() => import('./survey/marketing/ShowcasePage'));
+const FaqPage = lazy(() => import('./survey/marketing/FaqPage'));
+
+const MARKETING_PATHS = ['/about', '/how-it-works', '/showcase', '/faq'];
+
+function MarketingFallback() {
+  return <div className="flex min-h-screen items-center justify-center text-slate-400">載入中…</div>;
+}
 
 function readResetToken() {
   const params = new URLSearchParams(window.location.search);
@@ -19,9 +33,10 @@ function readJoinCode() {
   return params.get('join');
 }
 
-function Routes() {
+function AppRoutes() {
   const { user, ready } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [resetToken, setResetToken] = useState(readResetToken);
   const [view, setView] = useState('landing');
   const [joinCode] = useState(readJoinCode);
@@ -72,6 +87,28 @@ function Routes() {
     };
   }, [user, joinCode]);
 
+  // 行銷／說明頁（理念、功能總覽、範例報告、常見問題）不論登入與否都能直接用
+  // 網址開啟——登入後導覽列的 CTA 會自動改成「前往我的評量」，不強制導回
+  // AppShell，讓已登入的使用者也能把連結分享給還沒有帳號的同事。
+  if (MARKETING_PATHS.includes(location.pathname)) {
+    // 登入畫面目前是首頁的一個 view 狀態，不是獨立路由，所以由行銷頁觸發登入時
+    // 要先導回首頁，再切換到 view === 'auth'，下一次渲染才會顯示 LoginPage。
+    const enterLogin = () => {
+      navigate('/');
+      setView('auth');
+    };
+    return (
+      <Suspense fallback={<MarketingFallback />}>
+        <Routes>
+          <Route path="/about" element={<AboutPage loggedIn={!!user} onEnter={enterLogin} />} />
+          <Route path="/how-it-works" element={<HowItWorksPage loggedIn={!!user} onEnter={enterLogin} />} />
+          <Route path="/showcase" element={<ShowcasePage loggedIn={!!user} onEnter={enterLogin} />} />
+          <Route path="/faq" element={<FaqPage loggedIn={!!user} onEnter={enterLogin} />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
   // 忘記密碼重設連結優先（未登入狀態下處理）。
   if (resetToken && !user) {
     return <ResetPasswordPage token={resetToken} onDone={clearReset} />;
@@ -97,7 +134,7 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <Routes />
+        <AppRoutes />
       </ToastProvider>
     </AuthProvider>
   );
