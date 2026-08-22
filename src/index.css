@@ -245,3 +245,19 @@ body {
   transform-origin: left;
   animation: toastProgress var(--toast-duration, 6000ms) linear forwards;
 }
+
+/* AI 小幫手浮動按鈕：首次出現時輕輕晃兩下吸引目光，晃完就定住不再動——
+   這顆按鈕在登入後每一頁都常駐，永遠動的話反而分心，對自動化測試也不友善
+   （元素的 bounding box 永遠「不穩定」，Playwright 的可互動判斷會卡住）。 */
+@keyframes assistantGreet {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-4px) rotate(-4deg); }
+  50%      { transform: translateY(0) rotate(0deg); }
+  75%      { transform: translateY(-2px) rotate(3deg); }
+}
+.animate-assistant-greet {
+  animation: assistantGreet 1.6s ease-in-out 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-assistant-greet { animation: none; }
+}

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { X, MessageCircle, Send } from 'lucide-react';
+import { X, Send } from 'lucide-react';
 import { useAuth } from '../auth/useAuth';
 import { readJSON, writeJSON, removeKey } from '../utils/storage';
+import AssistantMascot from './icons/AssistantMascot';
 
 const STORAGE_KEY = 'aiassess_chat_v1';
 
@@ -128,7 +129,10 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
       {open && (
         <div className="mb-3 flex h-[min(520px,80dvh)] w-80 flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl sm:w-96">
           <div className="flex items-center justify-between rounded-t-2xl bg-ink-700 px-4 py-3">
-            <span className="text-sm font-semibold text-white">AI 評測小幫手</span>
+            <span className="flex items-center gap-2 text-sm font-semibold text-white">
+              <AssistantMascot className="h-6 w-6 shrink-0" />
+              AI 評測小幫手
+            </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -214,9 +218,11 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
         type="button"
         aria-label={open ? '關閉 AI 助手' : '開啟 AI 助手'}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-ink-700 text-white shadow-lg hover:bg-ink-900 focus:outline-none focus:ring-2 focus:ring-brass-400 focus:ring-offset-2"
+        className={`flex h-14 w-14 items-center justify-center rounded-full bg-ink-700 text-white shadow-lg ring-2 ring-brass-300/70 transition-transform hover:bg-ink-900 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brass-400 focus:ring-offset-2 ${
+          open ? '' : 'animate-assistant-greet'
+        }`}
       >
-        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+        {open ? <X className="h-6 w-6" /> : <AssistantMascot className="h-9 w-9" />}
       </button>
     </div>
   );
