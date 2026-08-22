@@ -828,3 +828,122 @@ describe('管理後台', () => {
     assert.ok(overview.body.users.every((u) => u.passwordHash === undefined));
   });
 });
+
+describe('個人發展目標', () => {
+  async function userAgent(app, email = 'g@b.co') {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/register').send({ name: 'g', email, password: 'abcdef12' });
+    return agent;
+  }
+
+  test('未登入不得存取', async () => {
+    const app = await setup();
+    assert.equal((await request(app).get('/api/goals')).status, 401);
+    assert.equal((await request(app).post('/api/goals').send({ text: 'x' })).status, 401);
+  });
+
+  test('可建立目標並讀回，含行動項目', async () => {
+    const app = await setup();
+    const agent = await userAgent(app);
+
+    const created = await agent.post('/api/goals').send({
+      assessmentId: 'ai-competency',
+      dimensionId: 'innovation',
+      dimensionName: '創新力',
+      text: '每週用 GPTs 做一個小工具',
+      actions: [{ text: '先盤點三個重複性工作' }, { text: '做出第一版並找同事試用' }],
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.goal.dimensionName, '創新力');
+    assert.equal(created.body.goal.actions.length, 2);
+    assert.equal(created.body.goal.actions[0].done, false);
+    assert.equal(created.body.goal.achievedAt, null);
+    // 不應把 userId 這類內部欄位吐給前端
+    assert.equal(created.body.goal.userId, undefined);
+
+    const list = await agent.get('/api/goals');
+    assert.equal(list.status, 200);
+    assert.equal(list.body.goals.length, 1);
+  });
+
+  test('目標內容為空時擋下', async () => {
+    const app = await setup();
+    const agent = await userAgent(app);
+    assert.equal((await agent.post('/api/goals').send({ text: '   ' })).status, 400);
+    assert.equal((await agent.post('/api/goals').send({})).status, 400);
+  });
+
+  test('可依評量篩選', async () => {
+    const app = await setup();
+    const agent = await userAgent(app);
+    await agent.post('/api/goals').send({ assessmentId: 'ai-competency', text: 'a' });
+    await agent.post('/api/goals').send({ assessmentId: 'leadership-9d', text: 'b' });
+
+    const filtered = await agent.get('/api/goals?assessmentId=leadership-9d');
+    assert.equal(filtered.body.goals.length, 1);
+    assert.equal(filtered.body.goals[0].text, 'b');
+  });
+
+  test('勾選行動項目會記錄完成時間，取消勾選則清除', async () => {
+    const app = await setup();
+    const agent = await userAgent(app);
+    const { body } = await agent.post('/api/goals').send({ text: '目標', actions: [{ text: '行動一' }] });
+    const goal = body.goal;
+
+    const done = await agent.patch(`/api/goals/${goal.id}`)
+      .send({ actions: [{ ...goal.actions[0], done: true }] });
+    assert.equal(done.status, 200);
+    assert.equal(done.body.goal.actions[0].done, true);
+    assert.ok(done.body.goal.actions[0].doneAt);
+
+    const undone = await agent.patch(`/api/goals/${goal.id}`)
+      .send({ actions: [{ ...done.body.goal.actions[0], done: false }] });
+    assert.equal(undone.body.goal.actions[0].done, false);
+    assert.equal(undone.body.goal.actions[0].doneAt, null);
+  });
+
+  test('可標記達成與取消達成', async () => {
+    const app = await setup();
+    const agent = await userAgent(app);
+    const { body } = await agent.post('/api/goals').send({ text: '目標' });
+
+    const achieved = await agent.patch(`/api/goals/${body.goal.id}`).send({ achieved: true });
+    assert.ok(achieved.body.goal.achievedAt);
+
+    const reopened = await agent.patch(`/api/goals/${body.goal.id}`).send({ achieved: false });
+    assert.equal(reopened.body.goal.achievedAt, null);
+  });
+
+  test('看不到也改不動別人的目標', async () => {
+    const app = await setup();
+    const alice = await userAgent(app, 'alice@b.co');
+    const bob = await userAgent(app, 'bob@b.co');
+
+    const { body } = await alice.post('/api/goals').send({ text: 'alice 的目標' });
+    const goalId = body.goal.id;
+
+    assert.equal((await bob.get('/api/goals')).body.goals.length, 0);
+    assert.equal((await bob.patch(`/api/goals/${goalId}`).send({ text: '竄改' })).status, 404);
+    assert.equal((await bob.delete(`/api/goals/${goalId}`)).status, 404);
+
+    // 確認 alice 的目標沒有被動到
+    const still = await alice.get('/api/goals');
+    assert.equal(still.body.goals[0].text, 'alice 的目標');
+  });
+
+  test('可刪除自己的目標', async () => {
+    const app = await setup();
+    const agent = await userAgent(app);
+    const { body } = await agent.post('/api/goals').send({ text: '要刪掉的' });
+    assert.equal((await agent.delete(`/api/goals/${body.goal.id}`)).status, 200);
+    assert.equal((await agent.get('/api/goals')).body.goals.length, 0);
+  });
+
+  test('行動項目數量上限為 5，超過的被截掉', async () => {
+    const app = await setup();
+    const agent = await userAgent(app);
+    const actions = Array.from({ length: 9 }, (_, i) => ({ text: `行動 ${i}` }));
+    const { body } = await agent.post('/api/goals').send({ text: '目標', actions });
+    assert.equal(body.goal.actions.length, 5);
+  });
+});

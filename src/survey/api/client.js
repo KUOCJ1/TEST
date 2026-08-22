@@ -77,6 +77,13 @@ export const api = {
   groupMembers: () => request('/groups/mine/members').then((d) => d.members),
   // 已登入使用者掃到（另一個）班級的 QR：直接加入，不需重新註冊/登入。
   joinGroup: (joinCode) => request('/groups/join', { method: 'POST', body: { joinCode } }).then((d) => d.joinedGroup),
+
+  // 個人發展目標（僅本人可讀寫）
+  myGoals: (assessmentId) =>
+    request(`/goals${assessmentId ? `?assessmentId=${encodeURIComponent(assessmentId)}` : ''}`).then((d) => d.goals),
+  createGoal: (body) => request('/goals', { method: 'POST', body }).then((d) => d.goal),
+  updateGoal: (id, body) => request(`/goals/${id}`, { method: 'PATCH', body }).then((d) => d.goal),
+  deleteGoal: (id) => request(`/goals/${id}`, { method: 'DELETE' }),
   // 完全公開、免登入：QR 報到連結在使用者登入前就要能顯示班級資訊。
   publicJoinInfo: (code) => request(`/public/join/${encodeURIComponent(code)}`),
 

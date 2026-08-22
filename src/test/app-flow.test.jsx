@@ -82,6 +82,11 @@ vi.mock('../survey/api/client', () => {
         };
       },
       async myGroups() { return []; },
+      // 個人發展目標：這支流程測試不驗證目標功能，給空清單讓 GoalPanel 正常渲染即可。
+      async myGoals() { return []; },
+      async createGoal(body) { return { id: 'g1', actions: [], achievedAt: null, createdAt: new Date().toISOString(), ...body }; },
+      async updateGoal(id, body) { return { id, actions: [], achievedAt: null, createdAt: new Date().toISOString(), ...body }; },
+      async deleteGoal() { return { ok: true }; },
       async benchmark(assessmentId) {
         const totals = state.submissions
           .filter((s) => (s.assessmentId ?? 'ai-competency') === assessmentId)

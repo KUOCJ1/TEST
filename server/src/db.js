@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 
-const COLLECTIONS = ['users', 'submissions', 'assessments', 'groups'];
+const COLLECTIONS = ['users', 'submissions', 'assessments', 'groups', 'goals'];
 
 // 舊版 JSON 檔案型儲存遷移到 SQLite：把 DB_PATH 指向的舊檔（原本存純 JSON）解析後
 // 灌進新的 `${file}.sqlite3` 檔案。遷移過程完全不動、不刪原檔——新資料寫進另一個
@@ -51,7 +51,7 @@ export function createDb(file) {
     )
   `);
 
-  const data = { users: [], submissions: [], assessments: [], groups: [] };
+  const data = { users: [], submissions: [], assessments: [], groups: [], goals: [] };
   let freshlySeeded = false;
 
   if (legacyData) {

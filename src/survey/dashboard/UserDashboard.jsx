@@ -7,6 +7,7 @@ import ResultPanel from '../components/ResultPanel';
 import PrintableReport from '../components/PrintableReport';
 import TrendChart from '../components/charts/TrendChart';
 import JourneyTimeline from '../components/JourneyTimeline';
+import GoalPanel from '../components/GoalPanel';
 import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachCommentPanel';
 import { computePercentile } from '../utils/analytics';
 import { buildJourneyNarrative } from '../utils/narrative';
@@ -247,6 +248,8 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
           <GroupCommentPanel group={myGroupForActive} />
 
           <JourneyTimeline narrative={journeyNarrative} submissions={filtered} onSelect={setViewingSubId} />
+
+          <GoalPanel assessmentId={activeId} weakestDimension={latest.result.weakest} />
 
           {gain && (
             <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">

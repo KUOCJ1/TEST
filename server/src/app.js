@@ -7,6 +7,7 @@ import { createSubmissionsRouter } from './routes/submissions.js';
 import { createAdminRouter } from './routes/admin.js';
 import { createCoachRouter } from './routes/coach.js';
 import { createGroupsRouter } from './routes/groups.js';
+import { createGoalsRouter } from './routes/goals.js';
 import { createChatRouter } from './routes/chat.js';
 import { createPublicRouter } from './routes/public.js';
 
@@ -52,6 +53,7 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   app.use('/api', createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }));
   app.use('/api', createSubmissionsRouter({ db, requireAuth, requireCoach }));
   app.use('/api', createGroupsRouter({ db, requireAuth }));
+  app.use('/api', createGoalsRouter({ db, requireAuth }));
   app.use('/api', createChatRouter({ requireAuth }));
   // admin/coach 各自的 router 用 router.use() 統一掛驗證中介層，故須掛在專屬前綴下，
   // 否則會攔截同樣掛在 /api 的其他路由（例如非 admin 使用者呼叫 /api/coach/* 會先被
