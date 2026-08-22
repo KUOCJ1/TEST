@@ -234,6 +234,50 @@ export function buildOverallSummary(result, config, seedBase = 0) {
   return pick(templates, seed)();
 }
 
+/**
+ * 歷程敘事 — 把某個評量底下依時間新到舊排序的作答紀錄，組成一段「這趟歷程走到
+ * 哪裡」的話。跟 buildOverallSummary（單次報告的構面總評）刻意分開：這裡看的是
+ * 跨次比較，不看單次的構面強弱。
+ * @param {Array} filtered 依時間新到舊排序的作答紀錄（需含 id, createdAt, result{total, assessmentName, level, dimensions}）
+ * @returns {string} 段落文字；沒有資料時回傳空字串
+ */
+export function buildJourneyNarrative(filtered) {
+  if (!Array.isArray(filtered) || filtered.length === 0) return '';
+  const latest = filtered[0];
+  const oldest = filtered[filtered.length - 1];
+  const count = filtered.length;
+  const seed = hashStr(`${latest.id ?? latest.createdAt}|journey|${count}`);
+
+  if (count === 1) {
+    const templates = [
+      () => `這是您在「${latest.result.assessmentName ?? '本評量'}」的第一次作答，總分 ${latest.result.total} 分，落點為「${latest.result.level.badge}」。從這裡開始，之後每一次作答都會被記錄下來，累積成屬於您的成長軌跡。`,
+      () => `您剛完成第一次評測，總分 ${latest.result.total} 分（${latest.result.level.badge}）。這個分數會是您日後回頭比較的起點——之後的每一次複測都會自動算出成長幅度。`,
+    ];
+    return pick(templates, seed)();
+  }
+
+  const delta = latest.result.total - oldest.result.total;
+  const deltaAbs = Math.abs(delta);
+  const trendWord = delta > 0 ? '成長' : delta < 0 ? '下滑' : '持平';
+
+  // 進步最多的構面：比較第一次與最新一次的原始分數。
+  const oldestDims = new Map((oldest.result.dimensions ?? []).map((d) => [d.id, d]));
+  let topGain = null;
+  for (const d of latest.result.dimensions ?? []) {
+    const before = oldestDims.get(d.id);
+    if (!before) continue;
+    const gain = d.score - before.score;
+    if (!topGain || gain > topGain.gain) topGain = { name: d.subtitle ?? d.name, gain };
+  }
+  const gainNote = topGain && topGain.gain > 0 ? `「${topGain.name}」是這段時間進步最多的構面。` : '';
+
+  const templates = [
+    () => `您已累積 ${count} 次作答，總分從 ${oldest.result.total} 分到最新一次的 ${latest.result.total} 分${deltaAbs ? `，${trendWord} ${deltaAbs} 分` : '，大致持平'}。${gainNote}`,
+    () => `從第一次 ${oldest.result.total} 分開始，${count} 次作答累積下來${deltaAbs ? `已經${trendWord} ${deltaAbs} 分` : '分數大致持平'}，來到 ${latest.result.total} 分。${gainNote}`,
+  ];
+  return pick(templates, seed)();
+}
+
 // 依題庫的三圈層（LAYERS）彙整各層平均，供顧問級敘事描述「能力梯度」。
 function layerStats(result, config) {
   const layers = config?.LAYERS;

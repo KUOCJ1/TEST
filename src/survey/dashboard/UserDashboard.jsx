@@ -6,9 +6,11 @@ import { getAssessment } from '../data/assessments/index.js';
 import ResultPanel from '../components/ResultPanel';
 import PrintableReport from '../components/PrintableReport';
 import TrendChart from '../components/charts/TrendChart';
+import JourneyTimeline from '../components/JourneyTimeline';
 import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachCommentPanel';
 import { computePercentile } from '../utils/analytics';
-import { resultSummaryText, copyToClipboard, formatDate, formatDateShort } from '../utils/format';
+import { buildJourneyNarrative } from '../utils/narrative';
+import { resultSummaryText, copyToClipboard, formatDateShort } from '../utils/format';
 import InfoTip from '../components/InfoTip';
 
 export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey, onResultLoad }) {
@@ -155,7 +157,9 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
     : null;
   const topGain = gain?.dims?.[0] ?? null;
 
-  // 歷史紀錄可點開：預設看最新一筆，但點「作答紀錄」任一列就改看那一筆（S-03）。
+  const journeyNarrative = buildJourneyNarrative(filtered);
+
+  // 歷史紀錄可點開：預設看最新一筆，但點時間軸上任一節點就改看那一筆（S-03）。
   const viewingSub = viewingSubId ? filtered.find((s) => s.id === viewingSubId) : null;
   const reportSub = viewingSub ?? (showReport ? latest : null);
   const closeReport = () => { setShowReport(false); setViewingSubId(null); };
@@ -241,6 +245,8 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
 
           <CoachCommentPanel comments={latest.comments} />
           <GroupCommentPanel group={myGroupForActive} />
+
+          <JourneyTimeline narrative={journeyNarrative} submissions={filtered} onSelect={setViewingSubId} />
 
           {gain && (
             <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
@@ -343,55 +349,6 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
               </div>
             </section>
           )}
-
-          <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7 print:hidden">
-            <h3 className="mb-1 text-base font-bold text-slate-700">作答紀錄</h3>
-            <p className="mb-2 text-xs text-slate-400">點任一列即可查看該次完整報告。</p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-500">
-                    <th className="py-2 pr-3 font-medium">時間</th>
-                    <th className="py-2 pr-3 font-medium">總分</th>
-                    <th className="py-2 pr-3 font-medium">達成率</th>
-                    <th className="py-2 font-medium">
-                      落點等級
-                      <InfoTip text="共 4 個落點：探索期 / 發展期 / 精熟期 / 卓越，由總分決定整體能力成熟度。" />
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((s) => (
-                    <tr
-                      key={s.id}
-                      onClick={() => setViewingSubId(s.id)}
-                      className="cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50"
-                    >
-                      <td className="py-2.5 pr-3 text-slate-600">
-                        {formatDate(s.createdAt)}
-                        {s.phase === 'pre' && (
-                          <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">課前</span>
-                        )}
-                        {s.phase === 'post' && (
-                          <span className="ml-2 rounded bg-brass-100 px-1.5 py-0.5 text-xs font-medium text-brass-600">課後</span>
-                        )}
-                      </td>
-                      <td className="py-2.5 pr-3 font-semibold text-slate-700">{s.result.total}</td>
-                      <td className="py-2.5 pr-3 text-slate-600">{s.result.percent}%</td>
-                      <td className="py-2.5">
-                        <span
-                          className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
-                          style={{ background: s.result.level.color }}
-                        >
-                          {s.result.level.badge}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
         </>
       )}
     </main>
