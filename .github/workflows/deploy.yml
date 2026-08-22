@@ -22,13 +22,30 @@ jobs:
 
       - run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: Test
+        run: npm test
+
+      - name: Install server deps
+        working-directory: server
+        run: npm ci
+
+      - name: Server test
+        working-directory: server
         run: npm test
 
       - name: Build
         run: npm run build
         env:
           VITE_BASE_URL: /TEST/
+
+      # GitHub Pages 是純靜態託管，沒有 SPA fallback，直接開 /TEST/about 或在
+      # 子路由重新整理會 404。複製一份 index.html 當 404 頁，讓前端路由接手。
+      # （正式站走 Nginx，已有 try_files 設定，不受影響。）
+      - name: SPA fallback for GitHub Pages
+        run: cp dist/index.html dist/404.html
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
