@@ -13,7 +13,7 @@
 | 層 | 技術 |
 |----|------|
 | 前端 | React 19 + Vite 8 + Tailwind CSS 3 |
-| 後端 | Node.js (≥20) + Express 4 |
+| 後端 | Node.js (**≥22**，`better-sqlite3` 的原生模組要求；Node 20 會在載入時 segfault) + Express 4 |
 | 認證 | JWT（httpOnly cookie）+ bcryptjs |
 | 儲存 | SQLite（`better-sqlite3`），檔案路徑為 `${DB_PATH}.sqlite3`；`DB_PATH` 預設 `/var/lib/ai-assessment/db.json`。舊版純 JSON 檔開機時會自動偵測並遷移，原檔保留不動 |
 | 測試 | Vitest（前端）、`node --test`（後端） |
