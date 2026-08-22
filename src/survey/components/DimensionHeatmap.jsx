@@ -11,7 +11,7 @@ export default function DimensionHeatmap({ dimensions, memberRows }) {
   if (!dimensions?.length || !memberRows?.length) return null;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <div className="panel">
       <h4 className="mb-1 font-semibold text-slate-700">構面 × 成員熱力圖</h4>
       <p className="mb-3 text-xs text-slate-400">色塊越紅代表該構面分數越低，越綠代表越高——用來快速定位弱項與是誰拉低的。</p>
       <div className="overflow-x-auto">

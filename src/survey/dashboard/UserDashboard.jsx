@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BarChart3, FileText, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart3, FileText, Users, AlertCircle } from 'lucide-react';
 import { api } from '../api/client';
+import { getAssessment } from '../data/assessments/index.js';
 import ResultPanel from '../components/ResultPanel';
 import PrintableReport from '../components/PrintableReport';
 import TrendChart from '../components/charts/TrendChart';
@@ -10,6 +12,7 @@ import { resultSummaryText, copyToClipboard, formatDate, formatDateShort } from 
 import InfoTip from '../components/InfoTip';
 
 export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey, onResultLoad }) {
+  const navigate = useNavigate();
   const [subs, setSubs] = useState(null);
   const [myGroups, setMyGroups] = useState([]);
   const [benchmark, setBenchmark] = useState(null);
@@ -18,6 +21,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
   const [copied, setCopied] = useState(false);
   const [selectedId, setSelectedId] = useState(initialAssessmentId ?? null);
   const [showReport, setShowReport] = useState(false);
+  const [viewingSubId, setViewingSubId] = useState(null);
   const benchmarkCache = useRef({});
   const [retryKey, setRetryKey] = useState(0);
   const loadData = useCallback(() => { setError(''); setRetryKey((k) => k + 1); }, []);
@@ -104,6 +108,8 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
   const oldest = filtered[filtered.length - 1];
   const myGroupForActive = myGroups.find((g) => g.assessmentId === activeId);
 
+  const supports360 = !!getAssessment(activeId)?.SUPPORTS_360;
+
   const benchmarkForActive = benchmark?.assessmentId === activeId ? benchmark : null;
   const percentile = benchmarkForActive
     ? computePercentile(latest.result.total, benchmarkForActive.totals)
@@ -149,16 +155,21 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
     : null;
   const topGain = gain?.dims?.[0] ?? null;
 
+  // 歷史紀錄可點開：預設看最新一筆，但點「作答紀錄」任一列就改看那一筆（S-03）。
+  const viewingSub = viewingSubId ? filtered.find((s) => s.id === viewingSubId) : null;
+  const reportSub = viewingSub ?? (showReport ? latest : null);
+  const closeReport = () => { setShowReport(false); setViewingSubId(null); };
+
   return (
     <>
-    {showReport && latest && (
+    {reportSub && (
       <PrintableReport
-        result={latest.result}
+        result={reportSub.result}
         benchmark={benchmarkForActive}
         user={user}
-        submittedAt={latest.createdAt}
-        comments={latest.comments}
-        onClose={() => setShowReport(false)}
+        submittedAt={reportSub.createdAt}
+        comments={reportSub.comments}
+        onClose={closeReport}
       />
     )}
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -172,6 +183,17 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {/* 三種報告（個人分析／360°／PDF）互不相通，這裡先接上到 360° 的路
+              （S-02），PDF 匯出維持原樣。 */}
+          {supports360 && (
+            <button
+              type="button"
+              onClick={() => navigate(`/360/${activeId}`)}
+              className="btn-secondary"
+            >
+              <Users className="h-4 w-4" /> 前往 360° 評測
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setShowReport(true)}
@@ -323,7 +345,8 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
           )}
 
           <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7 print:hidden">
-            <h3 className="mb-3 text-base font-bold text-slate-700">作答紀錄</h3>
+            <h3 className="mb-1 text-base font-bold text-slate-700">作答紀錄</h3>
+            <p className="mb-2 text-xs text-slate-400">點任一列即可查看該次完整報告。</p>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -339,7 +362,11 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
                 </thead>
                 <tbody>
                   {filtered.map((s) => (
-                    <tr key={s.id} className="border-b border-slate-100 last:border-0">
+                    <tr
+                      key={s.id}
+                      onClick={() => setViewingSubId(s.id)}
+                      className="cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50"
+                    >
                       <td className="py-2.5 pr-3 text-slate-600">
                         {formatDate(s.createdAt)}
                         {s.phase === 'pre' && (

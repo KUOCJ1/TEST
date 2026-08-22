@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { getAssessment } from '../data/assessments/index.js';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
 import { exportAdminCsv } from '../utils/csvExport';
 import { useAssessmentFilter } from '../hooks/useAssessmentFilter';
-import { api } from '../api/client';
 import RadarChart from '../components/RadarChart';
 import BarList from '../components/charts/BarList';
 import LevelDistribution from '../components/charts/LevelDistribution';
@@ -26,10 +25,20 @@ function Kpi({ label, value, suffix, tip }) {
   );
 }
 
-export default function AnalyticsTab({ submissions, users, adminAssessments, onAssessmentsChange }) {
-  const [toggling, setToggling] = useState(false);
-  const [error, setError] = useState('');
+function compareRows(a, b, key, dir) {
+  const mul = dir === 'asc' ? 1 : -1;
+  if (key === 'level') return mul * a.level.badge.localeCompare(b.level.badge);
+  if (key === 'when') return mul * (new Date(a.when).getTime() - new Date(b.when).getTime());
+  const av = a[key];
+  const bv = b[key];
+  if (typeof av === 'string') return mul * av.localeCompare(bv);
+  return mul * ((av ?? 0) - (bv ?? 0));
+}
 
+export default function AnalyticsTab({ submissions, users, adminAssessments }) {
+  const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState('total');
+  const [sortDir, setSortDir] = useState('desc');
   const initialId = adminAssessments[0]?.id ?? null;
   const { activeId: selectedId, setSelectedId, filtered: filteredSubs } =
     useAssessmentFilter(submissions, initialId);
@@ -66,62 +75,47 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, onA
       .sort((a, b) => b.total - a.total);
   }, [filteredSubs, users, stats]);
 
-  const handleToggle = async (assessment) => {
-    setToggling(true);
-    setError('');
-    try {
-      const updated = await api.toggleAssessment(assessment.id, !assessment.enabled);
-      onAssessmentsChange((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-    } catch (e) {
-      setError(e.message || '操作失敗');
-    } finally {
-      setToggling(false);
-    }
+  // 填答者明細整張表沒有搜尋、排序，累積人數一多就只能靠瀏覽器 Ctrl-F（A-02）。
+  const displayRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = rows;
+    if (q) list = list.filter((r) => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q));
+    return [...list].sort((a, b) => compareRows(a, b, sortKey, sortDir));
+  }, [rows, search, sortKey, sortDir]);
+
+  const toggleSort = (key) => {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir(key === 'name' || key === 'email' ? 'asc' : 'desc'); }
   };
+
+  const sortIcon = (column) =>
+    sortKey === column ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : null;
 
   const memberCount = users.filter((u) => u.role !== 'admin').length;
   const dimCount = activeConfig?.DIMENSIONS?.length ?? 0;
 
   return (
     <div>
-      {error && (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-          {error}
-        </p>
-      )}
-
+      {/* 啟用／停用題庫是會影響全站學員的寫入操作，已移到管理後台頁首常駐區塊，
+          這裡只留「選擇要看哪個題庫的分析」這個單純的篩選功能（A-03）。 */}
       {adminAssessments.length > 0 && (
         <section className="mb-5 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-100">
-          <h3 className="mb-3 text-sm font-semibold text-slate-500">題庫管理</h3>
+          <h3 className="mb-3 text-sm font-semibold text-slate-500">選擇題庫</h3>
           <div className="flex flex-wrap gap-3">
             {adminAssessments.map((a) => (
-              <div key={a.id} className="flex items-center gap-2">
-                <button
-                  type="button"
-                  aria-pressed={selectedId === a.id}
-                  onClick={() => setSelectedId(a.id)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-                    selectedId === a.id
-                      ? 'bg-ink-700 text-white'
-                      : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {a.name}
-                </button>
-                <button
-                  type="button"
-                  disabled={toggling}
-                  onClick={() => handleToggle(a)}
-                  title={a.enabled ? '點擊停用此題庫' : '點擊啟用此題庫'}
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
-                    a.enabled
-                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                  }`}
-                >
-                  {a.enabled ? '啟用中' : '已停用'}
-                </button>
-              </div>
+              <button
+                key={a.id}
+                type="button"
+                aria-pressed={selectedId === a.id}
+                onClick={() => setSelectedId(a.id)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  selectedId === a.id
+                    ? 'bg-ink-700 text-white'
+                    : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {a.name}
+              </button>
             ))}
           </div>
         </section>
@@ -180,22 +174,43 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, onA
                 <Download className="h-3.5 w-3.5" /> 匯出 CSV
               </button>
             </div>
+            <div className="mb-3 relative w-56">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="搜尋姓名或 Email…"
+                className="input py-1.5 pl-8 text-sm"
+              />
+            </div>
             <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整欄位</p>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500">
-                    <th className="py-2 pr-3 font-medium">姓名</th>
-                    <th className="py-2 pr-3 font-medium">Email</th>
-                    <th className="py-2 pr-3 font-medium">總分</th>
-                    <th className="py-2 pr-3 font-medium">達成率</th>
-                    <th className="py-2 pr-3 font-medium">落點等級</th>
-                    <th className="py-2 pr-3 font-medium">次數</th>
-                    <th className="py-2 font-medium">最近作答</th>
+                    {[
+                      { key: 'name', label: '姓名' },
+                      { key: 'email', label: 'Email' },
+                      { key: 'total', label: '總分' },
+                      { key: 'percent', label: '達成率' },
+                      { key: 'level', label: '落點等級' },
+                      { key: 'attempts', label: '次數' },
+                      { key: 'when', label: '最近作答' },
+                    ].map(({ key, label }) => (
+                      <th key={key} className="py-2 pr-3 font-medium">
+                        <button type="button" onClick={() => toggleSort(key)} className="inline-flex items-center gap-1 hover:text-slate-700">
+                          {label} {sortIcon(key)}
+                        </button>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
+                  {displayRows.length === 0 && (
+                    <tr><td colSpan={7} className="py-6 text-center text-slate-400">查無符合的填答者</td></tr>
+                  )}
+                  {displayRows.map((r) => (
                     <tr key={r.id} className="border-b border-slate-100 last:border-0">
                       <td className="py-2.5 pr-3 font-medium text-slate-700">{r.name}</td>
                       <td className="py-2.5 pr-3 text-slate-500">{r.email}</td>

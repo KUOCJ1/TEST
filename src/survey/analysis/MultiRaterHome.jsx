@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Search, PenLine, CalendarClock, UserPlus, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, PenLine, CalendarClock, UserPlus, CheckCircle2, ChartColumn } from 'lucide-react';
 import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
 import MultiRaterDashboard from './MultiRaterDashboard';
@@ -9,6 +10,7 @@ import { resolveActiveAssessmentId } from '../utils/multiRaterHome';
 const OTHER_RATER_TYPES = ['manager', 'peer', 'subordinate'];
 
 export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers }) {
+  const navigate = useNavigate();
   const [assessments, setAssessments] = useState([]);
   const [members, setMembers] = useState([]);
   const [mySubs, setMySubs] = useState([]);
@@ -125,7 +127,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
                         key={t}
                         type="button"
                         disabled={done}
-                        onClick={() => onRateOthers(activeId, m.id, t)}
+                        onClick={() => onRateOthers(activeId, m.id, t, m.name)}
                         className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                           done
                             ? 'cursor-not-allowed bg-emerald-50 text-emerald-600'
@@ -146,7 +148,17 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
 
       {/* 360° 多元視角分析 */}
       <section>
-        <h3 className="mb-3 text-base font-bold text-slate-700">360° 多元視角分析</h3>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-base font-bold text-slate-700">360° 多元視角分析</h3>
+          {/* 360° 報告原本是座孤島，沒有回個人分析的路（S-02），這裡補上。 */}
+          <button
+            type="button"
+            onClick={() => navigate(`/analysis/${activeId}`)}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-brass-600 hover:text-brass-700 hover:underline"
+          >
+            <ChartColumn className="h-3.5 w-3.5" /> 查看我的個人分析報告
+          </button>
+        </div>
         {myGroupForActive && myGroupForActive.phase !== 'published' ? (
           <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-lg shadow-slate-200/60">
             {myGroupForActive.phase === 'closed' ? (

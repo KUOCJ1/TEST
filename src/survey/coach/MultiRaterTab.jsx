@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Search } from 'lucide-react';
 import { getAssessment } from '../data/assessments/index.js';
 import { useAssessmentFilter } from '../hooks/useAssessmentFilter';
 import MultiRaterDashboard from '../analysis/MultiRaterDashboard';
@@ -13,6 +13,7 @@ const RATER_TIPS = {
 
 export default function MultiRaterTab({ users, submissions }) {
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [search, setSearch] = useState('');
 
   const { assessmentIds, activeId: assessmentId, setSelectedId } =
     useAssessmentFilter(submissions);
@@ -22,7 +23,11 @@ export default function MultiRaterTab({ users, submissions }) {
     [submissions, assessmentId],
   );
 
-  const nonAdminUsers = users.filter((u) => u.role !== 'admin');
+  const nonAdminUsers = useMemo(() => {
+    const list = users.filter((u) => u.role !== 'admin');
+    const q = search.trim().toLowerCase();
+    return q ? list.filter((u) => u.name.toLowerCase().includes(q)) : list;
+  }, [users, search]);
 
   const progressMap = useMemo(() => {
     const map = new Map();
@@ -62,6 +67,16 @@ export default function MultiRaterTab({ users, submissions }) {
 
       {getAssessment(assessmentId)?.SUPPORTS_360 && (
         <>
+          <div className="mb-3 relative w-56">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="搜尋學員姓名…"
+              className="input py-1.5 pl-8 text-sm"
+            />
+          </div>
           <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整欄位</p>
           <div className="mb-4 overflow-x-auto">
             <table className="w-full text-sm">

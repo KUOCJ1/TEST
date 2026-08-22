@@ -12,7 +12,17 @@ const ResultPanel = forwardRef(function ResultPanel(
 ) {
   const { total, maxScore, percent, level, dimensions, strongest, weakest, assessmentName } = result;
   const dimCount = dimensions.length;
-  const suggestions = buildSuggestions(result, getAssessment(result.assessmentId));
+  const config = getAssessment(result.assessmentId);
+  const suggestions = buildSuggestions(result, config);
+  const hasSubs = dimensions.some((d) => d.subs?.length > 0);
+  const showNarrativeSection = !!(config?.COMMENTARY && hasSubs);
+
+  // 報告往下捲好幾個螢幕，加一列可點的章節導覽，不必盲目滑動找內容。
+  const sections = [
+    { id: 'section-radar', label: '雷達圖與構面' },
+    { id: 'section-suggestions', label: '強弱項與建議' },
+    ...(showNarrativeSection ? [{ id: 'section-narrative', label: '敘事報告' }] : []),
+  ];
 
   return (
     <section
@@ -42,8 +52,25 @@ const ResultPanel = forwardRef(function ResultPanel(
         )}
       </div>
 
+      {sections.length > 1 && (
+        <nav
+          aria-label="報告章節導覽"
+          className="sticky top-0 z-10 flex gap-1 overflow-x-auto border-b border-paper-300 bg-paper-50/95 px-5 py-2 text-xs backdrop-blur sm:px-7 print:hidden"
+        >
+          {sections.map((s) => (
+            <a
+              key={s.id}
+              href={`#${s.id}`}
+              className="shrink-0 whitespace-nowrap rounded-full px-3 py-1 font-semibold text-slate-500 transition-colors hover:bg-paper-200 hover:text-ink-700"
+            >
+              {s.label}
+            </a>
+          ))}
+        </nav>
+      )}
+
       <div className="px-5 py-6 sm:px-7">
-        <div className="flex flex-col items-center">
+        <div id="section-radar" className="scroll-mt-14 flex flex-col items-center">
           <h3 className="mb-2 text-base font-bold text-slate-700">{dimCount} 大構面落點雷達圖</h3>
           <RadarChart
             dimensions={dimensions}
@@ -84,70 +111,73 @@ const ResultPanel = forwardRef(function ResultPanel(
           ))}
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">最強構面</p>
-            <p className="mt-1 font-bold text-emerald-800">
-              {strongest.subtitle}
-              <span className="ml-2 text-sm font-normal text-emerald-600">平均 {strongest.average.toFixed(1)} 分</span>
+        <div id="section-suggestions" className="scroll-mt-14">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">最強構面</p>
+              <p className="mt-1 font-bold text-emerald-800">
+                {strongest.subtitle}
+                <span className="ml-2 text-sm font-normal text-emerald-600">平均 {strongest.average.toFixed(1)} 分</span>
+              </p>
+            </div>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">優先強化</p>
+              <p className="mt-1 font-bold text-amber-800">
+                {weakest.subtitle}
+                <span className="ml-2 text-sm font-normal text-amber-600">平均 {weakest.average.toFixed(1)} 分</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+            <p className="leading-relaxed text-slate-700">{level.desc}</p>
+          </div>
+
+          <div className="mt-4">
+            <p className="mb-2 flex items-center gap-1.5 font-semibold text-slate-700">
+              <Lightbulb className="h-4 w-4 text-brass-500" /> 學習修煉建議
+            </p>
+            <p className="rounded-md bg-paper-50 p-4 leading-relaxed text-slate-700 ring-1 ring-paper-300">
+              {level.advice}
             </p>
           </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">優先強化</p>
-            <p className="mt-1 font-bold text-amber-800">
-              {weakest.subtitle}
-              <span className="ml-2 text-sm font-normal text-amber-600">平均 {weakest.average.toFixed(1)} 分</span>
-            </p>
-          </div>
+
+          {suggestions && (
+            <div className="mt-4 rounded-md bg-paper-50 p-4 ring-1 ring-paper-300">
+              <p className="mb-3 flex items-center gap-1.5 font-semibold text-slate-700">
+                <Target className="h-4 w-4 text-brass-500" /> 為您客製的行動建議
+              </p>
+              {suggestions.develop.length > 0 && (
+                <div className="mb-3">
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">優先強化</p>
+                  <ul className="space-y-2">
+                    {suggestions.develop.map((d) => (
+                      <li key={d.id} className="flex gap-2 text-sm leading-relaxed text-slate-700">
+                        <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full" style={{ background: d.color }} />
+                        <span><span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>：{d.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {suggestions.leverage.length > 0 && (
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-600">發揮優勢</p>
+                  <ul className="space-y-2">
+                    {suggestions.leverage.map((d) => (
+                      <li key={d.id} className="flex gap-2 text-sm leading-relaxed text-slate-700">
+                        <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full" style={{ background: d.color }} />
+                        <span><span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>：{d.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="mt-6 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-          <p className="leading-relaxed text-slate-700">{level.desc}</p>
-        </div>
-
-        <div className="mt-4">
-          <p className="mb-2 flex items-center gap-1.5 font-semibold text-slate-700">
-            <Lightbulb className="h-4 w-4 text-brass-500" /> 學習修煉建議
-          </p>
-          <p className="rounded-md bg-paper-50 p-4 leading-relaxed text-slate-700 ring-1 ring-paper-300">
-            {level.advice}
-          </p>
-        </div>
-
-        {suggestions && (
-          <div className="mt-4 rounded-md bg-paper-50 p-4 ring-1 ring-paper-300">
-            <p className="mb-3 flex items-center gap-1.5 font-semibold text-slate-700">
-              <Target className="h-4 w-4 text-brass-500" /> 為您客製的行動建議
-            </p>
-            {suggestions.develop.length > 0 && (
-              <div className="mb-3">
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">優先強化</p>
-                <ul className="space-y-2">
-                  {suggestions.develop.map((d) => (
-                    <li key={d.id} className="flex gap-2 text-sm leading-relaxed text-slate-700">
-                      <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full" style={{ background: d.color }} />
-                      <span><span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>：{d.text}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {suggestions.leverage.length > 0 && (
-              <div>
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-600">發揮優勢</p>
-                <ul className="space-y-2">
-                  {suggestions.leverage.map((d) => (
-                    <li key={d.id} className="flex gap-2 text-sm leading-relaxed text-slate-700">
-                      <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full" style={{ background: d.color }} />
-                      <span><span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>：{d.text}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
+        {showNarrativeSection && <div id="section-narrative" className="scroll-mt-14" />}
         <NarrativeReport result={result} focusDimensionIds={focusDimensionIds} />
 
         {!readOnly && (

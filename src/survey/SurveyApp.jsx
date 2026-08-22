@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Check } from 'lucide-react';
 import { getAssessment } from './data/assessments/index.js';
@@ -20,6 +20,10 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
   const storageKey = useMemo(() => draftKey(user.id, assessmentId), [user.id, assessmentId]);
   const [answers, setAnswers] = useState(() => readJSON(storageKey, {}));
   const [phase, setPhase] = useState('pre');
+  // 這個評量若屬於某個班別，班別本身已經知道現在是課前還是課後——不必再讓學員自己
+  // 選（S-04）。autoPhase 非 null 時代表已判定並鎖定，只顯示結果供確認；仍在載入
+  // 或本來就不屬於任何班別（例如自主重測）時維持原本可手動切換的行為。
+  const [autoPhase, setAutoPhase] = useState(null);
   const [result, setResult] = useState(null);
   const [invalidIds, setInvalidIds] = useState([]);
   const [copied, setCopied] = useState(false);
@@ -30,6 +34,27 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
   const resultRef = useRef(null);
 
   const answered = useMemo(() => (config ? answeredCount(answers, config) : 0), [answers, config]);
+
+  useEffect(() => {
+    if (raterType && raterType !== 'self') return undefined; // 評測他人與課前/課後無關，維持手動
+    let active = true;
+    Promise.all([api.myGroups(), api.mySubmissions()])
+      .then(([groups, subs]) => {
+        if (!active) return;
+        const group = groups.find((g) => (g.assessmentId ?? 'ai-competency') === assessmentId);
+        if (!group) return; // 不屬於任何班別：系統無從判斷，保留手動切換
+        const done = new Set(
+          subs
+            .filter((s) => (s.raterType ?? 'self') === 'self' && s.groupId === group.id)
+            .map((s) => s.phase ?? 'pre'),
+        );
+        const derived = done.has('pre') && !done.has('post') ? 'post' : 'pre';
+        setAutoPhase(derived);
+        setPhase(derived);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [assessmentId, raterType]);
 
   const handleChange = useCallback(
     (qid, value) => {
@@ -126,28 +151,38 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           </div>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-slate-500">本次填答屬於：</span>
-          {[
-            { id: 'pre', label: '課前評測' },
-            { id: 'post', label: '課後複測' },
-          ].map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setPhase(opt.id)}
-              aria-pressed={phase === opt.id}
-              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                phase === opt.id
-                  ? 'bg-ink-700 text-white shadow-sm'
-                  : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-          <span className="text-xs text-slate-400">課後複測可在「我的分析」看到學習增益</span>
-        </div>
+        {autoPhase ? (
+          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 px-4 py-2.5">
+            <span className="text-sm font-medium text-slate-500">本次填答屬於：</span>
+            <span className="rounded-full bg-ink-700 px-4 py-1.5 text-sm font-semibold text-white shadow-sm">
+              {autoPhase === 'post' ? '課後複測' : '課前評測'}
+            </span>
+            <span className="text-xs text-slate-400">依所屬班別目前階段自動判定</span>
+          </div>
+        ) : (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-slate-500">本次填答屬於：</span>
+            {[
+              { id: 'pre', label: '課前評測' },
+              { id: 'post', label: '課後複測' },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setPhase(opt.id)}
+                aria-pressed={phase === opt.id}
+                className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                  phase === opt.id
+                    ? 'bg-ink-700 text-white shadow-sm'
+                    : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+            <span className="text-xs text-slate-400">課後複測可在「我的分析」看到學習增益</span>
+          </div>
+        )}
 
         <ProgressBar answered={answered} total={TOTAL_QUESTIONS} />
         {answered > 0 && !result && (
@@ -194,7 +229,9 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           )}
 
           <p className="mt-4 text-center text-xs text-slate-400">
-            將以「{phase === 'post' ? '課後複測' : '課前評測'}」身份送出，如需變更請至上方調整。
+            {autoPhase
+              ? `將以「${phase === 'post' ? '課後複測' : '課前評測'}」身份送出。`
+              : `將以「${phase === 'post' ? '課後複測' : '課前評測'}」身份送出，如需變更請至上方調整。`}
           </p>
 
           <button

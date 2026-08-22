@@ -70,16 +70,18 @@ export default function AssessmentCard({
             查看分析
           </button>
         )}
+        {/* 360° 入口原本只是頁尾一行文字連結，視覺份量遠低於其他按鈕，容易被忽略——
+            升級成跟「查看分析」同一排、同樣重量的按鈕（對應 S-02）。 */}
+        {supports360 && onGoTo360 && (
+          <button
+            type="button"
+            onClick={() => onGoTo360(assessment.id)}
+            className="btn-secondary flex-1"
+          >
+            360° 評測 →
+          </button>
+        )}
       </div>
-      {supports360 && onGoTo360 && (
-        <button
-          type="button"
-          onClick={() => onGoTo360(assessment.id)}
-          className="mt-3 text-left text-sm font-semibold text-brass-600 hover:text-brass-600 hover:underline"
-        >
-          前往 360° 評測 →
-        </button>
-      )}
     </div>
   );
 }

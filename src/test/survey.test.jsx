@@ -4,9 +4,16 @@ import { MemoryRouter } from 'react-router-dom';
 import SurveyApp from '../survey/SurveyApp';
 import { ALL_QUESTIONS } from '../survey/data/questions';
 
-// 模擬後端 API：送出評測只需驗證有正確呼叫。
+// 模擬後端 API：送出評測只需驗證有正確呼叫。myGroups/mySubmissions 回空陣列，
+// 代表這裡的受測者不屬於任何班別，維持課前/課後手動切換（見 SurveyApp 的 S-04 判定）。
 const { createSubmission } = vi.hoisted(() => ({ createSubmission: vi.fn() }));
-vi.mock('../survey/api/client', () => ({ api: { createSubmission } }));
+vi.mock('../survey/api/client', () => ({
+  api: {
+    createSubmission,
+    myGroups: async () => [],
+    mySubmissions: async () => [],
+  },
+}));
 
 beforeEach(() => {
   localStorage.clear();

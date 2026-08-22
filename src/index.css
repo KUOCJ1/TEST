@@ -43,6 +43,19 @@
     @apply rounded-md bg-paper-50 p-6 shadow-card ring-1 ring-paper-300;
   }
 
+  /* 三層表面：取代「每個區塊都是一樣的白色卡片」——頁首級數字用 panel-primary
+     突出重量，主要分析面板（圖表、表格）用 panel，次要的設定／表單類用
+     panel-secondary 刻意壓低視覺份量，避免整頁沒有輕重之分。 */
+  .panel {
+    @apply rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100;
+  }
+  .panel-primary {
+    @apply panel border-l-4 border-l-brass-400;
+  }
+  .panel-secondary {
+    @apply rounded-xl bg-paper-100/70 p-4 ring-1 ring-paper-200;
+  }
+
   /* 區塊標題小標籤 */
   .chip {
     @apply inline-flex items-center rounded-sm px-2.5 py-1 text-xs font-semibold;
@@ -92,6 +105,9 @@ body {
 .dark .ring-slate-200 { --tw-ring-color: #3a2f22 !important; }
 .dark .input { background: #1c1610; color: #f3ece0; border-color: #3a2f22; }
 .dark .card { background: #231d15; --tw-ring-color: #3a2f22; }
+.dark .panel,
+.dark .panel-primary { background-color: #231d15; --tw-ring-color: #3a2f22; }
+.dark .panel-secondary { background-color: #1c1610; --tw-ring-color: #3a2f22; }
 /* .btn-primary／.btn-secondary／.btn-ghost／.btn-icon 是 @apply 出來的複合
    class，class 屬性上不會留下 bg-ink-700 這類字面 class，下面幾條全站共用的
    工具類覆寫吃不到它們，所以要另外直接覆寫。 */

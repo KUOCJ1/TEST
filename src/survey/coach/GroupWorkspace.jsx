@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Trash2, Download, Target, Star, Plus, X, FileText, Eye,
+  Trash2, Download, Target, Star, Plus, X, FileText, Eye, Copy,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
@@ -10,6 +10,7 @@ import RadarChart from '../components/RadarChart';
 import DimensionHeatmap from '../components/DimensionHeatmap';
 import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import PrintableReport from '../components/PrintableReport';
+import BatchPrintableReport from '../components/BatchPrintableReport';
 import GroupPrintableReport from '../components/GroupPrintableReport';
 import InfoTip from '../components/InfoTip';
 import PhaseBadge from '../components/PhaseBadge';
@@ -69,6 +70,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
   const [drawerIndex, setDrawerIndex] = useState(null);
   const [showGroupReport, setShowGroupReport] = useState(false);
   const [pdfMemberIndex, setPdfMemberIndex] = useState(null);
+  const [showBatchReport, setShowBatchReport] = useState(false);
   const showToast = useToast();
 
   useEffect(() => {
@@ -439,13 +441,22 @@ export default function GroupWorkspace({ users, currentUserId }) {
                 ))}
               </div>
               {section === 'overview' && groupStats && groupStats.respondents > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowGroupReport(true)}
-                  className="btn-primary btn-sm shrink-0"
-                >
-                  <FileText className="h-3.5 w-3.5" /> <span className="hidden sm:inline">產出班級專業分析報告</span>
-                </button>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowBatchReport(true)}
+                    className="btn-secondary btn-sm"
+                  >
+                    <Copy className="h-3.5 w-3.5" /> <span className="hidden sm:inline">批次匯出個人報告</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowGroupReport(true)}
+                    className="btn-primary btn-sm"
+                  >
+                    <FileText className="h-3.5 w-3.5" /> <span className="hidden sm:inline">產出班級專業分析報告</span>
+                  </button>
+                </div>
               )}
             </div>
 
@@ -457,8 +468,9 @@ export default function GroupWorkspace({ users, currentUserId }) {
                   </div>
                 ) : groupStats && (
                   <>
-                    {/* KPI row：完成度是主數字，其餘為支撐數字，避免四格全部等重。 */}
-                    <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                    {/* KPI row：完成度是主數字，其餘為支撐數字，避免四格全部等重。
+                        panel-primary 讓這一列在視覺上明確比下面的圖表／表格更重。 */}
+                    <div className="panel-primary">
                       <div className="flex flex-wrap items-baseline gap-x-8 gap-y-3">
                         <div>
                           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">已填答</p>
@@ -492,7 +504,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
                       </div>
                     </div>
 
-                    <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                    <div className="panel">
                       <h4 className="mb-2 text-center font-semibold text-slate-700">班級整體能力雷達</h4>
                       <p className="mb-3 text-center text-xs text-slate-400">{groupStats.respondents} 人作答平均</p>
                       <div className="flex justify-center">
@@ -502,8 +514,9 @@ export default function GroupWorkspace({ users, currentUserId }) {
 
                     <DimensionHeatmap dimensions={groupStats.dimensionAverages} memberRows={memberRows} />
 
-                    {/* Member table */}
-                    <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                    {/* Member table：達成率加長條、總分加「與班平均差距」，純數字表格
+                        不容易一眼掃描的問題（V-01）。 */}
+                    <div className="panel">
                       <h4 className="mb-3 font-semibold text-slate-700">成員比較</h4>
                       <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整欄位</p>
                       <div className="overflow-x-auto">
@@ -512,7 +525,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
                             <tr className="border-b border-slate-200 text-slate-500">
                               <th className="py-2 pr-3 font-medium">#</th>
                               <th className="py-2 pr-3 font-medium">姓名</th>
-                              <th className="py-2 pr-3 font-medium">總分</th>
+                              <th className="py-2 pr-3 font-medium">總分（與班平均差距）</th>
                               <th className="py-2 pr-3 font-medium">達成率</th>
                               <th className="py-2 pr-3 font-medium">落點等級</th>
                               <th className="py-2 pr-3 font-medium">評語</th>
@@ -520,34 +533,54 @@ export default function GroupWorkspace({ users, currentUserId }) {
                             </tr>
                           </thead>
                           <tbody>
-                            {memberRows.map((r, i) => (
-                              <tr key={r.userId} className="border-b border-slate-100 last:border-0">
-                                <td className="py-2.5 pr-3 text-slate-400">{i + 1}</td>
-                                <td className="py-2.5 pr-3 font-medium text-slate-700">{r.name}</td>
-                                <td className="py-2.5 pr-3 font-semibold text-slate-700">{r.total}</td>
-                                <td className="py-2.5 pr-3 text-slate-600">{r.percent}%</td>
-                                <td className="py-2.5 pr-3">
-                                  <span
-                                    className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
-                                    style={{ background: r.level.color }}
-                                  >
-                                    {r.level.badge}
-                                  </span>
-                                </td>
-                                <td className="py-2.5 pr-3">
-                                  {r.hasMyComment ? (
-                                    <span className="text-xs font-semibold text-emerald-600">已寫</span>
-                                  ) : (
-                                    <span className="text-xs text-amber-600">未寫</span>
-                                  )}
-                                </td>
-                                <td className="py-2.5">
-                                  <button type="button" onClick={() => setDrawerIndex(i)} className="btn-secondary btn-sm">
-                                    <Eye className="h-3.5 w-3.5" /> 查看
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
+                            {memberRows.map((r, i) => {
+                              const diff = groupStats ? r.total - groupStats.avgTotal : null;
+                              return (
+                                <tr key={r.userId} className="border-b border-slate-100 last:border-0">
+                                  <td className="py-2.5 pr-3 text-slate-400">{i + 1}</td>
+                                  <td className="py-2.5 pr-3 font-medium text-slate-700">{r.name}</td>
+                                  <td className="py-2.5 pr-3">
+                                    <span className="font-semibold text-slate-700">{r.total}</span>
+                                    {diff != null && diff !== 0 && (
+                                      <span className={`ml-1.5 text-xs font-semibold ${diff > 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                        {diff > 0 ? `▲ +${diff}` : `▽ ${diff}`}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-2.5 pr-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-2 w-16 overflow-hidden rounded-full bg-slate-100">
+                                        <div
+                                          className="h-full rounded-full"
+                                          style={{ width: `${r.percent}%`, background: r.level.color }}
+                                        />
+                                      </div>
+                                      <span className="text-slate-600">{r.percent}%</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-2.5 pr-3">
+                                    <span
+                                      className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
+                                      style={{ background: r.level.color }}
+                                    >
+                                      {r.level.badge}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 pr-3">
+                                    {r.hasMyComment ? (
+                                      <span className="text-xs font-semibold text-emerald-600">已寫</span>
+                                    ) : (
+                                      <span className="text-xs text-amber-600">未寫</span>
+                                    )}
+                                  </td>
+                                  <td className="py-2.5">
+                                    <button type="button" onClick={() => setDrawerIndex(i)} className="btn-secondary btn-sm">
+                                      <Eye className="h-3.5 w-3.5" /> 查看
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -701,7 +734,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
                   </button>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="panel-secondary">
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="font-semibold text-slate-700">成員管理</h3>
                     <button type="button"
@@ -750,7 +783,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
                   </button>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="panel-secondary">
                   <h3 className="mb-1 font-semibold text-slate-700">批量匯入名單</h3>
                   <p className="mb-2 text-xs text-slate-400">每行一筆，格式：<code className="rounded bg-slate-100 px-1">姓名,Email</code> 或僅 Email。</p>
                   <textarea value={rosterText} onChange={(e) => setRosterText(e.target.value)} rows={4}
@@ -819,6 +852,14 @@ export default function GroupWorkspace({ users, currentUserId }) {
           submissions={patchedSubmissions}
           users={users}
           onClose={() => setShowGroupReport(false)}
+        />
+      )}
+
+      {showBatchReport && memberRows.length > 0 && (
+        <BatchPrintableReport
+          members={memberRows}
+          benchmark={groupBenchmark}
+          onClose={() => setShowBatchReport(false)}
         />
       )}
     </div>

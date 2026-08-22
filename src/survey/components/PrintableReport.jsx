@@ -1011,8 +1011,8 @@ function DevPlanPage({ result, config, user, date }) {
   );
 }
 
-// ─── Main export ───────────────────────────────────────────────
-export default function PrintableReport({ result, benchmark, user, submittedAt, onClose, comments = [] }) {
+// ─── Report body (reusable — single member or part of a batch run) ──────
+export function ReportPages({ result, benchmark, user, submittedAt, comments = [] }) {
   const config = getAssessment(result.assessmentId);
   const percentile = benchmark?.totals?.length >= 2
     ? computePercentile(result.total, benchmark.totals)
@@ -1020,6 +1020,32 @@ export default function PrintableReport({ result, benchmark, user, submittedAt, 
   const date = formatDate(submittedAt);
   const hasSubs = result.dimensions?.some((d) => d.subs?.length > 0);
   const showNarrative = !!(config?.COMMENTARY && hasSubs);
+  const layers = config?.LAYERS ?? null;
+
+  return (
+    <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
+      <CoverPage result={result} user={user} submittedAt={submittedAt} benchmark={benchmark} percentile={percentile} />
+      <ReadingGuidePage user={user} date={date} />
+      {showNarrative && <ExecutiveSummaryPage result={result} benchmark={benchmark} config={config} user={user} date={date} />}
+      <OverviewPage result={result} benchmark={benchmark} user={user} date={date} />
+      {hasSubs && <QuadrantPage result={result} benchmark={benchmark} user={user} date={date} />}
+      {layers
+        ? layers.map((layer) => (
+            <LayerPage key={layer.id} layer={layer} result={result} benchmark={benchmark} config={config} user={user} date={date} />
+          ))
+        : <LayerPage layer={{ id: 'all', name: '構面詳細分析', desc: '', dimensions: result.dimensions.map((d) => d.id) }} result={result} benchmark={benchmark} config={config} user={user} date={date} />
+      }
+      {(showNarrative || comments.length > 0) && <CoachPage result={result} config={config} user={user} date={date} comments={comments} />}
+      {showNarrative && <DevPlanPage result={result} config={config} user={user} date={date} />}
+    </div>
+  );
+}
+
+// ─── Main export ───────────────────────────────────────────────
+export default function PrintableReport({ result, benchmark, user, submittedAt, onClose, comments = [] }) {
+  const percentile = benchmark?.totals?.length >= 2
+    ? computePercentile(result.total, benchmark.totals)
+    : null;
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -1028,8 +1054,6 @@ export default function PrintableReport({ result, benchmark, user, submittedAt, 
 
   const portal = document.getElementById('report-portal');
   if (!portal) return null;
-
-  const layers = config?.LAYERS ?? null;
 
   return createPortal(
     <>
@@ -1060,22 +1084,7 @@ export default function PrintableReport({ result, benchmark, user, submittedAt, 
         </div>
       </div>
 
-      {/* Report pages */}
-      <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
-        <CoverPage result={result} user={user} submittedAt={submittedAt} benchmark={benchmark} percentile={percentile} />
-        <ReadingGuidePage user={user} date={date} />
-        {showNarrative && <ExecutiveSummaryPage result={result} benchmark={benchmark} config={config} user={user} date={date} />}
-        <OverviewPage result={result} benchmark={benchmark} user={user} date={date} />
-        {hasSubs && <QuadrantPage result={result} benchmark={benchmark} user={user} date={date} />}
-        {layers
-          ? layers.map((layer) => (
-              <LayerPage key={layer.id} layer={layer} result={result} benchmark={benchmark} config={config} user={user} date={date} />
-            ))
-          : <LayerPage layer={{ id: 'all', name: '構面詳細分析', desc: '', dimensions: result.dimensions.map((d) => d.id) }} result={result} benchmark={benchmark} config={config} user={user} date={date} />
-        }
-        {(showNarrative || comments.length > 0) && <CoachPage result={result} config={config} user={user} date={date} comments={comments} />}
-        {showNarrative && <DevPlanPage result={result} config={config} user={user} date={date} />}
-      </div>
+      <ReportPages result={result} benchmark={benchmark} user={user} submittedAt={submittedAt} comments={comments} />
     </>,
     portal,
   );

@@ -188,7 +188,14 @@ export default function AppShell() {
   const handleStartSurvey = (id) => {
     navigate(`/survey/${id}`, { state: { rateeId: user.id, raterType: 'self' } });
   };
-  const handleRateOthers = (id, presetRateeId = null, presetRaterType = '') => {
+  const handleRateOthers = (id, presetRateeId = null, presetRaterType = '', presetRateeName = '') => {
+    // 在「360° 評測」頁面點某位成員的關係按鈕時，對象與關係已經一次選好，不必再
+    // 跳到 RaterSetup 把兩個欄位預先填好又要求再按一次「開始評測」（S-05：兩個
+    // 畫面、一個決定）。只有在兩者都還沒定案時才進 RaterSetup 讓使用者選。
+    if (presetRateeId && presetRaterType) {
+      navigate(`/survey/${id}`, { state: { rateeId: presetRateeId, raterType: presetRaterType, rateeName: presetRateeName } });
+      return;
+    }
     navigate(`/rater-setup/${id}`, presetRateeId ? { state: { rateeId: presetRateeId, raterType: presetRaterType } } : undefined);
   };
   const handleRaterConfirm = (assessmentId, rateeId, raterType, rateeName) => {
