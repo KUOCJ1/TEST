@@ -277,6 +277,17 @@ export default function GroupWorkspace({ users, currentUserId }) {
   const memberRows = useMemo(() => {
     if (!groupDetail || !config) return [];
     const latest = latestPerUser(patchedSubmissions);
+    // 這個班的全部作答（不只最新一筆）依人分組，讓抽屜能顯示個人歷程趨勢，
+    // 而不是只看得到單次成績——教練端本來看不到學員的成長軌跡。
+    const historyByUser = new Map();
+    for (const s of patchedSubmissions) {
+      const list = historyByUser.get(s.userId) ?? [];
+      list.push(s);
+      historyByUser.set(s.userId, list);
+    }
+    for (const list of historyByUser.values()) {
+      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // 新到舊
+    }
     return latest
       .map((s) => {
         const u = users.find((x) => x.id === s.userId);
@@ -288,6 +299,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
           total: s.result.total,
           percent: s.result.percent,
           level: s.result.level,
+          history: historyByUser.get(s.userId) ?? [s],
           hasMyComment: (s.comments ?? []).some((c) => c.coachId === currentUserId),
         };
       })

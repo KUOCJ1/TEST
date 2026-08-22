@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, X, FileText, Pencil } from 'lucide-react';
 import ResultPanel from '../components/ResultPanel';
+import TrendChart from '../components/charts/TrendChart';
 import { CoachCommentPanel } from '../components/CoachCommentPanel';
 import CommentEditor from './CommentEditor';
 import { computePercentile } from '../utils/analytics';
+import { buildJourneyNarrative } from '../utils/narrative';
+import { formatDateShort } from '../utils/format';
 
 /**
  * 報告＋評語合一的側邊抽屜。教練點一位成員就在同一個畫面看報告、看其他教練的
@@ -54,6 +57,15 @@ export default function MemberDrawer({
     onCommentSaved(member.submission.id, comment);
     setEditing(false);
   };
+
+  // 個人歷程：這位學員在本班的所有作答（新到舊）。只有一筆時不顯示趨勢區塊。
+  const history = member.history ?? [member.submission];
+  const hasJourney = history.length > 1;
+  const journeyNarrative = hasJourney ? buildJourneyNarrative(history) : '';
+  const trendPoints = [...history].reverse().map((s) => ({
+    label: formatDateShort(s.createdAt),
+    value: s.result.total,
+  }));
 
   return (
     <div
@@ -108,6 +120,24 @@ export default function MemberDrawer({
         <div className="flex-1 overflow-y-auto">
           <div className="grid gap-6 px-5 py-6 sm:px-7 lg:grid-cols-[1fr_360px]">
             <div className="min-w-0">
+              {hasJourney && (
+                <div className="mb-5 rounded-md bg-paper-50 p-4 ring-1 ring-paper-300">
+                  <h4 className="mb-1 font-serif text-sm font-bold text-ink-700">
+                    學員歷程
+                    <span className="ml-2 font-sans text-xs font-normal text-slate-400">
+                      本班共 {history.length} 次作答
+                    </span>
+                  </h4>
+                  {journeyNarrative && (
+                    <p className="mb-3 text-sm leading-relaxed text-slate-600">{journeyNarrative}</p>
+                  )}
+                  <TrendChart
+                    points={trendPoints}
+                    min={member.submission.result.minScore}
+                    max={member.submission.result.maxScore}
+                  />
+                </div>
+              )}
               <ResultPanel
                 result={member.submission.result}
                 percentile={percentile}
