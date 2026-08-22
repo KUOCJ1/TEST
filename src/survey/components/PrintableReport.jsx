@@ -148,14 +148,16 @@ function InfoCard({ color, bg, border, icon, title, children }) {
   );
 }
 
-function PageMeta({ name, section, date }) {
+function PageMeta({ name, section, date, assessmentName }) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between',
       fontSize: 9, color: '#64748b', letterSpacing: '0.04em',
       borderBottom: '0.5px solid #e2e8f0', paddingBottom: 7, marginBottom: 18,
     }}>
-      <span style={{ fontWeight: 600 }}>{name} · L9D 領導力評量 · 個人評測報告</span>
+      <span style={{ fontWeight: 600 }}>
+        {name}{assessmentName ? ` · ${assessmentName}` : ''} · 個人評測報告
+      </span>
       <span>{section} · {date}</span>
     </div>
   );
@@ -197,12 +199,13 @@ function CoverPage({ result, user, submittedAt, benchmark, percentile }) {
         <div style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>
           Confidential · 個人評測報告
         </div>
-        <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.025em', lineHeight: 1.15 }}>
-          Leadership Assessment<br />
-          <span style={{ fontSize: 22, fontWeight: 600, opacity: 0.85 }}>個人領導力評測報告</span>
+        <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.025em', lineHeight: 1.25 }}>
+          {assessmentName}
+          <br />
+          <span style={{ fontSize: 20, fontWeight: 600, opacity: 0.85 }}>個人評測報告</span>
         </div>
         <div style={{ marginTop: 16, fontSize: 11, opacity: 0.65 }}>
-          {assessmentName} · L9D · 評測日期 {formatDate(submittedAt)}
+          評測日期 {formatDate(submittedAt)}
         </div>
       </div>
 
@@ -250,7 +253,7 @@ function CoverPage({ result, user, submittedAt, benchmark, percentile }) {
 
         {/* 9-dim grid */}
         <div style={{ marginBottom: 32 }}>
-          <div style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>九大構面落點概覽</div>
+          <div style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>{dimensions.length} 大構面落點概覽</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {dimensions.map((d) => {
               const tone = toneOf(d.average);
@@ -282,17 +285,27 @@ function CoverPage({ result, user, submittedAt, benchmark, percentile }) {
 }
 
 // ─── Page 2: Reading Guide ──────────────────────────────────────
-function ReadingGuidePage({ user, date }) {
-  const overallLevels = [
-    { badge: '👑 卓越領導者', range: '406–450 分', color: '#d69e2e', desc: '九大構面均高度成熟，是組織中的領導典範。' },
-    { badge: '🚀 領導精熟期', range: '316–405 分', color: '#805ad5', desc: '大多數構面有優秀表現，能有效帶領團隊面對挑戰。' },
-    { badge: '📈 領導發展期', range: '226–315 分', color: '#3182ce', desc: '具備一定基礎，在進階領域仍有提升空間。' },
-    { badge: '🌱 領導探索期', range: '90–225 分', color: '#38a169', desc: '正處於起步階段，有初步的行為基礎，成長空間大。' },
-  ];
+// 落點等級、分數區間、子能力說明全部改由題庫設定推導——同一支元件會印出不同
+// 題庫（AI 職能／L9D 領導力）的報告，寫死 L9D 的內容會讓其他題庫的報告出現
+// 錯誤的評量名稱與分數級距。
+function ReadingGuidePage({ user, date, config, result, hasSubs }) {
+  const assessmentName = result?.assessmentName;
+  const levels = Array.isArray(config?.LEVELS) ? config.LEVELS : [];
+  const overallLevels = [...levels]
+    .sort((a, b) => (b.min ?? 0) - (a.min ?? 0))
+    .map((l) => ({
+      badge: l.badge,
+      range: `${l.min}–${l.max} 分`,
+      color: l.color,
+      // 題庫設定的 desc 是完整段落，這張對照表只有 9pt 的空間，取第一句即可。
+      desc: (l.desc ?? '').split('。')[0].trim(),
+    }));
+  const minScore = config?.MIN_SCORE ?? result?.minScore;
+  const maxScore = config?.MAX_SCORE ?? result?.maxScore;
 
   return (
     <div style={{ pageBreakAfter: 'always', padding: '32px 52px' }}>
-      <PageMeta name={user?.name ?? '—'} section="閱讀指南" date={date} />
+      <PageMeta name={user?.name ?? '—'} section="閱讀指南" date={date} assessmentName={assessmentName} />
       <SectionTitle sub="本頁說明如何解讀報告中的各項指標與圖表">如何閱讀本報告</SectionTitle>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
@@ -320,17 +333,25 @@ function ReadingGuidePage({ user, date }) {
 
         {/* Right: Overall levels + chart guide */}
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 10 }}>整體落點等級（總分 90–450）</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
+            整體落點等級{minScore != null && maxScore != null ? `（總分 ${minScore}–${maxScore}）` : ''}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-            {overallLevels.map((l) => (
-              <div key={l.badge} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, borderRadius: 8, padding: '8px 11px', border: '1px solid #e2e8f0', background: '#fafafa' }}>
-                <div style={{ fontSize: 12 }}>{l.badge.split(' ')[0]}</div>
-                <div>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: l.color }}>{l.badge.slice(2)}</div>
-                  <div style={{ fontSize: 9, color: '#64748b' }}>{l.range} · {l.desc}</div>
+            {overallLevels.map((l) => {
+              // badge 格式為「<emoji> <名稱>」，拆出來讓 emoji 獨立顯示於左側。
+              const spaceAt = l.badge.indexOf(' ');
+              const icon = spaceAt > 0 ? l.badge.slice(0, spaceAt) : '';
+              const label = spaceAt > 0 ? l.badge.slice(spaceAt + 1) : l.badge;
+              return (
+                <div key={l.badge} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, borderRadius: 8, padding: '8px 11px', border: '1px solid #e2e8f0', background: '#fafafa' }}>
+                  <div style={{ fontSize: 12 }}>{icon}</div>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: l.color }}>{label}</div>
+                    <div style={{ fontSize: 9, color: '#64748b' }}>{l.range} · {l.desc}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 8 }}>圖表閱讀說明</div>
@@ -350,12 +371,14 @@ function ReadingGuidePage({ user, date }) {
         </div>
       </div>
 
-      {/* Sub-dimension note */}
-      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 16px', fontSize: 10, color: '#475569', lineHeight: 1.7 }}>
-        <span style={{ fontWeight: 700 }}>子能力分析</span>：每個構面下設 2–3 個子能力，反映構面內部的細部行為。
-        子能力平均高（≥ 4.5）為「<span style={{ color: '#059669', fontWeight: 600 }}>優</span>」、中（3.5–4.49）為「<span style={{ color: '#0284c7', fontWeight: 600 }}>良</span>」、低（&lt; 3.5）為「<span style={{ color: '#d97706', fontWeight: 600 }}>待強化</span>」。
-        敘事評語由系統依分數自動生成，供發展參考，不代表絕對評斷。
-      </div>
+      {/* Sub-dimension note — 只有設有子能力的題庫才需要這段說明 */}
+      {hasSubs && (
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 16px', fontSize: 10, color: '#475569', lineHeight: 1.7 }}>
+          <span style={{ fontWeight: 700 }}>子能力分析</span>：每個構面下設數個子能力，反映構面內部的細部行為。
+          子能力平均高（≥ 4.5）為「<span style={{ color: '#059669', fontWeight: 600 }}>優</span>」、中（3.5–4.49）為「<span style={{ color: '#0284c7', fontWeight: 600 }}>良</span>」、低（&lt; 3.5）為「<span style={{ color: '#d97706', fontWeight: 600 }}>待強化</span>」。
+          敘事評語由系統依分數自動生成，供發展參考，不代表絕對評斷。
+        </div>
+      )}
 
       <PageFooter />
     </div>
@@ -376,7 +399,7 @@ function ExecutiveSummaryPage({ result, benchmark, config, user, date }) {
 
   return (
     <div style={{ pageBreakAfter: 'always', padding: '32px 52px' }}>
-      <PageMeta name={user?.name ?? '—'} section="關鍵發現" date={date} />
+      <PageMeta name={user?.name ?? '—'} section="關鍵發現" date={date} assessmentName={result?.assessmentName} />
       <SectionTitle sub="本頁彙整評測最核心的發現，建議優先閱讀">關鍵發現 · Key Findings</SectionTitle>
 
       {/* Overall summary */}
@@ -536,7 +559,7 @@ function OverviewPage({ result, benchmark, user, date }) {
 
   return (
     <div style={{ pageBreakAfter: 'always', padding: '32px 52px' }}>
-      <PageMeta name={user?.name ?? '—'} section="構面總覽" date={date} />
+      <PageMeta name={user?.name ?? '—'} section="構面總覽" date={date} assessmentName={result?.assessmentName} />
       <SectionTitle sub="雷達圖與各構面得分 vs 全體平均對照（| 為常模基準線）">構面落點總覽</SectionTitle>
 
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 32, alignItems: 'start' }}>
@@ -657,8 +680,8 @@ function QuadrantPage({ result, benchmark, user, date }) {
 
   return (
     <div style={{ pageBreakBefore: 'always', padding: '32px 52px' }}>
-      <PageMeta name={user?.name ?? '—'} section="子能力四象限" date={date} />
-      <SectionTitle sub={`18 項子能力依「得分高低」×「${yLabel}差距」四象限分佈，快速識別優勢與發展機會`}>
+      <PageMeta name={user?.name ?? '—'} section="子能力四象限" date={date} assessmentName={result?.assessmentName} />
+      <SectionTitle sub={`${allSubs.length} 項子能力依「得分高低」×「${yLabel}差距」四象限分佈，快速識別優勢與發展機會`}>
         子能力四象限分析
       </SectionTitle>
 
@@ -840,7 +863,7 @@ function LayerPage({ layer, result, benchmark, config, user, date }) {
 
   return (
     <div style={{ pageBreakBefore: 'always', padding: '32px 52px' }}>
-      <PageMeta name={user?.name ?? '—'} section={layer.name} date={date} />
+      <PageMeta name={user?.name ?? '—'} section={layer.name} date={date} assessmentName={result?.assessmentName} />
       {/* Layer header */}
       <div style={{ marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid #f1f5f9' }}>
         <div style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>
@@ -903,7 +926,7 @@ function CoachPage({ result, config, user, date, comments = [] }) {
 
   return (
     <div style={{ pageBreakBefore: 'always', padding: '32px 52px' }}>
-      <PageMeta name={user?.name ?? '—'} section="教練視角" date={date} />
+      <PageMeta name={user?.name ?? '—'} section="教練視角" date={date} assessmentName={result?.assessmentName} />
       <SectionTitle sub="以教練視角分析您的領導行為模式，提供個人化發展方向">教練視角 · Coach Perspective</SectionTitle>
 
       <CoachFeedbackBlock comments={comments} />
@@ -962,7 +985,7 @@ function DevPlanPage({ result, config, user, date }) {
 
   return (
     <div style={{ pageBreakBefore: 'always', padding: '32px 52px' }}>
-      <PageMeta name={user?.name ?? '—'} section="發展行動計畫" date={date} />
+      <PageMeta name={user?.name ?? '—'} section="發展行動計畫" date={date} assessmentName={result?.assessmentName} />
       <SectionTitle sub="依據您的評測結果，系統建議的三階段個人發展計畫">發展行動計畫 · Development Roadmap</SectionTitle>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
@@ -1006,7 +1029,7 @@ function DevPlanPage({ result, config, user, date }) {
         依實際工作情境調整執行策略。每季結束後建議重新填答評量，追蹤能力成長軌跡。
       </div>
 
-      <PageFooter label="本報告屬機密文件，僅限受測者及授權主管閱覽 · © L9D 領導力評量系統" />
+      <PageFooter label={`本報告屬機密文件，僅限受測者及授權主管閱覽${result?.assessmentName ? ` · © ${result.assessmentName}` : ''}`} />
     </div>
   );
 }
@@ -1025,7 +1048,7 @@ export function ReportPages({ result, benchmark, user, submittedAt, comments = [
   return (
     <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
       <CoverPage result={result} user={user} submittedAt={submittedAt} benchmark={benchmark} percentile={percentile} />
-      <ReadingGuidePage user={user} date={date} />
+      <ReadingGuidePage user={user} date={date} config={config} result={result} hasSubs={hasSubs} />
       {showNarrative && <ExecutiveSummaryPage result={result} benchmark={benchmark} config={config} user={user} date={date} />}
       <OverviewPage result={result} benchmark={benchmark} user={user} date={date} />
       {hasSubs && <QuadrantPage result={result} benchmark={benchmark} user={user} date={date} />}
