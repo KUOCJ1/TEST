@@ -1,0 +1,1 @@
+import{r as e}from"./rolldown-runtime-Dw2cE7zH.js";import{m as t}from"./vendor-dkpp8wOb.js";var n=e(t(),1),r=(0,n.createContext)(null);function i(){let e=(0,n.useContext)(r);if(!e)throw Error(`useToast 必須在 <ToastProvider> 內使用`);return e}export{i as n,r as t};
