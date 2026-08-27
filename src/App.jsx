@@ -5,7 +5,6 @@ import { useAuth } from './survey/auth/useAuth';
 import { api } from './survey/api/client';
 import LoginPage from './survey/auth/LoginPage';
 import ResetPasswordPage from './survey/auth/ResetPasswordPage';
-import AppShell from './survey/AppShell';
 import LandingPage from './survey/LandingPage';
 import { ToastProvider } from './survey/components/Toast';
 import { ConfirmProvider } from './survey/components/ConfirmDialog';
@@ -18,6 +17,12 @@ const AboutPage = lazy(() => import('./survey/marketing/AboutPage'));
 const HowItWorksPage = lazy(() => import('./survey/marketing/HowItWorksPage'));
 const ShowcasePage = lazy(() => import('./survey/marketing/ShowcasePage'));
 const FaqPage = lazy(() => import('./survey/marketing/FaqPage'));
+
+// AppShell（整個已登入後的系統：作答、雷達圖、教練／管理後台）過去是靜態 import，
+// 跟 LandingPage／LoginPage 綁在一起，導致每個訪客（含還沒登入、只是看首頁的人）
+// 都得下載雷達圖、題庫資料、OnboardingBanner 等登入後才用得到的程式碼。改成
+// lazy() 之後這些只在真的登入成功、掛載 AppShell 時才下載。
+const AppShell = lazy(() => import('./survey/AppShell'));
 
 const MARKETING_PATHS = ['/about', '/how-it-works', '/showcase', '/faq'];
 
@@ -119,7 +124,13 @@ function AppRoutes() {
   if (!ready || joining) {
     return <LoadingState fullScreen />;
   }
-  if (user) return <AppShell />;
+  if (user) {
+    return (
+      <Suspense fallback={<LoadingState fullScreen />}>
+        <AppShell />
+      </Suspense>
+    );
+  }
   if (view === 'auth' || joinCode) {
     return (
       <LoginPage
