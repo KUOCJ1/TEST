@@ -4,6 +4,7 @@ import AnalyticsTab from './AnalyticsTab';
 import UsersTab from './UsersTab';
 import GroupsTab from './GroupsTab';
 import QuickAnalysisTab from '../analysis/QuickAnalysisTab';
+import LoadingState from '../components/LoadingState';
 
 // 內含 xlsx（體積較大），只有點開「批次上傳」分頁才需要，獨立拆成自己的 chunk。
 const BatchUploadSection = lazy(() => import('./BatchUploadSection'));
@@ -68,7 +69,7 @@ export default function AdminDashboard() {
   };
 
   if (!overview && !error) {
-    return <p className="py-20 text-center text-slate-400">載入中…</p>;
+    return <LoadingState />;
   }
 
   return (
@@ -153,7 +154,7 @@ export default function AdminDashboard() {
         <GroupsTab groups={adminGroups} onGroupUpdated={handleGroupUpdated} />
       )}
       {tab === 'import' && (
-        <Suspense fallback={<p className="py-20 text-center text-slate-400">載入中…</p>}>
+        <Suspense fallback={<LoadingState />}>
           <BatchUploadSection />
         </Suspense>
       )}

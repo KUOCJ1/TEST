@@ -13,6 +13,7 @@ import { computePercentile } from '../utils/analytics';
 import { buildJourneyNarrative } from '../utils/narrative';
 import { resultSummaryText, copyToClipboard, formatDateShort } from '../utils/format';
 import InfoTip from '../components/InfoTip';
+import LoadingState from '../components/LoadingState';
 
 export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey, onResultLoad }) {
   const navigate = useNavigate();
@@ -75,7 +76,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
     return () => { active = false; };
   }, [selectedId, subs]);
 
-  if (subs === null && !error) return <p className="py-20 text-center text-slate-400">載入中…</p>;
+  if (subs === null && !error) return <LoadingState />;
 
   if (subs === null && error) {
     return (

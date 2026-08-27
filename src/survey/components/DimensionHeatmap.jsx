@@ -13,7 +13,8 @@ export default function DimensionHeatmap({ dimensions, memberRows }) {
   return (
     <div className="panel">
       <h4 className="mb-1 font-semibold text-slate-700">構面 × 成員熱力圖</h4>
-      <p className="mb-3 text-xs text-slate-400">色塊越紅代表該構面分數越低，越綠代表越高——用來快速定位弱項與是誰拉低的。</p>
+      <p className="mb-1 text-xs text-slate-400">色塊越紅代表該構面分數越低，越綠代表越高——用來快速定位弱項與是誰拉低的。</p>
+      <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整構面</p>
       <div className="overflow-x-auto">
         <table className="w-full border-separate text-sm" style={{ borderSpacing: 2 }}>
           <thead>

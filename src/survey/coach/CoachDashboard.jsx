@@ -4,6 +4,7 @@ import { useAuth } from '../auth/useAuth';
 import GroupWorkspace from './GroupWorkspace';
 import MultiRaterTab from './MultiRaterTab';
 import OnboardingBanner from '../components/OnboardingBanner';
+import LoadingState from '../components/LoadingState';
 
 export default function CoachDashboard() {
   const { user } = useAuth();
@@ -17,7 +18,7 @@ export default function CoachDashboard() {
       .catch((e) => setError(e.message || '載入失敗'));
   }, []);
 
-  if (!overview && !error) return <p className="py-20 text-center text-slate-400">載入中…</p>;
+  if (!overview && !error) return <LoadingState />;
   if (error) return <p className="py-20 text-center text-red-500">{error}</p>;
 
   const TABS = [

@@ -9,6 +9,7 @@ import AppShell from './survey/AppShell';
 import LandingPage from './survey/LandingPage';
 import { ToastProvider } from './survey/components/Toast';
 import { ConfirmProvider } from './survey/components/ConfirmDialog';
+import LoadingState from './survey/components/LoadingState';
 
 // 行銷頁不是首次進站的關鍵路徑（大多數訪客只會看到 LandingPage／登入頁），
 // 獨立拆成各自的 chunk，避免 ShowcasePage 引入的圖表元件（雷達圖／熱力圖）
@@ -21,7 +22,7 @@ const FaqPage = lazy(() => import('./survey/marketing/FaqPage'));
 const MARKETING_PATHS = ['/about', '/how-it-works', '/showcase', '/faq'];
 
 function MarketingFallback() {
-  return <div className="flex min-h-screen items-center justify-center text-slate-400">載入中…</div>;
+  return <LoadingState fullScreen />;
 }
 
 function readResetToken() {
@@ -116,7 +117,7 @@ function AppRoutes() {
   }
 
   if (!ready || joining) {
-    return <div className="flex min-h-screen items-center justify-center text-slate-400">載入中…</div>;
+    return <LoadingState fullScreen />;
   }
   if (user) return <AppShell />;
   if (view === 'auth' || joinCode) {

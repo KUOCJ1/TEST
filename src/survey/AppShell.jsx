@@ -16,12 +16,13 @@ import HelpModal from './components/HelpModal';
 import OnboardingBanner from './components/OnboardingBanner';
 import ChatBot from './components/ChatBot';
 import ErrorBoundary from './components/ErrorBoundary';
+import LoadingState from './components/LoadingState';
 
 const CoachDashboard = lazy(() => import('./coach/CoachDashboard'));
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard'));
 
 function DashboardFallback() {
-  return <p className="py-20 text-center text-slate-400">載入中…</p>;
+  return <LoadingState />;
 }
 
 function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }) {
@@ -63,7 +64,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
     return m;
   }, {});
 
-  if (loading) return <p className="py-20 text-center text-slate-400">載入中…</p>;
+  if (loading) return <LoadingState />;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">

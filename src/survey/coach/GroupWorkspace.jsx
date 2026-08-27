@@ -331,7 +331,10 @@ export default function GroupWorkspace({ users, currentUserId }) {
   return (
     <div className="grid gap-5 lg:grid-cols-5">
       {/* Left: group list */}
-      <div className="lg:col-span-2">
+      {/* min-w-0：grid item 預設 min-width:auto，手機版沒有 lg:grid-cols-5 時仍會被
+          底下熱力圖表格等內容的最小內容寬度撐開，導致整個頁面被推出可視範圍橫向
+          捲動，而不是表格自己的 overflow-x-auto 生效（F-04）。 */}
+      <div className="min-w-0 lg:col-span-2">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-semibold text-slate-700">班別列表</h3>
           <button type="button" onClick={() => setCreating(true)} className="btn-primary btn-sm">
@@ -431,7 +434,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
       </div>
 
       {/* Right: group detail */}
-      <div className="lg:col-span-3">
+      <div className="min-w-0 lg:col-span-3">
         {!groupDetail ? (
           <div className="flex items-center justify-center py-20 text-slate-400">
             選擇左側班別以查看詳情

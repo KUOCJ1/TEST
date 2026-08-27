@@ -10,6 +10,7 @@ import PrintableReport from '../components/PrintableReport';
 import GroupPrintableReport from '../components/GroupPrintableReport';
 import PhaseBadge from '../components/PhaseBadge';
 import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachCommentPanel';
+import LoadingState from '../components/LoadingState';
 
 export default function QuickAnalysisTab({ users }) {
   const [groups, setGroups] = useState([]);
@@ -85,7 +86,10 @@ export default function QuickAnalysisTab({ users }) {
   return (
     <div className="grid gap-5 lg:grid-cols-5">
       {/* Left: group list */}
-      <div className="lg:col-span-2">
+      {/* min-w-0：跟 GroupWorkspace.jsx 同一個成因（F-04）——grid item 預設
+          min-width:auto，手機版沒有 lg:grid-cols-5 時仍會被右側報告內容的最小
+          內容寬度撐開，導致整頁被推出可視範圍橫向捲動。 */}
+      <div className="min-w-0 lg:col-span-2">
         <h3 className="mb-3 font-semibold text-slate-700">選擇班別</h3>
 
         {error && (
@@ -124,10 +128,8 @@ export default function QuickAnalysisTab({ users }) {
       </div>
 
       {/* Right: analysis */}
-      <div className="lg:col-span-3">
-        {loading && (
-          <div className="flex items-center justify-center py-20 text-slate-400">載入中…</div>
-        )}
+      <div className="min-w-0 lg:col-span-3">
+        {loading && <LoadingState />}
 
         {!loading && !groupDetail && (
           <div className="flex items-center justify-center py-20 text-slate-400">

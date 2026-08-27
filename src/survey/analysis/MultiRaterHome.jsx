@@ -6,6 +6,7 @@ import { getAssessment } from '../data/assessments/index.js';
 import MultiRaterDashboard from './MultiRaterDashboard';
 import { RATER_LABELS } from '../constants/raterTypes';
 import { resolveActiveAssessmentId } from '../utils/multiRaterHome';
+import LoadingState from '../components/LoadingState';
 
 const OTHER_RATER_TYPES = ['manager', 'peer', 'subordinate'];
 
@@ -53,7 +54,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
     return set;
   }, [mySubs, activeId]);
 
-  if (loading) return <p className="py-20 text-center text-slate-400">載入中…</p>;
+  if (loading) return <LoadingState />;
 
   if (error) {
     return (
