@@ -140,6 +140,19 @@ body {
 /* 墨色實心區塊（CTA 色塊）在深色模式下反轉為淺色，維持對比。 */
 .dark .bg-ink-700 { background-color: #f3ece0 !important; }
 .dark .text-paper-50 { color: #17130e !important; }
+/* 上面兩條各自成立時沒問題，但全站有 15＋ 處把 bg-ink-700 當「選取狀態」的
+   底色、配著寫死的 text-white（不是 text-paper-50）使用——分頁選取、答案
+   選取、步驟編號徽章、聊天視窗標題列等。bg-ink-700 反轉成淺色後，這些地方
+   的白字完全沒被上面任何一條規則涵蓋到，變成白字配淺底、實質看不見。用複合
+   選擇器（兩個 class 同時命中同一元素）一次補齊，不必逐檔案把 text-white
+   改成 text-paper-50。 */
+.dark .bg-ink-700.text-white { color: #17130e !important; }
+/* 同一個問題的另一種寫法：ChatBot 標題列的「清除對話」「關閉」用 text-brass-200
+   在深色底上當低調次要文字，bg-ink-700 反轉成淺色後這個本來就偏亮的金色幾乎融進
+   底色。這兩顆按鈕跟 bg-ink-700 底色是父子兩個不同元素（子孫選擇器，非複合），
+   hover 時的 text-white 維持不動，因為 hover:bg-ink-900 沒有被反轉、深底配白字
+   本來就還是對比夠的組合。 */
+.dark .bg-ink-700 .text-brass-200 { color: #6b5a3a !important; }
 .dark .text-paper-50\/75,
 .dark .text-paper-50\/80 { color: #4a4335 !important; }
 .dark .shadow-lg,

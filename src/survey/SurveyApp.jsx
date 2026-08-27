@@ -9,6 +9,7 @@ import { api } from './api/client';
 import ProgressBar from './components/ProgressBar';
 import QuestionCard from './components/QuestionCard';
 import ResultPanel from './components/ResultPanel';
+import { useConfirm } from './components/useConfirm';
 
 const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
 const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmentId}_v2`;
@@ -16,6 +17,7 @@ const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmen
 export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, assessmentId = 'ai-competency', rateeId, raterType, rateeName, onSubmitted }) {
   const config = useMemo(() => getAssessment(assessmentId), [assessmentId]);
   const navigate = useNavigate();
+  const confirm = useConfirm();
 
   const storageKey = useMemo(() => draftKey(user.id, assessmentId), [user.id, assessmentId]);
   const [answers, setAnswers] = useState(() => readJSON(storageKey, {}));
@@ -93,15 +95,15 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     }
   }, [answers, config, assessmentId, phase, rateeId, raterType, onSubmitted, user.id]);
 
-  const handleRetake = useCallback(() => {
-    if (!window.confirm('確定要重新作答嗎？目前畫面上的作答內容將被清空（先前已送出的紀錄不受影響）。')) return;
+  const handleRetake = useCallback(async () => {
+    if (!(await confirm('確定要重新作答嗎？目前畫面上的作答內容將被清空（先前已送出的紀錄不受影響）。'))) return;
     setAnswers({});
     writeJSON(storageKey, {});
     setResult(null);
     setInvalidIds([]);
     setCopied(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [storageKey]);
+  }, [storageKey, confirm]);
 
   const handleCopy = useCallback(async () => {
     if (!result) return;

@@ -3,6 +3,7 @@ import { X, Send } from 'lucide-react';
 import { useAuth } from '../auth/useAuth';
 import { readJSON, writeJSON, removeKey } from '../utils/storage';
 import AssistantMascot from './icons/AssistantMascot';
+import { useConfirm } from './useConfirm';
 
 const STORAGE_KEY = 'aiassess_chat_v1';
 
@@ -19,6 +20,7 @@ function getWelcomeContent(role) {
  */
 export default function ChatBot({ context = null, liftForBottomNav = false }) {
   const { isAdmin, isCoach } = useAuth();
+  const confirm = useConfirm();
   const role = isAdmin ? 'admin' : isCoach ? 'coach' : 'user';
 
   const makeWelcome = useCallback(
@@ -111,8 +113,8 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
     }
   };
 
-  const clearMessages = () => {
-    if (!window.confirm('確定要清除所有對話紀錄嗎？此操作無法復原。')) return;
+  const clearMessages = async () => {
+    if (!(await confirm('確定要清除所有對話紀錄嗎？此操作無法復原。'))) return;
     removeKey(STORAGE_KEY);
     setMessages([makeWelcome()]);
     setError('');
@@ -129,7 +131,10 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
       {open && (
         <div className="mb-3 flex h-[min(520px,80dvh)] w-80 flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl sm:w-96">
           <div className="flex items-center justify-between rounded-t-2xl bg-ink-700 px-4 py-3">
-            <span className="flex items-center gap-2 text-sm font-semibold text-white">
+            {/* 這個標題跟 bg-ink-700 底色是父子兩個不同元素，套不到 index.css 裡
+                「同一元素上 bg-ink-700 + text-white 才會反轉」的複合選擇器修法，
+                改用本來就有對應深色模式規則的 text-paper-50。 */}
+            <span className="flex items-center gap-2 text-sm font-semibold text-paper-50">
               <AssistantMascot className="h-6 w-6 shrink-0" />
               AI 評測小幫手
             </span>

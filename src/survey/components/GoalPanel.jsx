@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Target, Plus, Trash2, Check, X } from 'lucide-react';
 import { api } from '../api/client';
 import { formatDate } from '../utils/format';
+import { useConfirm } from './useConfirm';
 
 const MAX_ACTIONS = 5;
 
@@ -11,6 +12,7 @@ const MAX_ACTIONS = 5;
  * 目標只有本人看得到（教練與管理者都讀不到），所以可以誠實記錄。
  */
 export default function GoalPanel({ assessmentId, weakestDimension }) {
+  const confirm = useConfirm();
   const [goals, setGoals] = useState(null);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
@@ -69,7 +71,7 @@ export default function GoalPanel({ assessmentId, weakestDimension }) {
     });
 
   const handleDelete = async (goal) => {
-    if (!window.confirm('確定要刪除這個目標嗎？')) return;
+    if (!(await confirm('確定要刪除這個目標嗎？'))) return;
     setError('');
     try {
       await api.deleteGoal(goal.id);

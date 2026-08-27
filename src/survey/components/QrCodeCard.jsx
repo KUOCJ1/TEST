@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Maximize2, X as XIcon, RefreshCw, Copy, Check } from 'lucide-react';
 import { api } from '../api/client';
 import { useToast } from './useToast';
+import { useConfirm } from './useConfirm';
 
 // 用相對路徑組連結，正式站 base 為 '/'、GitHub Pages 預覽為 '/TEST/' 都能正確解析
 // （沿用 UsersTab.jsx 重設密碼連結的寫法）。
@@ -24,6 +25,7 @@ export default function QrCodeCard({ group, onUpdated }) {
   const [copied, setCopied] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const showToast = useToast();
+  const confirm = useConfirm();
 
   const joinCode = group.joinCode;
   const joinUrl = joinCode ? buildJoinUrl(joinCode) : '';
@@ -61,7 +63,7 @@ export default function QrCodeCard({ group, onUpdated }) {
   };
 
   const handleRevoke = async () => {
-    if (!window.confirm('確定撤銷此報到連結？撤銷後舊的 QR Code／連結會立即失效，學員需改用新連結。')) return;
+    if (!(await confirm('確定撤銷此報到連結？撤銷後舊的 QR Code／連結會立即失效，學員需改用新連結。'))) return;
     setBusy(true);
     setError('');
     try {

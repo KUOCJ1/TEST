@@ -8,6 +8,7 @@ import ResetPasswordPage from './survey/auth/ResetPasswordPage';
 import AppShell from './survey/AppShell';
 import LandingPage from './survey/LandingPage';
 import { ToastProvider } from './survey/components/Toast';
+import { ConfirmProvider } from './survey/components/ConfirmDialog';
 
 // 行銷頁不是首次進站的關鍵路徑（大多數訪客只會看到 LandingPage／登入頁），
 // 獨立拆成各自的 chunk，避免 ShowcasePage 引入的圖表元件（雷達圖／熱力圖）
@@ -134,7 +135,9 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <AppRoutes />
+        <ConfirmProvider>
+          <AppRoutes />
+        </ConfirmProvider>
       </ToastProvider>
     </AuthProvider>
   );

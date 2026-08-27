@@ -18,6 +18,7 @@ import GroupTimelineCard from '../components/GroupTimelineCard';
 import QrCodeCard from '../components/QrCodeCard';
 import MemberDrawer from './MemberDrawer';
 import { useToast } from '../components/useToast';
+import { useConfirm } from '../components/useConfirm';
 
 function parseRoster(text) {
   return text
@@ -72,6 +73,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
   const [pdfMemberIndex, setPdfMemberIndex] = useState(null);
   const [showBatchReport, setShowBatchReport] = useState(false);
   const showToast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     api.coachGroups().then(setGroups).catch(() => {});
@@ -203,7 +205,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
   };
 
   const handleDeleteGroup = async (id) => {
-    if (!window.confirm('確定刪除此班別？此操作無法復原。')) return;
+    if (!(await confirm('確定刪除此班別？此操作無法復原。'))) return;
     setError('');
     try {
       await api.deleteGroup(id);
