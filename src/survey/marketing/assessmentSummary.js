@@ -39,4 +39,13 @@ export const ASSESSMENT_SUMMARIES = [
     subCompetencies: 0,
     features: ['4 大行為風格構面', '32 題李克特量表', '支援 360° 多元評測'],
   },
+  {
+    id: 'archetype',
+    name: '識己®性格原型評測',
+    tagline: '認識自己天生比較自在的性格傾向',
+    dimensions: 4,
+    items: 40,
+    subCompetencies: 0,
+    features: ['4 組性格光譜', '40 題李克特量表', '16 種原創性格原型'],
+  },
 ];

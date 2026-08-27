@@ -57,23 +57,34 @@ export function getLevel(total, config) {
   return LEVELS.find((l) => total >= l.min && total <= l.max) ?? LEVELS[0];
 }
 
-/**
- * PROFILE_MODE 專用：像 DISC 這類「風格輪廓」題庫，構面之間沒有優劣之分，把
- * 全部構面加總成一個「總分」再對照成熟度級距沒有心理計量意義（D+I+S+C 加起來
- * 不代表任何真實構念），也不該自動把某個構面標成「待強化」。
- *
- * 因此不用 getLevel(total) 的「總分 → 級距」邏輯，改成「分數最高的兩個構面
- * （不分順序）→ 查表對應的風格組合」，回傳形狀跟 LEVELS 條目完全一樣
- * （{badge, badgeEn, color, desc, advice}），讓 ResultPanel／PrintableReport／
- * GroupWorkspace 等既有元件不用另外判斷就能正常渲染 result.level。
- *
- * config.PROFILES 為物件，key 是排序後的構面 id 組合（如 'c1+c2'，字母序排列、
- * 用 '+' 相接），涵蓋任兩個構面的所有組合。
- */
-export function getProfileLevel(dimensions, config) {
+// 預設的 key 推導邏輯（DISC 使用）：分數最高的兩個構面（不分順序）組成 key，
+// 適合「構面互相獨立、不分正反」的輪廓型題庫。
+function defaultProfileKey(dimensions) {
   const sorted = [...dimensions].sort((a, b) => b.average - a.average);
   const [top1, top2] = sorted;
-  const key = [top1.id, top2.id].sort().join('+');
+  return [top1.id, top2.id].sort().join('+');
+}
+
+/**
+ * PROFILE_MODE 專用：像 DISC、16 型人格這類「風格／原型輪廓」題庫，構面之間
+ * 沒有優劣之分，把全部構面加總成一個「總分」再對照成熟度級距沒有心理計量
+ * 意義，也不該自動把某個構面標成「待強化」。
+ *
+ * 因此不用 getLevel(total) 的「總分 → 級距」邏輯，改成「依構面分數推導出一個
+ * key → 查表對應的風格／原型」，回傳形狀跟 LEVELS 條目完全一樣（{badge,
+ * badgeEn, color, desc, advice}），讓 ResultPanel／PrintableReport／
+ * GroupWorkspace 等既有元件不用另外判斷就能正常渲染 result.level。
+ *
+ * key 怎麼推導因題庫而異——DISC 是「最高兩個構面」，16 型人格則是「每一軸
+ * 各自落在哪一端」——因此開放 config.getProfileKey(dimensions, config) 讓
+ * 題庫自訂推導邏輯；沒有提供時退回 defaultProfileKey()（DISC 的寫法，不需要
+ * 額外設定就能沿用）。查表用的 config.PROFILES 是物件，需含 default 項作為
+ * key 意外對不上時的防呆。
+ */
+export function getProfileLevel(dimensions, config) {
+  const key = typeof config.getProfileKey === 'function'
+    ? config.getProfileKey(dimensions, config)
+    : defaultProfileKey(dimensions);
   return config.PROFILES[key] ?? config.PROFILES.default;
 }
 

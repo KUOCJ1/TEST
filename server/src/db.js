@@ -72,6 +72,7 @@ export function createDb(file) {
     { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、37 題李克特量表', enabled: true },
     { id: 'leadership-9d', name: '經贏® 領導力九大構面行為評量', description: '9 大構面、90 題，含反向題', enabled: true },
     { id: 'disc', name: 'DISC 行為風格評測', description: '4 大構面、32 題，風格輪廓型評量', enabled: true },
+    { id: 'archetype', name: '識己®性格原型評測', description: '4 組性格光譜、40 題，16 種原創性格原型', enabled: true },
   ];
   if (data.assessments.length === 0) {
     data.assessments = KNOWN_ASSESSMENTS;
