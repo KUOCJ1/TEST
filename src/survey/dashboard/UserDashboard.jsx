@@ -100,6 +100,9 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
           <BarChart3 className="mx-auto h-12 w-12 text-brass-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-800">尚無評測紀錄</h2>
           <p className="mt-2 text-slate-500">完成一次評測後，這裡就會顯示您的能力落點與構面分析。</p>
+          <button type="button" onClick={() => navigate('/home')} className="btn-primary mt-5 mx-auto">
+            前往選擇評量
+          </button>
         </div>
       </div>
     );

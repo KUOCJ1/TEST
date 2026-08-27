@@ -23,6 +23,7 @@ function Toggle({ checked, onChange, label, hint }) {
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={label}
         onClick={() => onChange(!checked)}
         className={`relative mt-0.5 h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-brass-500' : 'bg-slate-300'}`}
       >

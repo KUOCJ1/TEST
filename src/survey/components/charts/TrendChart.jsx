@@ -23,12 +23,13 @@ export default function TrendChart({ points, min = 31, max = 155 }) {
   const gridVals = [min, Math.round((min + max) / 2), max];
 
   return (
+    <>
     <svg
       viewBox={`0 0 ${width} ${height}`}
       width="100%"
       style={{ height: 'auto' }}
       role="img"
-      aria-label="歷次總分趨勢折線圖"
+      aria-label="歷次總分趨勢折線圖，各時間點分數詳見下方表格"
     >
       {gridVals.map((v) => (
         <g key={v}>
@@ -53,5 +54,26 @@ export default function TrendChart({ points, min = 31, max = 155 }) {
         </g>
       ))}
     </svg>
+
+    {/* 折線圖是純視覺 SVG，螢幕閱讀器讀不到座標值——視覺隱藏的表格提供同一份
+        資料的文字版本。 */}
+    <table className="sr-only">
+      <caption>歷次總分趨勢</caption>
+      <thead>
+        <tr>
+          <th scope="col">時間點</th>
+          <th scope="col">總分</th>
+        </tr>
+      </thead>
+      <tbody>
+        {points.map((p, i) => (
+          <tr key={i}>
+            <th scope="row">{p.label}</th>
+            <td>{p.value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    </>
   );
 }

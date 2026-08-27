@@ -66,7 +66,7 @@ describe('SurveyApp', () => {
     // 全部原始分數填 5：31 正向題 ×5 + 6 反向題 ×1 = 161。
     expect(within(result).getByText('161')).toBeInTheDocument();
     expect(within(result).getByText(/AI 領航核心領袖/)).toBeInTheDocument();
-    expect(within(result).getByLabelText('6 大構面能力雷達圖')).toBeInTheDocument();
+    expect(within(result).getByLabelText('6 大構面能力雷達圖，各構面數值詳見下方表格')).toBeInTheDocument();
   });
 
   it('進度條隨作答更新', () => {

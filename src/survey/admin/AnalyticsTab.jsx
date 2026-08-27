@@ -208,7 +208,7 @@ export default function AnalyticsTab({ submissions, users, adminAssessments }) {
                 </thead>
                 <tbody>
                   {displayRows.length === 0 && (
-                    <tr><td colSpan={7} className="py-6 text-center text-slate-400">查無符合的填答者</td></tr>
+                    <tr><td colSpan={7} className="py-6 text-center text-slate-400">查無符合的填答者，請調整搜尋或篩選條件</td></tr>
                   )}
                   {displayRows.map((r) => (
                     <tr key={r.id} className="border-b border-slate-100 last:border-0">

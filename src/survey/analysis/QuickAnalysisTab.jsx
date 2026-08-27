@@ -99,7 +99,9 @@ export default function QuickAnalysisTab({ users }) {
         )}
 
         {groups.length === 0 && (
-          <p className="py-4 text-center text-sm text-slate-400">尚無班別可供分析</p>
+          <p className="py-4 text-center text-sm text-slate-400">
+            尚無班別可供分析，請至「教練後台」建立班別後即可查看分析。
+          </p>
         )}
 
         <div className="space-y-2">

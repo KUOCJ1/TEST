@@ -17,11 +17,12 @@ export default function DimensionHeatmap({ dimensions, memberRows }) {
       <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整構面</p>
       <div className="overflow-x-auto">
         <table className="w-full border-separate text-sm" style={{ borderSpacing: 2 }}>
+          <caption className="sr-only">構面 × 成員熱力圖</caption>
           <thead>
             <tr>
-              <th className="sticky left-0 bg-white py-1.5 pr-3 text-left text-xs font-medium text-slate-500">成員</th>
+              <th scope="col" className="sticky left-0 bg-white py-1.5 pr-3 text-left text-xs font-medium text-slate-500">成員</th>
               {dimensions.map((d) => (
-                <th key={d.id} className="min-w-[64px] px-1 py-1.5 text-center text-xs font-medium text-slate-500">
+                <th key={d.id} scope="col" className="min-w-[64px] px-1 py-1.5 text-center text-xs font-medium text-slate-500">
                   {d.subtitle}
                 </th>
               ))}
@@ -30,9 +31,9 @@ export default function DimensionHeatmap({ dimensions, memberRows }) {
           <tbody>
             {memberRows.map((r) => (
               <tr key={r.userId}>
-                <td className="sticky left-0 whitespace-nowrap bg-white py-1 pr-3 text-sm font-medium text-slate-700">
+                <th scope="row" className="sticky left-0 whitespace-nowrap bg-white py-1 pr-3 text-left text-sm font-medium text-slate-700">
                   {r.name}
-                </td>
+                </th>
                 {dimensions.map((d) => {
                   const percent = r.submission.result.dimensions.find((x) => x.id === d.id)?.percent ?? null;
                   const tone = cellTone(percent);

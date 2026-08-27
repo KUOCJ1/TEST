@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import LoadingState from './LoadingState';
 
 const RATER_TYPES = [
   { id: 'manager', label: '主管評', desc: '我是對方的直屬主管' },
@@ -57,12 +58,10 @@ export default function RaterSetup({ onConfirm, onCancel, initialRateeId = null,
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">你在評誰？</label>
             <div className="space-y-2">
-              {loading && (
-                <p className="py-2 text-center text-sm text-slate-400">載入同組成員…</p>
-              )}
+              {loading && <LoadingState label="載入同組成員…" />}
               {!loading && members.length === 0 && (
                 <p className="rounded-lg bg-slate-50 px-4 py-3 text-center text-sm text-slate-400">
-                  目前尚未加入任何班別，沒有可以評測的成員。
+                  目前尚未加入任何班別，沒有可以評測的成員。請洽詢您的教練或平台管理者加入班級。
                 </p>
               )}
               {members.map((m) => (

@@ -108,7 +108,7 @@ export default function UsersTab({ users, onUserChanged }) {
             </thead>
             <tbody>
               {rows.length === 0 && (
-                <tr><td colSpan={4} className="py-6 text-center text-slate-400">查無符合的用戶</td></tr>
+                <tr><td colSpan={4} className="py-6 text-center text-slate-400">查無符合的用戶，請調整搜尋條件</td></tr>
               )}
               {rows.map((u) => (
                 <tr key={u.id} className="border-b border-slate-100 last:border-0">

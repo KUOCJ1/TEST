@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { Fragment, useId } from 'react';
 
 /**
  * 純 SVG 六角雷達圖，無第三方相依。
@@ -47,12 +47,13 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
   const comparePath = compare ? toPath((i) => comparePct(i) ?? 0) : null;
 
   return (
+    <Fragment>
     <svg
       viewBox={viewBox}
       width="100%"
       style={{ maxWidth: size + padX * 2, height: 'auto' }}
       role="img"
-      aria-label={`${dimensions.length} 大構面能力雷達圖`}
+      aria-label={`${dimensions.length} 大構面能力雷達圖，各構面數值詳見下方表格`}
     >
       <defs>
         <radialGradient id={gradientId} cx="50%" cy="50%" r="50%">
@@ -128,5 +129,29 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
         );
       })}
     </svg>
+
+    {/* 圖表本身是純視覺 SVG，螢幕閱讀器讀不到座標與色塊代表的數值——用視覺隱藏
+        的表格提供同一份資料的文字版本，讓輔助科技使用者也能取得雷達圖傳達的
+        構面落點資訊。 */}
+    <table className="sr-only">
+      <caption>{dimensions.length} 大構面能力雷達圖數值</caption>
+      <thead>
+        <tr>
+          <th scope="col">構面</th>
+          <th scope="col">分數</th>
+          {compare && <th scope="col">{compareLabel}</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {dimensions.map((d, i) => (
+          <tr key={d.id ?? i}>
+            <th scope="row">{d.subtitle ?? d.name}</th>
+            <td>{d.percent}%</td>
+            {compare && <td>{Math.round(comparePct(i) * 100)}%</td>}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    </Fragment>
   );
 }

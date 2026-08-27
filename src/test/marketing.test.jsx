@@ -52,6 +52,6 @@ describe('行銷頁', () => {
     const { container } = renderPage(ShowcasePage);
     expect(container.querySelector('svg[aria-label*="雷達圖"]')).toBeTruthy();
     expect(container.querySelector('svg[aria-label*="趨勢"]')).toBeTruthy();
-    expect(screen.getByText('構面 × 成員熱力圖')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '構面 × 成員熱力圖' })).toBeInTheDocument();
   });
 });

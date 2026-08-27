@@ -70,7 +70,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
         <div className="rounded-2xl bg-white px-6 py-12 shadow-lg shadow-slate-200/60">
           <UserPlus className="mx-auto h-12 w-12 text-brass-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-800">目前沒有支援 360° 的評量</h2>
-          <p className="mt-2 text-slate-500">此功能需搭配支援 360° 多元評測的題庫（如經贏®領導力九大構面行為評量）。</p>
+          <p className="mt-2 text-slate-500">此功能需搭配支援 360° 多元評測的題庫（如經贏®領導力九大構面行為評量），請洽詢您的教練或平台管理者。</p>
         </div>
       </div>
     );
@@ -113,7 +113,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
 
         {members.length === 0 ? (
           <p className="rounded-lg bg-slate-50 px-4 py-3 text-center text-sm text-slate-500">
-            目前尚未加入任何班別，沒有可以評測的成員。
+            目前尚未加入任何班別，沒有可以評測的成員。請洽詢您的教練或平台管理者加入班級。
           </p>
         ) : (
           <div className="space-y-3">
