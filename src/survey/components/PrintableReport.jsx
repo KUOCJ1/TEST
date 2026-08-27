@@ -290,12 +290,15 @@ function CoverPage({ result, user, submittedAt, benchmark, percentile }) {
 // 錯誤的評量名稱與分數級距。
 function ReadingGuidePage({ user, date, config, result, hasSubs }) {
   const assessmentName = result?.assessmentName;
+  const profileMode = !!config?.PROFILE_MODE;
   const levels = Array.isArray(config?.LEVELS) ? config.LEVELS : [];
   const overallLevels = [...levels]
     .sort((a, b) => (b.min ?? 0) - (a.min ?? 0))
     .map((l) => ({
       badge: l.badge,
-      range: `${l.min}–${l.max} 分`,
+      // PROFILE_MODE（如 DISC）的風格組合沒有分數區間可言——l.min/l.max 不存在，
+      // 這裡就不顯示「undefined–undefined 分」。
+      range: l.min != null && l.max != null ? `${l.min}–${l.max} 分` : '',
       color: l.color,
       // 題庫設定的 desc 是完整段落，這張對照表只有 9pt 的空間，取第一句即可。
       desc: (l.desc ?? '').split('。')[0].trim(),
@@ -334,7 +337,9 @@ function ReadingGuidePage({ user, date, config, result, hasSubs }) {
         {/* Right: Overall levels + chart guide */}
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
-            整體落點等級{minScore != null && maxScore != null ? `（總分 ${minScore}–${maxScore}）` : ''}
+            {profileMode
+              ? '風格組合對照表'
+              : `整體落點等級${minScore != null && maxScore != null ? `（總分 ${minScore}–${maxScore}）` : ''}`}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
             {overallLevels.map((l) => {
@@ -347,7 +352,7 @@ function ReadingGuidePage({ user, date, config, result, hasSubs }) {
                   <div style={{ fontSize: 12 }}>{icon}</div>
                   <div>
                     <div style={{ fontSize: 9, fontWeight: 700, color: l.color }}>{label}</div>
-                    <div style={{ fontSize: 9, color: '#64748b' }}>{l.range} · {l.desc}</div>
+                    <div style={{ fontSize: 9, color: '#64748b' }}>{l.range && `${l.range} · `}{l.desc}</div>
                   </div>
                 </div>
               );

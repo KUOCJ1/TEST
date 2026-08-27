@@ -64,12 +64,25 @@ export function createDb(file) {
     }
   }
 
+  // 已知題庫 metadata：新增題庫時在這裡補一筆即可，不需要另外寫遷移腳本——
+  // 全新安裝直接用這份清單當種子；既有資料庫（如正式站）assessments 已非空，
+  // 下面會逐一補齊「已知但資料庫裡還沒有」的項目，讓新功能上線後既有資料庫也
+  // 能自動長出新題庫。
+  const KNOWN_ASSESSMENTS = [
+    { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、37 題李克特量表', enabled: true },
+    { id: 'leadership-9d', name: '經贏® 領導力九大構面行為評量', description: '9 大構面、90 題，含反向題', enabled: true },
+    { id: 'disc', name: 'DISC 行為風格評測', description: '4 大構面、32 題，風格輪廓型評量', enabled: true },
+  ];
   if (data.assessments.length === 0) {
-    data.assessments = [
-      { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、37 題李克特量表', enabled: true },
-      { id: 'leadership-9d', name: '經贏® 領導力九大構面行為評量', description: '9 大構面、90 題，含反向題', enabled: true },
-    ];
+    data.assessments = KNOWN_ASSESSMENTS;
     freshlySeeded = true;
+  } else {
+    const existingIds = new Set(data.assessments.map((a) => a.id));
+    const missing = KNOWN_ASSESSMENTS.filter((a) => !existingIds.has(a.id));
+    if (missing.length > 0) {
+      data.assessments.push(...missing);
+      freshlySeeded = true;
+    }
   }
 
   const deleteAll = sqlite.prepare('DELETE FROM records');

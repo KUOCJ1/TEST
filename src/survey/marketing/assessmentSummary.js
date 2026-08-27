@@ -30,4 +30,13 @@ export const ASSESSMENT_SUMMARIES = [
     subCompetencies: 20,
     features: ['9 大構面 × 20 項子能力', '90 題行為情境', '支援 360° 多元評測'],
   },
+  {
+    id: 'disc',
+    name: 'DISC 行為風格評測',
+    tagline: '認識自己與他人的行為風格組合',
+    dimensions: 4,
+    items: 32,
+    subCompetencies: 0,
+    features: ['4 大行為風格構面', '32 題李克特量表', '支援 360° 多元評測'],
+  },
 ];

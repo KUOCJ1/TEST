@@ -13,6 +13,12 @@ const ResultPanel = forwardRef(function ResultPanel(
   const { total, maxScore, percent, level, dimensions, strongest, weakest, assessmentName } = result;
   const dimCount = dimensions.length;
   const config = getAssessment(result.assessmentId);
+  const profileMode = !!config?.PROFILE_MODE;
+  // PROFILE_MODE 的「次要風格」要的是分數第二高的構面，不是 result.weakest（最低分
+  // 的構面）——那是完全不同的東西，跟 getProfileLevel() 判斷風格組合用的邏輯一致。
+  const bySorted = profileMode ? [...dimensions].sort((a, b) => b.average - a.average) : null;
+  const primary = bySorted ? bySorted[0] : strongest;
+  const secondary = bySorted ? bySorted[1] : weakest;
   const suggestions = buildSuggestions(result, config);
   const hasSubs = dimensions.some((d) => d.subs?.length > 0);
   const showNarrativeSection = !!(config?.COMMENTARY && hasSubs);
@@ -31,20 +37,28 @@ const ResultPanel = forwardRef(function ResultPanel(
       className="mt-8 overflow-hidden rounded-md ring-1 ring-paper-300 bg-paper-50 shadow-card"
     >
       <div className="bg-ink-700 px-6 py-7 text-center text-paper-50">
-        <p className="text-sm font-medium text-paper-50/75">{assessmentName ?? '評測'} · 您的總得分</p>
-        <p className="font-serif mt-1 text-5xl font-bold tracking-tight">
-          {total}
-          <span className="ml-1 text-xl font-semibold text-paper-50/75">/ {maxScore}</span>
+        <p className="text-sm font-medium text-paper-50/75">
+          {assessmentName ?? '評測'} · {profileMode ? '您的風格輪廓' : '您的總得分'}
         </p>
+        {/* PROFILE_MODE（如 DISC）構面之間沒有優劣，加總的總分／達成率／百分位排名
+            都沒有意義，也暗示「分數越高越好」，這裡不顯示，只呈現風格徽章本身。 */}
+        {!profileMode && (
+          <p className="font-serif mt-1 text-5xl font-bold tracking-tight">
+            {total}
+            <span className="ml-1 text-xl font-semibold text-paper-50/75">/ {maxScore}</span>
+          </p>
+        )}
         <span
-          className="mt-3 inline-block rounded-sm px-4 py-1.5 text-lg font-bold"
+          className={`inline-block rounded-sm px-4 py-1.5 text-lg font-bold ${profileMode ? '' : 'mt-3'}`}
           style={{ background: level.color, color: '#fff' }}
         >
           {level.badge}
           {level.badgeEn && <span className="ml-2 text-sm font-normal opacity-80">{level.badgeEn}</span>}
         </span>
-        <p className="mt-2 text-sm text-paper-50/75">能力達成率 {percent}%</p>
-        {percentile !== null && (
+        {!profileMode && (
+          <p className="mt-2 text-sm text-paper-50/75">能力達成率 {percent}%</p>
+        )}
+        {!profileMode && percentile !== null && (
           <p className="mt-2 inline-flex items-center gap-1 rounded-sm bg-paper-50/20 px-3 py-1 text-sm font-semibold text-paper-50">
             您的總分超越了 {percentile}% 的填答者
             <InfoTip text="百分位表示你的分數在所有填答者中的相對位置。70% 代表超越了 70% 的填答者。母體隨填答人數增加而更新。" className="text-paper-50/75" />
@@ -113,18 +127,25 @@ const ResultPanel = forwardRef(function ResultPanel(
 
         <div id="section-suggestions" className="scroll-mt-14">
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">最強構面</p>
-              <p className="mt-1 font-bold text-emerald-800">
-                {strongest.subtitle}
-                <span className="ml-2 text-sm font-normal text-emerald-600">平均 {strongest.average.toFixed(1)} 分</span>
+            {/* PROFILE_MODE：構面沒有優劣之分，兩個框都用同樣中性的配色（不用
+                綠色／琥珀色的「好／待改進」對比），文字也改成「主要／次要風格」
+                而非「最強／優先強化」。 */}
+            <div className={`rounded-xl border px-4 py-3 ${profileMode ? 'border-brass-200 bg-brass-50' : 'border-emerald-200 bg-emerald-50'}`}>
+              <p className={`text-xs font-semibold uppercase tracking-wide ${profileMode ? 'text-brass-600' : 'text-emerald-600'}`}>
+                {profileMode ? '主要風格' : '最強構面'}
+              </p>
+              <p className={`mt-1 font-bold ${profileMode ? 'text-ink-700' : 'text-emerald-800'}`}>
+                {primary.subtitle}
+                <span className={`ml-2 text-sm font-normal ${profileMode ? 'text-brass-600' : 'text-emerald-600'}`}>平均 {primary.average.toFixed(1)} 分</span>
               </p>
             </div>
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">優先強化</p>
-              <p className="mt-1 font-bold text-amber-800">
-                {weakest.subtitle}
-                <span className="ml-2 text-sm font-normal text-amber-600">平均 {weakest.average.toFixed(1)} 分</span>
+            <div className={`rounded-xl border px-4 py-3 ${profileMode ? 'border-brass-200 bg-brass-50' : 'border-amber-200 bg-amber-50'}`}>
+              <p className={`text-xs font-semibold uppercase tracking-wide ${profileMode ? 'text-brass-600' : 'text-amber-600'}`}>
+                {profileMode ? '次要風格' : '優先強化'}
+              </p>
+              <p className={`mt-1 font-bold ${profileMode ? 'text-ink-700' : 'text-amber-800'}`}>
+                {secondary.subtitle}
+                <span className={`ml-2 text-sm font-normal ${profileMode ? 'text-brass-600' : 'text-amber-600'}`}>平均 {secondary.average.toFixed(1)} 分</span>
               </p>
             </div>
           </div>
