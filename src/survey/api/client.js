@@ -37,6 +37,10 @@ export const api = {
 
   assessments: () => request('/assessments').then((d) => d.assessments),
   benchmark: (assessmentId) => request(`/assessments/${assessmentId}/benchmark`),
+  learningResources: (assessmentId, dimensionId) =>
+    request(`/learning-resources?assessmentId=${encodeURIComponent(assessmentId)}&dimensionId=${encodeURIComponent(dimensionId)}`)
+      .then((d) => d.articles)
+      .catch(() => []), // 非必要的附加功能，任何失敗都不能讓報告頁面壞掉。
   adminAssessments: () => request('/admin/assessments').then((d) => d.assessments),
   toggleAssessment: (id, enabled) =>
     request(`/admin/assessments/${id}`, { method: 'PATCH', body: { enabled } }).then((d) => d.assessment),

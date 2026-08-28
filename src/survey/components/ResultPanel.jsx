@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { Lightbulb, Target, Copy, Check, RotateCcw } from 'lucide-react';
 import RadarChart from './RadarChart';
 import NarrativeReport from './NarrativeReport';
+import LearningResources from './LearningResources';
 import { getAssessment } from '../data/assessments/index.js';
 import { buildSuggestions } from '../utils/suggestions';
 import InfoTip from './InfoTip';
@@ -196,6 +197,8 @@ const ResultPanel = forwardRef(function ResultPanel(
               )}
             </div>
           )}
+
+          <LearningResources assessmentId={result.assessmentId} dimension={secondary} />
         </div>
 
         {showNarrativeSection && <div id="section-narrative" className="scroll-mt-14" />}

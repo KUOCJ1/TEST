@@ -41,6 +41,9 @@ vi.mock('../survey/api/client', () => {
         if (!state.user) throw new Error('尚未登入');
         return pub(state.user);
       },
+      async learningResources() {
+        return [];
+      },
       async assessments() {
         return [
           { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、37 題李克特量表（含反向題）', enabled: true },

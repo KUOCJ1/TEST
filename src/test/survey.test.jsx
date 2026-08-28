@@ -13,6 +13,7 @@ vi.mock('../survey/api/client', () => ({
     createSubmission,
     myGroups: async () => [],
     mySubmissions: async () => [],
+    learningResources: async () => [],
   },
 }));
 

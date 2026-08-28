@@ -947,3 +947,93 @@ describe('個人發展目標', () => {
     assert.equal(body.goal.actions.length, 5);
   });
 });
+
+describe('學習資源（第二大腦整合）', () => {
+  async function agentFor(app) {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/register').send({ name: 'l', email: 'l@b.co', password: 'abcdef12' });
+    return agent;
+  }
+
+  // 實測 brain.rong-rise.com/api/articles?q= 的真實回應形狀（見
+  // server/src/routes/learningResources.js 頂端註解）：
+  // { articles: [{ slug, title, category, categoryIcon, tags, date, excerpt }] }
+  function mockBrainResponse(articles) {
+    return { ok: true, status: 200, json: async () => ({ articles }) };
+  }
+
+  test('未登入不得存取', async () => {
+    const app = await setup();
+    const res = await request(app).get('/api/learning-resources?assessmentId=ai-competency&dimensionId=foundation');
+    assert.equal(res.status, 401);
+  });
+
+  test('缺少 assessmentId／dimensionId 回 400', async () => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    assert.equal((await agent.get('/api/learning-resources')).status, 400);
+    assert.equal((await agent.get('/api/learning-resources?assessmentId=ai-competency')).status, 400);
+  });
+
+  test('構面沒有對照關鍵字時直接回空陣列，不呼叫外部 API', async (t) => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    const fetchMock = t.mock.method(globalThis, 'fetch', async () => {
+      throw new Error('不應該被呼叫');
+    });
+    const res = await agent.get('/api/learning-resources?assessmentId=ai-competency&dimensionId=not-a-real-dimension');
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.articles, []);
+    assert.equal(fetchMock.mock.callCount(), 0);
+  });
+
+  test('依構面查到文章時，依實際欄位（slug/title/category/excerpt）正確解析並組出連結', async (t) => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    t.mock.method(globalThis, 'fetch', async () => mockBrainResponse([
+      {
+        slug: '人才培訓體系設計框架', title: '人才培訓體系設計框架', category: '人資與組織發展',
+        categoryIcon: '🏢', tags: [], date: '2026-06-09', excerpt: '系統化設計企業培訓體系的方法論。',
+      },
+    ]));
+    const res = await agent.get('/api/learning-resources?assessmentId=leadership-9d&dimensionId=developing-others');
+    assert.equal(res.status, 200);
+    assert.equal(res.body.articles.length, 1);
+    const [article] = res.body.articles;
+    assert.equal(article.title, '人才培訓體系設計框架');
+    assert.equal(article.excerpt, '系統化設計企業培訓體系的方法論。');
+    assert.equal(article.url, `https://brain.rong-rise.com/api/articles/${encodeURIComponent('人才培訓體系設計框架')}`);
+  });
+
+  test('不在允許分類內的文章會被過濾掉（如「國際視野」「顧問專案」等內部筆記）', async (t) => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    t.mock.method(globalThis, 'fetch', async () => mockBrainResponse([
+      { slug: 'a', title: '允許分類文章', category: '管理心理學', excerpt: '' },
+      { slug: 'b', title: '不允許分類文章', category: '顧問專案', excerpt: '' },
+    ]));
+    const res = await agent.get('/api/learning-resources?assessmentId=leadership-9d&dimensionId=communication');
+    assert.equal(res.body.articles.length, 1);
+    assert.equal(res.body.articles[0].title, '允許分類文章');
+  });
+
+  test('外部 API 逾時或失敗時回空陣列，不讓報告頁面被卡住', async (t) => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    t.mock.method(globalThis, 'fetch', async () => { throw new Error('network down'); });
+    const res = await agent.get('/api/learning-resources?assessmentId=ai-competency&dimensionId=foundation');
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.articles, []);
+  });
+
+  test('同一關鍵字在快取有效期內不重複呼叫外部 API', async (t) => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    const fetchMock = t.mock.method(globalThis, 'fetch', async () => mockBrainResponse([
+      { slug: 'x', title: 'X', category: '技術深讀', excerpt: '' },
+    ]));
+    await agent.get('/api/learning-resources?assessmentId=ai-competency&dimensionId=foundation');
+    await agent.get('/api/learning-resources?assessmentId=ai-competency&dimensionId=foundation');
+    assert.equal(fetchMock.mock.callCount(), 1);
+  });
+});
