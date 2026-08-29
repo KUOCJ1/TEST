@@ -37,9 +37,12 @@ export default function LearningResources({ assessmentId, dimensions = [] }) {
   if (sections.length === 0) return null;
 
   return (
-    <div className="mt-4 rounded-md bg-paper-50 p-4 ring-1 ring-paper-300">
-      <p className="mb-3 flex items-center gap-1.5 font-semibold text-slate-700">
+    <div className="mt-6 rounded-md bg-paper-50 p-4 ring-1 ring-paper-300">
+      <p className="mb-1.5 flex items-center gap-1.5 font-semibold text-slate-700">
         <BookOpen className="h-4 w-4 text-brass-500" /> 延伸閱讀
+      </p>
+      <p className="mb-4 text-xs leading-relaxed text-slate-500">
+        依這次評測顯示的重點構面，從榕耀管理顧問「第二大腦」知識庫精選延伸閱讀，把診斷結果轉化為具體的學習方向——點擊文章標題即可在新分頁開啟全文。
       </p>
       <div className="space-y-4">
         {sections.map(({ dimensionId, dimension, articles }) => (
@@ -72,7 +75,6 @@ export default function LearningResources({ assessmentId, dimensions = [] }) {
           </div>
         ))}
       </div>
-      <p className="mt-3 text-xs text-slate-400">內容來自榕耀管理顧問「第二大腦」知識庫</p>
     </div>
   );
 }

@@ -203,12 +203,14 @@ const ResultPanel = forwardRef(function ResultPanel(
               )}
             </div>
           )}
-
-          <LearningResources assessmentId={result.assessmentId} dimensions={learningDimensions} />
         </div>
 
         {showNarrativeSection && <div id="section-narrative" className="scroll-mt-14" />}
         <NarrativeReport result={result} focusDimensionIds={focusDimensionIds} />
+
+        {/* 放在整份報告最後——所有章節（雷達圖、強弱項、敘事報告）都看完後，
+            最後給一個「接下來可以怎麼學」的收尾，而不是夾在中間打斷報告本身。 */}
+        <LearningResources assessmentId={result.assessmentId} dimensions={learningDimensions} />
 
         {!readOnly && (
           <div className="mt-6 flex flex-col gap-3 sm:flex-row print:hidden">
