@@ -23,15 +23,17 @@ const cache = new Map();
 
 // 實測 GET /api/articles?q=<關鍵字> 的回應形狀：
 // { articles: [{ slug, title, category, categoryIcon, tags, date, excerpt }] }
-// 沒有 url 欄位，單篇網址是 API 端點本身：/api/articles/{slug}（slug 可能是
-// 中文，需要 URL encode）。
+// 沒有 url 欄位。原本猜測單篇網址是 API 端點本身（/api/articles/{slug}），
+// 但那其實是裸資料 API、瀏覽器打開只會看到原始 JSON，不是給人看的閱讀頁；
+// 實際的閱讀頁網址是 /brain/{slug}/（注意跟 API 路徑不同、結尾有斜線，
+// slug 可能是中文，需要 URL encode）。
 function normalizeArticle(raw) {
   if (!raw || typeof raw !== 'object') return null;
   if (!raw.title || !raw.slug) return null;
   if (raw.category && !ALLOWED_CATEGORIES.has(raw.category)) return null;
   return {
     title: raw.title,
-    url: `${BRAIN_BASE_URL}/api/articles/${encodeURIComponent(raw.slug)}`,
+    url: `${BRAIN_BASE_URL}/brain/${encodeURIComponent(raw.slug)}/`,
     excerpt: raw.excerpt ?? '',
     category: raw.category ?? null,
   };

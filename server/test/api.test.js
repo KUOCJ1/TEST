@@ -1002,7 +1002,7 @@ describe('學習資源（第二大腦整合）', () => {
     const [article] = res.body.articles;
     assert.equal(article.title, '人才培訓體系設計框架');
     assert.equal(article.excerpt, '系統化設計企業培訓體系的方法論。');
-    assert.equal(article.url, `https://brain.rong-rise.com/api/articles/${encodeURIComponent('人才培訓體系設計框架')}`);
+    assert.equal(article.url, `https://brain.rong-rise.com/brain/${encodeURIComponent('人才培訓體系設計框架')}/`);
   });
 
   test('不在允許分類內的文章會被過濾掉（如「國際視野」「顧問專案」等內部筆記）', async (t) => {
