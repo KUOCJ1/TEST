@@ -21,6 +21,12 @@ const ResultPanel = forwardRef(function ResultPanel(
   const primary = bySorted ? bySorted[0] : strongest;
   const secondary = bySorted ? bySorted[1] : weakest;
   const suggestions = buildSuggestions(result, config);
+  // 延伸閱讀查詢的構面清單：PROFILE_MODE 用主／次要風格；一般題庫用分數最低的
+  // 最多 3 個構面，不依賴 DIMENSION_ADVICE 是否存在（L9D 等沒有 DIMENSION_ADVICE
+  // 的題庫不會顯示「客製化行動建議」框，但一樣值得推薦延伸閱讀）。
+  const learningDimensions = profileMode
+    ? [primary, secondary].filter(Boolean)
+    : [...dimensions].sort((a, b) => a.average - b.average).slice(0, 3);
   const hasSubs = dimensions.some((d) => d.subs?.length > 0);
   const showNarrativeSection = !!(config?.COMMENTARY && hasSubs);
 
@@ -198,7 +204,7 @@ const ResultPanel = forwardRef(function ResultPanel(
             </div>
           )}
 
-          <LearningResources assessmentId={result.assessmentId} dimension={secondary} />
+          <LearningResources assessmentId={result.assessmentId} dimensions={learningDimensions} />
         </div>
 
         {showNarrativeSection && <div id="section-narrative" className="scroll-mt-14" />}

@@ -957,7 +957,10 @@ describe('學習資源（第二大腦整合）', () => {
 
   // 實測 brain.rong-rise.com/api/articles?q= 的真實回應形狀（見
   // server/src/routes/learningResources.js 頂端註解）：
-  // { articles: [{ slug, title, category, categoryIcon, tags, date, excerpt }] }
+  // { articles: [{ slug, title, category, categoryIcon, tags, date, excerpt, url }] }
+  // url 是後來才加上的欄位——一開始沒有，猜測自己組網址兩次都猜錯（一次是裸資料
+  // API 端點、一次是網址規則跟 slug 對不起來，中文標題的 slug 是雜湊過的亂碼、
+  // 無法從標題反推），最後由 API 提供方直接補上 url 欄位解決。
   function mockBrainResponse(articles) {
     return { ok: true, status: 200, json: async () => ({ articles }) };
   }
@@ -975,7 +978,7 @@ describe('學習資源（第二大腦整合）', () => {
     assert.equal((await agent.get('/api/learning-resources?assessmentId=ai-competency')).status, 400);
   });
 
-  test('構面沒有對照關鍵字時直接回空陣列，不呼叫外部 API', async (t) => {
+  test('構面沒有對照關鍵字時該構面回空陣列，不呼叫外部 API', async (t) => {
     const app = await setup();
     const agent = await agentFor(app);
     const fetchMock = t.mock.method(globalThis, 'fetch', async () => {
@@ -983,54 +986,79 @@ describe('學習資源（第二大腦整合）', () => {
     });
     const res = await agent.get('/api/learning-resources?assessmentId=ai-competency&dimensionId=not-a-real-dimension');
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body.articles, []);
+    assert.deepEqual(res.body.byDimension, [{ dimensionId: 'not-a-real-dimension', articles: [] }]);
     assert.equal(fetchMock.mock.callCount(), 0);
   });
 
-  test('依構面查到文章時，依實際欄位（slug/title/category/excerpt）正確解析並組出連結', async (t) => {
+  test('依構面查到文章時，依實際欄位（title/excerpt/url）正確解析，直接用 API 給的 url', async (t) => {
     const app = await setup();
     const agent = await agentFor(app);
     t.mock.method(globalThis, 'fetch', async () => mockBrainResponse([
       {
-        slug: '人才培訓體系設計框架', title: '人才培訓體系設計框架', category: '人資與組織發展',
+        slug: 'a-sr7kgx', title: '人才培訓體系設計框架', category: '人資與組織發展',
         categoryIcon: '🏢', tags: [], date: '2026-06-09', excerpt: '系統化設計企業培訓體系的方法論。',
+        url: 'https://brain.rong-rise.com/brain/a-sr7kgx/',
       },
     ]));
     const res = await agent.get('/api/learning-resources?assessmentId=leadership-9d&dimensionId=developing-others');
     assert.equal(res.status, 200);
-    assert.equal(res.body.articles.length, 1);
-    const [article] = res.body.articles;
-    assert.equal(article.title, '人才培訓體系設計框架');
-    assert.equal(article.excerpt, '系統化設計企業培訓體系的方法論。');
-    assert.equal(article.url, `https://brain.rong-rise.com/brain/${encodeURIComponent('人才培訓體系設計框架')}/`);
+    assert.equal(res.body.byDimension.length, 1);
+    const [{ dimensionId, articles }] = res.body.byDimension;
+    assert.equal(dimensionId, 'developing-others');
+    assert.equal(articles.length, 1);
+    assert.equal(articles[0].title, '人才培訓體系設計框架');
+    assert.equal(articles[0].excerpt, '系統化設計企業培訓體系的方法論。');
+    assert.equal(articles[0].url, 'https://brain.rong-rise.com/brain/a-sr7kgx/');
+  });
+
+  // 用跟其他測試不同的構面（自我發展／接班成熟度），避免撞到同一個 process
+  // 內、跨測試共用的模組層級快取（同一關鍵字快取命中就不會真的呼叫 fetch，
+  // 若跟別的測試共用關鍵字，測試執行順序就會影響這支測試看到的是不是自己
+  // mock 的回應）。
+  test('可一次帶多個 dimensionId，各自查各自的關鍵字，回傳依序分組', async (t) => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    t.mock.method(globalThis, 'fetch', async (url) => {
+      const q = new URL(url).searchParams.get('q');
+      if (q === '自我覺察') return mockBrainResponse([{ title: '自我覺察文章', category: '管理心理學', url: 'https://brain.rong-rise.com/brain/c1/' }]);
+      if (q === '接班') return mockBrainResponse([{ title: '接班文章', category: '人才策略', url: 'https://brain.rong-rise.com/brain/c2/' }]);
+      return mockBrainResponse([]);
+    });
+    const res = await agent.get('/api/learning-resources?assessmentId=leadership-9d&dimensionId=self-development&dimensionId=succession-readiness');
+    assert.equal(res.body.byDimension.length, 2);
+    assert.equal(res.body.byDimension[0].dimensionId, 'self-development');
+    assert.equal(res.body.byDimension[0].articles[0].title, '自我覺察文章');
+    assert.equal(res.body.byDimension[1].dimensionId, 'succession-readiness');
+    assert.equal(res.body.byDimension[1].articles[0].title, '接班文章');
   });
 
   test('不在允許分類內的文章會被過濾掉（如「國際視野」「顧問專案」等內部筆記）', async (t) => {
     const app = await setup();
     const agent = await agentFor(app);
     t.mock.method(globalThis, 'fetch', async () => mockBrainResponse([
-      { slug: 'a', title: '允許分類文章', category: '管理心理學', excerpt: '' },
-      { slug: 'b', title: '不允許分類文章', category: '顧問專案', excerpt: '' },
+      { slug: 'a', title: '允許分類文章', category: '管理心理學', excerpt: '', url: 'https://brain.rong-rise.com/brain/a/' },
+      { slug: 'b', title: '不允許分類文章', category: '顧問專案', excerpt: '', url: 'https://brain.rong-rise.com/brain/b/' },
     ]));
     const res = await agent.get('/api/learning-resources?assessmentId=leadership-9d&dimensionId=communication');
-    assert.equal(res.body.articles.length, 1);
-    assert.equal(res.body.articles[0].title, '允許分類文章');
+    const [{ articles }] = res.body.byDimension;
+    assert.equal(articles.length, 1);
+    assert.equal(articles[0].title, '允許分類文章');
   });
 
-  test('外部 API 逾時或失敗時回空陣列，不讓報告頁面被卡住', async (t) => {
+  test('外部 API 逾時或失敗時該構面回空陣列，不讓報告頁面被卡住', async (t) => {
     const app = await setup();
     const agent = await agentFor(app);
     t.mock.method(globalThis, 'fetch', async () => { throw new Error('network down'); });
     const res = await agent.get('/api/learning-resources?assessmentId=ai-competency&dimensionId=foundation');
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body.articles, []);
+    assert.deepEqual(res.body.byDimension, [{ dimensionId: 'foundation', articles: [] }]);
   });
 
   test('同一關鍵字在快取有效期內不重複呼叫外部 API', async (t) => {
     const app = await setup();
     const agent = await agentFor(app);
     const fetchMock = t.mock.method(globalThis, 'fetch', async () => mockBrainResponse([
-      { slug: 'x', title: 'X', category: '技術深讀', excerpt: '' },
+      { slug: 'x', title: 'X', category: '技術深讀', excerpt: '', url: 'https://brain.rong-rise.com/brain/x/' },
     ]));
     await agent.get('/api/learning-resources?assessmentId=ai-competency&dimensionId=foundation');
     await agent.get('/api/learning-resources?assessmentId=ai-competency&dimensionId=foundation');

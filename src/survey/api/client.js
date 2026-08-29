@@ -37,10 +37,15 @@ export const api = {
 
   assessments: () => request('/assessments').then((d) => d.assessments),
   benchmark: (assessmentId) => request(`/assessments/${assessmentId}/benchmark`),
-  learningResources: (assessmentId, dimensionId) =>
-    request(`/learning-resources?assessmentId=${encodeURIComponent(assessmentId)}&dimensionId=${encodeURIComponent(dimensionId)}`)
-      .then((d) => d.articles)
-      .catch(() => []), // 非必要的附加功能，任何失敗都不能讓報告頁面壞掉。
+  // dimensionIds 可傳多個（一次評測結果常有不只一個值得延伸的構面），回傳
+  // [{ dimensionId, articles }]，跟傳入順序一致。
+  learningResources: (assessmentId, dimensionIds) => {
+    const params = new URLSearchParams({ assessmentId });
+    dimensionIds.forEach((id) => params.append('dimensionId', id));
+    return request(`/learning-resources?${params.toString()}`)
+      .then((d) => d.byDimension)
+      .catch(() => []); // 非必要的附加功能，任何失敗都不能讓報告頁面壞掉。
+  },
   adminAssessments: () => request('/admin/assessments').then((d) => d.assessments),
   toggleAssessment: (id, enabled) =>
     request(`/admin/assessments/${id}`, { method: 'PATCH', body: { enabled } }).then((d) => d.assessment),
