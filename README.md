@@ -31,6 +31,12 @@ npm run build          # 前端 production 打包
 cd server && npm test  # 後端 API 測試（node --test + supertest）
 ```
 
+## 文件
+
+- **[docs/PLATFORM_MANUAL.md](./docs/PLATFORM_MANUAL.md)** — 平台維運手冊，給接手維運與後續開發的工程師：架構、功能地圖、維運機制、常見 SOP。
+- **[docs/user-manual.md](./docs/user-manual.md)** — 給最終使用者（學員／教練／管理者）的操作手冊。
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** — 從零開始在全新 VPS 上架站的逐步指南。
+
 ## 部署（VPS：Ubuntu + Nginx + HTTPS）
 完整步驟見 **[DEPLOYMENT.md](./DEPLOYMENT.md)**。更新版本時於專案根目錄執行：
 ```bash
