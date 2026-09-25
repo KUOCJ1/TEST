@@ -172,12 +172,25 @@ curl -s localhost:3101/api/health      # 應回 {"ok":true}（本站後端埠為
 資料庫是 SQLite（WAL 模式），服務執行中直接 `cp` 主檔案可能漏掉尚未 checkpoint
 的 WAL 內容；用 `sqlite3` CLI 的線上備份指令才能在服務不停機的情況下拿到一致的
 快照（Ubuntu/Debian 沒有內建的話先 `sudo apt install -y sqlite3`）。
+
+**自動化每日備份**：repo 內 `deploy/backup.sh` 會備份、驗證完整性（`PRAGMA
+integrity_check`）、並自動清掉超過保留份數（預設 14 份）的舊備份：
 ```bash
-# 備份（建議排程 cron 每日，服務可以繼續跑）
-sqlite3 /var/lib/ai-assessment/db.json.sqlite3 ".backup '$HOME/backup-$(date +%F).sqlite3'"
-# 還原：停服務 → 覆蓋檔案 → 起服務
+# 手動跑一次（預設備份 /var/lib/ai-assessment/db.json.sqlite3 到 /var/backups/ai-assessment）
+bash /opt/ai-assessment/app/deploy/backup.sh
+
+# 排進 cron，每天凌晨 3 點自動備份：
+sudo crontab -e
+# 加入這行：
+0 3 * * * /opt/ai-assessment/app/deploy/backup.sh >> /var/log/ai-assessment-backup.log 2>&1
+```
+可用環境變數覆寫路徑與保留份數，例如 `KEEP=30 bash deploy/backup.sh`；細節見
+腳本內註解。
+
+**還原**：
+```bash
 sudo systemctl stop ai-assessment-api
-sudo cp ~/backup-YYYY-MM-DD.sqlite3 /var/lib/ai-assessment/db.json.sqlite3
+sudo cp /var/backups/ai-assessment/db-YYYY-MM-DD-HHMMSS.sqlite3 /var/lib/ai-assessment/db.json.sqlite3
 sudo rm -f /var/lib/ai-assessment/db.json.sqlite3-wal /var/lib/ai-assessment/db.json.sqlite3-shm
 sudo chown www-data:www-data /var/lib/ai-assessment/db.json.sqlite3
 sudo systemctl start ai-assessment-api

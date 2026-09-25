@@ -181,4 +181,6 @@ GitHub Actions `deploy.yml`：在功能分支 push 時 `npm ci` → `npm run bui
 - 整班掃 QR 註冊時出現「請求過於頻繁」：檢查 `.env` 的 `TRUST_PROXY` 是否已設定
   （見上方「後端環境變數」），未設定時所有使用者的請求都會被 rate limiter 當成同一
   個 IP。
-- 備份：`cp /var/lib/ai-assessment/db.json.sqlite3 ~/backup-$(date +%F).sqlite3`
+- 備份：`bash deploy/backup.sh`（線上備份 + 完整性驗證 + 自動清舊檔，可排 cron；
+  **不要**直接 `cp` 資料庫檔案——WAL 模式下服務執行中直接複製主檔案可能漏掉尚未
+  checkpoint 的內容，細節見 `DEPLOYMENT.md`「備份與還原」）

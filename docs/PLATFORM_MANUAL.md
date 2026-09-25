@@ -105,7 +105,7 @@ Traefik (host 網路, 80/443, Cloudflare DNS challenge 自動簽 TLS)
 | 儲存 | SQLite（`better-sqlite3`，WAL 模式） | 每個 collection 的每筆記錄以 JSON 字串存一個 row，見第 3 節 |
 | 前端測試 | Vitest + Testing Library | `src/test/` |
 | 後端測試 | Node 內建 `node --test` + supertest | `server/test/` |
-| E2E | Playwright（已安裝，`@playwright/test`） | |
+| E2E | Playwright（`@playwright/test` + `@axe-core/playwright`） | `e2e/`，`npm run test:e2e`，見第 12 節 |
 
 ### 前端目錄結構
 
@@ -117,8 +117,12 @@ src/
 │   ├── admin/                         管理後台（AdminDashboard、批次匯入…）
 │   ├── auth/                          登入/註冊/忘記密碼
 │   ├── coach/                         教練後台（CoachDashboard、班級管理、360° 追蹤）
+│   │                                   GroupWorkspace 拆成 GroupListPanel／
+│   │                                   GroupOverviewSection／GroupSettingsSection
 │   ├── components/                    ResultPanel、RadarChart、NarrativeReport、
 │   │                                   LearningResources、GroupNarrativeReport…
+│   │                                   printable-report/ 是 PrintableReport 依頁拆出的
+│   │                                   子元件（CoverPage、LayerPage…）
 │   ├── dashboard/                     UserDashboard（個人歷程/歷次趨勢）
 │   ├── profile/                       個人設定
 │   ├── data/assessments/              題庫設定（見第 4-5 節）
@@ -324,7 +328,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   localStorage，不跨裝置同步），可一鍵插入學員最強／待強化構面名稱
 - **比較梯次**（`coach/CohortCompare.jsx`）：選同一題庫的兩個班級，疊圖比較
   平均雷達圖與落點分布
-- 匯出班級成績 CSV（`utils/csvExport.js`，純前端 Blob 產生，不依賴 `xlsx`）
+- 匯出班級成績 CSV（`utils/csvExport.js`，純前端 Blob 產生，不依賴 Excel 解析套件）
 - 成員與設定：加人/移除、設定課前課後階段、QR Code 報到（產生/撤銷/投影）
 - 360° 進度追蹤：誰已評完誰還沒
 - AI 教練助理：協助撰寫評語
@@ -334,8 +338,9 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 - 評量開關：`enabled` 開關題庫是否對學員可見
 - 整體統計：跨題庫/跨班級分析
 - 用戶角色管理：改 user/coach/admin
-- 批次匯入：CSV/Excel（`xlsx` 套件，見第 13 節已知風險）匯入名單，
-  獨立 lazy chunk（`BatchUploadSection.jsx`），避免拖慢一般管理後台載入
+- 批次匯入：CSV/Excel（`.xlsx`，`read-excel-file` 套件解析）匯入名單，
+  獨立 lazy chunk（`BatchUploadSection.jsx`，解析邏輯抽在
+  `batchFileParsing.js`），避免拖慢一般管理後台載入；不支援舊版二進位 `.xls`
 - 密碼重設連結：管理者可代發重設連結
 - AI 平台助理
 
@@ -363,7 +368,9 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 掛在專屬前綴（`/api/admin`、`/api/coach`）下，否則會攔截其他掛在 `/api` 的
 路由——這是 `app.js` 裡路由順序/前綴選擇的原因，改動時務必留意。
 
-`GET /api/health` 不需認證，用於部署驗證與健康檢查。
+`GET /api/health` 不需認證，用於部署驗證與健康檢查；帶 `?deep=1` 時額外檢查
+第二大腦 API 與 OpenRouter 的可達性/設定狀態（`lib/health.js` 的
+`deepHealthCheck()`），供外部監控服務輪詢，一般部署驗證仍用不帶參數的版本。
 
 ---
 
@@ -587,11 +594,13 @@ curl -s localhost:3101/api/health     # 應回 {"ok":true}
 ### 11.5 備份與還原
 
 SQLite 是 WAL 模式，服務執行中直接 `cp` 主檔案可能漏掉尚未 checkpoint 的
-內容，要用 `sqlite3` 線上備份指令才能拿到服務不停機情況下的一致快照：
+內容，要用 `sqlite3` 線上備份指令才能拿到服務不停機情況下的一致快照。
+`deploy/backup.sh` 把這個流程包成腳本：`.backup` + `PRAGMA integrity_check`
+驗證備份檔完整、再依 `KEEP`（預設 14）份保留天數自動清掉更舊的備份：
 ```bash
-sqlite3 /var/lib/ai-assessment/db.json.sqlite3 ".backup '$HOME/backup-$(date +%F).sqlite3'"
+bash deploy/backup.sh   # 可用 DB_FILE / BACKUP_DIR / KEEP 環境變數覆寫預設路徑與保留數
 ```
-建議排程 cron 每日備份。還原步驟（需要短暫停機）見 `DEPLOYMENT.md`
+建議排程 cron 每日執行。還原步驟（需要短暫停機）見 `DEPLOYMENT.md`
 「備份與還原」章節。
 
 ---
@@ -603,15 +612,33 @@ sqlite3 /var/lib/ai-assessment/db.json.sqlite3 ".backup '$HOME/backup-$(date +%F
 npm test          # Vitest，CI 必須全綠
 npm run lint       # ESLint，提交前應為 0 problems
 npm run build      # 產出 dist/
+npm run test:e2e   # Playwright，見下方「E2E」
 
 # 後端（server/）
 cd server && npm test   # node --test
 ```
 
 **後端測試慣例**：用 `t.mock.method(globalThis, 'fetch', ...)` mock 對外
-HTTP 呼叫（第二大腦整合的測試就是這樣做的，`server/test/api.test.js`），
-不打真實網路。若之後要幫 `chat.js`（OpenRouter 整合）補測試，可以沿用
-同一個 mock 模式，目前這部分還沒有測試覆蓋。
+HTTP 呼叫（第二大腦整合、`chat.js`/OpenRouter 整合的測試都是這樣做的，見
+`server/test/api.test.js`），不打真實網路。`chat.js` 的測試涵蓋未登入 401、
+`OPENROUTER_API_KEY` 未設定時 503（並斷言 `fetch` 完全沒被呼叫）、訊息格式
+錯誤 400、串流回應原樣轉發、OpenRouter 各種錯誤狀態碼對應到的錯誤代碼、
+以及速率限制邊界。
+
+**E2E（`e2e/`，Playwright + `@axe-core/playwright`）**：`playwright.config.js`
+會自動起後端（記憶體 DB）與前端 dev server，跑 3 條黃金路徑並在關鍵頁面做
+無障礙掃描（斷言 `violations.filter(v => v.impact === 'critical')` 為空）：
+- `learner-golden-path.spec.js`：學員註冊 → 完成一次評測 → 看報告
+- `coach-qr-join.spec.js`：教練建班 → 產生 QR 報到連結 → 學員用連結直接加入
+- `admin-assessment-toggle.spec.js`：管理者停用某套題庫後學員看不到，重新
+  啟用後恢復
+
+這套測試會啟動真實 Chromium，能抓到 jsdom（Vitest 環境）測不出來的問題
+（實際渲染、真實使用者互動時序）。跑的時候三支測試共用同一個後端／
+記憶體 DB／rate limiter，因此 `playwright.config.js` 設 `workers: 1`
+（依序執行，不用平行搶同一份狀態）；每支測試若動到共用資料（例如停用
+題庫），結尾都要自己復原，避免污染後面的測試。CI 環境沒有預裝的
+Chromium 路徑時可用 `PLAYWRIGHT_CHROMIUM_PATH` 環境變數指定執行檔位置。
 
 **快取是模組層級（module-level）的**，同一個 process 內的測試會共用同一份
 快取 Map——寫多個測試涉及同一個快取 key（如同一個搜尋關鍵字）時，要留意
@@ -635,20 +662,15 @@ HTTP 呼叫（第二大腦整合的測試就是這樣做的，`server/test/api.t
 
 ## 13. 已知限制與技術債
 
-- **`xlsx` 套件有未修補的高風險漏洞**（Prototype Pollution + ReDoS，
-  官方目前無修復版本，`npm audit` 會持續顯示）。使用範圍僅限管理後台
-  「批次匯入」功能解析使用者上傳的 CSV/Excel 檔（`BatchUploadSection.jsx`）。
-  風險僅限**管理者主動上傳的檔案**，不是對外開放的攻擊面，但若之後要徹底
-  排除，需要評估替換成其他 Excel 解析套件或改為只接受 CSV。
 - **SQLite 單檔儲存，適合課程規模、低併發**。若使用規模明顯成長（更高
   併發、多機部署需求），需要評估改接 PostgreSQL 等真正的資料庫伺服器——
   目前 `db.js` 的抽象（`db.data.*` + `db.persist()`）刻意留了置換空間，
   但實際遷移仍是一項未做的工作。
 - **第二大腦整合是單點外部依賴**：已用 5 秒逾時 + try/catch + 空狀態
-  處理將風險降到「壞了看不到延伸閱讀，但不影響評測本身」，但目前沒有
-  監控告警機制去偵測第二大腦 API 是否已經連續故障一段時間。
-- **`chat.js`（OpenRouter 整合）沒有自動化測試**，是目前唯一缺測試覆蓋
-  的對外 API 整合點。
+  處理將風險降到「壞了看不到延伸閱讀，但不影響評測本身」。`GET /api/health
+  ?deep=1`（見第 7 節）現在可以回報第二大腦與 OpenRouter 的可達性/設定
+  狀態，但**還沒有接上任何外部監控服務去主動輪詢並告警**——這支 endpoint
+  存在，但沒人在固定時間打它，等於還是要人工發現問題才會查。
 - **`server/.env` 的 `TRUST_PROXY` 全靠人工在每次部署環境變動時正確設定
   並手動驗證**，沒有自動化檢查會在設錯時提醒維運人員（例如反向代理層數
   改變、但忘記同步更新這個值）。

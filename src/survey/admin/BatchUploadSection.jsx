@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
-import * as XLSX from 'xlsx';
 import { ChevronUp, ChevronDown, Download, Check, X } from 'lucide-react';
 import { api } from '../api/client';
 import { REGISTRY } from '../data/assessments/index.js';
 import { buildResult } from '../utils/scoring.js';
 import { RATER_LABELS, RATER_COLORS as RATER_COLOR } from '../constants/raterTypes';
+import { parseFile } from './batchFileParsing.js';
 
 const RATER_TYPE_OPTIONS = [
   { value: 'self',        en: 'self',        desc: '由受測者本人填寫，rater_email 可留空（系統自動填入受測者 Email）' },
@@ -34,25 +34,6 @@ function downloadCsv(csv, filename) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
-}
-
-function parseFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const wb = XLSX.read(data, { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-        resolve(rows);
-      } catch {
-        reject(new Error('檔案解析失敗，請確認格式正確'));
-      }
-    };
-    reader.onerror = () => reject(new Error('檔案讀取失敗'));
-    reader.readAsArrayBuffer(file);
-  });
 }
 
 function validateAndScore(rawRows, config) {
@@ -401,7 +382,7 @@ export default function BatchUploadSection() {
               {fileName
                 ? <><Check className="h-4 w-4 text-brass-600" /> {fileName}</>
                 : '選擇 CSV / Excel 檔案'}
-              <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" />
+              <input ref={fileRef} type="file" accept=".csv,.xlsx" onChange={handleFile} className="hidden" />
             </label>
             {fileName && (
               <button type="button" onClick={handleClear} className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-red-500">

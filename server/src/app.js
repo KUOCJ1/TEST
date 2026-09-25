@@ -12,6 +12,7 @@ import { createChatRouter } from './routes/chat.js';
 import { createPublicRouter } from './routes/public.js';
 import { createLearningResourcesRouter } from './routes/learningResources.js';
 import { createReadingListRouter } from './routes/readingList.js';
+import { deepHealthCheck } from './lib/health.js';
 
 export {
   sanitizeFocusDimensionIds,
@@ -45,7 +46,15 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   const { requireAuth, requireAdmin, requireCoach, setAuthCookie, COOKIE_NAME } =
     createAuthContext({ db, jwtSecret, secureCookies });
 
-  app.get('/api/health', (_req, res) => res.json({ ok: true }));
+  // ?deep=1：額外回報第二大腦／OpenRouter 這兩個外部依賴的狀態（見
+  // lib/health.js），供外部監控服務輪詢；平常（無此參數）維持原本輕量、
+  // 不打外部網路的健康檢查，避免監控頻率太高時反而一直打外部 API。
+  app.get('/api/health', (req, res, next) => {
+    if (req.query.deep !== '1') return res.json({ ok: true });
+    deepHealthCheck()
+      .then((deps) => res.json({ ok: true, deps }))
+      .catch(next);
+  });
 
   // 完全公開、不需登入的查詢端點（QR 報到連結的落地頁要用）。掛在自己的前綴下，
   // 原因與 admin/coach 相同：避免路由順序意外影響其他 /api 路徑。

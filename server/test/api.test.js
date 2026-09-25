@@ -1242,3 +1242,136 @@ describe('管理後台：延伸閱讀使用情形彙總', () => {
     assert.equal(JSON.stringify(res.body.stats).includes('alice3'), false);
   });
 });
+
+describe('AI 聊天小幫手', () => {
+  async function agentFor(app, email = 'chat@b.co') {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/register').send({ name: 'c', email, password: 'abcdef12' });
+    return agent;
+  }
+
+  // 假的 OpenRouter 串流回應：chat.js 用 `for await (const chunk of orRes.body)`
+  // 邊收邊轉發給前端，body 只要是「非同步可迭代」就好，用 async generator 模擬
+  // 最直接——不需要真的建立 ReadableStream。
+  async function* fakeChunks(strings) {
+    for (const s of strings) yield Buffer.from(s);
+  }
+
+  function mockOpenRouterOk(t, { onBody } = {}) {
+    return t.mock.method(globalThis, 'fetch', async (url, opts) => {
+      if (onBody) onBody(JSON.parse(opts.body));
+      return { ok: true, status: 200, body: fakeChunks(['data: {"choices":[{"delta":{"content":"你好"}}]}\n\n']) };
+    });
+  }
+
+  function mockOpenRouterError(t, status, body = {}) {
+    return t.mock.method(globalThis, 'fetch', async () => ({
+      ok: false,
+      status,
+      json: async () => body,
+    }));
+  }
+
+  const originalKey = process.env.OPENROUTER_API_KEY;
+  function setKey(v) { process.env.OPENROUTER_API_KEY = v; }
+  function restoreKey() {
+    if (originalKey === undefined) delete process.env.OPENROUTER_API_KEY;
+    else process.env.OPENROUTER_API_KEY = originalKey;
+  }
+
+  test('未登入不得使用', async () => {
+    const app = await setup();
+    const res = await request(app).post('/api/chat').send({ messages: [] });
+    assert.equal(res.status, 401);
+  });
+
+  test('未設定 OPENROUTER_API_KEY 時回 503，不會呼叫外部 API', async (t) => {
+    delete process.env.OPENROUTER_API_KEY;
+    const app = await setup();
+    const agent = await agentFor(app);
+    const fetchMock = t.mock.method(globalThis, 'fetch', async () => { throw new Error('不該被呼叫'); });
+    const res = await agent.post('/api/chat').send({ messages: [{ role: 'user', content: 'hi' }] });
+    assert.equal(res.status, 503);
+    assert.equal(res.body.code, 'CONFIG_ERROR');
+    assert.equal(fetchMock.mock.callCount(), 0);
+    restoreKey();
+  });
+
+  test('訊息格式不正確（非陣列、或超過 50 則）會被擋下', async (t) => {
+    setKey('test-key');
+    const app = await setup();
+    const agent = await agentFor(app);
+    mockOpenRouterOk(t);
+    const notArray = await agent.post('/api/chat').send({ messages: 'not-an-array' });
+    assert.equal(notArray.status, 400);
+    const tooMany = await agent.post('/api/chat').send({ messages: Array.from({ length: 51 }, () => ({ role: 'user', content: 'x' })) });
+    assert.equal(tooMany.status, 400);
+    restoreKey();
+  });
+
+  test('系統提示依角色帶不同上下文，並帶入評測結果摘要', async (t) => {
+    setKey('test-key');
+    const { app } = await setupWithDb({ withAdmin: true });
+    const admin = request.agent(app);
+    await admin.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
+
+    let sentBody = null;
+    mockOpenRouterOk(t, { onBody: (b) => { sentBody = b; } });
+
+    const result = {
+      assessmentName: 'AI 全方位職能實戰課前評測',
+      total: 120, maxScore: 150, percent: 80,
+      level: { badge: '🚀 高潛力股' },
+      strongest: { subtitle: '基礎力' },
+      weakest: { subtitle: '創新力' },
+      dimensions: [{ subtitle: '基礎力', score: 20, max: 25 }],
+    };
+    await admin.post('/api/chat').send({ messages: [{ role: 'user', content: '你好' }], context: { result } });
+
+    const systemMsg = sentBody.messages[0];
+    assert.equal(systemMsg.role, 'system');
+    assert.match(systemMsg.content, /管理員/);
+    assert.match(systemMsg.content, /AI 全方位職能實戰課前評測/);
+    assert.match(systemMsg.content, /基礎力 20\/25/);
+    restoreKey();
+  });
+
+  test('OpenRouter 回應成功時，把串流內容原封轉發給前端', async (t) => {
+    setKey('test-key');
+    const app = await setup();
+    const agent = await agentFor(app);
+    mockOpenRouterOk(t);
+    const res = await agent.post('/api/chat').send({ messages: [{ role: 'user', content: 'hi' }] });
+    assert.equal(res.status, 200);
+    assert.match(res.headers['content-type'], /text\/event-stream/);
+    assert.match(res.text, /你好/);
+    restoreKey();
+  });
+
+  for (const [status, code] of [[401, 'AI_AUTH_ERROR'], [402, 'AI_CREDITS_ERROR'], [429, 'AI_RATE_LIMIT'], [500, 'AI_ERROR']]) {
+    test(`OpenRouter 回應 ${status} 時轉換成 ${code}`, async (t) => {
+      setKey('test-key');
+      const app = await setup();
+      const agent = await agentFor(app);
+      mockOpenRouterError(t, status);
+      const res = await agent.post('/api/chat').send({ messages: [{ role: 'user', content: 'hi' }] });
+      assert.equal(res.body.code, code);
+      assert.equal(res.status, status === 429 ? 429 : 502);
+      restoreKey();
+    });
+  }
+
+  test('每分鐘限制 20 則，第 21 次會被擋下', async (t) => {
+    setKey('test-key');
+    const app = await setup();
+    const agent = await agentFor(app);
+    mockOpenRouterOk(t);
+    let last;
+    for (let i = 0; i < 21; i++) {
+      last = await agent.post('/api/chat').send({ messages: [{ role: 'user', content: `msg ${i}` }] });
+    }
+    assert.equal(last.status, 429);
+    assert.equal(last.body.code, 'RATE_LIMIT');
+    restoreKey();
+  });
+});
