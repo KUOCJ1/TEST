@@ -34,6 +34,7 @@ cd server && npm test  # 後端 API 測試（node --test + supertest）
 ## 文件
 
 - **[docs/PLATFORM_MANUAL.md](./docs/PLATFORM_MANUAL.md)** — 平台維運手冊，給接手維運與後續開發的工程師：架構、功能地圖、維運機制、常見 SOP。
+- **[docs/SPRINT_PLAN.md](./docs/SPRINT_PLAN.md)** — 接下來 5 個 Sprint 的產品開發規劃。
 - **[docs/user-manual.md](./docs/user-manual.md)** — 給最終使用者（學員／教練／管理者）的操作手冊。
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** — 從零開始在全新 VPS 上架站的逐步指南。
 
