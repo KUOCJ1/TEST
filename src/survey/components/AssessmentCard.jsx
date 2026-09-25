@@ -18,6 +18,18 @@ export default function AssessmentCard({
   if (alreadySubmitted) startLabel = '已完成作答';
   if (!canStart && !hasResult) startLabel = '尚未開放作答';
 
+  // 狀態標籤：跟 startLabel（按鈕文字，偏「接下來要做什麼」）分開，這個是純粹
+  // 陳述「目前完成到哪」的事實標籤，讓使用者不用讀按鈕文字也能一眼掃過去。
+  let statusLabel = '未作答';
+  let statusClass = 'bg-slate-100 text-slate-500';
+  if (inGroup) {
+    if (submittedPhases?.has('post')) { statusLabel = '課後已完成'; statusClass = 'bg-emerald-50 text-emerald-600'; }
+    else if (submittedPhases?.has('pre')) { statusLabel = '課前已完成'; statusClass = 'bg-blue-50 text-blue-600'; }
+  } else if (hasResult) {
+    statusLabel = '可重測';
+    statusClass = 'bg-brass-50 text-brass-600';
+  }
+
   return (
     <div className="card flex flex-col transition-shadow hover:shadow-card-hover">
       <div className="flex-1">
@@ -31,9 +43,12 @@ export default function AssessmentCard({
             {config.TOTAL_QUESTIONS} 題 · {config.DIMENSIONS.length} 大構面
           </p>
         )}
-        {supports360 && (
-          <span className="chip mt-2 bg-brass-50 text-brass-600">支援 360° 多元評測</span>
-        )}
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <span className={`chip ${statusClass}`}>{statusLabel}</span>
+          {supports360 && (
+            <span className="chip bg-brass-50 text-brass-600">支援 360° 多元評測</span>
+          )}
+        </div>
 
         {hasResult && (
           <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3">

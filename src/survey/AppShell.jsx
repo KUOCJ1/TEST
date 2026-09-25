@@ -6,7 +6,11 @@ import {
 } from 'lucide-react';
 import { useAuth } from './auth/useAuth';
 import { api } from './api/client';
+import { computeNextStep } from './utils/nextStep';
 import AssessmentCard from './components/AssessmentCard';
+import NextStepCard from './components/NextStepCard';
+import GroupStatusBar from './components/GroupStatusBar';
+import GoalProgressChip from './components/GoalProgressChip';
 import RaterSetup from './components/RaterSetup';
 import SurveyApp from './SurveyApp';
 import UserDashboard from './dashboard/UserDashboard';
@@ -26,14 +30,23 @@ function DashboardFallback() {
 }
 
 function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }) {
+  const navigate = useNavigate();
   const [assessments, setAssessments] = useState([]);
   const [mySubmissions, setMySubmissions] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.assessments(), api.mySubmissions(), api.myGroups()])
-      .then(([aList, sList, gList]) => { setAssessments(aList); setMySubmissions(sList); setMyGroups(gList); })
+    Promise.all([api.assessments(), api.mySubmissions(), api.myGroups(), api.groupMembers(), api.myGoals()])
+      .then(([aList, sList, gList, mList, goalList]) => {
+        setAssessments(aList);
+        setMySubmissions(sList);
+        setMyGroups(gList);
+        setGroupMembers(mList);
+        setGoals(goalList);
+      })
       .finally(() => setLoading(false));
   }, [refreshKey]);
 
@@ -66,9 +79,20 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
 
   if (loading) return <LoadingState />;
 
+  const nextStep = computeNextStep({ assessments, mySubmissions, myGroups, groupMembers });
+  // 班級狀態條優先顯示「下一步」正在講的那個班；沒有的話（例如下一步是 360°
+  // 他評或看報告）退回顯示第一個進行中的班別，讓使用者至少知道自己現在的
+  // 班級狀態，而不是完全不顯示。
+  const statusGroup = myGroups.find((g) => g.id === nextStep?.groupId)
+    ?? myGroups.find((g) => g.phase === 'in_progress')
+    ?? null;
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
       <OnboardingBanner role="user" />
+      <NextStepCard nextStep={nextStep} onStartSurvey={onStartSurvey} onGoTo360={onGoTo360} onViewAnalysis={onViewAnalysis} />
+      <GroupStatusBar group={statusGroup} />
+      <GoalProgressChip goals={goals} onClick={() => navigate('/analysis')} />
       <header className="mb-6">
         <h2 className="text-2xl font-extrabold text-slate-800">選擇評量</h2>
         <p className="mt-1 text-sm text-slate-500">選擇一個題庫開始作答，或點擊「查看分析」瀏覽歷次結果。</p>

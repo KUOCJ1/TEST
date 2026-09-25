@@ -85,6 +85,9 @@ vi.mock('../survey/api/client', () => {
         };
       },
       async myGroups() { return []; },
+      // 首頁「下一步」卡片與 360° 頁都需要這支；這支流程測試不驗證這些功能，
+      // 給空清單讓對應元件正常渲染即可。
+      async groupMembers() { return []; },
       // 個人發展目標：這支流程測試不驗證目標功能，給空清單讓 GoalPanel 正常渲染即可。
       async myGoals() { return []; },
       async createGoal(body) { return { id: 'g1', actions: [], achievedAt: null, createdAt: new Date().toISOString(), ...body }; },

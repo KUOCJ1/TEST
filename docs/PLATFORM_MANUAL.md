@@ -290,7 +290,13 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 ## 6. 前端功能地圖（依角色）
 
 ### 學員
-- 首頁「我的評量」：列出可作答的題庫（依 `assessments.enabled` 過濾）
+- 首頁「下一步」卡片（`components/NextStepCard.jsx`，判斷邏輯在
+  `utils/nextStep.js`，純函式、有獨立測試）：依優先序告訴學員現在該做什麼
+  （課前未作答 → 課後未作答 → 還有 360° 他評待完成 → 看報告 → 新帳號開始第一次
+  評測），下方接班級狀態條（`GroupStatusBar.jsx`）與目標進度摘要
+  （`GoalProgressChip.jsx`）
+- 首頁「我的評量」：列出可作答的題庫（依 `assessments.enabled` 過濾），每張
+  卡片有狀態標籤（未作答／課前已完成／課後已完成／可重測）
 - 作答：Likert 量表逐題填答，支援中途離開續答
 - 360° 多元評測（支援的題庫）：除自評外可邀請他人對自己評分
 - 提交後即時看到報告（`ResultPanel`）：雷達圖、構面落點、客製建議、
