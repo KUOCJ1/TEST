@@ -10,15 +10,22 @@ const MAX_ACTIONS = 5;
  * 個人發展目標：讓學員針對弱項構面訂下目標與具體行動，下次回來可以打勾。
  * 把「看到自己哪裡弱」接到「實際做了什麼」，是歷程追蹤的最後一哩。
  * 目標只有本人看得到（教練與管理者都讀不到），所以可以誠實記錄。
+ *
+ * profileMode（如 DISC）：構面沒有優劣之分，不能像一般題庫那樣預設「針對最
+ * 待強化的構面」——那會暗示分數最低的風格是缺點。改成中性引導語，並讓使用者
+ * 自己從 dimensions 挑一個想刻意練習的風格（可以不選）。
  */
-export default function GoalPanel({ assessmentId, weakestDimension }) {
+export default function GoalPanel({ assessmentId, weakestDimension, profileMode = false, dimensions = [] }) {
   const confirm = useConfirm();
   const [goals, setGoals] = useState(null);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [draftText, setDraftText] = useState('');
   const [draftActions, setDraftActions] = useState(['']);
+  const [draftDimId, setDraftDimId] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const selectedDim = profileMode ? dimensions.find((d) => d.id === draftDimId) ?? null : weakestDimension;
 
   useEffect(() => {
     let active = true;
@@ -31,6 +38,7 @@ export default function GoalPanel({ assessmentId, weakestDimension }) {
   const resetDraft = () => {
     setDraftText('');
     setDraftActions(['']);
+    setDraftDimId('');
     setCreating(false);
   };
 
@@ -41,8 +49,8 @@ export default function GoalPanel({ assessmentId, weakestDimension }) {
     try {
       const goal = await api.createGoal({
         assessmentId,
-        dimensionId: weakestDimension?.id ?? null,
-        dimensionName: weakestDimension?.subtitle ?? null,
+        dimensionId: selectedDim?.id ?? null,
+        dimensionName: selectedDim?.subtitle ?? null,
         text: draftText,
         actions: draftActions.filter((t) => t.trim()).map((text) => ({ text })),
       });
@@ -105,14 +113,33 @@ export default function GoalPanel({ assessmentId, weakestDimension }) {
 
       {creating && (
         <div className="mb-4 rounded-xl bg-slate-50 p-4">
-          {weakestDimension && (
-            <p className="mb-2 text-xs text-slate-500">
-              針對目前最待強化的
-              <span className="mx-1 font-semibold" style={{ color: weakestDimension.color }}>
-                {weakestDimension.subtitle}
-              </span>
-              訂一個目標：
-            </p>
+          {profileMode ? (
+            <div className="mb-3">
+              <label className="mb-1 block text-xs font-semibold text-slate-500" htmlFor="goal-dim-select">
+                想刻意練習哪一種風格？（可不選）
+              </label>
+              <select
+                id="goal-dim-select"
+                value={draftDimId}
+                onChange={(e) => setDraftDimId(e.target.value)}
+                className="input"
+              >
+                <option value="">不指定特定風格</option>
+                {dimensions.map((d) => (
+                  <option key={d.id} value={d.id}>{d.subtitle}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            weakestDimension && (
+              <p className="mb-2 text-xs text-slate-500">
+                針對目前最待強化的
+                <span className="mx-1 font-semibold" style={{ color: weakestDimension.color }}>
+                  {weakestDimension.subtitle}
+                </span>
+                訂一個目標：
+              </p>
+            )
           )}
           <textarea
             value={draftText}

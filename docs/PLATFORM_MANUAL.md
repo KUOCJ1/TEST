@@ -207,6 +207,10 @@ dimensionRating(average)  // 單一構面平均分 → 評語標籤（依題庫�
 PROFILE_MODE           // 選填，見 4.2
 getProfileKey(dimensions)  // PROFILE_MODE 題庫選填，見 4.2
 COMMENTARY             // 選填，有才顯示「敘事報告」章節
+RATER_PROMPT           // 選填，SUPPORTS_360 題庫用；360° 他評頁「您正在評估
+                        // 「王小明」＿＿」的語尾（見 SurveyApp.jsx），未提供時
+                        // 用中性預設「的日常行為表現」。PROFILE_MODE 題庫尤其
+                        // 該設，因為預設語氣（「行為表現」）暗示有優劣之分。
 ```
 
 `src/survey/utils/scoring.js` 是**唯一**的計分引擎，`buildResult(answers, config)`

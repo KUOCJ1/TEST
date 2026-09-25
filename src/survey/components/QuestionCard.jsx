@@ -1,12 +1,24 @@
 import { memo } from 'react';
-import { RefreshCw } from 'lucide-react';
 import { SCALE_LABELS } from '../data/questions';
 
-function QuestionCard({ number, question, value, onChange, invalid, inputRef }) {
+// 反向計分題（question.reversed）刻意不在畫面上標示：反向題的作用是偵測「不看
+// 題目內容、一律勾高分」這類敷衍作答傾向，若事先告訴受測者哪幾題是反向題，
+// 這個機制就完全失效了。計分邏輯（utils/scoring.js）不受影響，正常反轉分數。
+function QuestionCard({ number, question, value, onChange, invalid, inputRef, onAdvance }) {
+  // 鍵盤快速作答：題目聚焦時按數字鍵直接選分並自動跳到下一題，不必逐一點滑鼠。
+  const handleKeyDown = (e) => {
+    const opt = SCALE_LABELS.find((o) => String(o.value) === e.key);
+    if (!opt) return;
+    e.preventDefault();
+    onChange(question.id, opt.value);
+    onAdvance?.(question.id);
+  };
+
   return (
     <fieldset
       ref={inputRef}
       data-question-id={question.id}
+      onKeyDown={handleKeyDown}
       className={`scroll-mt-28 rounded-xl border px-4 py-4 transition-colors ${
         invalid ? 'border-red-300 bg-red-50' : 'border-slate-100 bg-slate-50/60'
       }`}
@@ -14,15 +26,6 @@ function QuestionCard({ number, question, value, onChange, invalid, inputRef }) 
       <legend className="mb-3 block text-[15px] font-medium leading-relaxed text-slate-800">
         <span className="mr-1.5 font-semibold text-brass-600">{number}.</span>
         {question.text}
-        {question.reversed && (
-          <span
-            className="ml-1.5 inline-flex align-middle text-amber-600"
-            title="反向計分題：分數會反轉計算"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            <span className="sr-only">反向計分題：分數會反轉計算</span>
-          </span>
-        )}
         {invalid && <span className="ml-2 text-sm font-medium text-red-500">（尚未作答）</span>}
       </legend>
 
@@ -36,7 +39,7 @@ function QuestionCard({ number, question, value, onChange, invalid, inputRef }) 
           return (
             <label
               key={opt.value}
-              className={`flex min-w-[58px] flex-1 cursor-pointer flex-col items-center rounded-lg border px-2 py-2 text-center transition-all sm:min-w-[72px] ${
+              className={`flex min-w-[58px] flex-1 cursor-pointer flex-col items-center rounded-lg border px-2 py-2 text-center transition-all focus-within:ring-2 focus-within:ring-brass-400 focus-within:ring-offset-1 sm:min-w-[72px] ${
                 selected
                   ? 'border-brass-500 bg-ink-700 text-white shadow-sm'
                   : 'border-slate-200 bg-white text-slate-600 hover:border-brass-300 hover:bg-brass-50'

@@ -4,6 +4,9 @@ export const NAME = '經贏® 領導力九大構面行為評量';
 export const NAME_EN = 'Leadership 9-Dimension Behavioral Assessment';
 export const ABBR = 'L9D';
 export const DESCRIPTION = '以行為錨定評量量表（BARS）設計，涵蓋 9 大構面、20 個子能力、90 題行為頻率型題目（含反向題 🔄），適用於接班人才與中高階管理者發展評量。';
+// 360° 他評頁「您正在評估「王小明」＿＿」的語尾，依題庫語意客製；未提供時
+// SurveyApp 用中性預設語句（見 SurveyApp.jsx）。
+export const RATER_PROMPT = '的領導力行為表現';
 
 export const LAYERS = [
   {

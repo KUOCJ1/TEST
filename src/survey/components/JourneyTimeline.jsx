@@ -5,7 +5,7 @@ import { formatDate } from '../utils/format';
  * 每個節點可點開查看該次的完整報告，並標示與前一次相比的分數變化，讓歷程
  * 不只是一張表，而是看得出走向的故事。
  */
-export default function JourneyTimeline({ narrative, submissions, onSelect }) {
+export default function JourneyTimeline({ narrative, submissions, onSelect, profileMode = false }) {
   if (!submissions?.length) return null;
 
   return (
@@ -49,17 +49,28 @@ export default function JourneyTimeline({ narrative, submissions, onSelect }) {
                       )}
                     </div>
                     <div className="mt-1 flex flex-wrap items-baseline gap-2">
-                      <span className="text-lg font-bold text-slate-800">{s.result.total}</span>
-                      <span className="text-xs text-slate-400">{s.result.percent}%</span>
+                      {/* PROFILE_MODE：風格沒有高低之分，不顯示總分／百分比／漲跌，只呈現
+                          當次的風格徽章——顯示數字或綠紅漲跌會暗示「分數越高越好」。 */}
+                      {!profileMode && (
+                        <>
+                          <span className="text-lg font-bold text-slate-800">{s.result.total}</span>
+                          <span className="text-xs text-slate-400">{s.result.percent}%</span>
+                        </>
+                      )}
                       <span
                         className="rounded-full px-2 py-0.5 text-xs font-semibold text-white"
                         style={{ background: s.result.level.color }}
                       >
                         {s.result.level.badge}
                       </span>
-                      {delta !== null && delta !== 0 && (
+                      {!profileMode && delta !== null && delta !== 0 && (
                         <span className={`text-xs font-semibold ${delta > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                           {delta > 0 ? `▲ +${delta}` : `▽ ${delta}`}
+                        </span>
+                      )}
+                      {profileMode && prev && prev.result.level.badge !== s.result.level.badge && (
+                        <span className="text-xs font-semibold text-slate-400">
+                          ← {prev.result.level.badge}
                         </span>
                       )}
                     </div>

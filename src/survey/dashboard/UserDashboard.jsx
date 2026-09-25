@@ -115,7 +115,11 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
   const oldest = filtered[filtered.length - 1];
   const myGroupForActive = myGroups.find((g) => g.assessmentId === activeId);
 
-  const supports360 = !!getAssessment(activeId)?.SUPPORTS_360;
+  const activeConfig = getAssessment(activeId);
+  const supports360 = !!activeConfig?.SUPPORTS_360;
+  // 風格輪廓型題庫（如 DISC）構面之間沒有優劣，總分／百分比／構面升降的「進步
+  // 退步」語言在這裡沒有意義，整頁改用中性的「風格變化」呈現（見下方各區塊）。
+  const profileMode = !!activeConfig?.PROFILE_MODE;
 
   const benchmarkForActive = benchmark?.assessmentId === activeId ? benchmark : null;
   const percentile = benchmarkForActive
@@ -162,7 +166,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
     : null;
   const topGain = gain?.dims?.[0] ?? null;
 
-  const journeyNarrative = buildJourneyNarrative(filtered);
+  const journeyNarrative = buildJourneyNarrative(filtered, profileMode);
 
   // 歷史紀錄可點開：預設看最新一筆，但點時間軸上任一節點就改看那一筆（S-03）。
   const viewingSub = viewingSubId ? filtered.find((s) => s.id === viewingSubId) : null;
@@ -251,11 +255,57 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
           <CoachCommentPanel comments={latest.comments} />
           <GroupCommentPanel group={myGroupForActive} />
 
-          <JourneyTimeline narrative={journeyNarrative} submissions={filtered} onSelect={setViewingSubId} />
+          <JourneyTimeline
+            narrative={journeyNarrative}
+            submissions={filtered}
+            onSelect={setViewingSubId}
+            profileMode={profileMode}
+          />
 
-          <GoalPanel assessmentId={activeId} weakestDimension={latest.result.weakest} />
+          <GoalPanel
+            assessmentId={activeId}
+            weakestDimension={latest.result.weakest}
+            profileMode={profileMode}
+            dimensions={latest.result.dimensions}
+          />
 
-          {gain && (
+          {/* PROFILE_MODE（如 DISC）：構面沒有優劣，總分沒有心理計量意義，「增益」
+              這個詞本身就暗示越高越好——改成中性的「風格變化」，比較課前／課後
+              的主要風格徽章，而不是比較分數。 */}
+          {gain && profileMode && (
+            <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
+              <h3 className="mb-1 flex items-center text-base font-bold text-slate-700">
+                風格變化
+                <InfoTip text="風格輪廓沒有好壞之分，這裡只是比較兩次評測落在哪一種風格組合，看看是否隨情境或刻意練習而有所不同。" />
+              </h3>
+              <p className="mb-4 text-xs text-slate-400">
+                {labelledPhase ? '課前評測' : '首次'} → {labelledPhase ? '課後複測' : '最新'}
+                （{formatDateShort(preSub.createdAt)} → {formatDateShort(postSub.createdAt)}）
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <span
+                  className="rounded-full px-4 py-1.5 text-sm font-bold text-white"
+                  style={{ background: preSub.result.level.color }}
+                >
+                  {preSub.result.level.badge}
+                </span>
+                <span className="text-xl font-bold text-slate-300">→</span>
+                <span
+                  className="rounded-full px-4 py-1.5 text-sm font-bold text-white"
+                  style={{ background: postSub.result.level.color }}
+                >
+                  {postSub.result.level.badge}
+                </span>
+              </div>
+              <p className="mt-4 text-center text-sm text-slate-500">
+                {preSub.result.level.badge === postSub.result.level.badge
+                  ? '兩次評測風格一致，看起來相當穩定。'
+                  : '風格組合有所不同，這很正常——可能反映當下情境或角色的差異，不代表進步或退步。'}
+              </p>
+            </section>
+          )}
+
+          {gain && !profileMode && (
             <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
               <h3 className="mb-1 flex items-center text-base font-bold text-slate-700">
                 學習增益
@@ -300,7 +350,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
             </section>
           )}
 
-          {hasTrend && (
+          {hasTrend && !profileMode && (
             <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7 print:hidden">
               <h3 className="mb-4 text-base font-bold text-slate-700">歷次總分趨勢</h3>
               <TrendChart
@@ -314,7 +364,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
           {hasTrend && (
             <section className="mt-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7 print:hidden">
               <h3 className="mb-4 text-base font-bold text-slate-700">
-                構面進步追蹤
+                {profileMode ? '構面位移追蹤' : '構面進步追蹤'}
                 <span className="ml-2 text-sm font-normal text-slate-400">首次 vs 最新</span>
               </h3>
               <div className="overflow-x-auto">
@@ -324,7 +374,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
                       <th className="py-2 pr-4 text-left font-medium">構面</th>
                       <th className="py-2 pr-4 text-right font-medium">首次</th>
                       <th className="py-2 pr-4 text-right font-medium">最新</th>
-                      <th className="py-2 text-right font-medium">變化</th>
+                      <th className="py-2 text-right font-medium">{profileMode ? '位移' : '變化'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -343,6 +393,8 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
                         <td className="py-2.5 text-right font-bold">
                           {d.delta === null || d.delta === 0 ? (
                             <span className="text-slate-400">—</span>
+                          ) : profileMode ? (
+                            <span className="text-slate-500">{d.delta > 0 ? `← +${d.delta}` : `← ${d.delta}`}</span>
                           ) : d.delta > 0 ? (
                             <span className="text-emerald-600">+{d.delta} ↑</span>
                           ) : (

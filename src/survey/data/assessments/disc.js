@@ -4,6 +4,9 @@ export const NAME_EN = 'DISC Behavioral Style Assessment';
 export const ABBR = 'DISC';
 export const DESCRIPTION = '4 大構面、32 題李克特量表（含反向題），呈現行為風格輪廓而非能力高低——沒有哪一型比較好，只有比較像你。';
 export const SUPPORTS_360 = true;
+// 360° 他評頁「您正在評估「王小明」＿＿」的語尾。DISC 評的是風格而非「行為
+// 表現」（沒有優劣），沿用 L9D 那套「行為表現」用語會暗示有高下之分，故客製。
+export const RATER_PROMPT = '在工作中展現的行為風格';
 
 // 跟 ai-competency／leadership-9d 的「總分→成熟度」模型不同：DISC 四個構面是
 // 平行的行為風格，不是可以加總、排優劣的能力項目。開啟這個旗標後 buildResult()

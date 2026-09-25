@@ -239,14 +239,32 @@ export function buildOverallSummary(result, config, seedBase = 0) {
  * 哪裡」的話。跟 buildOverallSummary（單次報告的構面總評）刻意分開：這裡看的是
  * 跨次比較，不看單次的構面強弱。
  * @param {Array} filtered 依時間新到舊排序的作答紀錄（需含 id, createdAt, result{total, assessmentName, level, dimensions}）
+ * @param {boolean} profileMode 風格輪廓型題庫（如 DISC）為 true——構面沒有優劣，
+ *   總分與「進步／退步」用語沒有意義，改用風格徽章（result.level.badge）敘事。
  * @returns {string} 段落文字；沒有資料時回傳空字串
  */
-export function buildJourneyNarrative(filtered) {
+export function buildJourneyNarrative(filtered, profileMode = false) {
   if (!Array.isArray(filtered) || filtered.length === 0) return '';
   const latest = filtered[0];
   const oldest = filtered[filtered.length - 1];
   const count = filtered.length;
   const seed = hashStr(`${latest.id ?? latest.createdAt}|journey|${count}`);
+
+  if (profileMode) {
+    if (count === 1) {
+      const templates = [
+        () => `這是您在「${latest.result.assessmentName ?? '本評量'}」的第一次作答，目前呈現的風格是「${latest.result.level.badge}」。風格輪廓沒有好壞之分，之後每一次複測都會被記錄下來，看看它是否隨情境或刻意練習而有所不同。`,
+        () => `您剛完成第一次評測，落在「${latest.result.level.badge}」。這個結果會是您日後回頭比較的起點——之後的複測不是要看「進步了沒」，而是看風格有沒有變化。`,
+      ];
+      return pick(templates, seed)();
+    }
+    const sameStyle = latest.result.level.badge === oldest.result.level.badge;
+    const templates = [
+      () => `您已累積 ${count} 次作答，風格${sameStyle ? `穩定落在「${latest.result.level.badge}」` : `從「${oldest.result.level.badge}」變成「${latest.result.level.badge}」`}。這類風格輪廓評測本來就可能隨情境不同而有變化，不代表進步或退步。`,
+      () => `從第一次的「${oldest.result.level.badge}」開始，累積 ${count} 次作答，${sameStyle ? '目前依然穩定落在同一種風格' : `目前呈現「${latest.result.level.badge}」`}。風格沒有優劣之分，重點是它跟您實際的情境與角色是否相符。`,
+    ];
+    return pick(templates, seed)();
+  }
 
   if (count === 1) {
     const templates = [

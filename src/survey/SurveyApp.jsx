@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, Check } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAssessment } from './data/assessments/index.js';
 import { answeredCount, buildResult, isComplete, unansweredQuestionIds } from './utils/scoring';
 import { readJSON, writeJSON } from './utils/storage';
@@ -31,6 +31,10 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  // 長問卷（如 L9D 90 題）以構面分頁，避免一次攤開太多題目造成疲勞作答；
+  // 題數較少的題庫（≤40 題）維持單頁，行為與過去完全相同。
+  const paginated = !!config && config.DIMENSIONS.length > 1 && config.TOTAL_QUESTIONS > 40;
+  const [pageIndex, setPageIndex] = useState(0);
 
   const questionRefs = useRef({});
   const resultRef = useRef(null);
@@ -70,13 +74,31 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     [storageKey],
   );
 
+  // 捲動並聚焦到某一題（若跨頁，先切到該題所在分頁，等下一輪渲染完成再捲動——
+  // ref 只有在該分頁真正被渲染出來後才會存在）。
+  const focusQuestion = useCallback((qid) => {
+    requestAnimationFrame(() => {
+      const el = questionRefs.current[qid];
+      if (el?.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }, []);
+
   const handleSubmit = useCallback(async () => {
     if (!config) return;
     if (!isComplete(answers, config)) {
       const missing = unansweredQuestionIds(answers, config);
       setInvalidIds(missing);
-      const first = questionRefs.current[missing[0]];
-      if (first?.scrollIntoView) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const firstMissingId = missing[0];
+      if (paginated) {
+        const dimIdx = config.DIMENSIONS.findIndex((d) => d.questions.some((q) => q.id === firstMissingId));
+        if (dimIdx !== -1 && dimIdx !== pageIndex) {
+          setPageIndex(dimIdx);
+          // 分頁切換後 DOM 要多一輪渲染才會出現該題目，rAF 兩層確保拿到最新的 ref。
+          requestAnimationFrame(() => focusQuestion(firstMissingId));
+          return;
+        }
+      }
+      focusQuestion(firstMissingId);
       return;
     }
     setInvalidIds([]);
@@ -93,7 +115,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     } finally {
       setSubmitting(false);
     }
-  }, [answers, config, assessmentId, phase, rateeId, raterType, onSubmitted, user.id]);
+  }, [answers, config, assessmentId, phase, rateeId, raterType, onSubmitted, user.id, paginated, pageIndex, focusQuestion]);
 
   const handleRetake = useCallback(async () => {
     if (!(await confirm('確定要重新作答嗎？目前畫面上的作答內容將被清空（先前已送出的紀錄不受影響）。'))) return;
@@ -102,6 +124,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     setResult(null);
     setInvalidIds([]);
     setCopied(false);
+    setPageIndex(0);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [storageKey, confirm]);
 
@@ -124,6 +147,28 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
   }
 
   const { DIMENSIONS, TOTAL_QUESTIONS } = config;
+  const dimensionsToRender = DIMENSIONS
+    .map((dim, di) => ({ dim, di }))
+    .filter(({ di }) => !paginated || di === pageIndex);
+  const visibleQuestionIds = dimensionsToRender.flatMap(({ dim }) => dim.questions.map((q) => q.id));
+  const isLastPage = !paginated || pageIndex === DIMENSIONS.length - 1;
+
+  // 鍵盤快速作答：選完分數後跳到「目前分頁內」的下一題；跨到下一段仍要靠
+  // 「下一段」按鈕或分頁圓點手動切換，避免使用者按數字鍵不小心就翻頁。
+  const handleAdvance = (qid) => {
+    const idx = visibleQuestionIds.indexOf(qid);
+    if (idx === -1 || idx === visibleQuestionIds.length - 1) return;
+    const nextId = visibleQuestionIds[idx + 1];
+    const nextEl = questionRefs.current[nextId];
+    const radio = nextEl?.querySelector('input[type="radio"]');
+    radio?.focus();
+    nextEl?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  };
+
+  const goToPage = (i) => {
+    setPageIndex(i);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -134,22 +179,19 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
         </header>
 
         <div className="mt-5 rounded-xl bg-slate-50 p-4 text-[15px] leading-relaxed text-slate-600">
-          歡迎填寫本評測系統。共 <strong className="text-slate-700">{TOTAL_QUESTIONS} 題</strong>，請依真實狀況勾選。
+          歡迎填寫本評測系統。共 <strong className="text-slate-700">{TOTAL_QUESTIONS} 題</strong>
+          {paginated && <>，分成 <strong className="text-slate-700">{DIMENSIONS.length} 段</strong>，可分段作答</>}
+          ，請依真實狀況勾選。
           <br />
           <span className="mt-1 inline-block font-medium text-slate-700">
             評分標準：1 分（非常不同意）～ 5 分（非常同意）
-            {DIMENSIONS.some((d) => d.questions.some((q) => q.reversed)) && (
-              <span className="ml-2 inline-flex items-center gap-1 text-amber-600">
-                · <RefreshCw className="h-3 w-3" /> 標示題目為反向計分
-              </span>
-            )}
           </span>
         </div>
 
         {raterType && raterType !== 'self' && rateeName && (
           <div className="mt-4 rounded-xl border border-brass-200 bg-brass-50 px-4 py-3 text-sm">
             <span className="font-semibold text-brass-600">您正在評估「{rateeName}」</span>
-            <span className="ml-1 text-brass-600">的領導力行為表現</span>
+            <span className="ml-1 text-brass-600">{config.RATER_PROMPT ?? '的日常行為表現'}</span>
           </div>
         )}
 
@@ -193,8 +235,40 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           </p>
         )}
 
+        {paginated && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 px-4 py-2.5">
+            <span className="text-sm font-semibold text-slate-600">
+              第 {pageIndex + 1} / {DIMENSIONS.length} 段：{DIMENSIONS[pageIndex].subtitle}
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {DIMENSIONS.map((d, i) => {
+                const done = d.questions.every((q) => answers[q.id] !== undefined);
+                const active = i === pageIndex;
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => goToPage(i)}
+                    aria-label={`第 ${i + 1} 段：${d.subtitle}${done ? '（已完成）' : ''}`}
+                    aria-current={active ? 'step' : undefined}
+                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                      active
+                        ? 'bg-ink-700 text-white'
+                        : done
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-white text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {done && !active ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-          {DIMENSIONS.map((dim, di) => (
+          {dimensionsToRender.map(({ dim, di }) => (
             <section key={dim.id} className="mt-7 first:mt-2">
               <h2
                 className="rounded-lg px-4 py-2.5 text-[15px] font-bold text-white"
@@ -211,6 +285,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
                     question={q}
                     value={answers[q.id]}
                     onChange={handleChange}
+                    onAdvance={handleAdvance}
                     invalid={invalidIds.includes(q.id)}
                     inputRef={(el) => (questionRefs.current[q.id] = el)}
                   />
@@ -230,19 +305,59 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
             </p>
           )}
 
-          <p className="mt-4 text-center text-xs text-slate-400">
-            {autoPhase
-              ? `將以「${phase === 'post' ? '課後複測' : '課前評測'}」身份送出。`
-              : `將以「${phase === 'post' ? '課後複測' : '課前評測'}」身份送出，如需變更請至上方調整。`}
-          </p>
+          {isLastPage && (
+            <p className="mt-4 text-center text-xs text-slate-400">
+              {autoPhase
+                ? `將以「${phase === 'post' ? '課後複測' : '課前評測'}」身份送出。`
+                : `將以「${phase === 'post' ? '課後複測' : '課前評測'}」身份送出，如需變更請至上方調整。`}
+            </p>
+          )}
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="btn-primary mt-2 w-full py-3.5 text-lg"
-          >
-            {submitting ? '送出中…' : '送出評測，立即查看落點分析'}
-          </button>
+          {paginated ? (
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => goToPage(pageIndex - 1)}
+                disabled={pageIndex === 0}
+                className="btn-secondary disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" /> 上一段
+              </button>
+              {isLastPage ? (
+                // 刻意用 type="button" + 直接呼叫 handleSubmit，不用 type="submit" 交給表單
+                // 原生送出：這顆按鈕跟上面的「下一段」共用同一個 DOM 位置，只有 type 不同——
+                // 點「下一段」切到最後一段那一下，React 會在同一次點擊事件內把這顆按鈕的
+                // type 從 button 同步改成 submit，瀏覽器原生的表單送出判定抓到的是「事件
+                // 處理當下」的 type，於是同一下點擊反而立刻誤觸送出（用還沒切換過去的舊
+                // answers 送出，導致假的「還有 90 題未答」）。改成 type="button" 完全避開
+                // 這個瀏覽器原生表單行為與 React 同步重渲染之間的競態。
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="btn-primary flex-1 py-3.5 text-lg"
+                >
+                  {submitting ? '送出中…' : '送出評測，立即查看落點分析'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => goToPage(pageIndex + 1)}
+                  className="btn-primary flex-1"
+                >
+                  下一段：{DIMENSIONS[pageIndex + 1].subtitle} <ChevronRight className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn-primary mt-2 w-full py-3.5 text-lg"
+            >
+              {submitting ? '送出中…' : '送出評測，立即查看落點分析'}
+            </button>
+          )}
         </form>
 
         {result && (
