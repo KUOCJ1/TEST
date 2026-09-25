@@ -24,6 +24,62 @@
 
 ---
 
+## 驗證標準與推進機制
+
+每個 Sprint 是否「完成、可以往下一個推進」，一律用以下**共同關卡（Gate）**加上
+該 Sprint 自己的**功能驗收表**共同判定。兩者都通過才算過關；任一項不過，
+該 Sprint 視為未完成，不推進到下一個。
+
+### 共同關卡（每個 Sprint 都要過，缺一不可）
+
+| # | 檢查 | 通過標準 | 指令 |
+|---|---|---|---|
+| G1 | 前端單元/元件測試 | 全綠，且新增/變更的行為有對應測試（不是只維持原有測試通過） | `npm test` |
+| G2 | 後端 API 測試 | 全綠 | `cd server && npm test` |
+| G3 | Lint | 0 problems | `npm run lint` |
+| G4 | Production build | 成功產出 `dist/`，無 build 期錯誤 | `npm run build` |
+| G5 | 後端可正常啟動並回應健康檢查 | `{"ok":true}` | 見下方「本機驗證環境」 |
+| G6 | 冒煙測試（Smoke） | 該 Sprint 涉及的畫面至少手動或以 Playwright 跑過一次黃金路徑，無 console error、無明顯版面錯亂（含手機寬度 375px 與深色模式各看一次） | 見各 Sprint 的「冒煙腳本」 |
+| G7 | Git 狀態 | 變更已 commit 並 `git push` 到 `claude/ai-assessment-survey-4vhjun`；GitHub Actions `deploy.yml` 綠燈 | `git push` + 確認 PR #7 的 check run 狀態 |
+| G8 | 文件同步 | 若該 Sprint 影響架構、API 或使用者操作流程，`PLATFORM_MANUAL.md` / `user-manual.md` 已同步更新 | 人工檢查 diff |
+
+> **關於「部署」**：這個工作環境是雲端沙箱，**無法 SSH 到正式 VPS**（見
+> `PLATFORM_MANUAL.md` 第 11 節）。因此本輪自動推進的「部署」定義為：
+> ① `npm run build` 產出前端靜態檔、② 後端以正式模式（`NODE_ENV=production`
+> 但 `secureCookies` 關閉以便本機 HTTP 測試）在本機啟動、③ 對這組本機「類正式」
+> 環境跑 G5、G6。**這不能取代正式站部署**——每個 Sprint 的變更會照常 push、
+> 開 PR，但實際上線到 `assess.rong-rise.com` 仍需要你在 VPS 上手動執行
+> `CLAUDE.md`／`DEPLOYMENT.md` 的部署指令。每個 Sprint 完成時我會照舊提供
+> 那段 VPS 指令。
+
+### 本機驗證環境（G5、G6 共用）
+
+```bash
+# 後端：正式模式啟動、資料庫用暫存檔（不動到任何真實資料）
+cd server
+DB_PATH=/tmp/sprint-verify/db.json JWT_SECRET=sprint-verify-secret \
+  ADMIN_EMAIL=admin@verify.local ADMIN_PASSWORD=Verify1234 \
+  PORT=4001 NODE_ENV=production node src/server.js &
+curl -s localhost:4001/api/health   # 應回 {"ok":true} → G5
+
+# 前端：build 後用 preview 服務靜態檔，模擬正式環境的靜態資源服務
+npm run build && npm run preview -- --port 4173
+```
+每個 Sprint 結束後關閉這兩個背景程序，下一個 Sprint 重新啟動一份乾淨的暫存資料庫，
+避免測資跨 Sprint 污染。
+
+### 推進規則
+
+1. 依編號順序（1→2→3→4→5）逐一進行，不並行。
+2. 每個 Sprint：實作 → 補測試 → 跑 G1–G6 → 全過才 commit + push（G7）→
+   視情況同步文件（G8）→ 記錄驗收結果 → 才開始下一個 Sprint。
+3. 若某項功能驗收失敗，先修正並重新跑該 Sprint 的 G1–G6，不允許帶著已知失敗
+   項目推進到下一個 Sprint。
+4. 待決 backlog（Email/LINE 通知、AI 個人化建議、PostgreSQL 遷移、多租戶）
+   不在本輪 5 個 Sprint 的自動推進範圍內，維持「需產品決策後再排入」。
+
+---
+
 ## Sprint 1　報告正確性與作答體驗
 
 **目標**：DISC／識己® 這類「風格輪廓型」題庫的所有畫面都不再出現「分數越高
@@ -61,6 +117,13 @@
 `SurveyApp.jsx`、`data/assessments/*.js`（`RATER_PROMPT`）、`components/JourneyTimeline.jsx`（確認敘事不引用總分）、
 對應測試 `src/test/*`。
 
+### 冒煙腳本（G6）
+1. 以 DISC 帳號登入 → 作答並提交 → 「我的分析」：確認**沒有**總分增益卡／總分趨勢圖，改看到「風格變化」卡，構面位移不是綠紅配色。
+2. 同一帳號在目標面板新增目標：文案為中性引導語，非「最待強化」。
+3. 進 L9D 作答頁：確認題目旁**沒有** 🔄 反向題圖示，且分段導覽（第 N / 9 段）正常運作，跳到未答題會定位到正確分頁。
+4. 在 DISC 的 360° 他評頁確認提示文字不是「領導力行為表現」。
+5. 手機寬度（375px）與深色模式下重複步驟 1、3，畫面無跑版。
+
 ### 風險
 - 分頁作答需確保「未答題標紅並跳轉」在跨頁時仍正確（跳到該題所在分頁）。
 - 移除反向題標示後，舊版 PDF 手冊若有截圖需一併更新。
@@ -90,6 +153,14 @@
 `AppShell.jsx`（抽出 `AssessmentHome` 至 `home/HomePage.jsx`）、`components/AssessmentCard.jsx`、
 `components/OnboardingBanner.jsx`、`api/client.js`；後端視需要新增 `GET /api/me/summary`
 （一次回傳班級、階段、待評 360°、目標統計，避免首頁打 5 支 API）。
+
+### 冒煙腳本（G6）
+1. 尚未作答的學員登入 →`/home` 最上方出現「下一步」卡片，指向「開始課前評測」。
+2. 完成課前、班級切到課後階段後重新整理 →「下一步」卡片改為「開始課後複測」。
+3. 有待評 360° 邀請的學員登入 → 卡片顯示「還有 N 位同事等你評分」，點擊導向 360° 頁。
+4. 題庫卡片檢查狀態標籤（未作答／課前已完成／課後已完成／可重測）與最近作答日期正確。
+5. 首次登入帳號看到 3 步驟導覽，關閉後重新整理不再出現。
+6. 手機寬度與深色模式下重複步驟 1。
 
 ### 風險
 - 「下一步」判斷邏輯需與 `SurveyApp.jsx` 的課前/課後自動判定**共用同一個函式**，避免兩處邏輯不一致。
@@ -122,9 +193,16 @@
 `server/src/routes/goals.js`（或新增 `readingList.js`）、`server/src/db.js`（`COLLECTIONS` 加新 collection）、
 `admin/AnalyticsTab.jsx`。
 
-### 設計決策（需產品負責人確認）
-- **閱讀紀錄的隱私**：比照目標的設計（「只有你看得到」），教練預設**看不到**個人學習清單；是否開放「學員主動分享給教練」請確認。
+### 設計決策（需產品負責人確認，本輪自動推進採用括號內的預設值）
+- **閱讀紀錄的隱私**：比照目標的設計（「只有你看得到」）（**預設：教練看不到**，之後如需開放「分享給教練」再加開關）。
 - **提醒管道**：本 Sprint 只做**站內提醒**（首頁卡片）。Email 提醒需要 SMTP 服務與寄件網域設定，列入待決 backlog（見文末）。
+
+### 冒煙腳本（G6）
+1. 學員在延伸閱讀點「加入清單」→ 進「我的學習」頁看到該篇、狀態未讀；標記已讀後狀態更新。
+2. 從一篇文章「加入目標」→ 建立新目標，行動項目預填「閱讀：〈標題〉」與連結。
+3. 建立目標時設定預計檢視日為過去日期（測試用）→「下一步」卡片出現複測提醒。
+4. 有課前/課後兩筆資料且該構面設有目標的帳號 → 目標卡片顯示「設定時分數 → 最新分數」。
+5. 管理後台看得到延伸閱讀點擊數／加入清單數彙總（非個人明細）。
 
 ---
 
@@ -155,6 +233,13 @@
 `coach/CommentEditor.jsx`、`components/GroupPrintableReport.jsx`、`server/src/routes/coach.js`
 （成效報告彙總端點、範本 CRUD）。
 
+### 冒煙腳本（G6）
+1. 教練登入 → 班級頁「作答進度」正確顯示課前/課後 x/N 與未完成名單。
+2. 點「複製提醒訊息」→ 剪貼簿內容包含班名、截止日、報到連結。
+3. 至少一位成員有課前+課後資料的班級 → 成效報告顯示平均變化與配對樣本數；風格型題庫班級顯示風格分布變化而非總分。
+4. 儲存一則評語範本 → 套用到另一位學員的評語欄位。
+5. 匯出班級 CSV → 檔案可開啟、欄位正確，且不再匯入 `xlsx` 套件。
+
 ### 風險
 - 成效報告的「配對樣本」邏輯要與 `groupId` 歸屬規則（見 `CLAUDE.md` 班級管理章節）一致，舊資料 `groupId=null` 的相容邏輯需一併考慮。
 
@@ -180,6 +265,12 @@
 ### 主要修改檔案
 `admin/BatchUploadSection.jsx`、`package.json`、`e2e/`（新增）、`server/test/`、
 `components/PrintableReport.jsx`、`coach/GroupWorkspace.jsx`、`src/index.css`、`deploy/`、`DEPLOYMENT.md`。
+
+### 冒煙腳本（G6）
+1. `npx playwright test` 三條黃金路徑全過。
+2. `npm audit --omit=dev` 無 high/critical。
+3. 批次匯入頁上傳一份範本 Excel，成功解析並匯入。
+4. axe 掃描 `/home`、作答頁、報告頁、教練後台、管理後台 0 critical。
 
 ---
 
