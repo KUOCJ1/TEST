@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Trash2, Download, Target, Star, Plus, X, FileText, Eye, Copy,
+  Trash2, Download, Target, Star, Plus, X, FileText, Eye, Copy, Scale,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
@@ -17,6 +17,9 @@ import PhaseBadge from '../components/PhaseBadge';
 import GroupTimelineCard from '../components/GroupTimelineCard';
 import QrCodeCard from '../components/QrCodeCard';
 import MemberDrawer from './MemberDrawer';
+import ProgressPanel from './ProgressPanel';
+import GroupGainReport from './GroupGainReport';
+import CohortCompare from './CohortCompare';
 import { useToast } from '../components/useToast';
 import { useConfirm } from '../components/useConfirm';
 
@@ -72,6 +75,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
   const [showGroupReport, setShowGroupReport] = useState(false);
   const [pdfMemberIndex, setPdfMemberIndex] = useState(null);
   const [showBatchReport, setShowBatchReport] = useState(false);
+  const [showCohortCompare, setShowCohortCompare] = useState(false);
   const showToast = useToast();
   const confirm = useConfirm();
 
@@ -335,11 +339,18 @@ export default function GroupWorkspace({ users, currentUserId }) {
           底下熱力圖表格等內容的最小內容寬度撐開，導致整個頁面被推出可視範圍橫向
           捲動，而不是表格自己的 overflow-x-auto 生效（F-04）。 */}
       <div className="min-w-0 lg:col-span-2">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="font-semibold text-slate-700">班別列表</h3>
-          <button type="button" onClick={() => setCreating(true)} className="btn-primary btn-sm">
-            <Plus className="h-3.5 w-3.5" /> 建立班別
-          </button>
+          <div className="flex gap-2">
+            {groups.length >= 2 && (
+              <button type="button" onClick={() => setShowCohortCompare(true)} className="btn-secondary btn-sm">
+                <Scale className="h-3.5 w-3.5" /> <span className="hidden sm:inline">比較梯次</span>
+              </button>
+            )}
+            <button type="button" onClick={() => setCreating(true)} className="btn-primary btn-sm">
+              <Plus className="h-3.5 w-3.5" /> 建立班別
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -479,6 +490,8 @@ export default function GroupWorkspace({ users, currentUserId }) {
 
             {section === 'overview' && (
               <div className="space-y-5">
+                <ProgressPanel group={groupDetail.group} members={directory} submissions={patchedSubmissions} />
+
                 {groupStats && groupStats.respondents === 0 ? (
                   <div className="rounded-xl bg-white px-6 py-12 text-center text-slate-400 shadow-sm ring-1 ring-slate-100">
                     此班別尚無成員完成作答，待有作答資料後即可查看分析。
@@ -612,6 +625,8 @@ export default function GroupWorkspace({ users, currentUserId }) {
                     )}
                   </>
                 )}
+
+                <GroupGainReport group={groupDetail.group} submissions={patchedSubmissions} />
 
                 {/* 班級整體評語（教練撰寫，學員在分析頁看得到） */}
                 <div className="rounded-xl border border-brass-200 bg-brass-50 p-4">
@@ -878,6 +893,10 @@ export default function GroupWorkspace({ users, currentUserId }) {
           benchmark={groupBenchmark}
           onClose={() => setShowBatchReport(false)}
         />
+      )}
+
+      {showCohortCompare && (
+        <CohortCompare groups={groups} onClose={() => setShowCohortCompare(false)} />
       )}
     </div>
   );

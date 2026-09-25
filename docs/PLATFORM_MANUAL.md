@@ -314,6 +314,17 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 ### 教練
 - 教練後台總覽：自己管理的班級列表
 - 班級總覽與評語：整班雷達圖平均、落點分布、對個別學員最新一筆作答留言
+- **作答進度追蹤**（`coach/ProgressPanel.jsx`）：課前／課後各自完成人數，未完成
+  者名單，一鍵「複製提醒訊息」（含截止日、報到連結，可直接貼去 LINE／Email）
+- **班級學習成效**（`coach/GroupGainReport.jsx`，邏輯在
+  `utils/analytics.js` 的 `computeGroupGain()`）：課前 vs 課後只計算「配對
+  樣本」（同一人課前課後都做過才算），一般題庫顯示平均總分增益與各構面增益，
+  PROFILE_MODE 題庫改顯示風格分布變化，不暗示分數有好壞
+- **評語範本**（`coach/CommentEditor.jsx`）：儲存/套用個人範本（存在
+  localStorage，不跨裝置同步），可一鍵插入學員最強／待強化構面名稱
+- **比較梯次**（`coach/CohortCompare.jsx`）：選同一題庫的兩個班級，疊圖比較
+  平均雷達圖與落點分布
+- 匯出班級成績 CSV（`utils/csvExport.js`，純前端 Blob 產生，不依賴 `xlsx`）
 - 成員與設定：加人/移除、設定課前課後階段、QR Code 報到（產生/撤銷/投影）
 - 360° 進度追蹤：誰已評完誰還沒
 - AI 教練助理：協助撰寫評語

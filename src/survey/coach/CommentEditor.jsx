@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Bookmark, BookmarkPlus, Trash2 } from 'lucide-react';
 import { api } from '../api/client';
-import { readJSON, writeJSON } from '../utils/storage';
+import { readJSON, writeJSON, uid } from '../utils/storage';
 
 const draftKey = (id) => `aiassess_comment_draft_${id}_v1`;
+const TEMPLATES_KEY = 'aiassess_comment_templates_v1';
+
+// 評語範本是教練個人的寫作素材庫，不是評測資料本身，跟草稿一樣存在本機
+// localStorage 即可——不需要跨裝置同步，也不必為此另外開一支後端 API。
+function loadTemplates() {
+  return readJSON(TEMPLATES_KEY, []);
+}
 
 export default function CommentEditor({ submission, existingComment, onSaved, onCancel }) {
   const [text, setText] = useState(() => {
@@ -17,6 +24,10 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [templates, setTemplates] = useState(loadTemplates);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [namingTemplate, setNamingTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState('');
 
   const timerRef = useRef(null);
   useEffect(() => {
@@ -30,6 +41,37 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
   const setTip = (i, v) => setTips((prev) => prev.map((t, j) => (j === i ? v : t)));
   const addTip = () => setTips((prev) => [...prev, '']);
   const removeTip = (i) => setTips((prev) => prev.filter((_, j) => j !== i));
+
+  const persistTemplates = (list) => {
+    setTemplates(list);
+    writeJSON(TEMPLATES_KEY, list);
+  };
+
+  const applyTemplate = () => {
+    const t = templates.find((x) => x.id === selectedTemplateId);
+    if (!t) return;
+    setText(t.text);
+    setTips(t.tips.length ? t.tips : ['']);
+  };
+
+  const saveAsTemplate = () => {
+    if (!templateName.trim() || !text.trim()) return;
+    const template = { id: uid('tpl'), name: templateName.trim(), text, tips: tips.filter((t) => t.trim()) };
+    persistTemplates([template, ...templates]);
+    setTemplateName('');
+    setNamingTemplate(false);
+  };
+
+  const removeTemplate = (id) => {
+    persistTemplates(templates.filter((t) => t.id !== id));
+    if (selectedTemplateId === id) setSelectedTemplateId('');
+  };
+
+  // 一鍵插入這位學員的最強／待強化構面名稱，不必自己回頭翻報告找怎麼稱呼。
+  const insertDimension = (dim) => {
+    if (!dim?.subtitle) return;
+    setText((prev) => (prev ? `${prev}「${dim.subtitle}」` : `「${dim.subtitle}」`));
+  };
 
   const handleSave = async () => {
     if (!text.trim()) { setError('請輸入評語內容'); return; }
@@ -49,11 +91,79 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
     }
   };
 
+  const strongest = submission.result?.strongest;
+  const weakest = submission.result?.weakest;
+
   return (
     <div className="mt-3 rounded-xl border border-brass-200 bg-brass-50 p-4">
       <p className="mb-2 text-sm font-semibold text-brass-600">
         {existingComment ? '編輯評語' : '新增評語'}
       </p>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-white/60 p-2">
+        {templates.length > 0 && (
+          <>
+            <select
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+              className="input !w-auto !py-1.5 text-xs"
+            >
+              <option value="">選擇我的範本…</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <button type="button" onClick={applyTemplate} disabled={!selectedTemplateId} className="btn-secondary btn-sm">
+              <Bookmark className="h-3.5 w-3.5" /> 套用
+            </button>
+            {selectedTemplateId && (
+              <button
+                type="button"
+                onClick={() => removeTemplate(selectedTemplateId)}
+                aria-label="刪除範本"
+                className="btn-icon"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </>
+        )}
+        {namingTemplate ? (
+          <div className="flex items-center gap-1.5">
+            <input
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="範本名稱"
+              className="input !w-32 !py-1.5 text-xs"
+            />
+            <button type="button" onClick={saveAsTemplate} disabled={!templateName.trim() || !text.trim()} className="btn-primary btn-sm">
+              儲存
+            </button>
+            <button type="button" onClick={() => setNamingTemplate(false)} className="btn-ghost btn-sm">取消</button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setNamingTemplate(true)} className="btn-ghost btn-sm">
+            <BookmarkPlus className="h-3.5 w-3.5" /> 另存為範本
+          </button>
+        )}
+      </div>
+
+      {(strongest || weakest) && (
+        <div className="mb-2 flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-slate-400">快速插入：</span>
+          {strongest && (
+            <button type="button" onClick={() => insertDimension(strongest)} className="chip bg-emerald-50 text-emerald-600 hover:bg-emerald-100">
+              最強：{strongest.subtitle}
+            </button>
+          )}
+          {weakest && (
+            <button type="button" onClick={() => insertDimension(weakest)} className="chip bg-amber-50 text-amber-600 hover:bg-amber-100">
+              待強化：{weakest.subtitle}
+            </button>
+          )}
+        </div>
+      )}
 
       <textarea
         value={text}
