@@ -38,8 +38,16 @@ function publicGoal(g) {
     createdAt: g.createdAt,
     updatedAt: g.updatedAt,
     achievedAt: g.achievedAt,
+    // 設定目標當下，該構面的平均分——用來在複測後顯示「設定時 → 最新」的變化，
+    // 不必回頭比對歷史作答紀錄。沒有指定構面（dimensionId 為 null）時一併為 null。
+    baselineAverage: typeof g.baselineAverage === 'number' ? g.baselineAverage : null,
+    // 建議複測日：預設建立後 4 週，可由使用者建立時調整。用於首頁「下一步」
+    // 提醒使用者該回來複測了（見 src/survey/utils/nextStep.js）。
+    reviewDate: g.reviewDate ?? null,
   };
 }
+
+const FOUR_WEEKS_MS = 28 * 24 * 60 * 60 * 1000;
 
 /**
  * 個人發展目標 — 讓學員針對某個構面訂下目標與具體行動，下次回來可以打勾。
@@ -62,7 +70,7 @@ export function createGoalsRouter({ db, requireAuth }) {
   });
 
   router.post('/goals', requireAuth, (req, res) => {
-    const { assessmentId, dimensionId, dimensionName, text, actions } = req.body ?? {};
+    const { assessmentId, dimensionId, dimensionName, text, actions, baselineAverage, reviewDate } = req.body ?? {};
     const cleanText = sanitizeText(text);
     if (!cleanText) {
       return res.status(400).json({ code: 'INVALID_GOAL', error: '請輸入目標內容' });
@@ -73,6 +81,13 @@ export function createGoalsRouter({ db, requireAuth }) {
       return res.status(400).json({ code: 'TOO_MANY_GOALS', error: '目標數量已達上限，請先刪除不再追蹤的目標' });
     }
     const now = new Date().toISOString();
+    // 建立時前端可能算不出 baselineAverage（如目標沒有指定構面），或沒帶
+    // reviewDate（用預設 4 週後）——兩者都做寬鬆檢查，不合法就退回安全預設值，
+    // 而不是整個 400 拒絕（這兩個欄位都只是輔助資訊，不影響目標本身能不能建立）。
+    const cleanBaseline = typeof baselineAverage === 'number' && Number.isFinite(baselineAverage) ? baselineAverage : null;
+    const cleanReviewDate = typeof reviewDate === 'string' && !Number.isNaN(Date.parse(reviewDate))
+      ? reviewDate
+      : new Date(Date.now() + FOUR_WEEKS_MS).toISOString();
     const goal = {
       id: randomUUID(),
       userId: req.user.id,
@@ -84,6 +99,8 @@ export function createGoalsRouter({ db, requireAuth }) {
       createdAt: now,
       updatedAt: now,
       achievedAt: null,
+      baselineAverage: cleanBaseline,
+      reviewDate: cleanReviewDate,
     };
     db.data.goals.push(goal);
     db.persist();

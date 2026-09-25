@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Download, LogOut, CircleHelp,
-  ClipboardList, ChartColumn, UsersRound, GraduationCap, Shield, User,
+  ClipboardList, ChartColumn, UsersRound, GraduationCap, Shield, User, BookOpen,
 } from 'lucide-react';
 import { useAuth } from './auth/useAuth';
 import { api } from './api/client';
@@ -15,6 +15,7 @@ import RaterSetup from './components/RaterSetup';
 import SurveyApp from './SurveyApp';
 import UserDashboard from './dashboard/UserDashboard';
 import MultiRaterHome from './analysis/MultiRaterHome';
+import MyLearningPage from './learning/MyLearningPage';
 import ProfilePage from './profile/ProfilePage';
 import HelpModal from './components/HelpModal';
 import OnboardingBanner from './components/OnboardingBanner';
@@ -79,7 +80,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
 
   if (loading) return <LoadingState />;
 
-  const nextStep = computeNextStep({ assessments, mySubmissions, myGroups, groupMembers });
+  const nextStep = computeNextStep({ assessments, mySubmissions, myGroups, groupMembers, goals });
   // 班級狀態條優先顯示「下一步」正在講的那個班；沒有的話（例如下一步是 360°
   // 他評或看報告）退回顯示第一個進行中的班別，讓使用者至少知道自己現在的
   // 班級狀態，而不是完全不顯示。
@@ -92,7 +93,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
       <OnboardingBanner role="user" />
       <NextStepCard nextStep={nextStep} onStartSurvey={onStartSurvey} onGoTo360={onGoTo360} onViewAnalysis={onViewAnalysis} />
       <GroupStatusBar group={statusGroup} />
-      <GoalProgressChip goals={goals} onClick={() => navigate('/analysis')} />
+      <GoalProgressChip goals={goals} onClick={() => navigate('/learning')} />
       <header className="mb-6">
         <h2 className="text-2xl font-extrabold text-slate-800">選擇評量</h2>
         <p className="mt-1 text-sm text-slate-500">選擇一個題庫開始作答，或點擊「查看分析」瀏覽歷次結果。</p>
@@ -202,6 +203,7 @@ export default function AppShell() {
     { id: 'home', label: '我的評量', shortLabel: '評量', path: '/home', Icon: ClipboardList },
     { id: 'analysis', label: '我的分析', shortLabel: '分析', path: '/analysis', Icon: ChartColumn },
     { id: '360', label: '360° 評測', shortLabel: '360°', path: '/360', Icon: UsersRound },
+    { id: 'learning', label: '我的學習', shortLabel: '學習', path: '/learning', Icon: BookOpen },
     ...(isCoach && !isAdmin ? [{ id: 'coach', label: '教練後台', shortLabel: '教練', path: '/coach', Icon: GraduationCap }] : []),
     ...(isAdmin ? [
       { id: 'coach', label: '教練後台', shortLabel: '教練', path: '/coach', Icon: GraduationCap },
@@ -391,6 +393,8 @@ export default function AppShell() {
             )}
           />
         )}
+
+        <Route path="/learning" element={<MyLearningPage />} />
 
         <Route path="/profile" element={<ProfilePage />} />
 

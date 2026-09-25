@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import { asyncHandler } from '../lib/helpers.js';
 import { getTopicKeyword } from '../lib/learningResourceTopics.js';
 
@@ -73,8 +74,8 @@ function normalizeDimensionIds(raw) {
   return [...new Set(list.filter((id) => typeof id === 'string' && id))].slice(0, MAX_DIMENSIONS_PER_REQUEST);
 }
 
-/** @param {{requireAuth}} deps */
-export function createLearningResourcesRouter({ requireAuth }) {
+/** @param {{db, requireAuth}} deps */
+export function createLearningResourcesRouter({ db, requireAuth }) {
   const router = Router();
 
   // 支援帶多個 dimensionId（?dimensionId=a&dimensionId=b&...），一次評測結果
@@ -95,6 +96,27 @@ export function createLearningResourcesRouter({ requireAuth }) {
 
     res.json({ byDimension });
   }));
+
+  // 點擊延伸閱讀文章連結時，前端會 fire-and-forget 呼叫這支記一筆，供管理後台
+  // 「延伸閱讀使用情形」彙總（見 routes/admin.js 的 /learning-resources/stats）。
+  // 不影響使用者體驗：失敗也不擋文章開啟，前端不等待這支的回應。
+  router.post('/learning-resources/track-click', requireAuth, (req, res) => {
+    const { assessmentId, dimensionId, url } = req.body ?? {};
+    if (typeof assessmentId !== 'string' || typeof dimensionId !== 'string' || !assessmentId || !dimensionId) {
+      return res.status(400).json({ code: 'VALIDATION_ERROR', error: '缺少 assessmentId 或 dimensionId' });
+    }
+    db.data.learningResourceClicks ??= [];
+    db.data.learningResourceClicks.push({
+      id: randomUUID(),
+      userId: req.user.id,
+      assessmentId,
+      dimensionId,
+      url: typeof url === 'string' ? url.slice(0, 500) : null,
+      at: new Date().toISOString(),
+    });
+    db.persist();
+    res.status(204).end();
+  });
 
   return router;
 }

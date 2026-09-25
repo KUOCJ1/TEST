@@ -166,7 +166,7 @@ CREATE TABLE records (
 呼叫端介面因此跟舊版純 JSON 檔儲存完全相同，遷移對業務邏輯是透明的。這個
 設計適合**課程規模、低併發**的使用情境（見第 13 節的規模限制）。
 
-五個 collection 的角色：
+七個 collection 的角色：
 
 | Collection | 內容 | 誰寫入 |
 |---|---|---|
@@ -174,7 +174,9 @@ CREATE TABLE records (
 | `submissions` | 每一次評測作答（answers、算出來的 result、groupId、raterId/rateeId 用於 360°、教練評語） | 學員提交、教練留言 |
 | `assessments` | 題庫 metadata（id/name/description/enabled），**不含題目本體**——題目在前端 `src/survey/data/assessments/*.js` | 開機自動種子（見下） |
 | `groups` | 班級（成員名單、joinCode、startDate、發佈狀態） | 教練建立/管理 |
-| `goals` | 個人發展目標（UserDashboard 的目標追蹤功能） | 學員自己 |
+| `goals` | 個人發展目標（含 `baselineAverage`、`reviewDate`，見第 10.2 節學習閉環） | 學員自己 |
+| `readingList` | 學員從延伸閱讀加入的文章清單（url/title/excerpt/read…），只有本人讀得到（見 `routes/readingList.js`） | 學員自己 |
+| `learningResourceClicks` | 延伸閱讀文章點擊事件（純計數用，供管理後台彙總，不對外曝光個人身分） | 前端 fire-and-forget 記錄 |
 
 **新增題庫不需要寫遷移腳本**：`db.js` 開機時若 `assessments` 為空就用
 `KNOWN_ASSESSMENTS` 陣列全新種子；若已非空（例如正式站既有資料庫），會逐一
@@ -292,16 +294,20 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 ### 學員
 - 首頁「下一步」卡片（`components/NextStepCard.jsx`，判斷邏輯在
   `utils/nextStep.js`，純函式、有獨立測試）：依優先序告訴學員現在該做什麼
-  （課前未作答 → 課後未作答 → 還有 360° 他評待完成 → 看報告 → 新帳號開始第一次
-  評測），下方接班級狀態條（`GroupStatusBar.jsx`）與目標進度摘要
-  （`GoalProgressChip.jsx`）
+  （課前未作答 → 課後未作答 → 還有 360° 他評待完成 → 有目標到期該複測 → 看報告
+  → 新帳號開始第一次評測），下方接班級狀態條（`GroupStatusBar.jsx`）與目標
+  進度摘要（`GoalProgressChip.jsx`）
 - 首頁「我的評量」：列出可作答的題庫（依 `assessments.enabled` 過濾），每張
   卡片有狀態標籤（未作答／課前已完成／課後已完成／可重測）
 - 作答：Likert 量表逐題填答，支援中途離開續答
 - 360° 多元評測（支援的題庫）：除自評外可邀請他人對自己評分
 - 提交後即時看到報告（`ResultPanel`）：雷達圖、構面落點、客製建議、
-  （L9D）敘事報告、**延伸閱讀**（見第 10 節，放在報告最下方）
-- 「我的分析」（`UserDashboard`）：歷次作答趨勢、目標追蹤
+  （L9D）敘事報告、**延伸閱讀**（見第 10.2 節，放在報告最下方，可加入學習
+  清單或發展目標）
+- 「我的分析」（`UserDashboard`）：歷次作答趨勢、目標追蹤（含設定時 → 最新的
+  構面分數變化，見第 10.2 節）
+- 「我的學習」（`learning/MyLearningPage.jsx`）：彙整進行中目標與學習清單，
+  可標記文章已讀／移除
 - 個人設定：改密碼、基本資料
 - AI 評測小幫手：浮動聊天按鈕，依角色帶不同 system prompt 上下文
 
@@ -334,11 +340,12 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 | `auth.js` | `POST /auth/register`、`/login`、`/logout`、`GET /auth/me`、`PATCH /auth/profile`、`POST /auth/password`、`/reset-password` | 帳號生命週期，`register`/`login` 可帶 `joinCode` 自動入班 |
 | `submissions.js` | `POST /submissions`、`GET /submissions/me`、`GET /submissions/ratee/:rateeId`、`POST/DELETE /submissions/:id/comment` | 提交作答、查詢自己或（360°）被評者的紀錄、教練留言 |
 | `groups.js` | `POST /groups/join`、`GET /groups/mine`、`GET /groups/mine/members` | 學員視角的班級操作（已登入掃碼加入等） |
-| `goals.js` | `GET/POST/PATCH/DELETE /goals` | 個人發展目標 CRUD |
+| `goals.js` | `GET/POST/PATCH/DELETE /goals` | 個人發展目標 CRUD，`POST` 可帶 `baselineAverage`／`reviewDate`（見第 10.2 節） |
+| `readingList.js` | `GET/POST /reading-list`、`PATCH/DELETE /reading-list/:id` | 「我的學習」清單 CRUD（見第 10.2 節） |
 | `chat.js` | `POST /chat` | AI 小幫手，串流代理到 OpenRouter（見第 10 節） |
-| `learning-resources` (`learningResources.js`) | `GET /learning-resources` | 延伸閱讀，代理到第二大腦 API（見第 10 節） |
+| `learning-resources` (`learningResources.js`) | `GET /learning-resources`、`POST /learning-resources/track-click` | 延伸閱讀，代理到第二大腦 API；後者記錄文章點擊供管理後台彙總（見第 10 節） |
 | `public.js` | `GET /public/join/:code` | **免登入**，QR 報到落地頁查班級資訊，獨立 rate limit |
-| `admin.js`（掛 `/api/admin`，`requireAdmin`） | `GET/PATCH /assessments`、`GET /overview`、`PATCH /users/:id/role`、`POST /users/:id/reset-token`、`POST /batch-import` | |
+| `admin.js`（掛 `/api/admin`，`requireAdmin`） | `GET/PATCH /assessments`、`GET /overview`、`PATCH /users/:id/role`、`POST /users/:id/reset-token`、`POST /batch-import`、`GET /learning-resources/stats` | |
 | `coach.js`（掛 `/api/coach`，`requireCoach`） | `GET /overview`、`/directory`、`GET/POST /groups`、`GET/PUT/DELETE /groups/:id`、`POST /groups/:id/publish`、`POST/DELETE /groups/:id/join-code`、`POST /groups/:id/roster` | admin 角色也滿足 `requireCoach`，故管理者能用教練後台全部功能 |
 
 `admin`/`coach` 各自的 router 用 `router.use()` 統一掛驗證中介層，因此**必須**
@@ -462,6 +469,46 @@ URL」的邏輯，那是脆弱且已被證明會壞的做法。
 
 **環境變數**：`BRAIN_API_BASE_URL`（預設 `https://brain.rong-rise.com`），
 測試環境可覆寫指向 mock server。
+
+**點擊追蹤**：每篇文章的標題連結 `onClick` 會 fire-and-forget 呼叫
+`POST /api/learning-resources/track-click`（不等待回應、不擋文章開啟），寫進
+`learningResourceClicks` collection。管理後台「延伸閱讀使用情形」
+（`admin/LearningResourceStatsPanel.jsx` → `GET /api/admin/learning-resources/stats`）
+依 `assessmentId + dimensionId` 彙總這張表的點擊數，加上 `readingList` 的
+筆數當「加入清單數」——刻意只回傳彙總數字，不回傳是誰點的/存的，個人的
+學習清單本身（第 10.3 節）設計上只有本人看得到。
+
+### 10.3 學習閉環：目標 × 延伸閱讀 × 複測
+
+把「看到推薦文章」接到「真的去學、排進目標、之後回來複測看有沒有變化」，串成
+一條路徑（對應 docs/SPRINT_PLAN.md Sprint 3）：
+
+- **加入學習清單**：`LearningResources.jsx` 每篇文章旁的「加入清單」呼叫
+  `POST /api/reading-list`（`routes/readingList.js`）。同一篇文章重複加入是
+  **冪等**的（用 `userId + url` 找既有記錄，不會產生重複項目），比對是否已加入
+  只在前端做樂觀更新，不會先查一次再決定要不要送出。
+- **加入目標**：`AddToGoalButton.jsx`（`LearningResources.jsx` 內嵌）可以把一
+  篇文章變成既有目標的行動項目（`PATCH /goals/:id` 附加一條 `actions`），或
+  直接建立一個新目標（`POST /goals`，`text` 預設「深化「{構面}」」，
+  `actions[0].text` 是「閱讀：《標題》 網址」）。**刻意不跟 GoalPanel 共用
+  goals 狀態**——兩者可能同時出現在同一頁，也可能只有其中一個出現（SurveyApp
+  剛送出評測、還沒有 GoalPanel 的畫面），各自獨立抓自己的資料比硬湊一份共享
+  state 更不容易互相牽制；已知的取捨是若兩者同時在畫面上，透過 `AddToGoalButton`
+  加的行動要等重新整理才會反映在 `GoalPanel` 上。
+- **baselineAverage（設定時的基準分）**：建立目標時，若指定了構面，會把
+  `dimensions` prop 裡那個構面**當下**的 `average` 存進 `goal.baselineAverage`
+  （`GoalPanel.jsx`／`AddToGoalButton.jsx` 建立時算好傳給後端，後端只負責存，
+  不回頭查歷史作答）。之後 `GoalPanel` 的 `BaselineDelta` 子元件拿使用者
+  **目前正在看的這次**報告的同一個構面 `average` 跟 `baselineAverage` 相比，
+  顯示「設定目標時 X 分 → 最新 Y 分」。
+- **reviewDate（建議複測日）**：建立目標時可調整（`<input type="date">`，
+  預設今天 + 28 天）；沒帶的話後端（`routes/goals.js`）預設一樣是 4 週後。
+  到期（且目標尚未達成）時，`utils/nextStep.js` 的 `computeNextStep()` 會在
+  「下一步」卡片插入 `retest-reminder`，優先序排在「360° 待評分」之後、
+  「看報告」之前（見第 6 節學員功能列表）。
+- **「我的學習」頁**（`learning/MyLearningPage.jsx`，路由 `/learning`）：
+  彙整進行中目標（含 reviewDate 提示）與整份學習清單（可標記已讀／移除），
+  是目標與清單的**總覽 + 管理**入口；建立/編輯動作仍在各評量報告頁進行。
 
 ---
 

@@ -16,11 +16,13 @@ function selfDonePhases(mySubmissions, groupId) {
 }
 
 /**
- * 首頁「下一步」卡片的優先序判斷（見 docs/SPRINT_PLAN.md Sprint 2 驗收條件 2.1）：
+ * 首頁「下一步」卡片的優先序判斷（見 docs/SPRINT_PLAN.md Sprint 2 驗收條件 2.1，
+ * ④ 是 Sprint 3 驗收條件 3.4 加的複測提醒）：
  *   ① 所屬班級課前未作答 → 開始課前評測
  *   ② 課前已完成、班級進行中 → 開始課後複測
  *   ③ 360° 他評邀請未完成 → 還有 N 位同事等你評分
- *   ④ 都完成 → 看看你的成長報告
+ *   ④ 有目標的建議複測日已到 → 提醒回來複測看看有沒有變化
+ *   ⑤ 都完成 → 看看你的成長報告
  *   （完全沒有任何班級/評量可做 → 回傳 null，卡片不顯示）
  *
  * 刻意寫成不打 API 的純函式，方便單元測試涵蓋每個分支，資料全部由呼叫端
@@ -31,10 +33,11 @@ function selfDonePhases(mySubmissions, groupId) {
  * @param {Array} data.mySubmissions GET /submissions/me 的結果
  * @param {Array} data.myGroups      GET /groups/mine 的結果（含 phase/coachName/…）
  * @param {Array} data.groupMembers  GET /groups/mine/members 的結果（跨所有班別的同學名單）
- * @returns {null | {kind: 'pre'|'post'|'rate-others'|'view-report'|'start-any',
- *   assessmentId, assessmentName, groupId?, count?}}
+ * @param {Array} data.goals         GET /goals 的結果（用於④的複測提醒）
+ * @returns {null | {kind: 'pre'|'post'|'rate-others'|'retest-reminder'|'view-report'|'start-any',
+ *   assessmentId, assessmentName, groupId?, count?, goalText?}}
  */
-export function computeNextStep({ assessments = [], mySubmissions = [], myGroups = [], groupMembers = [] }) {
+export function computeNextStep({ assessments = [], mySubmissions = [], myGroups = [], groupMembers = [], goals = [] }) {
   const nameOf = (id) => assessments.find((a) => a.id === id)?.name ?? id;
 
   // ① / ②：逐一檢查目前「進行中」的班別，看自己還缺課前還是課後。
@@ -86,7 +89,19 @@ export function computeNextStep({ assessments = [], mySubmissions = [], myGroups
     }
   }
 
-  // ④：有作答紀錄就導去看最新一筆的分析報告。
+  // ④：有目標設定了複測日、而且已經到期（且目標還沒達成）——提醒回來複測，
+  // 而不是靜靜等使用者自己想起來。
+  const dueGoal = goals.find((g) => !g.achievedAt && g.reviewDate && new Date(g.reviewDate).getTime() <= Date.now());
+  if (dueGoal) {
+    return {
+      kind: 'retest-reminder',
+      assessmentId: dueGoal.assessmentId,
+      assessmentName: nameOf(dueGoal.assessmentId),
+      goalText: dueGoal.text,
+    };
+  }
+
+  // ⑤：有作答紀錄就導去看最新一筆的分析報告。
   if (mySubmissions.length > 0) {
     const latestSelf = mySubmissions.find((s) => (s.raterType ?? 'self') === 'self') ?? mySubmissions[0];
     return {

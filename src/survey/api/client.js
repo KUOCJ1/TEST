@@ -46,6 +46,9 @@ export const api = {
       .then((d) => d.byDimension)
       .catch(() => []); // 非必要的附加功能，任何失敗都不能讓報告頁面壞掉。
   },
+  // fire-and-forget：呼叫端不 await，記錄失敗也不該影響文章正常開啟。
+  trackArticleClick: (payload) => request('/learning-resources/track-click', { method: 'POST', body: payload }).catch(() => {}),
+  adminLearningResourceStats: () => request('/admin/learning-resources/stats').then((d) => d.stats),
   adminAssessments: () => request('/admin/assessments').then((d) => d.assessments),
   toggleAssessment: (id, enabled) =>
     request(`/admin/assessments/${id}`, { method: 'PATCH', body: { enabled } }).then((d) => d.assessment),
@@ -95,6 +98,12 @@ export const api = {
   deleteGoal: (id) => request(`/goals/${id}`, { method: 'DELETE' }),
   // 完全公開、免登入：QR 報到連結在使用者登入前就要能顯示班級資訊。
   publicJoinInfo: (code) => request(`/public/join/${encodeURIComponent(code)}`),
+
+  // 我的學習清單（僅本人可讀寫，見 server/src/routes/readingList.js）
+  myReadingList: () => request('/reading-list').then((d) => d.items),
+  addToReadingList: (body) => request('/reading-list', { method: 'POST', body }).then((d) => d.item),
+  markReadingListItem: (id, read) => request(`/reading-list/${id}`, { method: 'PATCH', body: { read } }).then((d) => d.item),
+  removeReadingListItem: (id) => request(`/reading-list/${id}`, { method: 'DELETE' }),
 
   generateJoinCode: (groupId) =>
     request(`/coach/groups/${groupId}/join-code`, { method: 'POST' }),

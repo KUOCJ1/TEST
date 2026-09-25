@@ -41,6 +41,9 @@ vi.mock('../survey/api/client', () => ({
     updateGoal: async (id, body) => ({ id, actions: [], achievedAt: null, createdAt: new Date().toISOString(), ...body }),
     deleteGoal: async () => ({ ok: true }),
     learningResources: async () => [],
+    myReadingList: async () => [],
+    addToReadingList: async () => ({}),
+    trackArticleClick: async () => {},
   },
 }));
 

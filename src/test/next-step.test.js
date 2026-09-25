@@ -75,6 +75,47 @@ describe('computeNextStep', () => {
     expect(result.kind).toBe('view-report');
   });
 
+  it('④：有目標到了建議複測日 → 提醒複測', () => {
+    const mySubmissions = [{ assessmentId: 'leadership-9d', groupId: null, phase: 'pre', raterType: 'self' }];
+    const goals = [{
+      assessmentId: 'leadership-9d', text: '每週練習一次公開表達', achievedAt: null,
+      reviewDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 昨天到期
+    }];
+    const result = computeNextStep({ assessments, mySubmissions, myGroups: [], groupMembers: [], goals });
+    expect(result).toMatchObject({ kind: 'retest-reminder', assessmentId: 'leadership-9d', goalText: '每週練習一次公開表達' });
+  });
+
+  it('尚未到複測日的目標不會觸發提醒', () => {
+    const mySubmissions = [{ assessmentId: 'leadership-9d', groupId: null, phase: 'pre', raterType: 'self' }];
+    const goals = [{
+      assessmentId: 'leadership-9d', text: '未到期', achievedAt: null,
+      reviewDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 明天才到期
+    }];
+    const result = computeNextStep({ assessments, mySubmissions, myGroups: [], groupMembers: [], goals });
+    expect(result.kind).toBe('view-report');
+  });
+
+  it('已達成的目標即使複測日已過也不會觸發提醒', () => {
+    const mySubmissions = [{ assessmentId: 'leadership-9d', groupId: null, phase: 'pre', raterType: 'self' }];
+    const goals = [{
+      assessmentId: 'leadership-9d', text: '已達成', achievedAt: '2026-01-01T00:00:00Z',
+      reviewDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    }];
+    const result = computeNextStep({ assessments, mySubmissions, myGroups: [], groupMembers: [], goals });
+    expect(result.kind).toBe('view-report');
+  });
+
+  it('優先序：360° 待評分排在複測提醒之前', () => {
+    const mySubmissions = [{ assessmentId: 'leadership-9d', groupId: null, phase: 'pre', raterType: 'self' }];
+    const groupMembers = [{ id: 'u2', name: '小華' }];
+    const goals = [{
+      assessmentId: 'leadership-9d', text: '目標', achievedAt: null,
+      reviewDate: new Date(Date.now() - 1000).toISOString(),
+    }];
+    const result = computeNextStep({ assessments, mySubmissions, myGroups: [], groupMembers, goals });
+    expect(result.kind).toBe('rate-others');
+  });
+
   it('④：都完成了 → 看報告', () => {
     const mySubmissions = [{ assessmentId: 'ai-competency', groupId: null, phase: 'pre', raterType: 'self' }];
     const result = computeNextStep({ assessments, mySubmissions, myGroups: [], groupMembers: [] });

@@ -11,6 +11,7 @@ import { createGoalsRouter } from './routes/goals.js';
 import { createChatRouter } from './routes/chat.js';
 import { createPublicRouter } from './routes/public.js';
 import { createLearningResourcesRouter } from './routes/learningResources.js';
+import { createReadingListRouter } from './routes/readingList.js';
 
 export {
   sanitizeFocusDimensionIds,
@@ -56,7 +57,8 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   app.use('/api', createGroupsRouter({ db, requireAuth }));
   app.use('/api', createGoalsRouter({ db, requireAuth }));
   app.use('/api', createChatRouter({ requireAuth }));
-  app.use('/api', createLearningResourcesRouter({ requireAuth }));
+  app.use('/api', createLearningResourcesRouter({ db, requireAuth }));
+  app.use('/api', createReadingListRouter({ db, requireAuth }));
   // admin/coach 各自的 router 用 router.use() 統一掛驗證中介層，故須掛在專屬前綴下，
   // 否則會攔截同樣掛在 /api 的其他路由（例如非 admin 使用者呼叫 /api/coach/* 會先被
   // admin router 的 requireAdmin 擋下）。

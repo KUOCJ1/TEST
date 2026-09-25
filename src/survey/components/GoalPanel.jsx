@@ -6,6 +6,23 @@ import { useConfirm } from './useConfirm';
 
 const MAX_ACTIONS = 5;
 
+// 行動項目文字裡常會帶著「加入目標」流程自動填入的文章連結（見
+// AddToGoalButton.jsx 的 actionTextFor()），把它 render 成可點擊的連結，而不是
+// 一長串看不出是連結的純文字。
+const URL_RE = /(https?:\/\/[^\s]+)/g;
+function linkifyText(text) {
+  // split() 搭配「一個 capture group」的 regex 會把「符合的部分」跟「不符合的
+  // 部分」交錯放進結果陣列——單數索引固定是抓到的網址、雙數索引固定是網址以外
+  // 的文字，不需要（也不該）再用同一個帶 g flag 的 regex 呼叫 .test() 判斷一次：
+  // 帶 g flag 的 regex 呼叫 .test() 時會用 lastIndex 記狀態，同一個 regex 物件
+  // 對不同字串輪流呼叫會因為殘留的 lastIndex 而誤判。
+  return text.split(URL_RE).map((part, i) =>
+    i % 2 === 1
+      ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline hover:text-brass-600" onClick={(e) => e.stopPropagation()}>{part}</a>
+      : <span key={i}>{part}</span>,
+  );
+}
+
 /**
  * 個人發展目標：讓學員針對弱項構面訂下目標與具體行動，下次回來可以打勾。
  * 把「看到自己哪裡弱」接到「實際做了什麼」，是歷程追蹤的最後一哩。
@@ -15,6 +32,24 @@ const MAX_ACTIONS = 5;
  * 待強化的構面」——那會暗示分數最低的風格是缺點。改成中性引導語，並讓使用者
  * 自己從 dimensions 挑一個想刻意練習的風格（可以不選）。
  */
+// 預計檢視日 <input type="date"> 要的是 YYYY-MM-DD；預設抓「今天 + 28 天」
+// （跟後端沒帶 reviewDate 時的預設一致，見 server/src/routes/goals.js）。
+function defaultReviewDateInput() {
+  const d = new Date(Date.now() + 28 * 24 * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 10);
+}
+
+function BaselineDelta({ goal, dimensions }) {
+  if (!goal.dimensionId || goal.baselineAverage == null) return null;
+  const current = dimensions.find((d) => d.id === goal.dimensionId);
+  if (!current) return null;
+  return (
+    <p className="mt-1 text-xs text-slate-500">
+      設定目標時「{current.subtitle}」平均 {goal.baselineAverage.toFixed(1)} 分 → 最新 {current.average.toFixed(1)} 分
+    </p>
+  );
+}
+
 export default function GoalPanel({ assessmentId, weakestDimension, profileMode = false, dimensions = [] }) {
   const confirm = useConfirm();
   const [goals, setGoals] = useState(null);
@@ -23,6 +58,7 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
   const [draftText, setDraftText] = useState('');
   const [draftActions, setDraftActions] = useState(['']);
   const [draftDimId, setDraftDimId] = useState('');
+  const [draftReviewDate, setDraftReviewDate] = useState(defaultReviewDateInput);
   const [saving, setSaving] = useState(false);
 
   const selectedDim = profileMode ? dimensions.find((d) => d.id === draftDimId) ?? null : weakestDimension;
@@ -39,6 +75,7 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
     setDraftText('');
     setDraftActions(['']);
     setDraftDimId('');
+    setDraftReviewDate(defaultReviewDateInput());
     setCreating(false);
   };
 
@@ -53,6 +90,10 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
         dimensionName: selectedDim?.subtitle ?? null,
         text: draftText,
         actions: draftActions.filter((t) => t.trim()).map((text) => ({ text })),
+        // 記下設定當下該構面的平均分，之後複測完可以顯示「設定時 → 最新」的變化
+        // （見下方渲染，比對 dimensions prop 裡同一個構面的最新 average）。
+        baselineAverage: selectedDim?.average ?? null,
+        reviewDate: draftReviewDate ? new Date(`${draftReviewDate}T00:00:00`).toISOString() : undefined,
       });
       setGoals((prev) => [goal, ...(prev ?? [])]);
       resetDraft();
@@ -178,6 +219,18 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
               <Plus className="h-3.5 w-3.5" /> 新增行動
             </button>
           )}
+          <div className="mt-3">
+            <label className="mb-1 block text-xs font-semibold text-slate-500" htmlFor="goal-review-date">
+              預計檢視日（到期後會在首頁提醒你回來複測）
+            </label>
+            <input
+              id="goal-review-date"
+              type="date"
+              value={draftReviewDate}
+              onChange={(e) => setDraftReviewDate(e.target.value)}
+              className="input"
+            />
+          </div>
           <div className="mt-3 flex gap-2">
             <button type="button" onClick={handleCreate} disabled={saving} className="btn-primary btn-sm">
               {saving ? '儲存中…' : '儲存目標'}
@@ -217,7 +270,9 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
                     設定於 {formatDate(goal.createdAt)}
                     {goal.actions.length > 0 && ` · 行動 ${doneCount}/${goal.actions.length}`}
                     {goal.achievedAt && ` · 已於 ${formatDate(goal.achievedAt)} 達成`}
+                    {!goal.achievedAt && goal.reviewDate && ` · 建議 ${formatDate(goal.reviewDate)} 前回來複測`}
                   </p>
+                  <BaselineDelta goal={goal} dimensions={dimensions} />
                 </div>
                 <div className="flex shrink-0 gap-1">
                   <button
@@ -256,7 +311,7 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
                           {a.done && <Check className="h-3 w-3" />}
                         </span>
                         <span className={`text-sm ${a.done ? 'text-slate-400 line-through' : 'text-slate-600'}`}>
-                          {a.text}
+                          {linkifyText(a.text)}
                         </span>
                       </button>
                     </li>

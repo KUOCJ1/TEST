@@ -9,6 +9,7 @@ import BarList from '../components/charts/BarList';
 import LevelDistribution from '../components/charts/LevelDistribution';
 import { formatDate } from '../utils/format';
 import InfoTip from '../components/InfoTip';
+import LearningResourceStatsPanel from './LearningResourceStatsPanel';
 
 function Kpi({ label, value, suffix, tip }) {
   return (
@@ -234,6 +235,8 @@ export default function AnalyticsTab({ submissions, users, adminAssessments }) {
           </section>
         </>
       )}
+
+      <LearningResourceStatsPanel />
     </div>
   );
 }

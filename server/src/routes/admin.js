@@ -27,6 +27,25 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
     res.json({ assessment: list[idx] });
   });
 
+  // 延伸閱讀使用情形：只回傳依「題庫+構面」彙總的點擊/加入清單次數，不揭露是
+  // 誰點的、誰存的——個人的學習清單／閱讀紀錄設計上只有本人看得到（見
+  // routes/readingList.js、components/GoalPanel.jsx 的隱私設計）。
+  router.get('/learning-resources/stats', (_req, res) => {
+    const key = (assessmentId, dimensionId) => `${assessmentId}::${dimensionId}`;
+    const counts = new Map();
+    const bump = (assessmentId, dimensionId, field) => {
+      if (!assessmentId || !dimensionId) return;
+      const k = key(assessmentId, dimensionId);
+      const row = counts.get(k) ?? { assessmentId, dimensionId, clicks: 0, saves: 0 };
+      row[field] += 1;
+      counts.set(k, row);
+    };
+    (db.data.learningResourceClicks ?? []).forEach((c) => bump(c.assessmentId, c.dimensionId, 'clicks'));
+    (db.data.readingList ?? []).forEach((i) => bump(i.assessmentId, i.dimensionId, 'saves'));
+    const stats = [...counts.values()].sort((a, b) => (b.clicks + b.saves) - (a.clicks + a.saves));
+    res.json({ stats });
+  });
+
   router.get('/overview', (_req, res) => {
     res.json({
       users: db.data.users.map(publicUser),

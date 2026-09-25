@@ -40,6 +40,21 @@ describe('NextStepCard', () => {
     expect(onGoTo360).toHaveBeenCalledWith('leadership-9d');
   });
 
+  it('kind=retest-reminder：顯示目標文字，點擊呼叫 onStartSurvey', () => {
+    const onStartSurvey = vi.fn();
+    render(
+      <NextStepCard
+        nextStep={{ kind: 'retest-reminder', assessmentId: 'leadership-9d', assessmentName: 'L9D', goalText: '每週練習表達' }}
+        onStartSurvey={onStartSurvey}
+        onGoTo360={vi.fn()}
+        onViewAnalysis={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/每週練習表達/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /開始複測/ }));
+    expect(onStartSurvey).toHaveBeenCalledWith('leadership-9d');
+  });
+
   it('kind=view-report：點擊呼叫 onViewAnalysis', () => {
     const onViewAnalysis = vi.fn();
     render(

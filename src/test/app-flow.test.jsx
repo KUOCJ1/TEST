@@ -44,6 +44,9 @@ vi.mock('../survey/api/client', () => {
       async learningResources() {
         return [];
       },
+      async myReadingList() { return []; },
+      async addToReadingList(body) { return { id: 'r1', read: false, addedAt: new Date().toISOString(), ...body }; },
+      async trackArticleClick() {},
       async assessments() {
         return [
           { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、37 題李克特量表（含反向題）', enabled: true },
@@ -71,6 +74,7 @@ vi.mock('../survey/api/client', () => {
           .filter((s) => s.userId === state.user.id)
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       },
+      async adminLearningResourceStats() { return []; },
       async adminOverview() {
         return {
           users: state.users.map(pub),

@@ -946,6 +946,36 @@ describe('個人發展目標', () => {
     const { body } = await agent.post('/api/goals').send({ text: '目標', actions });
     assert.equal(body.goal.actions.length, 5);
   });
+
+  test('建立時可記錄當下的構面平均分（baselineAverage），供之後比對複測變化', async () => {
+    const app = await setup();
+    const agent = await userAgent(app);
+    const { body } = await agent.post('/api/goals').send({ text: '目標', dimensionId: 'communication', baselineAverage: 3.2 });
+    assert.equal(body.goal.baselineAverage, 3.2);
+  });
+
+  test('沒帶 baselineAverage（或型別不對）時為 null，不是 400', async () => {
+    const app = await setup();
+    const agent = await userAgent(app);
+    const noBaseline = await agent.post('/api/goals').send({ text: '目標' });
+    assert.equal(noBaseline.body.goal.baselineAverage, null);
+    const badType = await agent.post('/api/goals').send({ text: '目標2', baselineAverage: '不是數字' });
+    assert.equal(badType.body.goal.baselineAverage, null);
+  });
+
+  test('可自訂建議複測日；沒帶則預設 4 週後', async () => {
+    const app = await setup();
+    const agent = await userAgent(app);
+    const custom = await agent.post('/api/goals').send({ text: '目標', reviewDate: '2026-12-25T00:00:00.000Z' });
+    assert.equal(custom.body.goal.reviewDate, '2026-12-25T00:00:00.000Z');
+
+    const before = Date.now();
+    const defaulted = await agent.post('/api/goals').send({ text: '目標2' });
+    const reviewMs = new Date(defaulted.body.goal.reviewDate).getTime();
+    const twentySevenDays = 27 * 24 * 60 * 60 * 1000;
+    const twentyNineDays = 29 * 24 * 60 * 60 * 1000;
+    assert.ok(reviewMs - before > twentySevenDays && reviewMs - before < twentyNineDays);
+  });
 });
 
 describe('學習資源（第二大腦整合）', () => {
@@ -1063,5 +1093,152 @@ describe('學習資源（第二大腦整合）', () => {
     await agent.get('/api/learning-resources?assessmentId=ai-competency&dimensionId=foundation');
     await agent.get('/api/learning-resources?assessmentId=ai-competency&dimensionId=foundation');
     assert.equal(fetchMock.mock.callCount(), 1);
+  });
+
+  test('點擊延伸閱讀文章可記一筆點擊（供管理後台彙總，不影響文章開啟）', async () => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    const res = await agent.post('/api/learning-resources/track-click').send({
+      assessmentId: 'leadership-9d', dimensionId: 'communication', url: 'https://brain.rong-rise.com/brain/x/',
+    });
+    assert.equal(res.status, 204);
+  });
+
+  test('記點擊時缺 assessmentId 或 dimensionId 會被擋下', async () => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    assert.equal((await agent.post('/api/learning-resources/track-click').send({ assessmentId: 'x' })).status, 400);
+    assert.equal((await agent.post('/api/learning-resources/track-click').send({})).status, 400);
+  });
+
+  test('未登入不得記點擊', async () => {
+    const app = await setup();
+    const res = await request(app).post('/api/learning-resources/track-click').send({ assessmentId: 'x', dimensionId: 'y' });
+    assert.equal(res.status, 401);
+  });
+});
+
+describe('我的學習清單', () => {
+  async function agentFor(app, email = 'reader@b.co') {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/register').send({ name: 'r', email, password: 'abcdef12' });
+    return agent;
+  }
+
+  test('未登入不得存取', async () => {
+    const app = await setup();
+    assert.equal((await request(app).get('/api/reading-list')).status, 401);
+    assert.equal((await request(app).post('/api/reading-list').send({ url: 'x', title: 'y' })).status, 401);
+  });
+
+  test('可加入文章並讀回，預設未讀', async () => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    const created = await agent.post('/api/reading-list').send({
+      url: 'https://brain.rong-rise.com/brain/a/',
+      title: '示範文章',
+      excerpt: '摘要',
+      category: '管理心理學',
+      assessmentId: 'leadership-9d',
+      dimensionId: 'communication',
+      dimensionName: '溝通力',
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.item.title, '示範文章');
+    assert.equal(created.body.item.read, false);
+    assert.equal(created.body.item.userId, undefined);
+
+    const list = await agent.get('/api/reading-list');
+    assert.equal(list.body.items.length, 1);
+  });
+
+  test('缺 url 或 title 時擋下', async () => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    assert.equal((await agent.post('/api/reading-list').send({ title: '只有標題' })).status, 400);
+    assert.equal((await agent.post('/api/reading-list').send({ url: '只有連結' })).status, 400);
+  });
+
+  test('同一篇文章重複加入是冪等的，不會產生重複項目', async () => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    const url = 'https://brain.rong-rise.com/brain/dup/';
+    const first = await agent.post('/api/reading-list').send({ url, title: '文章' });
+    const second = await agent.post('/api/reading-list').send({ url, title: '文章（標題改了也一樣）' });
+    assert.equal(first.body.item.id, second.body.item.id);
+    const list = await agent.get('/api/reading-list');
+    assert.equal(list.body.items.length, 1);
+  });
+
+  test('可標記已讀與取消已讀', async () => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    const { body } = await agent.post('/api/reading-list').send({ url: 'https://x/', title: 'X' });
+
+    const read = await agent.patch(`/api/reading-list/${body.item.id}`).send({ read: true });
+    assert.equal(read.body.item.read, true);
+    assert.ok(read.body.item.readAt);
+
+    const unread = await agent.patch(`/api/reading-list/${body.item.id}`).send({ read: false });
+    assert.equal(unread.body.item.read, false);
+    assert.equal(unread.body.item.readAt, null);
+  });
+
+  test('看不到也改不動別人的學習清單', async () => {
+    const app = await setup();
+    const alice = await agentFor(app, 'alice2@b.co');
+    const bob = await agentFor(app, 'bob2@b.co');
+    const { body } = await alice.post('/api/reading-list').send({ url: 'https://x/', title: 'X' });
+
+    assert.equal((await bob.get('/api/reading-list')).body.items.length, 0);
+    assert.equal((await bob.patch(`/api/reading-list/${body.item.id}`).send({ read: true })).status, 404);
+    assert.equal((await bob.delete(`/api/reading-list/${body.item.id}`)).status, 404);
+  });
+
+  test('可刪除自己加入的項目', async () => {
+    const app = await setup();
+    const agent = await agentFor(app);
+    const { body } = await agent.post('/api/reading-list').send({ url: 'https://x/', title: 'X' });
+    assert.equal((await agent.delete(`/api/reading-list/${body.item.id}`)).status, 200);
+    assert.equal((await agent.get('/api/reading-list')).body.items.length, 0);
+  });
+});
+
+describe('管理後台：延伸閱讀使用情形彙總', () => {
+  async function userAgent(app, email) {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/register').send({ name: 'u', email, password: 'abcdef12' });
+    return agent;
+  }
+  async function adminAgent(app) {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
+    return agent;
+  }
+
+  test('非管理員不得存取', async () => {
+    const { app } = await setupWithDb({ withAdmin: true });
+    const user = await userAgent(app, 'x@b.co');
+    assert.equal((await user.get('/api/admin/learning-resources/stats')).status, 403);
+  });
+
+  test('依題庫+構面彙總點擊數與加入清單數，不含個人身分', async () => {
+    const { app } = await setupWithDb({ withAdmin: true });
+    const alice = await userAgent(app, 'alice3@b.co');
+    const bob = await userAgent(app, 'bob3@b.co');
+
+    await alice.post('/api/learning-resources/track-click').send({ assessmentId: 'leadership-9d', dimensionId: 'communication' });
+    await bob.post('/api/learning-resources/track-click').send({ assessmentId: 'leadership-9d', dimensionId: 'communication' });
+    await alice.post('/api/reading-list').send({
+      url: 'https://x/', title: 'X', assessmentId: 'leadership-9d', dimensionId: 'communication',
+    });
+
+    const admin = await adminAgent(app);
+    const res = await admin.get('/api/admin/learning-resources/stats');
+    assert.equal(res.status, 200);
+    const row = res.body.stats.find((s) => s.assessmentId === 'leadership-9d' && s.dimensionId === 'communication');
+    assert.equal(row.clicks, 2);
+    assert.equal(row.saves, 1);
+    assert.equal(JSON.stringify(res.body.stats).includes('alice3'), false);
   });
 });

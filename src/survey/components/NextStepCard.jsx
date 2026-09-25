@@ -19,6 +19,12 @@ const KIND_CONFIG = {
     desc: (s) => `「${s.assessmentName}」的 360° 多元評測需要你的回饋，花幾分鐘完成吧。`,
     cta: '前往評測他人',
   },
+  'retest-reminder': {
+    Icon: RotateCcw,
+    title: (s) => `該回來複測了：「${s.assessmentName}」`,
+    desc: (s) => `你設定的目標「${s.goalText}」建議這個時候回顧一下，看看有沒有改變。`,
+    cta: '開始複測',
+  },
   'view-report': {
     Icon: ChartColumn,
     title: (s) => `看看你在「${s.assessmentName}」的成長報告`,
