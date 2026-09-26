@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { asyncHandler, normalizeSubmission, getGroupPhase, validateResultShape } from '../lib/helpers.js';
+import { notifyNewComment } from '../lib/notifications.js';
 
 const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
 
@@ -159,6 +160,10 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
     else submission.comments.push(comment);
     db.persist();
     res.json({ comment });
+    // 通知學員（Sprint 7 驗收條件 7.6）：不等寄信完成才回應，教練存評語不必等 SMTP；
+    // 寄信失敗只記 log，評語本身已經存好了。
+    notifyNewComment(db, submission, req.user.name)
+      .catch((err) => console.error('[notify] comment mail failed', err?.message ?? err));
   }));
 
   router.delete('/submissions/:id/comment/:commentId', requireAuth, requireCoach, (req, res) => {

@@ -4,6 +4,7 @@ import { createDb } from './db.js';
 import { hashPassword } from './auth.js';
 import { checkAndAlert } from './lib/health.js';
 import { isMailConfigured } from './lib/mailer.js';
+import { sendDueRetestReminders } from './lib/notifications.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -73,7 +74,23 @@ if (HEALTH_CHECK_INTERVAL_MINUTES > 0) {
   runHealthWatch(); // 開機先跑一次，不必等第一個間隔
   setInterval(runHealthWatch, HEALTH_CHECK_INTERVAL_MINUTES * 60 * 1000).unref();
 }
+// ── 複測提醒信（Sprint 7 驗收條件 7.5）─────────────────────────
+// 每個目標只寄一次（goal.reviewReminderSentAt），所以排程頻率只影響「到期後多快
+// 寄出」，不會重複寄。預設每小時檢查一次，設成 0 可以關閉。
+const NOTIFY_INTERVAL_MINUTES = Number(process.env.NOTIFY_INTERVAL_MINUTES ?? 60);
+if (NOTIFY_INTERVAL_MINUTES > 0) {
+  const runRetestReminders = () => {
+    sendDueRetestReminders(db)
+      .then(({ sent, failed }) => {
+        if (sent || failed) console.log(`[notify] 複測提醒：寄出 ${sent} 封、失敗 ${failed} 封`);
+      })
+      .catch((err) => console.error('[notify] 複測提醒失敗', err?.message ?? err));
+  };
+  runRetestReminders();
+  setInterval(runRetestReminders, NOTIFY_INTERVAL_MINUTES * 60 * 1000).unref();
+}
+
 if (!isMailConfigured()) {
-  console.warn('⚠️  未設定 SMTP（SMTP_HOST／SMTP_USER／SMTP_PASS）：健康檢查狀態變化時無法寄告警信，' +
-    '教練的「寄送提醒信」功能也會停用（其他功能不受影響）。');
+  console.warn('⚠️  未設定 SMTP（SMTP_HOST／SMTP_USER／SMTP_PASS）：異常告警信、教練「寄送提醒信」、' +
+    '學員的複測提醒與評語通知都會停用（其他功能不受影響）。');
 }

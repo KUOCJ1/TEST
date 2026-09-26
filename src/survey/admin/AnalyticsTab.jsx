@@ -46,6 +46,12 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
     useAssessmentFilter(submissions, initialId);
 
   const activeConfig = useMemo(() => (selectedId ? getAssessment(selectedId) : null), [selectedId]);
+  // 風格型題庫（DISC、識己®）沒有高低之分：不顯示「達成率」「總分」這類暗示越高
+  // 越好的數字，改用中性的「傾向強度」「風格」（Sprint 7 驗收條件 7.8，沿用
+  // Sprint 1 起的呈現原則；跨梯次區塊在 Sprint 6 已經這樣處理）。
+  const profileMode = Boolean(activeConfig?.PROFILE_MODE);
+  // 風格型題庫隱藏了總分／達成率欄位，預設的「依總分排序」就改成依最近作答。
+  const effectiveSortKey = profileMode && (sortKey === 'total' || sortKey === 'percent') ? 'when' : sortKey;
 
   const stats = useMemo(
     () => (activeConfig ? aggregateStats(filteredSubs, activeConfig) : null),
@@ -82,8 +88,8 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
     const q = search.trim().toLowerCase();
     let list = rows;
     if (q) list = list.filter((r) => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q));
-    return [...list].sort((a, b) => compareRows(a, b, sortKey, sortDir));
-  }, [rows, search, sortKey, sortDir]);
+    return [...list].sort((a, b) => compareRows(a, b, effectiveSortKey, sortDir));
+  }, [rows, search, effectiveSortKey, sortDir]);
 
   const toggleSort = (key) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -91,10 +97,21 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
   };
 
   const sortIcon = (column) =>
-    sortKey === column ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : null;
+    effectiveSortKey === column ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : null;
 
   const memberCount = users.filter((u) => u.role !== 'admin').length;
   const dimCount = activeConfig?.DIMENSIONS?.length ?? 0;
+  const topStyle = profileMode && stats
+    ? [...stats.levelDistribution].sort((a, b) => b.count - a.count).find((d) => d.count > 0)
+    : null;
+  const columns = [
+    { key: 'name', label: '姓名' },
+    { key: 'email', label: 'Email' },
+    ...(profileMode ? [] : [{ key: 'total', label: '總分' }, { key: 'percent', label: '達成率' }]),
+    { key: 'level', label: profileMode ? '風格' : '落點等級' },
+    { key: 'attempts', label: '次數' },
+    { key: 'when', label: '最近作答' },
+  ];
 
   return (
     <div>
@@ -127,7 +144,11 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
         <Kpi label="註冊人數" value={memberCount} suffix="人" />
         <Kpi label="已填答人數" value={stats?.respondents ?? 0} suffix="人" tip="依每位用戶最新一筆作答計算，重複作答只計算最新一次，避免數據失真。" />
         <Kpi label="總作答次數" value={stats?.totalSubmissions ?? 0} suffix="次" />
-        <Kpi label="平均達成率" value={stats?.avgPercent ?? 0} suffix="%" tip="所有填答者最新一筆作答的達成率平均值（總分 / 滿分）。" />
+        {profileMode ? (
+          <Kpi label="最常見風格" value={topStyle ? topStyle.badge : '—'} tip="所有填答者最新一筆作答中，人數最多的風格組合。風格沒有高低之分。" />
+        ) : (
+          <Kpi label="平均達成率" value={stats?.avgPercent ?? 0} suffix="%" tip="所有填答者最新一筆作答的達成率平均值（總分 / 滿分）。" />
+        )}
       </section>
 
       {!stats || stats.respondents === 0 ? (
@@ -147,7 +168,9 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
             </section>
 
             <section className="rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60">
-              <h3 className="mb-4 text-base font-bold text-slate-700">各構面平均達成率</h3>
+              <h3 className="mb-4 text-base font-bold text-slate-700">
+                {profileMode ? '各構面平均傾向強度' : '各構面平均達成率'}
+              </h3>
               <BarList
                 items={stats.dimensionAverages.map((d) => ({
                   id: d.id,
@@ -161,7 +184,7 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
           </div>
 
           <section className="mt-5 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60">
-            <h3 className="mb-4 text-base font-bold text-slate-700">落點等級人數分佈</h3>
+            <h3 className="mb-4 text-base font-bold text-slate-700">{profileMode ? '風格人數分佈' : '落點等級人數分佈'}</h3>
             <LevelDistribution distribution={stats.levelDistribution} />
           </section>
 
@@ -193,15 +216,7 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500">
-                    {[
-                      { key: 'name', label: '姓名' },
-                      { key: 'email', label: 'Email' },
-                      { key: 'total', label: '總分' },
-                      { key: 'percent', label: '達成率' },
-                      { key: 'level', label: '落點等級' },
-                      { key: 'attempts', label: '次數' },
-                      { key: 'when', label: '最近作答' },
-                    ].map(({ key, label }) => (
+                    {columns.map(({ key, label }) => (
                       <th key={key} className="py-2 pr-3 font-medium">
                         <button type="button" onClick={() => toggleSort(key)} className="inline-flex items-center gap-1 hover:text-slate-700">
                           {label} {sortIcon(key)}
@@ -212,14 +227,14 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
                 </thead>
                 <tbody>
                   {displayRows.length === 0 && (
-                    <tr><td colSpan={7} className="py-6 text-center text-slate-400">查無符合的填答者，請調整搜尋或篩選條件</td></tr>
+                    <tr><td colSpan={columns.length} className="py-6 text-center text-slate-400">查無符合的填答者，請調整搜尋或篩選條件</td></tr>
                   )}
                   {displayRows.map((r) => (
                     <tr key={r.id} className="border-b border-slate-100 last:border-0">
                       <td className="py-2.5 pr-3 font-medium text-slate-700">{r.name}</td>
                       <td className="py-2.5 pr-3 text-slate-500">{r.email}</td>
-                      <td className="py-2.5 pr-3 font-semibold text-slate-700">{r.total}</td>
-                      <td className="py-2.5 pr-3 text-slate-600">{r.percent}%</td>
+                      {!profileMode && <td className="py-2.5 pr-3 font-semibold text-slate-700">{r.total}</td>}
+                      {!profileMode && <td className="py-2.5 pr-3 text-slate-600">{r.percent}%</td>}
                       <td className="py-2.5 pr-3">
                         <span
                           className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"

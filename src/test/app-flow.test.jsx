@@ -169,7 +169,9 @@ describe('App 流程', () => {
 
     const adminTab = await screen.findByRole('button', { name: '管理後台' });
     fireEvent.click(adminTab);
-    expect(await screen.findByRole('heading', { name: '管理後台' })).toBeInTheDocument();
+    // AdminDashboard 是 lazy() 載入的獨立 chunk：CI 的冷啟動要先編譯整條相依鏈，
+    // 超過 findBy 預設的 1 秒是常態（Sprint 7 在 CI 上因此失敗過一次），給足時間。
+    expect(await screen.findByRole('heading', { name: '管理後台' }, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByText('註冊人數')).toBeInTheDocument();
   });
 

@@ -35,6 +35,20 @@ function claimPendingGroups(db, user) {
 }
 
 /** @param {{db, requireAuth, setAuthCookie, COOKIE_NAME}} deps */
+// 只收已知的偏好設定鍵：以前是整包原樣合併，任何人都能在自己的帳號塞進任意
+// 鍵與大量資料。notifyAssessment／notifyComment 會決定要不要寄通知信（見
+// lib/notifications.js），必須是布林值。
+const BOOLEAN_PREFS = ['darkMode', 'notifyAssessment', 'notifyComment'];
+export function sanitizePreferences(input) {
+  const out = {};
+  for (const key of BOOLEAN_PREFS) {
+    if (typeof input[key] === 'boolean') out[key] = input[key];
+  }
+  if (input.defaultAssessmentId === null) out.defaultAssessmentId = null;
+  else if (typeof input.defaultAssessmentId === 'string') out.defaultAssessmentId = input.defaultAssessmentId.slice(0, 64);
+  return out;
+}
+
 export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }) {
   const router = Router();
 
@@ -117,7 +131,7 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }
       req.user.name = name.trim();
     }
     if (preferences !== undefined && preferences && typeof preferences === 'object') {
-      req.user.preferences = { ...(req.user.preferences ?? {}), ...preferences };
+      req.user.preferences = { ...(req.user.preferences ?? {}), ...sanitizePreferences(preferences) };
     }
     db.persist();
     res.json({ user: publicUser(req.user) });

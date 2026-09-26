@@ -45,3 +45,13 @@ export async function sendMail({ to, subject, text }) {
     return { ok: false, code: 'SEND_ERROR', error };
   }
 }
+
+/** 信裡連結用的站台網址（APP_URL，預設正式站），去掉結尾斜線。 */
+export function appBaseUrl() {
+  return (process.env.APP_URL || 'https://assess.rong-rise.com').replace(/\/+$/, '');
+}
+
+/** 信裡顯示日期一律用台灣時區，不受伺服器時區影響。 */
+export function formatTaipeiDate(iso) {
+  return new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+}

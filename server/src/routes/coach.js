@@ -11,18 +11,10 @@ import {
   sanitizeDimensionNotes,
 } from '../lib/helpers.js';
 import { generateJoinCode } from '../lib/joinCode.js';
-import { isMailConfigured, sendMail } from '../lib/mailer.js';
+import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from '../lib/mailer.js';
 
 // 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
 export const REMINDER_COOLDOWN_MS = 60 * 60 * 1000;
-
-function appBaseUrl() {
-  return (process.env.APP_URL || 'https://assess.rong-rise.com').replace(/\/+$/, '');
-}
-
-function formatTaipeiDate(iso) {
-  return new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-}
 
 function buildReminderMail({ group, name, phaseLabel }) {
   const link = group.joinCode ? `${appBaseUrl()}/?join=${group.joinCode}` : `${appBaseUrl()}/`;

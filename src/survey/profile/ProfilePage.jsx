@@ -142,16 +142,22 @@ export default function ProfilePage() {
         {savingPref && <p className="mt-2 text-sm text-slate-400">儲存中…</p>}
       </Card>
 
-      <Card title="通知偏好" desc="設定您希望接收的通知（實際發送需搭配通知管道）。">
+      {/* 這兩個開關決定後端要不要寄對應的通知信（server/src/lib/notifications.js）。
+          教練寄給全班的催交信屬課程行政通知，不受這裡影響——寫在說明裡，免得學員
+          以為關掉就收不到任何信、或關了還收到催交信覺得設定壞了。 */}
+      <Card
+        title="通知偏好"
+        desc={`以 Email 寄到您的註冊信箱（${user.email}）。教練寄給全班的課前／課後作答提醒屬課程通知，不受這裡的設定影響。`}
+      >
         <Toggle
           label="評測提醒"
-          hint="有新評量或尚未完成時提醒我"
+          hint="發展目標的「預計檢視日」到了時，寄信提醒我回來複測"
           checked={prefs.notifyAssessment !== false}
           onChange={(v) => savePref({ notifyAssessment: v })}
         />
         <Toggle
           label="教練評語通知"
-          hint="教練留下新評語時通知我"
+          hint="教練留下或更新評語時寄信通知我（信裡不會包含評語內容）"
           checked={prefs.notifyComment !== false}
           onChange={(v) => savePref({ notifyComment: v })}
         />
