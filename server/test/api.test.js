@@ -445,12 +445,13 @@ describe('教練 / 班別 / 名單', () => {
     // 重新登入取得 coach 角色 cookie
     await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef12' });
 
-    const g = await coach.post('/api/coach/groups').send({ name: 'A 班', assessmentId: 'ai-competency' });
-    assert.equal(g.status, 201);
-
     const u = request.agent(app);
     const ureg = await u.post('/api/auth/register').send({ name: '學員', email: 's@b.co', password: 'abcdef12' });
     const sub = await u.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(124) });
+
+    // 教練只能對自己班上的學員留評語（Sprint 7 起）：先把學員收進班上。
+    const g = await coach.post('/api/coach/groups').send({ name: 'A 班', assessmentId: 'ai-competency', memberIds: [ureg.body.user.id] });
+    assert.equal(g.status, 201);
 
     const c = await coach.post(`/api/submissions/${sub.body.submission.id}/comment`)
       .send({ text: '表現良好', tips: ['多練習提示詞'] });
@@ -461,6 +462,22 @@ describe('教練 / 班別 / 名單', () => {
     const mine = await u.get('/api/submissions/me');
     assert.equal(mine.body.submissions[0].comments[0].text, '表現良好');
     assert.equal(ureg.body.user.role, 'user');
+  });
+
+  test('教練不能對別班學員留評語（403）；管理者可以', async () => {
+    const app = await setup({ withAdmin: true });
+    const { admin, coach } = await makeCoach(app);
+    await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef12' });
+    const u = request.agent(app);
+    await u.post('/api/auth/register').send({ name: '別班學員', email: 'other@b.co', password: 'abcdef12' });
+    const sub = await u.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(124) });
+    const id = sub.body.submission.id;
+
+    const denied = await coach.post(`/api/submissions/${id}/comment`).send({ text: '越界的評語' });
+    assert.equal(denied.status, 403);
+    assert.equal((await u.get('/api/submissions/me')).body.submissions[0].comments, undefined);
+
+    assert.equal((await admin.post(`/api/submissions/${id}/comment`).send({ text: '管理者評語' })).status, 200);
   });
 
   test('批量名單：現有用戶入班、未註冊者待加入並於註冊後自動入班', async () => {

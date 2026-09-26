@@ -145,10 +145,13 @@ git checkout claude/ai-assessment-survey-4vhjun
 git pull origin claude/ai-assessment-survey-4vhjun
 bash deploy/deploy.sh    # 重建前端 → 同步後端 → npm ci --omit=dev → 重啟服務 + reload nginx
 ```
-`deploy.sh` 會保留 `.env` 與資料檔。部署後驗證：
+`deploy.sh` 會保留 `.env` 與資料檔，結尾自動跑 `deploy/verify.sh`（PASS／WARN／FAIL，有 FAIL
+結束代碼為 1）。部署後驗證：
 ```bash
-curl -s localhost:3101/api/health     # 應回 {"ok":true}
+bash deploy/verify.sh                 # 也可單獨重跑
+curl -s localhost:3101/api/health     # {"ok":true,"version":{"commit":"<目前 commit>",...}}
 ```
+`TRUST_PROXY` 要從外部網路開「管理後台 → 系統狀態」看「伺服器看到的你的 IP」才能確認。
 
 > 注意：VPS 部署在 VPS 本機執行（`deploy.sh` 全是 `sudo systemctl`、`rsync` 等本機操作）。
 > 雲端開發容器無法直接 SSH 部署到 VPS。
@@ -168,7 +171,9 @@ loopback，不設定的話 Express 會把所有請求都當成同一個 IP（Ngi
 `SMTP_PORT`（預設 587）、`SMTP_FROM`。用於外部依賴狀態變化時寄告警信給 `ADMIN_EMAIL`
 （`HEALTH_CHECK_INTERVAL_MINUTES`，預設 5 分鐘，0 關閉）與教練「寄送提醒信」
 （`POST /api/coach/groups/:id/remind`，同班 1 小時冷卻）；未設定時兩者優雅停用。
-細節見 `docs/PLATFORM_MANUAL.md` 第 10.4 節。
+學員通知信（複測提醒、教練評語通知，可在個人設定關閉）也走同一組 SMTP，
+`NOTIFY_INTERVAL_MINUTES` 調整複測提醒檢查間隔（預設 60）。細節見
+`docs/PLATFORM_MANUAL.md` 第 10.4 節。`AUTH_RATE_LIMIT` 只給 E2E 用，正式環境不要設。
 
 > ⚠️ 安全守則：絕不在程式碼、提交訊息、文件或對話中索取或重現密碼、JWT 密鑰、
 > SSH 金鑰等任何憑證。`.env` 僅在 VPS 上以實際值存在。

@@ -106,9 +106,9 @@ export default function ProfilePage() {
       </header>
 
       <Card title="基本資料">
-        <label className="block text-sm font-medium text-slate-600">姓名</label>
+        <label htmlFor="profile-name" className="block text-sm font-medium text-slate-600">姓名</label>
         <div className="mt-1.5 flex gap-2">
-          <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+          <input id="profile-name" className="input" value={name} onChange={(e) => setName(e.target.value)} />
           <button type="button" onClick={saveName} disabled={savingName}
             className="btn-primary">
             {savingName ? '儲存中…' : '儲存'}
@@ -126,8 +126,8 @@ export default function ProfilePage() {
           onChange={(v) => savePref({ darkMode: v })}
         />
         <div className="mt-3">
-          <label className="block text-sm font-medium text-slate-600">預設進入的評量</label>
-          <select
+          <label htmlFor="profile-default-assessment" className="block text-sm font-medium text-slate-600">預設進入的評量</label>
+          <select id="profile-default-assessment"
             className="input mt-1.5"
             value={prefs.defaultAssessmentId ?? ''}
             onChange={(e) => savePref({ defaultAssessmentId: e.target.value || null })}
@@ -166,18 +166,18 @@ export default function ProfilePage() {
       <Card title="變更密碼">
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-slate-600">目前密碼</label>
-            <input type="password" className="input mt-1.5" autoComplete="current-password"
+            <label htmlFor="profile-pw-current" className="block text-sm font-medium text-slate-600">目前密碼</label>
+            <input id="profile-pw-current" type="password" className="input mt-1.5" autoComplete="current-password"
               value={pw.current} onChange={(e) => setPw((p) => ({ ...p, current: e.target.value }))} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600">新密碼</label>
-            <input type="password" className="input mt-1.5" autoComplete="new-password" placeholder="至少 8 碼"
+            <label htmlFor="profile-pw-new" className="block text-sm font-medium text-slate-600">新密碼</label>
+            <input id="profile-pw-new" type="password" className="input mt-1.5" autoComplete="new-password" placeholder="至少 8 碼"
               value={pw.next} onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600">確認新密碼</label>
-            <input type="password" className="input mt-1.5" autoComplete="new-password"
+            <label htmlFor="profile-pw-confirm" className="block text-sm font-medium text-slate-600">確認新密碼</label>
+            <input id="profile-pw-confirm" type="password" className="input mt-1.5" autoComplete="new-password"
               value={pw.confirm} onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))} />
           </div>
           {pwMsg.text && (

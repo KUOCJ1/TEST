@@ -170,13 +170,24 @@ git checkout claude/ai-assessment-survey-4vhjun
 git pull origin claude/ai-assessment-survey-4vhjun
 bash deploy/deploy.sh        # 重新 build 前端、同步後端、重啟服務（保留 .env 與資料）
 ```
-> `deploy.sh` 會：重建前端 → 同步 `dist/` 到 `/var/www/ai-assessment` → 同步後端 →
-> `npm ci --omit=dev` → 重啟 `ai-assessment-api` 並 reload Nginx。
+> `deploy.sh` 會：重建前端（寫入目前 commit 版本）→ 同步 `dist/` 到 `/var/www/ai-assessment` →
+> 同步後端 → `npm ci --omit=dev` → 重啟 `ai-assessment-api` 並 reload Nginx →
+> **自動執行 `deploy/verify.sh` 部署驗證**。
 
-部署後快速驗證：
+`verify.sh` 會逐項印出 **PASS／WARN／FAIL**：
+- **FAIL**（要立刻處理，結束代碼為 1）：服務沒在跑、健康檢查失敗、前後端版本不等於剛拉下來的
+  commit（例如服務沒重啟成功）、對外網址打不開。
+- **WARN**（功能可用、但有設定該補）：沒設定 SMTP 或 `TRUST_PROXY`、沒有備份 cron、26 小時內沒有
+  備份、第二大腦連不到、沒設定 OpenRouter 金鑰。
+
+隨時都可以再單獨跑一次：
 ```bash
-curl -s localhost:3101/api/health      # 應回 {"ok":true}（本站後端埠為 3101）
+bash deploy/verify.sh
+curl -s localhost:3101/api/health      # {"ok":true,"version":{"commit":"<目前 commit>",...}}（本站後端埠為 3101）
 ```
+**最後一步要從 VPS 以外的網路做**：用瀏覽器登入管理員 →「管理後台 → 系統狀態」，確認「伺服器
+看到的你的 IP」跟 whatismyip 之類網站顯示的一致，才代表 `TRUST_PROXY` 設對了（VPS 本機測不出來）。
+
 再開 `https://assess.rong-rise.com` 確認網站正常；若要驗證「整體組織敘事評論」，
 進教練後台 → 選一個 `leadership-9d` 班別（需 ≥2 位成員已作答），確認雷達圖下方
 出現「🏢 整體組織評語」區塊。

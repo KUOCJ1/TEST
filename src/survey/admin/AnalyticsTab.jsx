@@ -19,7 +19,8 @@ function Kpi({ label, value, suffix, tip }) {
         {label}
         {tip && <InfoTip text={tip} />}
       </p>
-      <p className="mt-1 text-3xl font-extrabold text-slate-800">
+      {/* 數字用大字；文字值（例如風格名稱「🔥 魅力領導者」）用 3xl 會擠爆卡片。 */}
+      <p className={`mt-1 font-extrabold text-slate-800 ${typeof value === 'number' ? 'text-3xl' : 'text-xl leading-snug'}`}>
         {value}
         {suffix && <span className="ml-1 text-base font-semibold text-slate-400">{suffix}</span>}
       </p>

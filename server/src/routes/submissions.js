@@ -140,6 +140,15 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
   router.post('/submissions/:id/comment', requireAuth, requireCoach, asyncHandler(async (req, res) => {
     const submission = db.data.submissions.find((s) => s.id === req.params.id);
     if (!submission) return res.status(404).json({ error: '作答記錄不存在' });
+    // 只有管理者，或「受評者在自己班上」的教練可以留評語——跟教練後台其他地方
+    // 「教練只看得到自己班上學員」的範圍一致。以前只檢查身分是教練，任何教練只要
+    // 拿到作答 id 就能對別班學員留言（Sprint 7 起還會因此寄通知信給對方學員）。
+    const { rateeId, userId } = normalizeSubmission(submission);
+    const coachesThem = (db.data.groups ?? []).some((g) => g.coachId === req.user.id
+      && ((g.memberIds ?? []).includes(rateeId) || (g.memberIds ?? []).includes(userId)));
+    if (req.user.role !== 'admin' && !coachesThem) {
+      return res.status(403).json({ error: '只能對自己班上的學員留評語' });
+    }
     const { text, tips } = req.body ?? {};
     if (!text?.trim()) return res.status(400).json({ error: '請輸入評語' });
     if (!submission.comments) submission.comments = [];

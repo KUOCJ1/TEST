@@ -144,10 +144,12 @@ server/src/
 ├── auth.js                  密碼雜湊、JWT 簽發/驗證
 ├── lib/
 │   ├── authContext.js       requireAuth / requireAdmin / requireCoach 中介層
+│   ├── buildInfo.js         讀 deploy.sh 寫入的 build-info.json（目前跑的是哪一版）
 │   ├── health.js            外部依賴深度健康檢查＋狀態變化告警（見第 10.4 節）
 │   ├── helpers.js           asyncHandler、輸入清洗（sanitizeXxx）
 │   ├── joinCode.js          QR 報到代碼產生邏輯
 │   ├── mailer.js            寄信（nodemailer + SMTP 環境變數，未設定時優雅降級）
+│   ├── notifications.js     學員通知信：複測提醒、教練評語通知（見第 10.4 節）
 │   └── learningResourceTopics.js   構面 → 第二大腦搜尋關鍵字對照表
 └── routes/                  各功能的 Express Router（見第 7 節）
 ```
@@ -177,11 +179,11 @@ CREATE TABLE records (
 
 | Collection | 內容 | 誰寫入 |
 |---|---|---|
-| `users` | 帳號（email、密碼雜湊、role: user/coach/admin、所屬 groupId 等） | 註冊/登入、管理者改角色 |
-| `submissions` | 每一次評測作答（answers、算出來的 result、groupId、raterId/rateeId 用於 360°、教練評語） | 學員提交、教練留言 |
+| `users` | 帳號（email、密碼雜湊、role: user/coach/admin、所屬 groupId、`preferences`——只收白名單鍵：`darkMode`／`defaultAssessmentId`／`notifyAssessment`／`notifyComment`） | 註冊/登入、管理者改角色、本人改設定 |
+| `submissions` | 每一次評測作答（answers、算出來的 result、groupId、raterId/rateeId 用於 360°、教練評語、`commentNotifiedAt` 評語通知冷卻用） | 學員提交、教練留言 |
 | `assessments` | 題庫 metadata（id/name/description/enabled），**不含題目本體**——題目在前端 `src/survey/data/assessments/*.js` | 開機自動種子（見下） |
 | `groups` | 班級（成員名單、joinCode、startDate、發佈狀態、`lastReminderSentAt` 催交信冷卻用） | 教練建立/管理 |
-| `goals` | 個人發展目標（含 `baselineAverage`、`reviewDate`，見第 10.2 節學習閉環） | 學員自己 |
+| `goals` | 個人發展目標（含 `baselineAverage`、`reviewDate`，見第 10.2 節學習閉環；`reviewReminderSentAt` 記錄複測提醒信已寄） | 學員自己 |
 | `readingList` | 學員從延伸閱讀加入的文章清單（url/title/excerpt/read…），只有本人讀得到（見 `routes/readingList.js`） | 學員自己 |
 | `learningResourceClicks` | 延伸閱讀文章點擊事件（純計數用，供管理後台彙總，不對外曝光個人身分） | 前端 fire-and-forget 記錄 |
 | `systemStatus` | 系統狀態（目前只有一筆 `deepHealth`：外部依賴上一次檢查的結果，供告警比對「有沒有變化」，見第 10.4 節） | 後端排程 |
@@ -309,6 +311,8 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   卡片有狀態標籤（未作答／課前已完成／課後已完成／可重測）
 - 作答：Likert 量表逐題填答，支援中途離開續答
 - 360° 多元評測（支援的題庫）：除自評外可邀請他人對自己評分
+- 通知信（需設定 SMTP，見第 10.4 節）：發展目標到了預計檢視日寄「複測提醒」、
+  教練留評語時寄「有新評語」通知；可在「個人設定 → 通知偏好」各自關閉
 - 提交後即時看到報告（`ResultPanel`）：雷達圖、構面落點、客製建議、
   （L9D）敘事報告、**延伸閱讀**（見第 10.2 節，放在報告最下方，可加入學習
   清單或發展目標）
@@ -355,6 +359,12 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   獨立 lazy chunk（`BatchUploadSection.jsx`，解析邏輯抽在
   `batchFileParsing.js`），避免拖慢一般管理後台載入；不支援舊版二進位 `.xls`
 - 密碼重設連結：管理者可代發重設連結
+- **系統狀態**（`admin/SystemStatusTab.jsx`，`GET /api/admin/system-status`）：
+  前端／後端版本、外部依賴、寄信設定、告警排程最後執行時間、「伺服器看到的你的
+  IP」（驗證 `TRUST_PROXY` 用，見第 8 節）。前後端版本不一致時管理後台頂端會
+  出現警示——通常是只部署了一半，或瀏覽器的 PWA 快取還是舊版
+- 風格型題庫（DISC／識己®）的「數據分析」不顯示總分、達成率，改為最常見風格、
+  各構面傾向強度與風格人數分佈（沿用第 4.2 節「風格沒有高低」的原則）
 - AI 平台助理
 
 ---
@@ -384,7 +394,8 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 `GET /api/health` 不需認證，用於部署驗證與健康檢查；帶 `?deep=1` 時額外檢查
 第二大腦 API 與 OpenRouter 的可達性/設定狀態（`lib/health.js` 的
 `deepHealthCheck()`），供外部監控服務輪詢，一般部署驗證仍用不帶參數的版本。
-後端自己也會定期跑這個檢查並在狀態變化時寄信告警（第 10.4 節）。
+後端自己也會定期跑這個檢查並在狀態變化時寄信告警（第 10.4 節）。兩種模式都會
+回傳 `version: { commit, builtAt }`——`deploy.sh` 部署時寫入，本機開發為 `null`。
 
 ---
 
@@ -395,9 +406,15 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   送出 cookie——這是「正式站沒開 HTTPS 就會一直被登出」的根因，見疑難排解。
 - **權限中介層**（`lib/authContext.js`）：`requireAuth` / `requireAdmin` /
   `requireCoach` 三層，`requireCoach` 對 `admin` 角色也放行。
+- **教練只能碰自己班上的學員**：成績可見範圍（`coach.js` 的 `visibleUserIds`）與
+  寫評語（`submissions.js`，Sprint 7 補上——以前只檢查身分是教練，任何教練拿到
+  作答 id 就能對別班學員留言，而且會觸發通知信寄給對方學員）都以「受評者在不在
+  自己的班上」為準；管理者不受限。
 - **密碼**：bcryptjs 雜湊，絕不明文儲存或記錄。
 - **Rate limiting**（`express-rate-limit`）：
-  - 註冊/登入：預設每 5 分鐘 10 次；帶有效 `joinCode` 時放寬到 100 次
+  - 註冊/登入：預設每 5 分鐘 10 次；帶有效 `joinCode` 時放寬到 100 次。
+    `AUTH_RATE_LIMIT` 環境變數可改預設額度，**只給 E2E 用**（幾支測試共用同一個
+    後端與來源 IP），正式環境不要設
     （整班同時掃碼註冊不會互相卡到），仍有上限且綁定「持有教練發出的代碼」。
   - AI 聊天：每分鐘 20 次／IP。
   - 公開查詢（`/public/join/:code`）：獨立 rate limit，避免被拿來掃碼枚舉。
@@ -576,6 +593,20 @@ URL」的邏輯，那是脆弱且已被證明會壞的做法。
   失敗（通常是 SMTP 設定錯）時**不進冷卻**，修好設定可以馬上重試。
 - 信裡的作答連結用 `APP_URL` 組出來（預設正式站網址）。
 
+**學員通知信**（`lib/notifications.js`，Sprint 7）：
+- **複測提醒**：`server.js` 每 `NOTIFY_INTERVAL_MINUTES` 分鐘（預設 60）找出
+  「預計檢視日已過、未達成、還沒寄過」的目標寄信，寄出後記 `reviewReminderSentAt`，
+  每個目標只寄一次。學員設定目標後已經重新做過同一套評量的就不寄（他已經複測了）。
+  判斷條件跟首頁「下一步」卡片的複測提醒一致。
+- **教練評語通知**：教練存評語（`POST /submissions/:id/comment`）後、回應送出之後
+  才非同步寄信，教練不必等 SMTP。**信裡刻意不放評語內容**（評語可能含敏感的
+  績效觀察，Email 可能被轉寄），只說「有新評語」附連結。同一份作答 1 小時內反覆
+  修改只寄一次（`commentNotifiedAt`）；只通知「自評」作答的作答者。
+- 兩者分別受 `preferences.notifyAssessment`、`notifyComment` 控制（個人設定的
+  「評測提醒」「教練評語通知」，沒設定過＝開啟）。教練手動寄的課程催交信屬課程
+  行政通知，**不受這兩個開關影響**，設定頁有寫明。
+- 未設定 SMTP 時整個略過、不留紀錄；之後設定好了，已到期的複測提醒會照常補寄。
+
 ## 11. 部署架構與維運
 
 完整逐步指令見 [`DEPLOYMENT.md`](../DEPLOYMENT.md)，這裡整理「為什麼」與
@@ -615,7 +646,8 @@ Traefik（host 網路，80/443，Cloudflare DNS challenge 自動簽 TLS）
 寄信（第 10.4 節）需要 `SMTP_HOST`／`SMTP_USER`／`SMTP_PASS`（缺一即停用寄信
 功能，其他不受影響），選填 `SMTP_PORT`（預設 587；465 走 implicit TLS）、
 `SMTP_FROM`（寄件者顯示，預設同 `SMTP_USER`）；`APP_URL` 也用於提醒信裡的
-作答連結。`HEALTH_CHECK_INTERVAL_MINUTES` 調整告警排程間隔（預設 5，0 關閉）。
+作答連結。`HEALTH_CHECK_INTERVAL_MINUTES` 調整告警排程間隔（預設 5，0 關閉）；
+`NOTIFY_INTERVAL_MINUTES` 調整複測提醒的檢查間隔（預設 60，0 關閉）。
 
 > ⚠️ 安全守則：絕不在程式碼、提交訊息、文件或對話中索取或重現密碼、
 > JWT 密鑰、SSH 金鑰等任何憑證。`.env` 已列入 `.gitignore`，只在 VPS 上
@@ -630,12 +662,21 @@ git checkout claude/ai-assessment-survey-4vhjun
 git pull origin claude/ai-assessment-survey-4vhjun
 bash deploy/deploy.sh
 ```
-`deploy.sh` 會：重建前端 → 同步 `dist/` 到 `/var/www/ai-assessment` →
-同步後端 → `npm ci --omit=dev` → 重啟 `ai-assessment-api` 並 reload Nginx，
-且**會保留** `.env` 與資料檔（不會被覆蓋或清空）。部署後驗證：
+`deploy.sh` 會：記下目前 commit → 重建前端（把版本寫進打包）→ 同步 `dist/` 到
+`/var/www/ai-assessment` → 同步後端 → 前後端各寫一份 `build-info.json` →
+`npm ci --omit=dev` → 重啟 `ai-assessment-api` 並 reload Nginx → **自動執行
+`deploy/verify.sh`**。`.env` 與資料檔**會保留**（不會被覆蓋或清空）。
+
+`deploy/verify.sh`（也可以隨時單獨跑）逐項印出 PASS／WARN／FAIL：服務是否在跑、
+健康檢查、**前後端版本是否等於目前 commit**、對外網址 200、第二大腦／OpenRouter、
+SMTP 與 `TRUST_PROXY` 有沒有設、備份 cron 是否存在、26 小時內有沒有備份。
+FAIL（服務沒正常運作）會讓結束代碼為 1；WARN（該補的設定）不會。手動確認：
 ```bash
-curl -s localhost:3101/api/health     # 應回 {"ok":true}
+curl -s localhost:3101/api/health     # 應回 {"ok":true,"version":{"commit":"<目前 commit>",...}}
+bash deploy/verify.sh
 ```
+最後從**外部網路**開「管理後台 → 系統狀態」，確認「伺服器看到的你的 IP」是你
+真實的對外 IP（這是驗證 `TRUST_PROXY` 唯一可靠的方式，VPS 本機測不出來）。
 
 > 這個部署腳本**必須在 VPS 本機執行**（內含 `sudo systemctl`、`rsync` 等
 > 本機操作）。雲端開發容器（例如這個 Claude Code 工作環境）無法直接 SSH
@@ -676,17 +717,22 @@ HTTP 呼叫（第二大腦整合、`chat.js`/OpenRouter 整合的測試都是這
 以及速率限制邊界。
 
 **E2E（`e2e/`，Playwright + `@axe-core/playwright`）**：`playwright.config.js`
-會自動起後端（記憶體 DB）與前端 dev server，跑 3 條黃金路徑並在關鍵頁面做
+會自動起後端（記憶體 DB）與前端 dev server，跑 4 條黃金路徑並在關鍵頁面做
 無障礙掃描（斷言 `violations.filter(v => v.impact === 'critical')` 為空）：
 - `learner-golden-path.spec.js`：學員註冊 → 完成一次評測 → 看報告
 - `coach-qr-join.spec.js`：教練建班 → 產生 QR 報到連結 → 學員用連結直接加入
 - `admin-assessment-toggle.spec.js`：管理者停用某套題庫後學員看不到，重新
   啟用後恢復
+- `coach-overview-with-data.spec.js`：用 API 種好一個有作答資料的班級，教練打開
+  總覽，斷言作答進度、KPI、成員比較表都在、未設定 SMTP 時寄信按鈕優雅降級。
+  Sprint 5 拆元件時漏搬「作答進度」面板，前三條都沒走到有資料的班級總覽才沒
+  抓到——這條就是為此而加，已驗證拿掉面板時會失敗
 
 這套測試會啟動真實 Chromium，能抓到 jsdom（Vitest 環境）測不出來的問題
 （實際渲染、真實使用者互動時序）。跑的時候三支測試共用同一個後端／
 記憶體 DB／rate limiter，因此 `playwright.config.js` 設 `workers: 1`
-（依序執行，不用平行搶同一份狀態）；每支測試若動到共用資料（例如停用
+（依序執行，不用平行搶同一份狀態），並設 `AUTH_RATE_LIMIT=1000`（否則幾支
+測試加起來會把正式額度 10 次用光）；每支測試若動到共用資料（例如停用
 題庫），結尾都要自己復原，避免污染後面的測試。CI 環境沒有預裝的
 Chromium 路徑時可用 `PLAYWRIGHT_CHROMIUM_PATH` 環境變數指定執行檔位置。
 
@@ -697,8 +743,10 @@ Chromium 路徑時可用 `PLAYWRIGHT_CHROMIUM_PATH` 環境變數指定執行檔�
 不重複 dimension ID 的寫法）。
 
 **CI**（`.github/workflows/deploy.yml`）：push 到功能分支時跑
-`npm ci → lint → test`（前端）+ `npm ci → test`（後端）→ `npm run build`
-→ 部署到 **GitHub Pages**（`base: /TEST/`）。
+`npm ci → lint → test`（前端）+ `npm ci → test`（後端）→ **E2E**（安裝
+Chromium 後跑 `npm run test:e2e`，失敗時上傳 trace 當 artifact）→ `npm run build`
+→ 部署到 **GitHub Pages**（`base: /TEST/`）。E2E 任何一條失敗就不會部署預覽站。
+（Sprint 5 當時宣稱「E2E 可在 CI 執行」但其實沒接上，Sprint 7 才補齊。）
 
 > ⚠️ **這個 GitHub Pages 部署只是預覽站，跟正式的 VPS 站
 > （`assess.rong-rise.com`）完全獨立**——GitHub Pages 是純靜態託管，沒有
@@ -725,9 +773,10 @@ Chromium 路徑時可用 `PLAYWRIGHT_CHROMIUM_PATH` 環境變數指定執行檔�
 - **寄出的信可能進垃圾信匣**：沒有為寄件網域設定 SPF/DKIM 時，Gmail 等大型
   信箱有一定機率把告警信、催交信判成垃圾信。正式使用前建議用有設定 SPF/DKIM
   的自有網域寄信，並實際寄一封測試信確認收得到。
-- **`server/.env` 的 `TRUST_PROXY` 全靠人工在每次部署環境變動時正確設定
-  並手動驗證**，沒有自動化檢查會在設錯時提醒維運人員（例如反向代理層數
-  改變、但忘記同步更新這個值）。
+- **`TRUST_PROXY` 仍要人工從外部驗證一次**：`verify.sh` 會提醒有沒有設定，
+  「管理後台 → 系統狀態」會顯示伺服器看到的 IP 並在看起來是內網位址時警示，
+  但「設的層數對不對」只有從外部網路打開那一頁才看得出來，無法完全自動化。
+  反向代理架構改變時要重看一次。
 
 ---
 
