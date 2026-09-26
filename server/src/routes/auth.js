@@ -45,9 +45,13 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }
   // 隨時可由教練撤銷。
   // Created fresh per router instance (not module-level) so each createApp()
   // call — notably each test's own app — gets an independent counter.
+  //
+  // AUTH_RATE_LIMIT 只給 E2E 測試用：Playwright 的幾支測試共用同一個後端、同一個
+  // 來源 IP，照正式額度（10 次）很快就會被自己擋下。正式環境不要設。
+  const baseLimit = Number(process.env.AUTH_RATE_LIMIT) || 10;
   const authLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,
-    limit: (req) => (findGroupByJoinCode(db, req.body?.joinCode) ? 100 : 10),
+    limit: (req) => (findGroupByJoinCode(db, req.body?.joinCode) ? Math.max(100, baseLimit) : baseLimit),
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: '請求過於頻繁，請稍後再試' },

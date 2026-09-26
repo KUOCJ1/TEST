@@ -13,6 +13,7 @@ import { createPublicRouter } from './routes/public.js';
 import { createLearningResourcesRouter } from './routes/learningResources.js';
 import { createReadingListRouter } from './routes/readingList.js';
 import { deepHealthCheck } from './lib/health.js';
+import { getBuildInfo } from './lib/buildInfo.js';
 
 export {
   sanitizeFocusDimensionIds,
@@ -49,10 +50,13 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   // ?deep=1：額外回報第二大腦／OpenRouter 這兩個外部依賴的狀態（見
   // lib/health.js），供外部監控服務輪詢；平常（無此參數）維持原本輕量、
   // 不打外部網路的健康檢查，避免監控頻率太高時反而一直打外部 API。
+  // version：deploy.sh 寫入的 commit／建置時間（本機開發為 null），部署後用來確認
+  // 正式站跑的就是剛推上去的那一版。commit SHA 本身不含敏感資訊，公開無妨。
   app.get('/api/health', (req, res, next) => {
-    if (req.query.deep !== '1') return res.json({ ok: true });
+    const version = getBuildInfo();
+    if (req.query.deep !== '1') return res.json({ ok: true, version });
     deepHealthCheck()
-      .then((deps) => res.json({ ok: true, deps }))
+      .then((deps) => res.json({ ok: true, version, deps }))
       .catch(next);
   });
 

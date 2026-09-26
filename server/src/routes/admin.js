@@ -5,7 +5,28 @@ import {
   asyncHandler, normalizeSubmission, auditLog, hashToken, revokeUserTokens, validateResultShape,
 } from '../lib/helpers.js';
 
+import { getBuildInfo } from '../lib/buildInfo.js';
+import { deepHealthCheck } from '../lib/health.js';
+import { isMailConfigured } from '../lib/mailer.js';
+
 const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
+
+/**
+ * 這個 IP 是不是本機或內網位址？req.ip 讀到這種位址，而請求明明是從外部網路
+ * 連進來的，就代表 trust proxy 層數設太低——Express 把反向代理（Nginx）自己的
+ * 位址當成了使用者 IP，rate limit 會變成全站共用一份額度（見 PLATFORM_MANUAL 第 8 節）。
+ */
+export function isInternalIp(ip) {
+  if (!ip) return true;
+  const v4 = ip.startsWith('::ffff:') ? ip.slice(7) : ip;
+  if (/^127\./.test(v4) || v4 === '::1') return true;
+  if (/^10\./.test(v4) || /^192\.168\./.test(v4)) return true;
+  const m = v4.match(/^172\.(\d+)\./);
+  if (m && Number(m[1]) >= 16 && Number(m[1]) <= 31) return true;
+  if (/^169\.254\./.test(v4)) return true;
+  if (/^f[cd][0-9a-f]{2}:/i.test(v4) || /^fe80:/i.test(v4)) return true;
+  return false;
+}
 
 /** @param {{db, requireAuth, requireAdmin}} deps */
 export function createAdminRouter({ db, requireAuth, requireAdmin }) {
@@ -45,6 +66,31 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
     const stats = [...counts.values()].sort((a, b) => (b.clicks + b.saves) - (a.clicks + a.saves));
     res.json({ stats });
   });
+
+  // ── 系統狀態（Sprint 7 驗收條件 7.1、7.3）────────────────────
+  // 部署後在管理後台一頁看完：跑的是哪一版、外部依賴、寄信有沒有設定、告警排程
+  // 有沒有在跑，以及「伺服器看到的你的 IP」——後者是驗證 TRUST_PROXY 唯一可靠
+  // 的方法：一定要從外部網路打開這一頁，才看得到真實情況。
+  router.get('/system-status', asyncHandler(async (req, res) => {
+    const deps = await deepHealthCheck();
+    const watch = (db.data.systemStatus ?? []).find((s) => s.id === 'deepHealth');
+    res.json({
+      version: getBuildInfo(),
+      deps,
+      mail: { configured: isMailConfigured() },
+      healthWatch: {
+        intervalMinutes: Number(process.env.HEALTH_CHECK_INTERVAL_MINUTES ?? 5),
+        lastCheckedAt: watch?.checkedAt ?? null,
+      },
+      connection: {
+        ip: req.ip,
+        ipLooksInternal: isInternalIp(req.ip),
+        forwardedFor: req.headers['x-forwarded-for'] ?? null,
+        remoteAddress: req.socket?.remoteAddress ?? null,
+        trustProxy: req.app.get('trust proxy'),
+      },
+    });
+  }));
 
   router.get('/overview', (_req, res) => {
     res.json({

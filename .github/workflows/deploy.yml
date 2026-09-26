@@ -36,6 +36,23 @@ jobs:
         working-directory: server
         run: npm test
 
+      # E2E 黃金路徑（Sprint 7 驗收條件 7.4）：playwright.config.js 會自己起後端
+      # （記憶體 DB）與前端 dev server。放在 Build／Deploy 之前，任何一條失敗就
+      # 不會部署預覽站。
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E
+        run: npm run test:e2e
+
+      - name: Upload E2E traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
+
       - name: Build
         run: npm run build
         env:

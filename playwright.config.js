@@ -40,6 +40,10 @@ export default defineConfig({
       env: {
         DB_PATH: process.env.E2E_DB_PATH || ':memory:',
         JWT_SECRET: 'e2e-test-secret-key-at-least-32-characters-long',
+        // 所有測試共用一個後端與來源 IP，正式的註冊／登入額度（10 次／5 分鐘）不夠用。
+        AUTH_RATE_LIMIT: '1000',
+        // 排程會去打外部網路的第二大腦，E2E 不需要。
+        HEALTH_CHECK_INTERVAL_MINUTES: '0',
         ADMIN_EMAIL: 'admin@e2e.test',
         ADMIN_PASSWORD: 'E2eTest1234',
         PORT: '3001',

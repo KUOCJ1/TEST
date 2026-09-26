@@ -5,6 +5,8 @@ import UsersTab from './UsersTab';
 import GroupsTab from './GroupsTab';
 import QuickAnalysisTab from '../analysis/QuickAnalysisTab';
 import LoadingState from '../components/LoadingState';
+import SystemStatusTab from './SystemStatusTab';
+import { FRONTEND_BUILD, isVersionMismatch } from '../utils/buildInfo';
 
 // 內含 xlsx（體積較大），只有點開「批次上傳」分頁才需要，獨立拆成自己的 chunk。
 const BatchUploadSection = lazy(() => import('./BatchUploadSection'));
@@ -15,6 +17,7 @@ const TABS = [
   { id: 'users', label: '用戶管理' },
   { id: 'groups', label: '班別與發佈' },
   { id: 'import', label: '批次上傳' },
+  { id: 'system', label: '系統狀態' },
 ];
 
 export default function AdminDashboard() {
@@ -25,6 +28,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
   const [toggling, setToggling] = useState(false);
   const [toggleError, setToggleError] = useState('');
+  const [backendVersion, setBackendVersion] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -36,6 +40,8 @@ export default function AdminDashboard() {
         setAdminGroups(gs);
       })
       .catch((e) => active && setError(e.message || '載入失敗'));
+    // 版本比對獨立抓、失敗就算了：只是提示用，不能影響管理後台本身載入。
+    api.health().then((h) => active && setBackendVersion(h.version ?? null)).catch(() => {});
     return () => { active = false; };
   }, []);
 
@@ -80,6 +86,13 @@ export default function AdminDashboard() {
           以每位填答者「最新一筆」作答為母體，依題庫分別彙整能力落點。
         </p>
       </header>
+
+      {isVersionMismatch(FRONTEND_BUILD, backendVersion) && (
+        <p role="alert" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          前端版本（{FRONTEND_BUILD.commit}）與後端版本（{backendVersion.commit}）不一致：可能只部署了其中一邊，
+          或瀏覽器還在用舊的快取頁面。請先重新整理；仍不一致請重新執行部署，細節見「系統狀態」分頁。
+        </p>
+      )}
 
       {error && (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -154,6 +167,7 @@ export default function AdminDashboard() {
       {tab === 'groups' && (
         <GroupsTab groups={adminGroups} onGroupUpdated={handleGroupUpdated} />
       )}
+      {tab === 'system' && <SystemStatusTab />}
       {tab === 'import' && (
         <Suspense fallback={<LoadingState />}>
           <BatchUploadSection />

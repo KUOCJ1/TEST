@@ -19,7 +19,10 @@ describe('GET /api/health', () => {
     const fetchMock = t.mock.method(globalThis, 'fetch', async () => { throw new Error('不該被呼叫'); });
     const res = await request(setup()).get('/api/health');
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body, { ok: true });
+    assert.equal(res.body.ok, true);
+    assert.equal(res.body.deps, undefined);
+    // 測試環境沒有 deploy.sh 寫的 build-info.json：版本欄位存在但為 null。
+    assert.deepEqual(res.body.version, { commit: null, builtAt: null });
     assert.equal(fetchMock.mock.callCount(), 0);
   });
 

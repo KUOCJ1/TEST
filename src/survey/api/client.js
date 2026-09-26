@@ -64,6 +64,8 @@ export const api = {
   },
 
   adminOverview: () => request('/admin/overview'),
+  health: () => request('/health'),
+  adminSystemStatus: () => request('/admin/system-status'),
   batchImport: (payload) => request('/admin/batch-import', { method: 'POST', body: payload }),
   setUserRole: (userId, role) =>
     request(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role } }).then((d) => d.user),

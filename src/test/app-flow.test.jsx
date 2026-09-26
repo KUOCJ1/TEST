@@ -75,6 +75,7 @@ vi.mock('../survey/api/client', () => {
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       },
       async adminLearningResourceStats() { return []; },
+      async health() { return { ok: true, version: { commit: null, builtAt: null } }; },
       async adminOverview() {
         return {
           users: state.users.map(pub),
