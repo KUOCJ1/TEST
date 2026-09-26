@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aggregateStats, computePercentile, latestPerUser, computeGroupGain } from '../survey/utils/analytics';
+import { aggregateStats, computePercentile, latestPerUser, computeGroupGain, computeCohortTrend } from '../survey/utils/analytics';
 import { buildResult } from '../survey/utils/scoring';
 import { getAssessment } from '../survey/data/assessments/index.js';
 
@@ -166,5 +166,62 @@ describe('computeGroupGain', () => {
     expect(gain.avgTotalDelta).toBeUndefined();
     expect(gain.preDistribution.reduce((n, d) => n + d.count, 0)).toBe(1);
     expect(gain.postDistribution.reduce((n, d) => n + d.count, 0)).toBe(1);
+  });
+});
+
+describe('computeCohortTrend（Sprint 6 跨梯次比較）', () => {
+  const g = (id, startDate, extra = {}) => ({ id, name: `班${id}`, assessmentId: 'ai-competency', startDate, memberIds: [], ...extra });
+  const s = (userId, groupId, value, extra = {}) => ({
+    userId, groupId, raterType: 'self', phase: 'pre', assessmentId: 'ai-competency',
+    createdAt: '2026-01-01T00:00:00Z', result: resultFor(value), ...extra,
+  });
+
+  it('依開課日由舊到新排序，沒設開課日的排最後', () => {
+    const groups = [g('c', null), g('b', '2026-06-01'), g('a', '2026-03-01')];
+    const subs = [s('u1', 'a', 3), s('u2', 'b', 4), s('u3', 'c', 5)];
+    const { cohorts } = computeCohortTrend(groups, subs, config);
+    expect(cohorts.map((c) => c.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('每班各自彙整：人數、平均總分與達成率只算歸屬在該班的作答', () => {
+    const groups = [g('a', '2026-03-01'), g('b', '2026-06-01')];
+    const subs = [s('u1', 'a', 2), s('u2', 'a', 4), s('u3', 'b', 5)];
+    const { cohorts } = computeCohortTrend(groups, subs, config);
+    const [a, b] = cohorts;
+    expect(a.respondents).toBe(2);
+    expect(a.avgTotal).toBe(aggregateStats([s('u1', 'a', 2), s('u2', 'a', 4)], config).avgTotal);
+    expect(b.respondents).toBe(1);
+    expect(b.avgPercent).toBe(resultFor(5).percent);
+  });
+
+  it('只看指定階段：課前、課後分開計算，不混在同一個平均', () => {
+    const groups = [g('a', '2026-03-01')];
+    const subs = [s('u1', 'a', 2), s('u1', 'a', 5, { phase: 'post', createdAt: '2026-02-01T00:00:00Z' })];
+    expect(computeCohortTrend(groups, subs, config, 'pre').cohorts[0].avgPercent).toBe(resultFor(2).percent);
+    expect(computeCohortTrend(groups, subs, config, 'post').cohorts[0].avgPercent).toBe(resultFor(5).percent);
+  });
+
+  it('phase 為 null 的舊資料視為課前；360 他評不算', () => {
+    const groups = [g('a', '2026-03-01')];
+    const subs = [s('u1', 'a', 3, { phase: null }), s('u2', 'a', 5, { raterType: 'peer' })];
+    const { cohorts } = computeCohortTrend(groups, subs, config, 'pre');
+    expect(cohorts[0].respondents).toBe(1);
+  });
+
+  it('舊資料（groupId 為 null）退回用成員名單＋同題庫反查', () => {
+    const groups = [g('a', '2026-03-01', { memberIds: ['u1'] })];
+    const subs = [s('u1', null, 4), s('u9', null, 4), s('u1', null, 4, { assessmentId: 'disc' })];
+    expect(computeCohortTrend(groups, subs, config).cohorts[0].respondents).toBe(1);
+  });
+
+  it('只列出同一套題庫的班級；該階段沒有作答的班級不列入並回報數量', () => {
+    const groups = [g('a', '2026-03-01'), g('b', '2026-06-01'), g('d', '2026-01-01', { assessmentId: 'disc' })];
+    const { cohorts, emptyCount } = computeCohortTrend(groups, [s('u1', 'a', 3)], config);
+    expect(cohorts.map((c) => c.id)).toEqual(['a']);
+    expect(emptyCount).toBe(1);
+  });
+
+  it('沒有 config 時回傳空結果', () => {
+    expect(computeCohortTrend([g('a', null)], [], null)).toEqual({ cohorts: [], emptyCount: 0 });
   });
 });

@@ -10,6 +10,7 @@ import LevelDistribution from '../components/charts/LevelDistribution';
 import { formatDate } from '../utils/format';
 import InfoTip from '../components/InfoTip';
 import LearningResourceStatsPanel from './LearningResourceStatsPanel';
+import CohortTrendSection from './CohortTrendSection';
 
 function Kpi({ label, value, suffix, tip }) {
   return (
@@ -36,7 +37,7 @@ function compareRows(a, b, key, dir) {
   return mul * ((av ?? 0) - (bv ?? 0));
 }
 
-export default function AnalyticsTab({ submissions, users, adminAssessments }) {
+export default function AnalyticsTab({ submissions, users, adminAssessments, groups = [] }) {
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState('total');
   const [sortDir, setSortDir] = useState('desc');
@@ -163,6 +164,8 @@ export default function AnalyticsTab({ submissions, users, adminAssessments }) {
             <h3 className="mb-4 text-base font-bold text-slate-700">落點等級人數分佈</h3>
             <LevelDistribution distribution={stats.levelDistribution} />
           </section>
+
+          <CohortTrendSection groups={groups} submissions={submissions} config={activeConfig} />
 
           <section className="mt-5 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60">
             <div className="mb-4 flex items-center justify-between">

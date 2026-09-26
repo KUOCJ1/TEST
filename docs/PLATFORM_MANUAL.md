@@ -82,7 +82,8 @@
          │
          ├── SQLite（better-sqlite3，單一檔案）── 使用者／作答／題庫／班級／目標
          ├── OpenRouter API（外部）────────────── AI 聊天小幫手
-         └── 第二大腦 API（外部，brain.rong-rise.com）── 延伸閱讀文章
+         ├── 第二大腦 API（外部，brain.rong-rise.com）── 延伸閱讀文章
+         └── SMTP 寄信服務（外部，選配）────────── 告警信、催交提醒信
 ```
 
 正式站的實際反向代理層（VPS 上已有 Traefik 佔用 80/443，見第 11 節）：
@@ -143,8 +144,10 @@ server/src/
 ├── auth.js                  密碼雜湊、JWT 簽發/驗證
 ├── lib/
 │   ├── authContext.js       requireAuth / requireAdmin / requireCoach 中介層
+│   ├── health.js            外部依賴深度健康檢查＋狀態變化告警（見第 10.4 節）
 │   ├── helpers.js           asyncHandler、輸入清洗（sanitizeXxx）
 │   ├── joinCode.js          QR 報到代碼產生邏輯
+│   ├── mailer.js            寄信（nodemailer + SMTP 環境變數，未設定時優雅降級）
 │   └── learningResourceTopics.js   構面 → 第二大腦搜尋關鍵字對照表
 └── routes/                  各功能的 Express Router（見第 7 節）
 ```
@@ -170,17 +173,18 @@ CREATE TABLE records (
 呼叫端介面因此跟舊版純 JSON 檔儲存完全相同，遷移對業務邏輯是透明的。這個
 設計適合**課程規模、低併發**的使用情境（見第 13 節的規模限制）。
 
-七個 collection 的角色：
+八個 collection 的角色：
 
 | Collection | 內容 | 誰寫入 |
 |---|---|---|
 | `users` | 帳號（email、密碼雜湊、role: user/coach/admin、所屬 groupId 等） | 註冊/登入、管理者改角色 |
 | `submissions` | 每一次評測作答（answers、算出來的 result、groupId、raterId/rateeId 用於 360°、教練評語） | 學員提交、教練留言 |
 | `assessments` | 題庫 metadata（id/name/description/enabled），**不含題目本體**——題目在前端 `src/survey/data/assessments/*.js` | 開機自動種子（見下） |
-| `groups` | 班級（成員名單、joinCode、startDate、發佈狀態） | 教練建立/管理 |
+| `groups` | 班級（成員名單、joinCode、startDate、發佈狀態、`lastReminderSentAt` 催交信冷卻用） | 教練建立/管理 |
 | `goals` | 個人發展目標（含 `baselineAverage`、`reviewDate`，見第 10.2 節學習閉環） | 學員自己 |
 | `readingList` | 學員從延伸閱讀加入的文章清單（url/title/excerpt/read…），只有本人讀得到（見 `routes/readingList.js`） | 學員自己 |
 | `learningResourceClicks` | 延伸閱讀文章點擊事件（純計數用，供管理後台彙總，不對外曝光個人身分） | 前端 fire-and-forget 記錄 |
+| `systemStatus` | 系統狀態（目前只有一筆 `deepHealth`：外部依賴上一次檢查的結果，供告警比對「有沒有變化」，見第 10.4 節） | 後端排程 |
 
 **新增題庫不需要寫遷移腳本**：`db.js` 開機時若 `assessments` 為空就用
 `KNOWN_ASSESSMENTS` 陣列全新種子；若已非空（例如正式站既有資料庫），會逐一
@@ -318,8 +322,10 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 ### 教練
 - 教練後台總覽：自己管理的班級列表
 - 班級總覽與評語：整班雷達圖平均、落點分布、對個別學員最新一筆作答留言
-- **作答進度追蹤**（`coach/ProgressPanel.jsx`）：課前／課後各自完成人數，未完成
-  者名單，一鍵「複製提醒訊息」（含截止日、報到連結，可直接貼去 LINE／Email）
+- **作答進度追蹤**（`coach/ProgressPanel.jsx`，放在班級「總覽」分頁最上方）：
+  課前／課後各自完成人數，未完成者名單，一鍵「複製提醒訊息」（含截止日、報到
+  連結，可直接貼去 LINE／Email）；設定好 SMTP 後另有「寄送提醒信」直接寄出
+  （見第 10.4 節）
 - **班級學習成效**（`coach/GroupGainReport.jsx`，邏輯在
   `utils/analytics.js` 的 `computeGroupGain()`）：課前 vs 課後只計算「配對
   樣本」（同一人課前課後都做過才算），一般題庫顯示平均總分增益與各構面增益，
@@ -337,6 +343,13 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 - 管理後台總覽：全站 KPI
 - 評量開關：`enabled` 開關題庫是否對學員可見
 - 整體統計：跨題庫/跨班級分析
+- **跨班級／跨梯次比較**（`admin/CohortTrendSection.jsx`，邏輯在
+  `utils/analytics.js` 的 `computeCohortTrend()`）：「數據分析」分頁下方，所選
+  題庫的全部班級（不限教練）依開課日排序，一次只看課前或課後（混在一起會把
+  「進來時的程度」跟「上完課的成果」攪在同一個平均），一般題庫顯示各梯平均
+  達成率與「最新一梯比第一梯差幾個百分點」，PROFILE_MODE 題庫改列各梯風格
+  分布、不算差距。跟教練端「比較梯次」的差別：那個一次選兩班、只限自己名下
+  的班級；這個是全站所有梯次的長期趨勢
 - 用戶角色管理：改 user/coach/admin
 - 批次匯入：CSV/Excel（`.xlsx`，`read-excel-file` 套件解析）匯入名單，
   獨立 lazy chunk（`BatchUploadSection.jsx`，解析邏輯抽在
@@ -362,7 +375,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 | `learning-resources` (`learningResources.js`) | `GET /learning-resources`、`POST /learning-resources/track-click` | 延伸閱讀，代理到第二大腦 API；後者記錄文章點擊供管理後台彙總（見第 10 節） |
 | `public.js` | `GET /public/join/:code` | **免登入**，QR 報到落地頁查班級資訊，獨立 rate limit |
 | `admin.js`（掛 `/api/admin`，`requireAdmin`） | `GET/PATCH /assessments`、`GET /overview`、`PATCH /users/:id/role`、`POST /users/:id/reset-token`、`POST /batch-import`、`GET /learning-resources/stats` | |
-| `coach.js`（掛 `/api/coach`，`requireCoach`） | `GET /overview`、`/directory`、`GET/POST /groups`、`GET/PUT/DELETE /groups/:id`、`POST /groups/:id/publish`、`POST/DELETE /groups/:id/join-code`、`POST /groups/:id/roster` | admin 角色也滿足 `requireCoach`，故管理者能用教練後台全部功能 |
+| `coach.js`（掛 `/api/coach`，`requireCoach`） | `GET /overview`、`/directory`、`GET/POST /groups`、`GET/PUT/DELETE /groups/:id`、`POST /groups/:id/publish`、`POST/DELETE /groups/:id/join-code`、`POST /groups/:id/roster`、`POST /groups/:id/remind` | admin 角色也滿足 `requireCoach`，故管理者能用教練後台全部功能 |
 
 `admin`/`coach` 各自的 router 用 `router.use()` 統一掛驗證中介層，因此**必須**
 掛在專屬前綴（`/api/admin`、`/api/coach`）下，否則會攔截其他掛在 `/api` 的
@@ -371,6 +384,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 `GET /api/health` 不需認證，用於部署驗證與健康檢查；帶 `?deep=1` 時額外檢查
 第二大腦 API 與 OpenRouter 的可達性/設定狀態（`lib/health.js` 的
 `deepHealthCheck()`），供外部監控服務輪詢，一般部署驗證仍用不帶參數的版本。
+後端自己也會定期跑這個檢查並在狀態變化時寄信告警（第 10.4 節）。
 
 ---
 
@@ -530,6 +544,38 @@ URL」的邏輯，那是脆弱且已被證明會壞的做法。
 
 ---
 
+### 10.4 寄信：健康檢查告警與催交提醒信
+
+`server/src/lib/mailer.js` 用 `nodemailer` 接任何提供 SMTP relay 的服務
+（Gmail、SendGrid、Mailgun…），**不綁定廠商**，全部靠 `SMTP_*` 環境變數（見
+第 11.3 節）。沒設定時 `sendMail()` 回 `{ ok:false, code:'CONFIG_ERROR' }`
+而不是丟例外——寄信壞掉或沒設定，絕不能連帶讓評測本身壞掉，跟 `chat.js` 對
+`OPENROUTER_API_KEY` 的處理方式一致。
+
+**健康檢查告警**（`lib/health.js` 的 `checkAndAlert()`，由 `server.js` 排程呼叫）：
+- 每 `HEALTH_CHECK_INTERVAL_MINUTES` 分鐘（預設 5，設 0 關閉）跑一次深度健康
+  檢查，跟 `systemStatus` 裡的上次結果比對。第二大腦從「連得到」變「連不到」
+  或 OpenRouter 金鑰被移除時寄「⚠️ 異常」信給 `ADMIN_EMAIL`，恢復時寄「✅ 已恢復」。
+- **只在狀態變化時寄**：異常持續一小時不會寄 12 封一樣的信（那會很快被當成
+  雜訊忽略）。第一次跑（全新安裝）只記錄基準、不寄。
+- 上次狀態存在資料庫而不是記憶體：服務重啟後讀回來接著比，不會誤判成變化。
+- 排程放在 `server.js` 而不是 `createApp()`：後者也給測試用，放進去會在每個
+  測試檔留下計時器。
+- ⚠️ 這個告警是**這支服務自己**在跑——如果整個後端掛掉，就沒有人會寄信。
+  要涵蓋「整台服務掛掉」，仍建議另外用外部監控（UptimeRobot 等）定期打
+  `GET /api/health`，見第 13 節。
+
+**催交提醒信**（`POST /api/coach/groups/:id/remind`，前端是 `ProgressPanel` 的
+「寄送提醒信」）：
+- 對象判定跟「複製提醒訊息」一致：只看自評；還有人沒做課前就只催課前（含
+  「待加入」名單——已登錄 Email、尚未註冊的人，信裡的連結帶報到代碼），
+  全員課前完成後才改催課後。一人一封（個人化稱呼，也不會把全班信箱曝光在
+  收件人欄）。
+- 只能在施測期間寄（`getGroupPhase() === 'in_progress'`，否則 409）；同一班
+  1 小時內只能寄一次（`lastReminderSentAt`，否則 429 並附剩餘秒數）；全部寄送
+  失敗（通常是 SMTP 設定錯）時**不進冷卻**，修好設定可以馬上重試。
+- 信裡的作答連結用 `APP_URL` 組出來（預設正式站網址）。
+
 ## 11. 部署架構與維運
 
 完整逐步指令見 [`DEPLOYMENT.md`](../DEPLOYMENT.md)，這裡整理「為什麼」與
@@ -566,6 +612,10 @@ Traefik（host 網路，80/443，Cloudflare DNS challenge 自動簽 TLS）
 **必設**：`TRUST_PROXY=2`（見第 8 節）。AI 功能需要
 `OPENROUTER_API_KEY`（未設定則該功能優雅降級為 503，不影響其他功能）。
 第二大腦整合可選填 `BRAIN_API_BASE_URL`（預設已指向正式網址）。
+寄信（第 10.4 節）需要 `SMTP_HOST`／`SMTP_USER`／`SMTP_PASS`（缺一即停用寄信
+功能，其他不受影響），選填 `SMTP_PORT`（預設 587；465 走 implicit TLS）、
+`SMTP_FROM`（寄件者顯示，預設同 `SMTP_USER`）；`APP_URL` 也用於提醒信裡的
+作答連結。`HEALTH_CHECK_INTERVAL_MINUTES` 調整告警排程間隔（預設 5，0 關閉）。
 
 > ⚠️ 安全守則：絕不在程式碼、提交訊息、文件或對話中索取或重現密碼、
 > JWT 密鑰、SSH 金鑰等任何憑證。`.env` 已列入 `.gitignore`，只在 VPS 上
@@ -667,10 +717,14 @@ Chromium 路徑時可用 `PLAYWRIGHT_CHROMIUM_PATH` 環境變數指定執行檔�
   目前 `db.js` 的抽象（`db.data.*` + `db.persist()`）刻意留了置換空間，
   但實際遷移仍是一項未做的工作。
 - **第二大腦整合是單點外部依賴**：已用 5 秒逾時 + try/catch + 空狀態
-  處理將風險降到「壞了看不到延伸閱讀，但不影響評測本身」。`GET /api/health
-  ?deep=1`（見第 7 節）現在可以回報第二大腦與 OpenRouter 的可達性/設定
-  狀態，但**還沒有接上任何外部監控服務去主動輪詢並告警**——這支 endpoint
-  存在，但沒人在固定時間打它，等於還是要人工發現問題才會查。
+  處理將風險降到「壞了看不到延伸閱讀，但不影響評測本身」，且後端會定期檢查、
+  狀態變化時寄告警信（第 10.4 節）。**剩下的缺口**：這個告警是服務自己在跑，
+  整個後端掛掉時不會有人通知——需要另外設一個外部監控（UptimeRobot 等）
+  定期打 `GET /api/health`，這是 VPS 端的設定，程式碼這邊沒辦法代勞。告警
+  管道目前也只有 Email（Slack/Discord webhook 列在待決 backlog）。
+- **寄出的信可能進垃圾信匣**：沒有為寄件網域設定 SPF/DKIM 時，Gmail 等大型
+  信箱有一定機率把告警信、催交信判成垃圾信。正式使用前建議用有設定 SPF/DKIM
+  的自有網域寄信，並實際寄一封測試信確認收得到。
 - **`server/.env` 的 `TRUST_PROXY` 全靠人工在每次部署環境變動時正確設定
   並手動驗證**，沒有自動化檢查會在設錯時提醒維運人員（例如反向代理層數
   改變、但忘記同步更新這個值）。
@@ -724,3 +778,24 @@ Chromium 路徑時可用 `PLAYWRIGHT_CHROMIUM_PATH` 環境變數指定執行檔�
 ### 資料庫備份/還原
 
 見第 11.5 節。
+
+### 設定寄信服務（SMTP）
+
+1. 在 VPS 的 `server/.env` 填 `SMTP_HOST`、`SMTP_PORT`、`SMTP_USER`、
+   `SMTP_PASS`（選填 `SMTP_FROM`），格式與 Gmail 範例見 `server/.env.example`。
+   Gmail 要用「應用程式密碼」，不是登入密碼。
+2. `sudo systemctl restart ai-assessment-api`。啟動 log（`journalctl -u
+   ai-assessment-api`）若還看得到「未設定 SMTP」的警告，代表三個必填項還沒
+   填齊。
+3. 驗證：教練後台找一個施測期間內、有人還沒作答的班級，按「寄送提醒信」，
+   確認收件人真的收到（也檢查垃圾信匣）。
+4. VPS 防火牆或雲端供應商若擋了對外 SMTP 埠（25/465/587），寄信會一直失敗
+   ——`journalctl` 會看到 `[mailer] sendMail failed` 與錯誤訊息。
+
+### 收到「⚠️ 異常」告警信
+
+- 第二大腦：先 `curl -I https://brain.rong-rise.com` 看是不是對方服務掛了；
+  期間學員報告頁的延伸閱讀會顯示空狀態，評測本身不受影響。恢復後會自動收到
+  「✅ 已恢復」信，不需要手動解除。
+- OpenRouter：檢查 `server/.env` 的 `OPENROUTER_API_KEY` 是否被移除或改壞，
+  修好後重啟服務。

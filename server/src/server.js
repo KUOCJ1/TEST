@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { createApp } from './app.js';
 import { createDb } from './db.js';
 import { hashPassword } from './auth.js';
+import { checkAndAlert } from './lib/health.js';
+import { isMailConfigured } from './lib/mailer.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -54,3 +56,24 @@ app.listen(PORT, () => {
       '（本站 Traefik→Nginx 兩層皆走 loopback，經確認應為 2），並於部署後從外部網路實測 req.ip 確為使用者真實位址。');
   }
 });
+
+// ── 外部依賴主動告警（Sprint 6 驗收條件 6.1、6.2）─────────────────
+// 排程放在這裡而不是 createApp()：createApp() 同時給測試用，每個測試檔都會建一個
+// app，排程放進去會在測試裡到處留下 setInterval。設成 0 可以關閉。
+const HEALTH_CHECK_INTERVAL_MINUTES = Number(process.env.HEALTH_CHECK_INTERVAL_MINUTES ?? 5);
+if (HEALTH_CHECK_INTERVAL_MINUTES > 0) {
+  const runHealthWatch = () => {
+    checkAndAlert(db, { adminEmail: ADMIN_EMAIL })
+      .then(({ baseline, changes }) => {
+        if (baseline) console.log('✓ 健康檢查：已記錄基準狀態');
+        for (const c of changes) console.log(`[health-watch] ${c.label} → ${c.ok ? '恢復' : '異常'}`);
+      })
+      .catch((err) => console.error('[health-watch] 檢查失敗', err?.message ?? err));
+  };
+  runHealthWatch(); // 開機先跑一次，不必等第一個間隔
+  setInterval(runHealthWatch, HEALTH_CHECK_INTERVAL_MINUTES * 60 * 1000).unref();
+}
+if (!isMailConfigured()) {
+  console.warn('⚠️  未設定 SMTP（SMTP_HOST／SMTP_USER／SMTP_PASS）：健康檢查狀態變化時無法寄告警信，' +
+    '教練的「寄送提醒信」功能也會停用（其他功能不受影響）。');
+}

@@ -145,6 +145,7 @@ export default function AdminDashboard() {
           submissions={submissions}
           users={users}
           adminAssessments={adminAssessments}
+          groups={adminGroups}
         />
       )}
       {tab === 'users' && (

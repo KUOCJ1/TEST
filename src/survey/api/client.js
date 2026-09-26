@@ -19,6 +19,8 @@ async function request(path, { method = 'GET', body } = {}) {
   if (!res.ok) {
     const err = new Error(data?.error || `請求失敗（${res.status}）`);
     err.status = res.status;
+    err.code = data?.code;
+    err.data = data;
     throw err;
   }
   return data;
@@ -79,6 +81,8 @@ export const api = {
     request(`/coach/groups/${id}/roster`, { method: 'POST', body: { entries } }),
   publishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'POST' }).then((d) => d.group),
   unpublishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'DELETE' }).then((d) => d.group),
+  // 回傳 { phase, sent, failed:[email], group }；群組帶新的 lastReminderSentAt（冷卻用）。
+  sendGroupReminders: (id) => request(`/coach/groups/${id}/remind`, { method: 'POST' }),
 
   upsertComment: (submissionId, payload) =>
     request(`/submissions/${submissionId}/comment`, { method: 'POST', body: payload }).then((d) => d.comment),

@@ -21,6 +21,14 @@ export function formatDate(iso) {
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** 只有日期（YYYY/MM/DD），給開課日這類「時分沒有意義」的欄位用。 */
+export function formatDay(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
+}
+
 export function formatDateShort(iso) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';

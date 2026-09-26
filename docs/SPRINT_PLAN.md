@@ -317,12 +317,27 @@ push，見對應 commit，非本 Sprint 工作項目，這裡僅記錄延續性�
 | 6.6 | 身為系統管理者，沒設定 SMTP 時其他功能不受影響 | 未設定 SMTP 環境變數時，6.1／6.5 的寄信動作優雅降級（回傳明確錯誤訊息／按鈕顯示「尚未設定寄信服務」），不影響評測本身；比照 `chat.js` 對 `OPENROUTER_API_KEY` 未設定的既有處理模式 |
 
 ### 主要修改檔案
-`server/src/lib/mailer.js`（新增，包 `nodemailer`）、`server/src/lib/health.js`（加排程觸發與狀態比對）、
-`server/src/db.js`（新增 `systemStatus` collection 存最後已知健康狀態、`groups` 加 `lastReminderSentAt`）、
-`server/src/routes/coach.js`（新增 `POST /groups/:id/remind`）、
-`server/src/routes/admin.js`（`/overview` 回應加 `groups`）、
-`admin/AnalyticsTab.jsx`（新增跨班級/跨梯次區塊）、`coach/ProgressPanel.jsx`（新增寄信按鈕）、
-`server/.env.example`（新增 SMTP 相關變數）。
+`server/src/lib/mailer.js`（新增，包 `nodemailer`）、`server/src/lib/health.js`（`checkAndAlert()` 狀態比對＋告警）、
+`server/src/server.js`（排程）、`server/src/db.js`（新增 `systemStatus` collection）、
+`server/src/routes/coach.js`（新增 `POST /groups/:id/remind`，`groups` 加 `lastReminderSentAt`）、
+`coach/ProgressPanel.jsx`（寄信按鈕）、`coach/GroupOverviewSection.jsx`、
+`admin/CohortTrendSection.jsx`（新增）、`admin/AnalyticsTab.jsx`、`utils/analytics.js`（`computeCohortTrend()`）、
+`server/.env.example`。
+
+### 實作結果與規劃差異
+- **6.3 不需要改後端**：管理後台本來就透過 `GET /api/coach/groups` 拿到全站班級
+  （admin 通過該路由的教練篩選），直接傳給 `AnalyticsTab` 即可，`admin.js` 沒動。
+- **6.3/6.4 加了「課前／課後」切換**：規劃時沒想到——每人「最新一筆」若課前課後混著取，
+  會把「進來時的程度」跟「上完課的成果」攪在同一個平均裡，各梯就沒得比。
+- **順手修了 Sprint 5 的迴歸**：拆分 `GroupWorkspace` 時漏搬了「作答進度」面板
+  （Sprint 4 的催交追蹤），正式站因此看不到這個面板。本 Sprint 補回並加了能抓到
+  這種漏搬的迴歸測試（`group-overview-section.test.jsx`）。
+- **順手修了深色模式分頁對比**：分頁列「選取中」膠囊（`bg-white text-brass-600`）在
+  深色模式只有約 2:1 對比、比未選取還暗；Sprint 5 的深色稽核漏掉了，影響管理後台、
+  教練後台、班級工作台三處既有分頁列。以 `src/index.css` 的複合選擇器一次修正。
+- **冒煙驗證**：以本機 SMTP 收信器實測——第二大腦斷線/恢復各只收到一封信（約 5 輪檢查
+  期間）、重啟服務後不會多寄；催交信只寄給課前未完成者＋待加入者、內容個人化、
+  1 小時冷卻生效；跨梯次比較在亮色/深色/手機寬度與 axe 掃描皆正常。
 
 ### 設計決策（需產品負責人確認，本輪自動推進採用括號內的預設值）
 - **寄信服務**：不綁定特定廠商，採 `nodemailer` + 通用 SMTP 環境變數

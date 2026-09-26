@@ -153,6 +153,13 @@ body {
    hover 時的 text-white 維持不動，因為 hover:bg-ink-900 沒有被反轉、深底配白字
    本來就還是對比夠的組合。 */
 .dark .bg-ink-700 .text-brass-200 { color: #6b5a3a !important; }
+/* 分頁列的「選取中」膠囊統一寫成 bg-white text-brass-600（管理後台、教練後台、
+   班級工作台、跨梯次比較的課前/課後切換）。bg-white 在深色模式轉成深底，但
+   text-brass-600 沒有覆寫，深棕金字配深底對比只有約 2:1，選取中的分頁反而比
+   未選取（text-slate-500 已提亮）還暗，強調方向整個顛倒。只用複合選擇器處理
+   「同一個元素同時有這兩個 class」的情況——text-brass-600 用在淺米色
+   bg-brass-50 區塊（深色模式維持淺底）時本來就清楚，不能一起提亮。 */
+.dark .bg-white.text-brass-600 { color: #dbbb72 !important; }
 .dark .text-paper-50\/75,
 .dark .text-paper-50\/80 { color: #4a4335 !important; }
 .dark .shadow-lg,

@@ -5,6 +5,7 @@ import RadarChart from '../components/RadarChart';
 import DimensionHeatmap from '../components/DimensionHeatmap';
 import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import GroupGainReport from './GroupGainReport';
+import ProgressPanel from './ProgressPanel';
 
 // 「總覽」分頁內容：KPI 卡、班級雷達圖、能力熱力圖、成員比較表、班級敘事報告、
 // 學習成效面板、班級整體評語表單。從 GroupWorkspace 拆出（Sprint 5.6）——
@@ -12,8 +13,8 @@ import GroupGainReport from './GroupGainReport';
 // 一起搬過來；父層在切換班別時用 key={group.id} 讓這裡的表單狀態自動重置，
 // 沿用本檔案原本 GroupTimelineCard／QrCodeCard 已經在用的作法。
 export default function GroupOverviewSection({
-  group, groupStats, memberRows, strongestWeakest, commentedCount,
-  submissions, onGroupUpdated, showToast, onOpenMember,
+  group, directory, groupStats, memberRows, strongestWeakest, commentedCount,
+  submissions, onGroupUpdated, showToast, confirm, onOpenMember,
 }) {
   const [groupComment, setGroupComment] = useState(group.groupComment ?? '');
   const [groupTips, setGroupTips] = useState(group.groupTips?.length ? group.groupTips : ['']);
@@ -39,6 +40,15 @@ export default function GroupOverviewSection({
 
   return (
     <div className="space-y-5">
+      <ProgressPanel
+        group={group}
+        members={directory}
+        submissions={submissions}
+        onGroupUpdated={onGroupUpdated}
+        showToast={showToast}
+        confirm={confirm}
+      />
+
       {groupStats && groupStats.respondents === 0 ? (
         <div className="rounded-xl bg-white px-6 py-12 text-center text-slate-400 shadow-sm ring-1 ring-slate-100">
           此班別尚無成員完成作答，待有作答資料後即可查看分析。

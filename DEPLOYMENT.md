@@ -57,6 +57,19 @@ nano server/.env
 ```
 `.env` 至少要設定：`JWT_SECRET`（剛產生的隨機字串）、`ADMIN_EMAIL`、`ADMIN_PASSWORD`（請用強密碼）、`NODE_ENV=production`。
 
+**選填：寄信服務（SMTP）**——設定後才會啟用「外部依賴異常時寄告警信給 `ADMIN_EMAIL`」與教練的「寄送提醒信」；
+沒設定時這兩項自動停用，其他功能不受影響。在 `.env` 填入：
+```
+SMTP_HOST=smtp.gmail.com        # 或 SendGrid／Mailgun 等任何 SMTP relay
+SMTP_PORT=587                   # 465 會走 implicit TLS
+SMTP_USER=你的寄件帳號
+SMTP_PASS=應用程式密碼            # Gmail 要用「應用程式密碼」，不是登入密碼
+SMTP_FROM=評測平台 <noreply@你的網域>   # 選填
+```
+設定後重啟服務，再從教練後台對一個施測中的班級按一次「寄送提醒信」，確認收件人真的收到（也看一下垃圾信匣）。
+沒有 SPF/DKIM 的寄件網域容易被判成垃圾信；VPS 若擋了對外 SMTP 埠（25/465/587）則會寄送失敗，
+`sudo journalctl -u ai-assessment-api` 會看到 `[mailer] sendMail failed`。
+
 ## 4. 安裝後端服務（systemd）
 ```bash
 # 後端程式放到 /opt/ai-assessment/server

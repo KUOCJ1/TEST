@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { publicUser } from '../auth.js';
 import {
+  asyncHandler,
   normalizeSubmission,
   getGroupPhase,
   auditLog,
@@ -10,6 +11,36 @@ import {
   sanitizeDimensionNotes,
 } from '../lib/helpers.js';
 import { generateJoinCode } from '../lib/joinCode.js';
+import { isMailConfigured, sendMail } from '../lib/mailer.js';
+
+// 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
+export const REMINDER_COOLDOWN_MS = 60 * 60 * 1000;
+
+function appBaseUrl() {
+  return (process.env.APP_URL || 'https://assess.rong-rise.com').replace(/\/+$/, '');
+}
+
+function formatTaipeiDate(iso) {
+  return new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+}
+
+function buildReminderMail({ group, name, phaseLabel }) {
+  const link = group.joinCode ? `${appBaseUrl()}/?join=${group.joinCode}` : `${appBaseUrl()}/`;
+  const deadline = group.endDate ? `請於 ${formatTaipeiDate(group.endDate)} 前完成` : '請盡快完成';
+  const org = group.companyName ? `（${group.companyName}）` : '';
+  return {
+    subject: `【${group.name}】${phaseLabel}評測提醒`,
+    text: [
+      `${name || '同學'} 您好：`,
+      '',
+      `您參加的「${group.name}」${org}${phaseLabel}評測尚未完成，${deadline}。`,
+      '',
+      `作答連結：${link}`,
+      '',
+      `（此信由評測平台代 ${group.coachName || '授課教練'} 寄出；如已完成，請忽略這封信。）`,
+    ].join('\n'),
+  };
+}
 
 /** @param {{db, requireAuth, requireCoach}} deps */
 export function createCoachRouter({ db, requireAuth, requireCoach }) {
@@ -211,6 +242,83 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     auditLog(req, 'unpublish_group', { groupId: groups[idx].id, groupName: groups[idx].name });
     res.json({ group: { ...groups[idx], phase: getGroupPhase(groups[idx]) } });
   });
+
+  // ── 寄送催交提醒信（Sprint 6 驗收條件 6.5、6.6）───────────────
+  // 對象判定跟前端 ProgressPanel 的「複製提醒訊息」一致：只看自評提交；還有人
+  // 沒做課前就只催課前（課程還沒上，不該叫已做完課前的人去做課後），全員課前
+  // 都完成後才改催課後。課前階段也會寄給「待加入」名單（已登錄 Email、尚未
+  // 註冊）的人——他們顯然還沒作答，信裡的連結帶報到代碼，註冊完直接進班。
+  router.post('/groups/:id/remind', asyncHandler(async (req, res) => {
+    const group = (db.data.groups ?? []).find((g) => g.id === req.params.id);
+    if (!group) return res.status(404).json({ error: '班別不存在' });
+    if (group.coachId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '無權限' });
+    }
+    if (!isMailConfigured()) {
+      return res.status(503).json({ code: 'CONFIG_ERROR', error: '尚未設定寄信服務，請聯絡管理員設定 SMTP。' });
+    }
+    // 不在施測期間內寄催交信沒有意義：學員點進去也會被擋在「尚未開放／已截止」。
+    if (getGroupPhase(group) !== 'in_progress') {
+      return res.status(409).json({ code: 'NOT_IN_PROGRESS', error: '目前不在施測期間，無法寄送提醒信。' });
+    }
+    const last = group.lastReminderSentAt ? new Date(group.lastReminderSentAt).getTime() : 0;
+    const waitMs = last + REMINDER_COOLDOWN_MS - Date.now();
+    if (waitMs > 0) {
+      return res.status(429).json({
+        code: 'REMINDER_COOLDOWN',
+        error: `這個班 1 小時內已寄過提醒信，請 ${Math.ceil(waitMs / 60000)} 分鐘後再試。`,
+        retryAfterSeconds: Math.ceil(waitMs / 1000),
+      });
+    }
+
+    const selfSubs = db.data.submissions
+      .map(normalizeSubmission)
+      .filter((n) => n.raterType === 'self' && (n.groupId
+        ? n.groupId === group.id
+        : group.memberIds.includes(n.userId) && n.assessmentId === group.assessmentId));
+    const preDone = new Set(selfSubs.filter((n) => (n.phase ?? 'pre') === 'pre').map((n) => n.userId));
+    const postDone = new Set(selfSubs.filter((n) => n.phase === 'post').map((n) => n.userId));
+    const members = (group.memberIds ?? [])
+      .map((id) => db.data.users.find((u) => u.id === id))
+      .filter(Boolean);
+
+    const notStartedPre = members.filter((m) => !preDone.has(m.id));
+    const pending = group.pendingMembers ?? [];
+    let phase;
+    let recipients;
+    if (notStartedPre.length > 0 || pending.length > 0) {
+      phase = 'pre';
+      recipients = [...notStartedPre, ...pending].map((m) => ({ name: m.name, email: m.email }));
+    } else {
+      phase = 'post';
+      recipients = members
+        .filter((m) => preDone.has(m.id) && !postDone.has(m.id))
+        .map((m) => ({ name: m.name, email: m.email }));
+    }
+
+    if (recipients.length === 0) {
+      return res.json({ phase, sent: 0, failed: [], group: { ...group, phase: getGroupPhase(group) } });
+    }
+
+    const phaseLabel = phase === 'pre' ? '課前' : '課後';
+    const failed = [];
+    let sent = 0;
+    // 一人一封（個人化稱呼，也不會把全班信箱互相曝光在收件人欄位）。
+    for (const r of recipients) {
+      const result = await sendMail({ to: r.email, ...buildReminderMail({ group, name: r.name, phaseLabel }) });
+      if (result.ok) sent += 1;
+      else failed.push(r.email);
+    }
+
+    // 全部失敗（通常是 SMTP 設定錯）時不進冷卻，讓教練修好設定後可以馬上重試。
+    if (sent > 0) {
+      group.lastReminderSentAt = new Date().toISOString();
+      group.updatedAt = group.lastReminderSentAt;
+      db.persist();
+    }
+    auditLog(req, 'send_reminders', { groupId: group.id, phase, sent, failed: failed.length });
+    res.json({ phase, sent, failed, group: { ...group, phase: getGroupPhase(group) } });
+  }));
 
   // 批量匯入名單。
   router.post('/groups/:id/roster', (req, res) => {

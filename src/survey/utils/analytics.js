@@ -132,3 +132,55 @@ export function computeGroupGain(submissions, config) {
     leastImproved: dimensionDeltas.length > 1 ? dimensionDeltas[dimensionDeltas.length - 1] : null,
   };
 }
+
+/**
+ * 跨班級／跨梯次比較（Sprint 6 驗收條件 6.3、6.4）：同一套題庫底下的所有班級
+ * （不限教練）依開課日排序，各自算一份 aggregateStats，讓管理者看出這門課辦了
+ * 好幾梯之後，整體是往哪個方向走。
+ *
+ * 一次只看一個階段（課前或課後）：每人「最新一筆」若把課前、課後混在一起取，
+ * 會把「這梯學員進來時的程度」跟「上完課的成果」攪在同一個平均裡，兩梯就沒得比。
+ * phase 為 null 的舊資料視為課前，跟 ProgressPanel 的判斷一致；只算自評。
+ *
+ * 班級歸屬沿用教練後台班級報告的規則：有 groupId 的以 groupId 為準，舊資料
+ * （groupId 為 null）退回「目前成員名單 + 同題庫」反查。
+ *
+ * @param {Array} groups 全部班級（管理者視角）
+ * @param {Array} submissions 全部作答（已 normalize，含 groupId／phase／raterType）
+ * @param {object} config getAssessment(assessmentId)
+ * @param {'pre'|'post'} phase
+ * @returns {{cohorts: Array, emptyCount: number}} cohorts 依開課日由舊到新，
+ *   沒設開課日的排最後；emptyCount 為該階段沒有任何作答、因此未列入的班級數。
+ */
+export function computeCohortTrend(groups, submissions, config, phase = 'pre') {
+  if (!config) return { cohorts: [], emptyCount: 0 };
+  const inPhase = (s) => (s.phase ?? 'pre') === phase && (s.raterType ?? 'self') === 'self';
+  const relevant = (groups ?? []).filter((g) => (g.assessmentId ?? 'ai-competency') === config.ID);
+
+  const all = relevant.map((g) => {
+    const subs = submissions.filter((s) => inPhase(s) && (s.groupId
+      ? s.groupId === g.id
+      : (g.memberIds ?? []).includes(s.userId) && (s.assessmentId ?? 'ai-competency') === config.ID));
+    const stats = aggregateStats(subs, config);
+    return {
+      id: g.id,
+      name: g.name,
+      coachName: g.coachName ?? '',
+      startDate: g.startDate ?? null,
+      respondents: stats.respondents,
+      avgTotal: stats.avgTotal,
+      avgPercent: stats.avgPercent,
+      levelDistribution: stats.levelDistribution,
+    };
+  });
+
+  const cohorts = all
+    .filter((c) => c.respondents > 0)
+    .sort((a, b) => {
+      if (!a.startDate && !b.startDate) return a.name.localeCompare(b.name);
+      if (!a.startDate) return 1;
+      if (!b.startDate) return -1;
+      return new Date(a.startDate) - new Date(b.startDate);
+    });
+  return { cohorts, emptyCount: all.length - cohorts.length };
+}

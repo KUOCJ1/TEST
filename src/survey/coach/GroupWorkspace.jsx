@@ -223,6 +223,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
               <GroupOverviewSection
                 key={`overview-${groupDetail.group.id}`}
                 group={groupDetail.group}
+                directory={directory}
                 groupStats={groupStats}
                 memberRows={memberRows}
                 strongestWeakest={strongestWeakest}
@@ -230,6 +231,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
                 submissions={patchedSubmissions}
                 onGroupUpdated={handleGroupUpdated}
                 showToast={showToast}
+                confirm={confirm}
                 onOpenMember={setDrawerIndex}
               />
             )}

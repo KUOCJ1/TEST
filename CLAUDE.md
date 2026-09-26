@@ -164,6 +164,12 @@ loopback，不設定的話 Express 會把所有請求都當成同一個 IP（Ngi
 網路實際驗證** `req.ip` 讀到的是使用者真實 IP，不能只憑推論設定——設太高會讓偽造的
 `X-Forwarded-For` 被當真、形同繞過限流，設太低則限流仍然全站共用。
 
+選填鍵（寄信，Sprint 6）：`SMTP_HOST`／`SMTP_USER`／`SMTP_PASS`（三者齊全才啟用寄信）、
+`SMTP_PORT`（預設 587）、`SMTP_FROM`。用於外部依賴狀態變化時寄告警信給 `ADMIN_EMAIL`
+（`HEALTH_CHECK_INTERVAL_MINUTES`，預設 5 分鐘，0 關閉）與教練「寄送提醒信」
+（`POST /api/coach/groups/:id/remind`，同班 1 小時冷卻）；未設定時兩者優雅停用。
+細節見 `docs/PLATFORM_MANUAL.md` 第 10.4 節。
+
 > ⚠️ 安全守則：絕不在程式碼、提交訊息、文件或對話中索取或重現密碼、JWT 密鑰、
 > SSH 金鑰等任何憑證。`.env` 僅在 VPS 上以實際值存在。
 
