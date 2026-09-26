@@ -11,6 +11,7 @@ import GroupPrintableReport from '../components/GroupPrintableReport';
 import PhaseBadge from '../components/PhaseBadge';
 import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachCommentPanel';
 import LoadingState from '../components/LoadingState';
+import { badgeBg } from '../utils/color';
 
 export default function QuickAnalysisTab({ users }) {
   const [groups, setGroups] = useState([]);
@@ -227,7 +228,7 @@ export default function QuickAnalysisTab({ users }) {
                             <td className="py-2.5 pr-3">
                               <span
                                 className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
-                                style={{ background: r.level.color }}
+                                style={{ background: badgeBg(r.level.color) }}
                               >
                                 {r.level.badge}
                               </span>

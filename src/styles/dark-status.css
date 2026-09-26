@@ -1,0 +1,12 @@
+/* 深色模式：狀態色文字（正向／待加強／提示／錯誤）直接放在深色面板上時提亮；
+   放在淺色色塊 chip 裡（chip 在深色模式刻意維持「亮底＋深色字」的貼紙樣式）則不動。
+   （Sprint 8 驗收條件 8.1）
+
+   刻意放在獨立檔案、不放進 index.css：index.css 裡有用 @apply 組出來的元件
+   （例如 .btn-warning 內含 bg-amber-50），Tailwind 會把同一份樣式表裡引用到這些
+   工具類的選擇器「展開」成多份，連帶把下面排除清單裡的 .bg-amber-50 換成
+   .btn-warning——排除條件失效，chip 裡的文字會被錯誤提亮成淺字配淺底。 */
+.dark :is(.text-emerald-600, .text-emerald-700):not(:is(.bg-emerald-50, .bg-emerald-100, .bg-green-50, .bg-amber-50, .bg-amber-100, .bg-red-50, .bg-red-100, .bg-blue-50, .bg-sky-50, .bg-sky-100, .bg-purple-50), :is(.bg-emerald-50, .bg-emerald-100, .bg-green-50, .bg-amber-50, .bg-amber-100, .bg-red-50, .bg-red-100, .bg-blue-50, .bg-sky-50, .bg-sky-100, .bg-purple-50) *) { color: #34d399 !important; }
+.dark :is(.text-amber-600, .text-amber-700):not(:is(.bg-emerald-50, .bg-emerald-100, .bg-green-50, .bg-amber-50, .bg-amber-100, .bg-red-50, .bg-red-100, .bg-blue-50, .bg-sky-50, .bg-sky-100, .bg-purple-50), :is(.bg-emerald-50, .bg-emerald-100, .bg-green-50, .bg-amber-50, .bg-amber-100, .bg-red-50, .bg-red-100, .bg-blue-50, .bg-sky-50, .bg-sky-100, .bg-purple-50) *) { color: #fbbf24 !important; }
+.dark :is(.text-blue-600, .text-blue-700):not(:is(.bg-emerald-50, .bg-emerald-100, .bg-green-50, .bg-amber-50, .bg-amber-100, .bg-red-50, .bg-red-100, .bg-blue-50, .bg-sky-50, .bg-sky-100, .bg-purple-50), :is(.bg-emerald-50, .bg-emerald-100, .bg-green-50, .bg-amber-50, .bg-amber-100, .bg-red-50, .bg-red-100, .bg-blue-50, .bg-sky-50, .bg-sky-100, .bg-purple-50) *) { color: #60a5fa !important; }
+.dark :is(.text-red-500, .text-red-600):not(:is(.bg-emerald-50, .bg-emerald-100, .bg-green-50, .bg-amber-50, .bg-amber-100, .bg-red-50, .bg-red-100, .bg-blue-50, .bg-sky-50, .bg-sky-100, .bg-purple-50), :is(.bg-emerald-50, .bg-emerald-100, .bg-green-50, .bg-amber-50, .bg-amber-100, .bg-red-50, .bg-red-100, .bg-blue-50, .bg-sky-50, .bg-sky-100, .bg-purple-50) *) { color: #f87171 !important; }

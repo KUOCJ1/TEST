@@ -10,6 +10,7 @@ import ProgressBar from './components/ProgressBar';
 import QuestionCard from './components/QuestionCard';
 import ResultPanel from './components/ResultPanel';
 import { useConfirm } from './components/useConfirm';
+import { badgeBg } from './utils/color';
 
 const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
 const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmentId}_v2`;
@@ -155,14 +156,20 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
 
   // 鍵盤快速作答：選完分數後跳到「目前分頁內」的下一題；跨到下一段仍要靠
   // 「下一段」按鈕或分頁圓點手動切換，避免使用者按數字鍵不小心就翻頁。
-  const handleAdvance = (qid) => {
+  // 作答後自動帶到下一題（Sprint 8 驗收條件 8.5）：跳到「下一個還沒作答」的題目，
+  // 不是單純的下一題——回頭補答中間漏掉的題目時，不會被拉回已經答過的地方。
+  // 鍵盤作答（按數字鍵）同時移動焦點，讓人可以一路按數字鍵答完；滑鼠／觸控只捲動，
+  // 不把焦點框帶過去。系統設定「減少動態效果」時改成瞬間定位。
+  const handleAdvance = (qid, { viaKeyboard = false } = {}) => {
     const idx = visibleQuestionIds.indexOf(qid);
-    if (idx === -1 || idx === visibleQuestionIds.length - 1) return;
-    const nextId = visibleQuestionIds[idx + 1];
+    if (idx === -1) return;
+    const rest = visibleQuestionIds.slice(idx + 1);
+    const nextId = rest.find((id) => answers[id] == null || answers[id] === '') ?? (viaKeyboard ? rest[0] : null);
+    if (!nextId) return;
     const nextEl = questionRefs.current[nextId];
-    const radio = nextEl?.querySelector('input[type="radio"]');
-    radio?.focus();
-    nextEl?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    if (viaKeyboard) nextEl?.querySelector('input[type="radio"]')?.focus({ preventScroll: true });
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    nextEl?.scrollIntoView?.({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
   };
 
   const goToPage = (i) => {
@@ -272,10 +279,10 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
             <section key={dim.id} className="mt-7 first:mt-2">
               <h2
                 className="rounded-lg px-4 py-2.5 text-[15px] font-bold text-white"
-                style={{ background: dim.color }}
+                style={{ background: badgeBg(dim.color) }}
               >
                 {ORDINALS[di] || di + 1}、{dim.name}
-                <span className="ml-1 font-normal opacity-90">（{dim.subtitle}）</span>
+                <span className="ml-1 font-normal">（{dim.subtitle}）</span>
               </h2>
               <div className="mt-3 space-y-3">
                 {dim.questions.map((q, qi) => (

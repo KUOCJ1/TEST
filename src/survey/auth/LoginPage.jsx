@@ -88,7 +88,7 @@ export default function LoginPage({ onBack, joinCode, joinInfo }) {
                 aria-selected={mode === key}
                 onClick={() => { setMode(key); setError(''); }}
                 className={`rounded-sm py-2 transition-colors ${
-                  mode === key ? 'bg-paper-50 text-ink-700 shadow-sm' : 'text-ink-50 hover:text-ink-400'
+                  mode === key ? 'bg-paper-50 text-ink-700 shadow-sm' : 'text-ink-100 hover:text-ink-400'
                 }`}
               >
                 {label}
@@ -141,7 +141,7 @@ export default function LoginPage({ onBack, joinCode, joinInfo }) {
             </button>
           </form>
 
-          <p className="mt-5 rounded-sm bg-paper-200 px-3 py-2.5 text-center text-xs leading-relaxed text-ink-50">
+          <p className="mt-5 rounded-sm bg-paper-200 px-3 py-2.5 text-center text-xs leading-relaxed text-ink-100">
             第一次使用請先「註冊」建立帳號。
             <br />
             忘記密碼？請聯絡您的教練或管理員協助重設。

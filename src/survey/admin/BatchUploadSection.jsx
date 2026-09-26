@@ -5,6 +5,7 @@ import { REGISTRY } from '../data/assessments/index.js';
 import { buildResult } from '../utils/scoring.js';
 import { RATER_LABELS, RATER_COLORS as RATER_COLOR } from '../constants/raterTypes';
 import { parseFile } from './batchFileParsing.js';
+import { badgeBg } from '../utils/color';
 
 const RATER_TYPE_OPTIONS = [
   { value: 'self',        en: 'self',        desc: '由受測者本人填寫，rater_email 可留空（系統自動填入受測者 Email）' },
@@ -469,7 +470,7 @@ export default function BatchUploadSection() {
                       <td className="px-3 py-2 font-bold text-slate-800">{r.result.total}</td>
                       <td className="px-3 py-2">
                         <span className="rounded-full px-2 py-0.5 text-xs font-bold text-white"
-                          style={{ background: r.result.level?.color ?? '#6b7280' }}>
+                          style={{ background: badgeBg(r.result.level?.color ?? '#6b7280') }}>
                           {r.result.level?.badge ?? '—'}
                         </span>
                       </td>

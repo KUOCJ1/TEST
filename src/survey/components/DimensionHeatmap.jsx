@@ -1,10 +1,10 @@
 // 構面 × 成員熱力圖：橫軸是構面、縱軸是成員，色深代表該構面的分數高低。
 // 用意是讓教練一眼看出「這班哪個構面弱、是被誰拉低的」，不必逐一點開每個人的雷達圖比對。
 function cellTone(percent) {
-  if (percent == null) return { bg: '#f1f5f6', text: '#94a3b8' };
+  if (percent == null) return { bg: '#f1f5f6', text: '#656f7d' };
   if (percent < 60) return { bg: '#f5e1df', text: '#a92f28' };
-  if (percent < 80) return { bg: '#f6ead8', text: '#96601e' };
-  return { bg: '#dcefe6', text: '#1e7a52' };
+  if (percent < 80) return { bg: '#f6ead8', text: '#925d1d' };
+  return { bg: '#dcefe6', text: '#1d7650' };
 }
 
 export default function DimensionHeatmap({ dimensions, memberRows }) {
@@ -15,7 +15,7 @@ export default function DimensionHeatmap({ dimensions, memberRows }) {
       <h4 className="mb-1 font-semibold text-slate-700">構面 × 成員熱力圖</h4>
       <p className="mb-1 text-xs text-slate-400">色塊越紅代表該構面分數越低，越綠代表越高——用來快速定位弱項與是誰拉低的。</p>
       <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整構面</p>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="構面 × 成員熱力圖">
         <table className="w-full border-separate text-sm" style={{ borderSpacing: 2 }}>
           <caption className="sr-only">構面 × 成員熱力圖</caption>
           <thead>

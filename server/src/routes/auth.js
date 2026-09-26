@@ -49,7 +49,7 @@ export function sanitizePreferences(input) {
   return out;
 }
 
-export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }) {
+export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, currentUser }) {
   const router = Router();
 
   // Rate limit for auth endpoints — 10 attempts per 5 minutes per IP, or 100 when
@@ -118,6 +118,14 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }
   router.post('/auth/logout', (_req, res) => {
     res.clearCookie(COOKIE_NAME);
     res.json({ ok: true });
+  });
+
+  // 前端啟動時查「目前有沒有登入」用（Sprint 8）：沒登入是正常狀態，回 200 + null，
+  // 而不是 401——以前用 /auth/me，每個未登入的訪客開首頁，瀏覽器 console 都會
+  // 印出紅色的 401 錯誤。/auth/me 維持原本語意（需登入）不變。
+  router.get('/auth/session', (req, res) => {
+    const user = currentUser(req);
+    res.json({ user: user ? publicUser(user) : null });
   });
 
   router.get('/auth/me', requireAuth, (req, res) => {

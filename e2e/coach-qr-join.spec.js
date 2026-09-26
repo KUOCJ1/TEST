@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { register, login } from './helpers.js';
+import { register, login, logout } from './helpers.js';
 
 // 黃金路徑 2／3（Sprint 5 驗收條件 5.2）：教練建班 → 產生 QR 報到連結 →
 // 學員透過報到連結加入班級。admin 帳號密碼對應 playwright.config.js
@@ -15,7 +15,7 @@ test('教練建立班級、產生報到連結，學員可透過連結直接加�
   await page.goto('/');
   await register(page, 'E2E 教練', coachEmail, 'abcdef12');
   await expect(page.getByRole('heading', { name: '選擇評量' })).toBeVisible({ timeout: 15000 });
-  await page.getByRole('button', { name: '登出' }).click();
+  await logout(page);
 
   // 2) 管理員登入，把剛剛那個帳號升級成教練。
   // 上面才剛登出過，同一頁的 App.jsx view 狀態已經停在登入表單，不會再看到
@@ -28,7 +28,7 @@ test('教練建立班級、產生報到連結，學員可透過連結直接加�
   await expect(coachRow).toBeVisible({ timeout: 10000 });
   await coachRow.getByRole('button', { name: '設為教練' }).click();
   await expect(coachRow.getByText('教練', { exact: true })).toBeVisible({ timeout: 10000 });
-  await page.getByRole('button', { name: '登出' }).click();
+  await logout(page);
 
   // 3) 教練登入、建班、產生報到 QR / 連結。
   await login(page, coachEmail, 'abcdef12', { fromLanding: false });
@@ -51,7 +51,7 @@ test('教練建立班級、產生報到連結，學員可透過連結直接加�
   const joinLink = await joinLinkParagraph.textContent();
   const joinCode = joinLink ? new URL(joinLink.trim()).searchParams.get('join') : null;
   expect(joinCode, '報到連結需帶有 join 參數').toBeTruthy();
-  await page.getByRole('button', { name: '登出' }).click();
+  await logout(page);
 
   // 4) 全新學員從報到連結進站，註冊後應直接被帶進這個班。用全新的瀏覽器
   // context（不是 context.newPage()）——同一個 context 開新分頁會共用 cookie，

@@ -41,6 +41,9 @@ vi.mock('../survey/api/client', () => {
         if (!state.user) throw new Error('尚未登入');
         return pub(state.user);
       },
+      async session() {
+        return state.user ? pub(state.user) : null;
+      },
       async learningResources() {
         return [];
       },

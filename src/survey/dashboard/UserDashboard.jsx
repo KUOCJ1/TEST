@@ -14,6 +14,7 @@ import { buildJourneyNarrative } from '../utils/narrative';
 import { resultSummaryText, copyToClipboard, formatDateShort } from '../utils/format';
 import InfoTip from '../components/InfoTip';
 import LoadingState from '../components/LoadingState';
+import { badgeBg, dimTextStyle } from '../utils/color';
 
 export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey, onResultLoad }) {
   const navigate = useNavigate();
@@ -285,14 +286,14 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <span
                   className="rounded-full px-4 py-1.5 text-sm font-bold text-white"
-                  style={{ background: preSub.result.level.color }}
+                  style={{ background: badgeBg(preSub.result.level.color) }}
                 >
                   {preSub.result.level.badge}
                 </span>
                 <span className="text-xl font-bold text-slate-300">→</span>
                 <span
                   className="rounded-full px-4 py-1.5 text-sm font-bold text-white"
-                  style={{ background: postSub.result.level.color }}
+                  style={{ background: badgeBg(postSub.result.level.color) }}
                 >
                   {postSub.result.level.badge}
                 </span>
@@ -343,7 +344,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
               {topGain && topGain.delta > 0 && (
                 <p className="mt-4 text-sm text-slate-500">
                   進步最多的構面是
-                  <span className="mx-1 font-bold" style={{ color: topGain.color }}>{topGain.subtitle}</span>
+                  <span className="mx-1 font-bold dim-text" style={dimTextStyle(topGain.color)}>{topGain.subtitle}</span>
                   （+{topGain.delta} 分），持續保持！
                 </p>
               )}
@@ -381,7 +382,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
                     {dimProgress.map((d) => (
                       <tr key={d.id} className="border-b border-slate-100 last:border-0">
                         <td className="py-2.5 pr-4">
-                          <span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>
+                          <span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{d.subtitle}</span>
                           <span className="ml-2 text-xs text-slate-400">{d.name}</span>
                         </td>
                         <td className="py-2.5 pr-4 text-right text-slate-500">

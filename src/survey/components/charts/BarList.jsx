@@ -1,3 +1,5 @@
+import { dimTextStyle } from '../../utils/color';
+
 /**
  * 通用水平長條清單。
  * @param {Array<{label, sublabel?, percent, color, labelColor?, valueText?}>} items
@@ -11,7 +13,7 @@ export default function BarList({ items }) {
         <div key={it.id ?? i}>
           <div className="mb-1 flex items-center justify-between text-sm">
             <span className="font-medium text-slate-700">
-              <span className="font-semibold" style={{ color: it.labelColor ?? it.color }}>
+              <span className="font-semibold dim-text" style={dimTextStyle(it.labelColor ?? it.color)}>
                 {it.label}
               </span>
               {it.sublabel && <span className="ml-2 text-slate-400">{it.sublabel}</span>}

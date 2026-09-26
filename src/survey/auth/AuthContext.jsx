@@ -10,7 +10,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let active = true;
     api
-      .me()
+      .session()
       .then((u) => active && setUser(u))
       .catch(() => active && setUser(null))
       .finally(() => active && setReady(true));

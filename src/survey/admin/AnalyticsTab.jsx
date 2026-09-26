@@ -11,6 +11,7 @@ import { formatDate } from '../utils/format';
 import InfoTip from '../components/InfoTip';
 import LearningResourceStatsPanel from './LearningResourceStatsPanel';
 import CohortTrendSection from './CohortTrendSection';
+import { badgeBg } from '../utils/color';
 
 function Kpi({ label, value, suffix, tip }) {
   return (
@@ -176,7 +177,7 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
                 items={stats.dimensionAverages.map((d) => ({
                   id: d.id,
                   label: d.subtitle,
-                  sublabel: d.name,
+                  sublabel: d.subtitle?.includes(d.name) ? null : d.name,
                   percent: d.percent,
                   color: d.color,
                 }))}
@@ -239,7 +240,7 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
                       <td className="py-2.5 pr-3">
                         <span
                           className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
-                          style={{ background: r.level.color }}
+                          style={{ background: badgeBg(r.level.color) }}
                         >
                           {r.level.badge}
                         </span>

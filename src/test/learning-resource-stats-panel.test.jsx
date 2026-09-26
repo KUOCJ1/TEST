@@ -17,8 +17,10 @@ describe('LearningResourceStatsPanel', () => {
       { assessmentId: 'leadership-9d', dimensionId: 'communication', clicks: 5, saves: 2 },
     ]);
     render(<LearningResourceStatsPanel />);
-    expect(await screen.findByText('leadership-9d')).toBeInTheDocument();
-    expect(screen.getByText('communication')).toBeInTheDocument();
+    // 顯示題庫與構面的中文名稱，不是內部 id（Sprint 8）。
+    expect(await screen.findByText('經贏® 領導力九大構面行為評量')).toBeInTheDocument();
+    expect(screen.getByText('溝通力')).toBeInTheDocument();
+    expect(screen.queryByText('leadership-9d')).not.toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
   });

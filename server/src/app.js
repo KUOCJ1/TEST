@@ -44,7 +44,7 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   app.use(express.json({ limit: '512kb' }));
   app.use(cookieParser());
 
-  const { requireAuth, requireAdmin, requireCoach, setAuthCookie, COOKIE_NAME } =
+  const { requireAuth, requireAdmin, requireCoach, setAuthCookie, COOKIE_NAME, currentUser } =
     createAuthContext({ db, jwtSecret, secureCookies });
 
   // ?deep=1：額外回報第二大腦／OpenRouter 這兩個外部依賴的狀態（見
@@ -65,7 +65,7 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   app.use('/api/public', createPublicRouter({ db }));
 
   app.use('/api', createAssessmentsRouter({ db, requireAuth }));
-  app.use('/api', createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME }));
+  app.use('/api', createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, currentUser }));
   app.use('/api', createSubmissionsRouter({ db, requireAuth, requireCoach }));
   app.use('/api', createGroupsRouter({ db, requireAuth }));
   app.use('/api', createGoalsRouter({ db, requireAuth }));

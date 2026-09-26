@@ -64,7 +64,9 @@ test('教練打開有作答資料的班級：作答進度、KPI、成員比較�
   await expect(kpi).toContainText('已填答');
   await expect(kpi).toContainText('2');
   await expect(page.getByRole('heading', { name: '成員比較' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: '總覽學員2' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: '總覽學員2', exact: true })).toBeVisible();
+  // 查看按鈕有帶學員姓名的無障礙名稱（Sprint 8），不是一排都叫「查看」。
+  await expect(page.getByRole('button', { name: '查看 總覽學員2 的報告' })).toBeVisible();
 
   // E2E 環境沒有設定 SMTP：寄信按鈕要優雅降級成明確的錯誤訊息，而不是壞掉。
   await page.getByRole('button', { name: /寄送提醒信/ }).click();

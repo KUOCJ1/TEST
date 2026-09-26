@@ -2,6 +2,7 @@ import { TrendingUp } from 'lucide-react';
 import { computeGroupGain } from '../utils/analytics';
 import { getAssessment } from '../data/assessments/index.js';
 import InfoTip from '../components/InfoTip';
+import { dimTextStyle } from '../utils/color';
 
 /**
  * 班級學習成效報告（Sprint 4 驗收條件 4.3）：課前 vs 課後，只算配對樣本
@@ -89,7 +90,7 @@ export default function GroupGainReport({ group, submissions }) {
                 {gain.dimensionDeltas.map((d) => (
                   <tr key={d.id} className="border-b border-slate-100 last:border-0">
                     <td className="py-2 pr-4">
-                      <span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>
+                      <span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{d.subtitle}</span>
                     </td>
                     <td className={`py-2 text-right font-bold ${d.avgDelta > 0 ? 'text-emerald-600' : d.avgDelta < 0 ? 'text-red-500' : 'text-slate-400'}`}>
                       {d.avgDelta > 0 ? `+${d.avgDelta}` : d.avgDelta}

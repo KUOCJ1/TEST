@@ -3,6 +3,7 @@ import { Users } from 'lucide-react';
 import { api } from '../api/client';
 import RadarChart from '../components/RadarChart';
 import { RATER_LABELS } from '../constants/raterTypes';
+import { dimTextStyle } from '../utils/color';
 
 const RATER_COLORS = {
   self: '#7c3aed',
@@ -92,7 +93,7 @@ function BarPanel({ byType, dimensions }) {
         {dimensions.map((dim) => (
           <div key={dim.id}>
             <div className="mb-1.5 flex items-center justify-between">
-              <span className="text-sm font-semibold" style={{ color: dim.color }}>{dim.subtitle}</span>
+              <span className="text-sm font-semibold dim-text" style={dimTextStyle(dim.color)}>{dim.subtitle}</span>
               <span className="text-xs text-slate-400">{dim.name}</span>
             </div>
             <div className="space-y-1.5">
@@ -156,7 +157,7 @@ function GapPanel({ selfDims, othersDims }) {
               return (
                 <tr key={d.id} className="border-b border-slate-100 last:border-0">
                   <td className="py-2.5 pr-4">
-                    <span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>
+                    <span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{d.subtitle}</span>
                     <span className="ml-2 text-xs text-slate-400">{d.name}</span>
                   </td>
                   <td className="py-2.5 pr-4 text-right font-semibold text-slate-700">{d.selfScore.toFixed(1)}</td>
@@ -261,7 +262,7 @@ function QuadrantPanel({ selfDims, othersDims }) {
         ].map((q) => (
           <div key={q.label} className="flex items-center gap-1.5 text-xs">
             <span className="inline-block h-3 w-3 shrink-0 rounded-sm" style={{ background: q.bg, border: `1px solid ${q.text}` }} />
-            <span><span className="font-semibold" style={{ color: q.text }}>{q.label}</span>（{q.desc}）</span>
+            <span><span className="font-semibold dim-text" style={dimTextStyle(q.text)}>{q.label}</span>（{q.desc}）</span>
           </div>
         ))}
       </div>

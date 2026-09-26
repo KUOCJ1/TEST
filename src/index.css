@@ -58,7 +58,7 @@
 
   /* 區塊標題小標籤 */
   .chip {
-    @apply inline-flex items-center rounded-sm px-2.5 py-1 text-xs font-semibold;
+    @apply inline-flex items-center whitespace-nowrap rounded-sm px-2.5 py-1 text-xs font-semibold;
   }
 }
 
@@ -162,6 +162,46 @@ body {
 .dark .bg-white.text-brass-600 { color: #dbbb72 !important; }
 .dark .text-paper-50\/75,
 .dark .text-paper-50\/80 { color: #4a4335 !important; }
+/* ── Sprint 8：深色模式對比補強（全站 axe color-contrast 稽核的結果）────────
+   1. 米色提示框（bg-brass-50：新手引導、摘要、班級評語…）與半透明的淺色敘事框、
+      題卡（*-50/60）以前在深色模式維持亮底，但框內文字已被上面的規則提亮，
+      變成淺字配淺底（約 2:1）。改成暖深色版本，跟其他區塊一致。 */
+.dark .bg-brass-50,
+.dark .bg-brass-50\/50,
+.dark .bg-brass-50\/60 { background-color: #2a2217 !important; }
+.dark .bg-sky-50\/60 { background-color: #182127 !important; }
+/* 淺黃銅底的 chip／按鈕（bg-brass-100、hover 的 bg-brass-200，例如用戶管理的「教練」
+   角色徽章、「設為教練」按鈕）：配合上面「黃銅色文字在深色模式一律提亮」，底色要
+   一起轉深，否則是亮金字配淺金底（1.25:1）。 */
+.dark .bg-brass-100 { background-color: #3a2e1d !important; }
+.dark .hover\:bg-brass-200:hover,
+.dark .bg-brass-200 { background-color: #4a3b24 !important; }
+.dark .bg-slate-50\/60 { background-color: #1c1610 !important; }
+.dark .bg-paper-50\/95 { background-color: rgba(28, 22, 16, 0.95) !important; }
+.dark .border-paper-300 { border-color: #3a2f22 !important; }
+.dark .border-brass-100,
+.dark .border-brass-200,
+.dark .border-brass-300 { border-color: #4a3b24 !important; }
+.dark .ring-brass-100,
+.dark .ring-sky-100 { --tw-ring-color: #4a3b24 !important; }
+/* 2. 黃銅色文字在深色底上一律改用亮金色（原本的深棕金在深底只有 2–3:1）。
+      唯一例外是 bg-ink-700 反轉成淺底的區塊（CTA、選取中的選項），裡面改回深色。 */
+.dark .text-brass-400,
+.dark .text-brass-500,
+.dark .text-brass-600,
+.dark .text-brass-700 { color: #dbbb72 !important; }
+.dark .bg-ink-700 .text-brass-50,
+.dark .bg-ink-700 .text-brass-100,
+.dark .bg-ink-700 .text-brass-300,
+.dark .bg-ink-700 .text-brass-400,
+.dark .bg-ink-700 .text-brass-500,
+.dark .bg-ink-700 .text-brass-600 { color: #6b5a3a !important; }
+/* 3. 狀態色文字的深色模式提亮放在 src/styles/dark-status.css（見該檔說明）。 */
+/* 4. 構面顏色（題庫設定裡寫死的 inline style）改由 utils/color.js 的 dimTextStyle()
+      算出亮色／深色兩組達標的文字色，透過 CSS 變數 --dim-light／--dim-dark 套用。 */
+.dim-text { color: var(--dim-light); }
+.dark .dim-text { color: var(--dim-dark); }
+
 .dark .shadow-lg,
 .dark .shadow-md,
 .dark .shadow-sm,
@@ -200,6 +240,25 @@ body {
   to   { transform: translateY(0);    opacity: 1; }
 }
 .animate-slide-up { animation: slideUp 0.22s ease-out; }
+
+/* Sprint 8 驗收條件 8.9：選單彈出、換頁時的輕微淡入，讓畫面切換不突兀。
+   只動 opacity／transform（不觸發重排），系統設定「減少動態效果」時完全關閉。 */
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-menu-in { animation: menuIn 0.14s ease-out; transform-origin: top right; }
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-page-in { animation: pageIn 0.22s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-menu-in,
+  .animate-page-in,
+  .tab-content { animation: none; }
+  html { scroll-behavior: auto !important; }
+}
 
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }

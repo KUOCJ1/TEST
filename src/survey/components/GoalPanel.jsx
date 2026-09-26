@@ -3,6 +3,7 @@ import { Target, Plus, Trash2, Check, X } from 'lucide-react';
 import { api } from '../api/client';
 import { formatDate } from '../utils/format';
 import { useConfirm } from './useConfirm';
+import { dimTextStyle } from '../utils/color';
 
 const MAX_ACTIONS = 5;
 
@@ -175,7 +176,7 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
             weakestDimension && (
               <p className="mb-2 text-xs text-slate-500">
                 針對目前最待強化的
-                <span className="mx-1 font-semibold" style={{ color: weakestDimension.color }}>
+                <span className="mx-1 font-semibold dim-text" style={dimTextStyle(weakestDimension.color)}>
                   {weakestDimension.subtitle}
                 </span>
                 訂一個目標：

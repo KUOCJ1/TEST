@@ -309,7 +309,11 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   進度摘要（`GoalProgressChip.jsx`）
 - 首頁「我的評量」：列出可作答的題庫（依 `assessments.enabled` 過濾），每張
   卡片有狀態標籤（未作答／課前已完成／課後已完成／可重測）
-- 作答：Likert 量表逐題填答，支援中途離開續答
+- 作答：Likert 量表逐題填答，支援中途離開續答。`QuestionCard.jsx` 的五個選項
+  在手機上也是一列五格（48px 觸控目標，兩端標籤放在下方），第一次作答某題後
+  自動捲到**下一個未作答**的題目（改答不跳；鍵盤 1–5 作答時焦點一併移過去；
+  `prefers-reduced-motion` 時不做平滑捲動）。作答中隱藏 AI 小幫手浮動按鈕，
+  避免擋住選項，提交後才出現
 - 360° 多元評測（支援的題庫）：除自評外可邀請他人對自己評分
 - 通知信（需設定 SMTP，見第 10.4 節）：發展目標到了預計檢視日寄「複測提醒」、
   教練留評語時寄「有新評語」通知；可在「個人設定 → 通知偏好」各自關閉
@@ -320,7 +324,8 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   構面分數變化，見第 10.2 節）
 - 「我的學習」（`learning/MyLearningPage.jsx`）：彙整進行中目標與學習清單，
   可標記文章已讀／移除
-- 個人設定：改密碼、基本資料
+- 個人設定：改密碼、基本資料。入口在頁首右上角的帳號選單
+  （`components/UserMenu.jsx`），跟使用說明、手冊下載、登出收在一起
 - AI 評測小幫手：浮動聊天按鈕，依角色帶不同 system prompt 上下文
 
 ### 教練
@@ -367,6 +372,46 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   各構面傾向強度與風格人數分佈（沿用第 4.2 節「風格沒有高低」的原則）
 - AI 平台助理
 
+### 共用介面規範（Sprint 8）
+
+改 UI 前先看這一節，這些是「全站一致」靠的東西，零散改動很容易打破：
+
+- **頁首**（`AppShell.jsx`）：Logo／功能分頁（單列，超出時水平捲動，不換行）／
+  帳號選單。個人設定、使用說明、手冊下載、登出都在 `UserMenu` 裡（`role="menu"`，
+  ↑↓ 移動、Esc 關閉並還焦點、點外面關閉），別再加回頁首——分頁一多就會折成兩行。
+- **頁面標題**：`AppShell.jsx` 的 `PAGE_TITLES`（登入後）與 `App.jsx` 的
+  `MARKETING_TITLES`（行銷頁／未登入）把 `document.title` 設成
+  `頁面名稱｜全方位職能評測`；新增路由時兩邊要一起補。切頁時捲回頂端（網址帶
+  `#錨點` 時除外），並有 `animate-page-in` 淡入。
+- **色票與對比（WCAG AA 4.5:1）**：在 `tailwind.config.js` 的 token 層處理，
+  不在個別元件補丁——`slate-400/500`、`ink-50`、`brass-500`、`emerald-600`、
+  `amber-600` 都已調深到在白底／米色底過 AA。**不要**再用 `opacity-*`、
+  `text-white/70` 之類把文字調淡，axe 會算進對比。
+- **題庫設定裡的顏色**（構面、落點的 hex 色）不保證對比，一律經
+  `src/survey/utils/color.js`：
+  - 當徽章底色配白字 → `style={{ backgroundColor: badgeBg(hex) }}`（自動加深到
+    白字過 AA）
+  - 當文字顏色 → `style={dimTextStyle(hex)}` 加 `className="dim-text"`（算出
+    淺色／深色模式各一個過 AA 的色，透過 `--dim-light`／`--dim-dark` CSS 變數
+    切換；不用 CSS `filter`，因為 axe 不把 filter 算進對比）
+- **深色模式**：全域覆寫在 `src/index.css` 的 `.dark` 區塊。狀態色文字（綠／琥珀／
+  藍／紅）的提亮規則放在獨立的 `src/styles/dark-status.css`（`main.jsx` 在
+  `index.css` 之後匯入）——那些規則用 `:not(:is(.bg-amber-50 …))` 排除淺色小
+  標籤裡的文字，而 Tailwind 處理 `index.css` 時會把「選擇器裡提到、同檔又被
+  `@apply` 的 utility class」改寫掉，放同一檔就壞了。
+- **不斷字**：按鈕、`.chip`、表格欄位都 `whitespace-nowrap`；手機上要隱藏的按鈕
+  文字用 `sr-only sm:not-sr-only`（**不要**用 `hidden sm:inline`，那會讓按鈕在
+  手機上沒有無障礙名稱）。會水平捲動的表格容器要 `tabIndex={0}`＋`role="region"`＋
+  `aria-label`，鍵盤使用者才捲得動。
+- **首頁**：評量卡片主要按鈕依狀態是「查看分析」／「開始作答」，重新作答、360°
+  是次要列；`OnboardingBanner` 用 `show` prop 控制，學員端只在還沒有任何作答時
+  顯示，教練端只在還沒有任何學員時顯示。
+- **未登入不再打出 401**：`AuthContext` 開機改呼叫 `GET /api/auth/session`，未登入
+  回 `200 { user: null }`（`/auth/me` 仍維持 401 語意），瀏覽器主控台不會再有紅字。
+- **動畫**：`animate-menu-in`／`animate-page-in` 都有 `prefers-reduced-motion`
+  防護；Playwright 以 `contextOptions: { reducedMotion: 'reduce' }` 執行（寫在
+  頂層 `use.reducedMotion` 不會生效），否則自動捲動的平滑動畫會讓 E2E 慢 3 倍以上。
+
 ---
 
 ## 7. 後端 API 一覽
@@ -376,7 +421,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 | Router | 路徑範例 | 說明 |
 |---|---|---|
 | `assessments.js` | `GET /assessments`、`GET /assessments/:id/benchmark` | 題庫清單、跨使用者 benchmark 平均（有快取） |
-| `auth.js` | `POST /auth/register`、`/login`、`/logout`、`GET /auth/me`、`PATCH /auth/profile`、`POST /auth/password`、`/reset-password` | 帳號生命週期，`register`/`login` 可帶 `joinCode` 自動入班 |
+| `auth.js` | `POST /auth/register`、`/login`、`/logout`、`GET /auth/me`、`GET /auth/session`（未登入回 200 `{user:null}`）、`PATCH /auth/profile`、`POST /auth/password`、`/reset-password` | 帳號生命週期，`register`/`login` 可帶 `joinCode` 自動入班 |
 | `submissions.js` | `POST /submissions`、`GET /submissions/me`、`GET /submissions/ratee/:rateeId`、`POST/DELETE /submissions/:id/comment` | 提交作答、查詢自己或（360°）被評者的紀錄、教練留言 |
 | `groups.js` | `POST /groups/join`、`GET /groups/mine`、`GET /groups/mine/members` | 學員視角的班級操作（已登入掃碼加入等） |
 | `goals.js` | `GET/POST/PATCH/DELETE /goals` | 個人發展目標 CRUD，`POST` 可帶 `baselineAverage`／`reviewDate`（見第 10.2 節） |
@@ -731,10 +776,16 @@ HTTP 呼叫（第二大腦整合、`chat.js`/OpenRouter 整合的測試都是這
 這套測試會啟動真實 Chromium，能抓到 jsdom（Vitest 環境）測不出來的問題
 （實際渲染、真實使用者互動時序）。跑的時候三支測試共用同一個後端／
 記憶體 DB／rate limiter，因此 `playwright.config.js` 設 `workers: 1`
-（依序執行，不用平行搶同一份狀態），並設 `AUTH_RATE_LIMIT=1000`（否則幾支
+（依序執行，不用平行搶同一份狀態），並以 `contextOptions.reducedMotion`
+關閉平滑捲動動畫；切換帳號用 `e2e/helpers.js` 的 `logout(page)`（登出在帳號
+選單裡），並設 `AUTH_RATE_LIMIT=1000`（否則幾支
 測試加起來會把正式額度 10 次用光）；每支測試若動到共用資料（例如停用
 題庫），結尾都要自己復原，避免污染後面的測試。CI 環境沒有預裝的
 Chromium 路徑時可用 `PLAYWRIGHT_CHROMIUM_PATH` 環境變數指定執行檔位置。
+
+**前端測試的非同步等待**：`src/test/setup.js` 把 Testing Library 的
+`asyncUtilTimeout` 設為 3 秒——管理後台等頁面是 `lazy()` 載入，冷啟動的 CI 機器上
+第一次 import 常超過預設 1 秒，`findBy*` 會偶發失敗。
 
 **快取是模組層級（module-level）的**，同一個 process 內的測試會共用同一份
 快取 Map——寫多個測試涉及同一個快取 key（如同一個搜尋關鍵字）時，要留意

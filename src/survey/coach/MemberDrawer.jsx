@@ -109,7 +109,7 @@ export default function MemberDrawer({
             </button>
           </div>
           <button type="button" onClick={onExportPdf} className="btn-secondary btn-sm shrink-0">
-            <FileText className="h-3.5 w-3.5" /> <span className="hidden sm:inline">產出報告</span>
+            <FileText className="h-3.5 w-3.5" /> <span className="sr-only sm:not-sr-only">產出報告</span>
           </button>
           <button type="button" onClick={onClose} aria-label="關閉" className="btn-icon shrink-0">
             <X className="h-5 w-5" />

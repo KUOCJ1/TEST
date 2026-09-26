@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
-  ArrowLeft, Download, LogOut, CircleHelp,
-  ClipboardList, ChartColumn, UsersRound, GraduationCap, Shield, User, BookOpen,
+  ArrowLeft,
+  ClipboardList, ChartColumn, UsersRound, GraduationCap, Shield, BookOpen,
 } from 'lucide-react';
 import { useAuth } from './auth/useAuth';
 import { api } from './api/client';
@@ -20,10 +20,17 @@ import ProfilePage from './profile/ProfilePage';
 import HelpModal from './components/HelpModal';
 import OnboardingBanner from './components/OnboardingBanner';
 import ChatBot from './components/ChatBot';
+import UserMenu from './components/UserMenu';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingState from './components/LoadingState';
 
 const CoachDashboard = lazy(() => import('./coach/CoachDashboard'));
+
+const PAGE_TITLES = [
+  ['/home', '我的評量'], ['/analysis', '我的分析'], ['/360', '360° 評測'], ['/rater-setup', '360° 評測'],
+  ['/learning', '我的學習'], ['/coach', '教練後台'], ['/admin', '管理後台'], ['/profile', '個人設定'],
+  ['/survey', '作答中'],
+];
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard'));
 
 function DashboardFallback() {
@@ -90,10 +97,13 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
-      <OnboardingBanner role="user" />
+      <OnboardingBanner role="user" show={mySubmissions.length === 0} />
       <NextStepCard nextStep={nextStep} onStartSurvey={onStartSurvey} onGoTo360={onGoTo360} onViewAnalysis={onViewAnalysis} />
-      <GroupStatusBar group={statusGroup} />
-      <GoalProgressChip goals={goals} onClick={() => navigate('/learning')} />
+      {/* 班級狀態與目標摘要並排成一條資訊列（Sprint 8），不再各佔一整列。 */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row [&>*]:flex-1 [&:empty]:hidden">
+        <GroupStatusBar group={statusGroup} />
+        <GoalProgressChip goals={goals} onClick={() => navigate('/learning')} />
+      </div>
       <header className="mb-6">
         <h2 className="text-2xl font-extrabold text-slate-800">選擇評量</h2>
         <p className="mt-1 text-sm text-slate-500">選擇一個題庫開始作答，或點擊「查看分析」瀏覽歷次結果。</p>
@@ -166,7 +176,7 @@ function SurveyRoute({ user, onSubmitted }) {
       rateeId={rateeId}
       raterType={raterType}
       rateeName={rateeName}
-      onSubmitted={() => onSubmitted(raterType)}
+      onSubmitted={(result) => onSubmitted(raterType, result)}
     />
   );
 }
@@ -193,6 +203,10 @@ export default function AppShell() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
   const [chatContext, setChatContext] = useState(null);
+  // 在哪個作答頁送出過（Sprint 8 驗收條件 8.6）：作答中隱藏 AI 小幫手浮動按鈕（它會
+  // 蓋住選項，也打斷專注），送出、結果就地顯示後才讓它出現。記路徑而不是布林值，
+  // 換到別的作答頁自然就回到「作答中」狀態，不必另外重設。
+  const [submittedPath, setSubmittedPath] = useState(null);
 
   const helpRole = isAdmin ? 'admin' : (isCoach ? 'coach' : 'user');
 
@@ -209,7 +223,8 @@ export default function AppShell() {
       { id: 'coach', label: '教練後台', shortLabel: '教練', path: '/coach', Icon: GraduationCap },
       { id: 'admin', label: '管理後台', shortLabel: '管理', path: '/admin', Icon: Shield },
     ] : []),
-    { id: 'profile', label: '個人設定', shortLabel: '設定', path: '/profile', Icon: User },
+    // 「個人設定」收進右上角使用者選單（Sprint 8）：分頁只放功能頁，桌機不再折成兩行、
+    // 手機底部導覽最多 6 項。
   ];
 
   const handleStartSurvey = (id) => {
@@ -232,8 +247,12 @@ export default function AppShell() {
   const handleGoTo360 = (id) => navigate(`/360/${id}`);
   // 送出後不再立刻導頁——讓 SurveyApp 先把結果就地顯示出來，使用者按下
   // 「查看完整分析／返回 360° 評測」才離開，避免作答完連自己的分數都看不到。
-  const handleSubmitted = () => {
+  const handleSubmitted = (raterType, result) => {
     setRefreshKey((k) => k + 1);
+    setSubmittedPath(location.pathname);
+    // 自評送出後結果就地顯示在作答頁：把結果交給 AI 小幫手當上下文，使用者可以直接
+    // 問「這個結果怎麼解讀」。他評（360°）是別人的結果，不帶。
+    if (raterType === 'self' && result) setChatContext({ result });
   };
 
   const isSurveyOrRaterSetup = location.pathname.startsWith('/survey') || location.pathname.startsWith('/rater-setup');
@@ -242,14 +261,25 @@ export default function AppShell() {
   const isTabActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
   const showBottomNav = !isSurveyOrRaterSetup;
 
+  // 換頁時（Sprint 8 驗收條件 8.8、8.9）：分頁標題改成「頁面名稱｜全方位職能評測」，
+  // 多開分頁或看瀏覽紀錄時才分得出來；捲回頁首（React Router 預設保留上一頁的捲動
+  // 位置，常常一進新頁面就停在半中間）。網址帶 #錨點時例外，讓錨點自己定位。
+  useEffect(() => {
+    const name = PAGE_TITLES.find(([prefix]) => location.pathname.startsWith(prefix))?.[1];
+    document.title = name ? `${name}｜全方位職能評測` : '全方位職能評測';
+    if (!location.hash) window.scrollTo(0, 0);
+  }, [location.pathname, location.hash]);
+
   return (
-    // 底部導覽是 fixed，手機需保留等高的內距，否則會蓋住頁面最後一段內容。
-    <div className={`min-h-screen ${showBottomNav ? 'pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0' : ''}`}>
+    // 底部導覽與 AI 小幫手浮動按鈕都是 fixed：保留足夠的底部內距，捲到最底時最後一段
+    // 內容才不會被它們蓋住（Sprint 8 驗收條件 8.6）。
+    <div className={`min-h-screen ${showBottomNav ? 'pb-[calc(8rem+env(safe-area-inset-bottom))] sm:pb-20' : ''}`}>
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur print:hidden">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
-          <span className="flex items-center gap-2 text-base font-extrabold tracking-tight text-slate-800">
+        <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-2.5 sm:px-6">
+          <span className="flex shrink-0 items-center gap-2 text-base font-extrabold tracking-tight text-slate-800">
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
-            全方位職能評測
+            <span className="hidden lg:inline">全方位職能評測</span>
+            <span className="lg:hidden">職能評測</span>
           </span>
 
           {isSurveyOrRaterSetup ? (
@@ -262,19 +292,19 @@ export default function AppShell() {
               {backTarget === '/360' ? '返回 360° 評測' : '返回評量列表'}
             </button>
           ) : (
-            /* 手機改用畫面底部的 tab bar（見下方 <nav>），這裡只在 sm 以上顯示，
-               避免窄螢幕時 logo 與右側按鈕把分頁列擠成無法點擊的細條。 */
-            <nav className="hidden flex-1 flex-wrap gap-1 sm:flex">
+            /* 手機改用畫面底部的 tab bar（見下方 <nav>），這裡只在 sm 以上顯示。
+               不換行：寬度真的不夠（sm～lg 之間的平板）時橫向捲動，而不是折成兩行。 */
+            <nav aria-label="功能分頁" className="no-scrollbar hidden min-w-0 flex-1 gap-1 overflow-x-auto sm:flex">
               {tabs.map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   aria-current={isTabActive(t.path) ? 'page' : undefined}
                   onClick={() => navigate(t.path)}
-                  className={`shrink-0 rounded-sm px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  className={`shrink-0 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-semibold transition-colors ${
                     isTabActive(t.path)
                       ? 'bg-ink-700 text-paper-50'
-                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
                   }`}
                 >
                   {t.label}
@@ -283,45 +313,15 @@ export default function AppShell() {
             </nav>
           )}
 
-          <div className="flex items-center gap-2 text-sm sm:gap-3">
-            <span className="hidden text-slate-500 sm:inline">
-              {user.name}
-              {isAdmin && (
-                <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-700">
-                  管理員
-                </span>
-              )}
-              {!isAdmin && user.role === 'coach' && (
-                <span className="ml-1.5 rounded bg-paper-200 px-1.5 py-0.5 text-xs font-semibold text-ink-600">
-                  教練
-                </span>
-              )}
-            </span>
-            <button
-              type="button"
-              onClick={() => setHelpOpen(true)}
-              aria-label="使用說明"
-              className="btn-secondary btn-sm"
-            >
-              <CircleHelp className="h-4 w-4" /> <span className="hidden sm:inline">使用說明</span>
-            </button>
-            <a
-              href={`${import.meta.env.BASE_URL}user-manual.pdf`}
-              download="職能評測平台使用手冊.pdf"
-              title="下載 PDF 使用手冊"
-              aria-label="下載 PDF 使用手冊"
-              className="btn-secondary btn-sm"
-            >
-              <Download className="h-4 w-4" /> <span className="hidden sm:inline">手冊下載</span>
-            </a>
-            <button
-              type="button"
-              onClick={logout}
-              aria-label="登出"
-              className="btn-ghost btn-sm"
-            >
-              <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">登出</span>
-            </button>
+          <div className="ml-auto shrink-0">
+            <UserMenu
+              user={user}
+              roleLabel={isAdmin ? '管理員' : user.role === 'coach' ? '教練' : null}
+              onProfile={() => navigate('/profile')}
+              onHelp={() => setHelpOpen(true)}
+              manualHref={`${import.meta.env.BASE_URL}user-manual.pdf`}
+              onLogout={logout}
+            />
           </div>
         </div>
       </header>
@@ -329,6 +329,9 @@ export default function AppShell() {
       {/* 只包住路由內容，不含頁首與底部導覽——單一頁面出錯時，使用者仍能切換到
           其他分頁自救，而不是整個 App 變白畫面。resetKey 用路徑，換頁即自動復原。 */}
       <ErrorBoundary resetKey={location.pathname}>
+      {/* 以第一層路徑當 key：切換功能頁時輕微淡入；同一頁內換參數（例如分析頁切換
+          題庫）不重掛元件，保留狀態。 */}
+      <div key={location.pathname.split('/')[1] || 'root'} className="animate-page-in">
       <Routes>
         <Route path="/" element={<Navigate to={defaultAid ? `/survey/${defaultAid}` : '/home'} replace />} />
 
@@ -400,6 +403,7 @@ export default function AppShell() {
 
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
+      </div>
       </ErrorBoundary>
 
       {/* 手機底部導覽：桌機（sm 以上）隱藏，改用頁首的分頁列。作答／選擇受評者
@@ -433,7 +437,9 @@ export default function AppShell() {
 
       {helpOpen && <HelpModal role={helpRole} onClose={() => setHelpOpen(false)} />}
 
-      <ChatBot context={chatContext} liftForBottomNav={showBottomNav} />
+      {(!isSurveyOrRaterSetup || submittedPath === location.pathname) && (
+        <ChatBot context={chatContext} liftForBottomNav={showBottomNav} />
+      )}
     </div>
   );
 }

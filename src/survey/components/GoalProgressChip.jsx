@@ -17,7 +17,7 @@ export default function GoalProgressChip({ goals, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="mb-6 flex w-full items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 text-left shadow-sm ring-1 ring-slate-100 transition-colors hover:bg-slate-50"
+      className="flex h-full w-full items-center justify-between gap-3 rounded-xl bg-white px-4 py-2.5 text-left shadow-sm ring-1 ring-slate-100 transition-colors hover:bg-slate-50"
     >
       <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
         <Target className="h-4 w-4 text-brass-500" />

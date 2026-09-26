@@ -31,3 +31,9 @@ export async function register(page, name, email, password, opts) {
   await page.getByPlaceholder('至少 8 碼').fill(password);
   await page.getByRole('button', { name: /建立帳號/ }).click();
 }
+
+// 登出收在右上角的帳號選單裡（Sprint 8），先打開選單再點「登出」。
+export async function logout(page) {
+  await page.getByRole('button', { name: /的帳號選單/ }).click();
+  await page.getByRole('menuitem', { name: '登出' }).click();
+}

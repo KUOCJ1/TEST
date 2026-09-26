@@ -19,7 +19,7 @@ export default function GroupStatusBar({ group }) {
   const remaining = group.phase === 'in_progress' ? daysUntil(group.endDate) : null;
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl bg-paper-100 px-4 py-2.5 text-sm ring-1 ring-paper-300">
+    <div className="flex h-full flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl bg-paper-100 px-4 py-2.5 text-sm ring-1 ring-paper-300">
       <span className="flex items-center gap-1.5 font-semibold text-ink-700">
         <Users2 className="h-4 w-4 text-brass-500" /> {group.name}
       </span>

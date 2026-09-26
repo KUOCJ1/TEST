@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { BookOpen } from 'lucide-react';
 import { api } from '../api/client';
+import { getAssessment } from '../data/assessments/index.js';
+
+// 後端只回傳 id，這裡換成題庫／構面的中文名稱（Sprint 8：以前直接顯示
+// ai-competency、workflow 這種內部代碼）。對不到的舊 id 退回原樣，不會空白。
+const assessmentLabel = (id) => getAssessment(id)?.NAME ?? id;
+const dimensionLabel = (assessmentId, dimensionId) =>
+  getAssessment(assessmentId)?.DIMENSIONS?.find((d) => d.id === dimensionId)?.name ?? dimensionId;
 
 /**
  * 延伸閱讀使用情形（Sprint 3 驗收條件 3.6）：依題庫＋構面彙總點擊數與加入清單
@@ -50,8 +57,8 @@ export default function LearningResourceStatsPanel() {
             <tbody>
               {stats.map((row) => (
                 <tr key={`${row.assessmentId}::${row.dimensionId}`} className="border-b border-slate-100 last:border-0">
-                  <td className="py-2.5 pr-4 text-slate-600">{row.assessmentId}</td>
-                  <td className="py-2.5 pr-4 text-slate-600">{row.dimensionId}</td>
+                  <td className="py-2.5 pr-4 text-slate-600">{assessmentLabel(row.assessmentId)}</td>
+                  <td className="py-2.5 pr-4 text-slate-600">{dimensionLabel(row.assessmentId, row.dimensionId)}</td>
                   <td className="py-2.5 pr-4 text-right font-semibold text-slate-700">{row.clicks}</td>
                   <td className="py-2.5 text-right font-semibold text-slate-700">{row.saves}</td>
                 </tr>

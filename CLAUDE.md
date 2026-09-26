@@ -56,7 +56,8 @@ src/
 │   ├── dashboard/    UserDashboard（個人歷史/分析）
 │   ├── profile/      個人設定
 │   ├── data/assessments/   題庫設定（leadership-9d.js、ai-competency…）
-│   └── utils/        scoring.js（計分）、narrative.js（敘事評語組裝）
+│   └── utils/        scoring.js（計分）、narrative.js（敘事評語組裝）、color.js（設定色的 AA 對比處理）
+├── styles/dark-status.css  深色模式狀態色（刻意與 index.css 分檔，見 PLATFORM_MANUAL 第 6 節「共用介面規範」）
 └── test/             前端測試（含 narrative.test.js）
 server/
 ├── src/server.js     Express 進入點

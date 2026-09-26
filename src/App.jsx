@@ -40,6 +40,10 @@ function readJoinCode() {
   return params.get('join');
 }
 
+const MARKETING_TITLES = {
+  '/about': '平台理念', '/how-it-works': '功能總覽', '/showcase': '範例報告', '/faq': '常見問題',
+};
+
 function AppRoutes() {
   const { user, ready } = useAuth();
   const navigate = useNavigate();
@@ -93,6 +97,15 @@ function AppRoutes() {
       active = false;
     };
   }, [user, joinCode]);
+
+  // 分頁標題（Sprint 8 驗收條件 8.8）：只管行銷頁與未登入畫面；登入後由 AppShell
+  // 依功能頁設定——effect 是子元件先跑，這裡若也寫就會把 AppShell 的蓋掉。
+  const isMarketing = MARKETING_PATHS.includes(location.pathname);
+  useEffect(() => {
+    if (user && !isMarketing) return;
+    const name = MARKETING_TITLES[location.pathname] ?? (!user && view === 'auth' ? '登入／註冊' : null);
+    document.title = name ? `${name}｜全方位職能評測` : '全方位職能評測｜職能評量與發展平台';
+  }, [user, isMarketing, location.pathname, view]);
 
   // 行銷／說明頁（理念、功能總覽、範例報告、常見問題）不論登入與否都能直接用
   // 網址開啟——登入後導覽列的 CTA 會自動改成「前往我的評量」，不強制導回

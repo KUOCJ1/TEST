@@ -154,7 +154,9 @@ export default function GroupWorkspace({ users, currentUserId }) {
   const pdfMember = pdfMemberIndex != null ? memberRows[pdfMemberIndex] : null;
 
   return (
-    <div className="grid gap-5 lg:grid-cols-5">
+    <div className="grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)]">
+      {/* 班別列表用固定窄欄（Sprint 8）：以前左右 2:3 分，列表大半空白，右側成員比較表
+          卻窄到要橫向捲動才看得到「查看」按鈕。 */}
       {/* Left: group list */}
       {/* min-w-0：grid item 預設 min-width:auto，手機版沒有 lg:grid-cols-5 時仍會被
           底下熱力圖表格等內容的最小內容寬度撐開，導致整個頁面被推出可視範圍橫向
@@ -171,7 +173,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
       />
 
       {/* Right: group detail */}
-      <div className="min-w-0 lg:col-span-3">
+      <div className="min-w-0">
         {error && (
           <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
             {error}
@@ -206,14 +208,14 @@ export default function GroupWorkspace({ users, currentUserId }) {
                     onClick={() => setShowBatchReport(true)}
                     className="btn-secondary btn-sm"
                   >
-                    <Copy className="h-3.5 w-3.5" /> <span className="hidden sm:inline">批次匯出個人報告</span>
+                    <Copy className="h-3.5 w-3.5" /> <span className="sr-only sm:not-sr-only">批次匯出個人報告</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowGroupReport(true)}
                     className="btn-primary btn-sm"
                   >
-                    <FileText className="h-3.5 w-3.5" /> <span className="hidden sm:inline">產出班級專業分析報告</span>
+                    <FileText className="h-3.5 w-3.5" /> <span className="sr-only sm:not-sr-only">產出班級專業分析報告</span>
                   </button>
                 </div>
               )}

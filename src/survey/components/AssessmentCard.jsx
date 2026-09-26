@@ -1,6 +1,7 @@
 import { getAssessment } from '../data/assessments/index.js';
 import { formatDate } from '../utils/format';
 import PhaseBadge from './PhaseBadge';
+import { badgeBg } from '../utils/color';
 
 export default function AssessmentCard({
   assessment, latestSubmission, groupPhase, submittedPhases, onStart, onViewAnalysis, onGoTo360,
@@ -15,7 +16,6 @@ export default function AssessmentCard({
   const supports360 = !!config?.SUPPORTS_360;
 
   let startLabel = hasResult ? '重新作答' : '開始作答';
-  if (alreadySubmitted) startLabel = '已完成作答';
   if (!canStart && !hasResult) startLabel = '尚未開放作答';
 
   // 狀態標籤：跟 startLabel（按鈕文字，偏「接下來要做什麼」）分開，這個是純粹
@@ -35,7 +35,7 @@ export default function AssessmentCard({
       <div className="flex-1">
         <div className="mb-2 flex items-start justify-between gap-2">
           <h3 className="text-lg font-extrabold text-slate-800">{assessment.name}</h3>
-          {inGroup && <PhaseBadge phase={groupPhase} />}
+          {inGroup && <span className="shrink-0"><PhaseBadge phase={groupPhase} /></span>}
         </div>
         <p className="mt-1 text-sm text-slate-500">{assessment.description}</p>
         {config && (
@@ -62,7 +62,7 @@ export default function AssessmentCard({
               </span>
               <span
                 className="rounded-full px-3 py-1 text-xs font-bold text-white"
-                style={{ background: latestSubmission.result.level.color }}
+                style={{ background: badgeBg(latestSubmission.result.level.color) }}
               >
                 {latestSubmission.result.level.badge}
               </span>
@@ -71,30 +71,39 @@ export default function AssessmentCard({
         )}
       </div>
 
-      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-        <button
-          type="button"
-          onClick={() => canStart && !alreadySubmitted && onStart(assessment.id)}
-          disabled={!canStart || alreadySubmitted}
-          className="btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {startLabel}
-        </button>
-        {hasResult && (
-          <button type="button" onClick={() => onViewAnalysis(assessment.id)} className="btn-secondary flex-1">
+      {/* 一個主要動作＋次要動作（Sprint 8 驗收條件 8.4）。以前三顆等寬按鈕擠在一排，
+          卡片一窄就斷成「重新作／答」「查看分／析」；做完的班級還留著一顆灰色的停用
+          按鈕。現在：做過的評量主要動作是「查看分析」，沒做過是「開始作答」，其餘放在
+          下方一排小按鈕；按鈕文字一律不換行。 */}
+      <div className="mt-5 space-y-2">
+        {hasResult ? (
+          <button type="button" onClick={() => onViewAnalysis(assessment.id)} className="btn-primary w-full whitespace-nowrap">
             查看分析
           </button>
-        )}
-        {/* 360° 入口原本只是頁尾一行文字連結，視覺份量遠低於其他按鈕，容易被忽略——
-            升級成跟「查看分析」同一排、同樣重量的按鈕（對應 S-02）。 */}
-        {supports360 && onGoTo360 && (
+        ) : (
           <button
             type="button"
-            onClick={() => onGoTo360(assessment.id)}
-            className="btn-secondary flex-1"
+            onClick={() => canStart && onStart(assessment.id)}
+            disabled={!canStart}
+            className="btn-primary w-full whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
           >
-            360° 評測 →
+            {startLabel}
           </button>
+        )}
+        {(hasResult || (supports360 && onGoTo360)) && (
+          <div className="flex flex-wrap gap-2">
+            {hasResult && !alreadySubmitted && canStart && (
+              <button type="button" onClick={() => onStart(assessment.id)} className="btn-secondary btn-sm flex-1 whitespace-nowrap">
+                {startLabel}
+              </button>
+            )}
+            {/* 360° 入口維持按鈕的份量（對應 S-02：以前只是一行文字連結，容易被忽略）。 */}
+            {supports360 && onGoTo360 && (
+              <button type="button" onClick={() => onGoTo360(assessment.id)} className="btn-secondary btn-sm flex-1 whitespace-nowrap">
+                360° 評測 →
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

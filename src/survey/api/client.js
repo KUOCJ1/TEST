@@ -33,6 +33,8 @@ export const api = {
   login: (payload) => request('/auth/login', { method: 'POST', body: payload }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me').then((d) => d.user),
+  // 啟動時查登入狀態：未登入回 { user: null }（200），不會在 console 留 401。
+  session: () => request('/auth/session').then((d) => d.user),
   updateProfile: (payload) => request('/auth/profile', { method: 'PATCH', body: payload }).then((d) => d.user),
   changePassword: (payload) => request('/auth/password', { method: 'POST', body: payload }),
   resetPassword: (payload) => request('/auth/reset-password', { method: 'POST', body: payload }),

@@ -6,6 +6,7 @@ import DimensionHeatmap from '../components/DimensionHeatmap';
 import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import GroupGainReport from './GroupGainReport';
 import ProgressPanel from './ProgressPanel';
+import { badgeBg } from '../utils/color';
 
 // 「總覽」分頁內容：KPI 卡、班級雷達圖、能力熱力圖、成員比較表、班級敘事報告、
 // 學習成效面板、班級整體評語表單。從 GroupWorkspace 拆出（Sprint 5.6）——
@@ -106,13 +107,15 @@ export default function GroupOverviewSection({
           <div className="panel">
             <h4 className="mb-3 font-semibold text-slate-700">成員比較</h4>
             <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整欄位</p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+            {/* 窄欄位時整張表橫向捲動，而不是把姓名、徽章擠成逐字直排（Sprint 8 稽核）；
+                捲動區可用鍵盤聚焦，才能用方向鍵捲動。 */}
+            <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="成員比較表">
+              <table className="w-full whitespace-nowrap text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500">
                     <th className="py-2 pr-3 font-medium">#</th>
                     <th className="py-2 pr-3 font-medium">姓名</th>
-                    <th className="py-2 pr-3 font-medium">總分（與班平均差距）</th>
+                    <th className="py-2 pr-3 font-medium">總分（與班平均）</th>
                     <th className="py-2 pr-3 font-medium">達成率</th>
                     <th className="py-2 pr-3 font-medium">落點等級</th>
                     <th className="py-2 pr-3 font-medium">評語</th>
@@ -121,7 +124,8 @@ export default function GroupOverviewSection({
                 </thead>
                 <tbody>
                   {memberRows.map((r, i) => {
-                    const diff = groupStats ? r.total - groupStats.avgTotal : null;
+                    // 平均總分是小數，直接相減會出現 +5.700000000000003 這種浮點誤差。
+                    const diff = groupStats ? Math.round((r.total - groupStats.avgTotal) * 10) / 10 : null;
                     return (
                       <tr key={r.userId} className="border-b border-slate-100 last:border-0">
                         <td className="py-2.5 pr-3 text-slate-400">{i + 1}</td>
@@ -148,7 +152,7 @@ export default function GroupOverviewSection({
                         <td className="py-2.5 pr-3">
                           <span
                             className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
-                            style={{ background: r.level.color }}
+                            style={{ background: badgeBg(r.level.color) }}
                           >
                             {r.level.badge}
                           </span>
@@ -161,7 +165,7 @@ export default function GroupOverviewSection({
                           )}
                         </td>
                         <td className="py-2.5">
-                          <button type="button" onClick={() => onOpenMember(i)} className="btn-secondary btn-sm">
+                          <button type="button" onClick={() => onOpenMember(i)} className="btn-secondary btn-sm" aria-label={`查看 ${r.name} 的報告`}>
                             <Eye className="h-3.5 w-3.5" /> 查看
                           </button>
                         </td>
@@ -204,7 +208,7 @@ export default function GroupOverviewSection({
         <div className="space-y-2">
           {groupTips.map((tip, i) => (
             <div key={i} className="flex gap-2">
-              <span className="mt-2 text-xs font-bold text-brass-400">{i + 1}.</span>
+              <span className="mt-2 text-xs font-bold text-brass-600">{i + 1}.</span>
               <input type="text" value={tip} onChange={(e) => setGroupTips((prev) => prev.map((t, j) => j === i ? e.target.value : t))}
                 placeholder={`班級建議 ${i + 1}`}
                 className="input flex-1"

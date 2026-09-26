@@ -67,16 +67,18 @@ export default function GroupListPanel({
   };
 
   return (
-    <div className="min-w-0 lg:col-span-2">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="font-semibold text-slate-700">班別列表</h3>
-        <div className="flex gap-2">
+    <div className="min-w-0">
+      {/* 欄寬固定 16rem（見 GroupWorkspace）：標題與按鈕在同一列放不下，會被擠成
+          「班別列／表」「建立班／別」，所以大螢幕時按鈕移到標題下方、各占一半。 */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="whitespace-nowrap font-semibold text-slate-700">班別列表</h3>
+        <div className="flex gap-2 lg:w-full">
           {groups.length >= 2 && (
-            <button type="button" onClick={onCompareCohorts} className="btn-secondary btn-sm">
-              <Scale className="h-3.5 w-3.5" /> <span className="hidden sm:inline">比較梯次</span>
+            <button type="button" onClick={onCompareCohorts} className="btn-secondary btn-sm whitespace-nowrap lg:flex-1">
+              <Scale className="h-3.5 w-3.5" /> <span className="sr-only sm:not-sr-only">比較梯次</span>
             </button>
           )}
-          <button type="button" onClick={() => setCreating(true)} className="btn-primary btn-sm">
+          <button type="button" onClick={() => setCreating(true)} className="btn-primary btn-sm whitespace-nowrap lg:flex-1">
             <Plus className="h-3.5 w-3.5" /> 建立班別
           </button>
         </div>

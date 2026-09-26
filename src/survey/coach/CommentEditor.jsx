@@ -177,7 +177,7 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
       <div className="space-y-2">
         {tips.map((tip, i) => (
           <div key={i} className="flex gap-2">
-            <span className="mt-2 text-xs font-bold text-brass-400">{i + 1}.</span>
+            <span className="mt-2 text-xs font-bold text-brass-600">{i + 1}.</span>
             <input
               type="text"
               value={tip}

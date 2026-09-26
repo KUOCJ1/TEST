@@ -24,6 +24,10 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'retain-on-failure',
+    // 作答後會平滑捲到下一題（Sprint 8）；37 題每題都等捲動動畫結束，單一測試會從
+    // 約 10 秒拉長到 35 秒以上、逼近 timeout。E2E 驗的是流程不是動畫，用「減少動態
+    // 效果」模式跑——這同時也驗到了尊重 prefers-reduced-motion 的那條路徑。
+    contextOptions: { reducedMotion: 'reduce' },
     screenshot: 'only-on-failure',
     // 這個環境預先裝好的 Chromium 版本跟 @playwright/test 內建預期的 revision
     // 對不上（環境設定就是這樣），要明確指到實際安裝的執行檔，不能靠內建的

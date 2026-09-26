@@ -16,12 +16,15 @@ const STEPS = {
   ],
 };
 
-export default function OnboardingBanner({ role = 'user' }) {
+// show：呼叫端判斷「這個人還需不需要新手引導」（例如學員已完成過評測、教練已有
+// 學員就不需要）——以前只看有沒有手動關掉，做過 4 次評測的人首頁仍然掛著它
+// （Sprint 8 稽核：首頁在主要內容前面疊了 4 個橫幅）。
+export default function OnboardingBanner({ role = 'user', show = true }) {
   const [dismissed, setDismissed] = useState(
     () => readJSON(STORAGE_KEY, {})[role] === true,
   );
 
-  if (dismissed) return null;
+  if (dismissed || !show) return null;
 
   const steps = STEPS[role] ?? STEPS.user;
 

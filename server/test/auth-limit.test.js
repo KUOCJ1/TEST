@@ -25,3 +25,15 @@ test('AUTH_RATE_LIMIT 可調整額度', async () => {
     delete process.env.AUTH_RATE_LIMIT;
   }
 });
+
+test('GET /auth/session：未登入回 200 + null（不再用 401 表示「沒登入」）；登入後回使用者', async () => {
+  const app = createApp({ db: createDb(':memory:'), jwtSecret: 'test-secret-please-change' });
+  const anon = await request(app).get('/api/auth/session');
+  assert.equal(anon.status, 200);
+  assert.equal(anon.body.user, null);
+  const agent = request.agent(app);
+  await agent.post('/api/auth/register').send({ name: '小明', email: 'm@b.co', password: 'abcdef12' });
+  const me = await agent.get('/api/auth/session');
+  assert.equal(me.body.user.email, 'm@b.co');
+  assert.equal(me.body.user.passwordHash, undefined);
+});

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getAssessment } from '../data/assessments/index.js';
+import { dimTextStyle } from '../utils/color';
 import {
   buildNarrative,
   buildOverallSummary,
@@ -36,7 +37,7 @@ function DimensionCard({ dim, config, seedBase, focus }) {
       >
         <span className="font-semibold text-slate-700">
           {focus && <span title="重點構面" className="mr-1">⭐</span>}
-          <span style={{ color: dim.color }}>{dim.name}</span>
+          <span className="dim-text" style={dimTextStyle(dim.color)}>{dim.name}</span>
           <span className="ml-2 text-xs font-normal text-slate-400">平均 {dim.average.toFixed(1)} / 5</span>
         </span>
         <span className="flex flex-shrink-0 items-center gap-2">

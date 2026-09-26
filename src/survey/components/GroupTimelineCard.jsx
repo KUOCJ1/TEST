@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import PhaseBadge from './PhaseBadge';
 import { useToast } from './useToast';
 import { api } from '../api/client';
 
 export default function GroupTimelineCard({ group, onUpdated, showHeader = false }) {
+  // 管理後台一頁會有好幾張這個卡片，標籤與欄位的關聯 id 必須唯一。
+  const idBase = useId();
   const [startDate, setStartDate] = useState(group.startDate ? group.startDate.slice(0, 10) : '');
   const [endDate, setEndDate] = useState(group.endDate ? group.endDate.slice(0, 10) : '');
   const [saving, setSaving] = useState(false);
@@ -78,8 +80,9 @@ export default function GroupTimelineCard({ group, onUpdated, showHeader = false
 
       <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:max-w-sm">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500">開始日期</label>
+          <label htmlFor={`${idBase}-start`} className="mb-1 block text-xs font-medium text-slate-500">開始日期</label>
           <input
+            id={`${idBase}-start`}
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
@@ -87,8 +90,9 @@ export default function GroupTimelineCard({ group, onUpdated, showHeader = false
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500">截止日期</label>
+          <label htmlFor={`${idBase}-end`} className="mb-1 block text-xs font-medium text-slate-500">截止日期</label>
           <input
+            id={`${idBase}-end`}
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}

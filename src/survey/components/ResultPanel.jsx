@@ -6,6 +6,7 @@ import LearningResources from './LearningResources';
 import { getAssessment } from '../data/assessments/index.js';
 import { buildSuggestions } from '../utils/suggestions';
 import InfoTip from './InfoTip';
+import { badgeBg, dimTextStyle } from '../utils/color';
 
 const ResultPanel = forwardRef(function ResultPanel(
   { result, onRetake, onCopy, copied, percentile = null, benchmarkDims = null, readOnly = false, focusDimensionIds = [] },
@@ -57,10 +58,10 @@ const ResultPanel = forwardRef(function ResultPanel(
         )}
         <span
           className={`inline-block rounded-sm px-4 py-1.5 text-lg font-bold ${profileMode ? '' : 'mt-3'}`}
-          style={{ background: level.color, color: '#fff' }}
+          style={{ background: badgeBg(level.color), color: '#fff' }}
         >
           {level.badge}
-          {level.badgeEn && <span className="ml-2 text-sm font-normal opacity-80">{level.badgeEn}</span>}
+          {level.badgeEn && <span className="ml-2 text-sm font-normal">{level.badgeEn}</span>}
         </span>
         {!profileMode && (
           <p className="mt-2 text-sm text-paper-50/75">能力達成率 {percent}%</p>
@@ -82,7 +83,7 @@ const ResultPanel = forwardRef(function ResultPanel(
             <a
               key={s.id}
               href={`#${s.id}`}
-              className="shrink-0 whitespace-nowrap rounded-full px-3 py-1 font-semibold text-slate-500 transition-colors hover:bg-paper-200 hover:text-ink-700"
+              className="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-600 transition-colors hover:border-brass-300 hover:text-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
             >
               {s.label}
             </a>
@@ -105,8 +106,9 @@ const ResultPanel = forwardRef(function ResultPanel(
             <div key={d.id}>
               <div className="mb-1 flex items-center justify-between text-sm">
                 <span className="font-medium text-slate-700">
-                  <span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>
-                  <span className="ml-2 text-slate-400">{d.name}</span>
+                  <span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{d.subtitle}</span>
+                  {/* DISC 這類題庫的 subtitle 已含名稱（「D 支配型」vs「支配型」），不重複顯示。 */}
+                  {!d.subtitle?.includes(d.name) && <span className="ml-2 text-slate-400">{d.name}</span>}
                 </span>
                 <span className="font-semibold text-slate-600">
                   {d.score}/{d.max}
@@ -182,7 +184,7 @@ const ResultPanel = forwardRef(function ResultPanel(
                     {suggestions.develop.map((d) => (
                       <li key={d.id} className="flex gap-2 text-sm leading-relaxed text-slate-700">
                         <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full" style={{ background: d.color }} />
-                        <span><span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>：{d.text}</span>
+                        <span><span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{d.subtitle}</span>：{d.text}</span>
                       </li>
                     ))}
                   </ul>
@@ -195,7 +197,7 @@ const ResultPanel = forwardRef(function ResultPanel(
                     {suggestions.leverage.map((d) => (
                       <li key={d.id} className="flex gap-2 text-sm leading-relaxed text-slate-700">
                         <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full" style={{ background: d.color }} />
-                        <span><span className="font-semibold" style={{ color: d.color }}>{d.subtitle}</span>：{d.text}</span>
+                        <span><span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{d.subtitle}</span>：{d.text}</span>
                       </li>
                     ))}
                   </ul>
