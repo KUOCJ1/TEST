@@ -4,10 +4,12 @@
 [`docs/SPRINT_PLAN.md`](docs/SPRINT_PLAN.md)（Sprint 1–5 在 [`docs/archive/`](docs/archive/sprints-1-5.md)）；
 逐筆程式碼變更請看 `git log`。每個 Sprint 結束時要在最上面補一段。
 
-## Sprint 9 — 文件與維運強化（2026-10，進行中）
+## Sprint 9 — 文件與維運強化（2026-10，待部署）
 - 新增本更新日誌；README 改為現況（4 套評量、SQLite）。
 - `DEPLOYMENT.md` 新增「上線檢查清單」；`PLATFORM_MANUAL.md` 新增「修改既有題庫」SOP。
-- Sprint 1–5 計畫書歸檔；使用手冊加入關鍵畫面截圖，可用 `npm run manual:screenshots` 重新產生。
+- Sprint 1–5 計畫書歸檔；使用手冊加入 11 張關鍵畫面截圖，可用 `npm run manual:screenshots` 重新產生。
+- 修正：作答頁題目文字被卡片上邊框線切過（`<legend>` 預設壓在 `fieldset` 邊框上）。
+- 移除不再使用的志工問卷頁面與其分析指南。
 
 ## Sprint 8 — UI/UX 優化（2026-09-26）
 - 全站文字對比達 WCAG AA（亮色與深色模式），嚴重無障礙問題歸零。

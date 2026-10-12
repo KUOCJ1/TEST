@@ -63,7 +63,7 @@ export default defineConfig({
     setupFiles: './src/test/setup.js',
     // 後端有自己的測試（node --test），不納入 Vitest；e2e/ 是 Playwright 測試
     // （@playwright/test 的 test()/expect() 跟 vitest 的不是同一套，混進來會
-    // 直接執行失敗），也不納入。
-    exclude: ['**/node_modules/**', '**/dist/**', 'server/**', 'e2e/**'],
+    // 直接執行失敗），也不納入（scripts/ 裡的手冊截圖腳本同理）。
+    exclude: ['**/node_modules/**', '**/dist/**', 'server/**', 'e2e/**', 'scripts/**'],
   },
 })

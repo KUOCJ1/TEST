@@ -1,9 +1,15 @@
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { marked } from 'marked';
 import { chromium } from 'playwright';
 
 const md = readFileSync(new URL('../docs/user-manual.md', import.meta.url), 'utf8');
-const body = marked.parse(md);
+// 手冊裡的截圖（docs/images/，由 `npm run manual:screenshots` 產生）嵌成 data URI，
+// PDF 才是單一自足的檔案；缺圖時直接報錯，避免產出一份少了圖的手冊。
+const body = marked.parse(md).replace(/src="images\/([^"]+)"/g, (_, name) => {
+  const file = new URL(`../docs/images/${name}`, import.meta.url);
+  if (!existsSync(file)) throw new Error(`手冊引用的截圖不存在：docs/images/${name}（先執行 npm run manual:screenshots）`);
+  return `src="data:image/jpeg;base64,${readFileSync(file).toString('base64')}"`;
+});
 
 const html = `<!DOCTYPE html>
 <html lang="zh-Hant">
@@ -37,6 +43,10 @@ const html = `<!DOCTYPE html>
   hr { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
   a { color: #2563eb; text-decoration: none; }
   p { margin: 6px 0; }
+  img { display: block; max-width: 100%; margin: 10px auto 2px; border: 1px solid #dbeafe;
+        border-radius: 6px; page-break-inside: avoid; }
+  img[src*="survey-mobile"], img[src*="account-menu"] { max-width: 45%; }
+  em { color: #64748b; font-size: 9.5pt; }
   strong { color: #0f172a; }
 </style>
 </head>

@@ -881,6 +881,20 @@ Chromium 後跑 `npm run test:e2e`，失敗時上傳 trace 當 artifact）→ `n
 **如果希望教練／管理者能在後台直接改構面或題目**：這是新功能，不是設定。需要把題庫從程式碼搬進
 資料庫（含版本管理）、做編輯介面與權限，並決定舊作答怎麼對應新版本，請另立 Sprint 評估。
 
+### 更新使用手冊與截圖
+
+使用手冊（`docs/user-manual.md`）的畫面截圖不是手動截的，介面改版後照這個流程重做：
+
+1. 先關掉本機正在跑的 dev server（截圖腳本會沿用已在跑的伺服器、動到真實資料）。
+2. `npm run manual:screenshots`：用 `scripts/manual-screenshots.spec.js` 與
+   `playwright.screenshots.config.js`，在記憶體資料庫裡種虛構的班級與學員，把學員／教練／管理者
+   的關鍵畫面存到 `docs/images/*.jpg`。環境的 Chromium 路徑對不上時設 `PLAYWRIGHT_CHROMIUM_PATH`。
+3. **逐張看過**：截圖腳本只保證流程跑得通，不保證畫面對——例如文字被切到、截到轉場一半。
+4. `npm run generate-manual`：把 Markdown 與圖片產生成 `public/user-manual.pdf`（網站「手冊下載」用的檔案），
+   再 `cp public/user-manual.pdf docs/user-manual.pdf` 同步 `docs/` 那份。缺圖時腳本會直接報錯。
+5. 新增要放進手冊的畫面：在截圖腳本加一張、在手冊對應章節加 `![說明](images/檔名.jpg)`。
+   「系統狀態」那張用模擬的正常回應（沙盒沒有對外網路，真實狀態會顯示異常）。
+
 ### 開關某套題庫是否對學員可見
 
 管理後台「評量開關」，或直接呼叫 `PATCH /api/admin/assessments/:id`

@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "generate-manual": "node scripts/generate-manual-pdf.js"
+    "generate-manual": "node scripts/generate-manual-pdf.js",
+    "manual:screenshots": "playwright test -c playwright.screenshots.config.js"
   },
   "dependencies": {
     "lucide-react": "^1.8.0",

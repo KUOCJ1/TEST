@@ -39,13 +39,15 @@ function QuestionCard({ number, question, value, onChange, invalid, inputRef, on
         invalid ? 'border-red-300 bg-red-50' : answered ? 'border-slate-100 bg-white' : 'border-slate-200 bg-slate-50/60'
       }`}
     >
-      <legend className="mb-3 block text-[15px] font-medium leading-relaxed text-slate-800">
+      {/* legend 預設會「坐在」fieldset 的上邊框線上、文字被邊框切過；float + w-full 讓它
+          回到卡片內容區（下方選項用 clear-both 接在它後面）。 */}
+      <legend className="float-left mb-3 w-full p-0 text-[15px] font-medium leading-relaxed text-slate-800">
         <span className="mr-1.5 font-semibold text-brass-600">{number}.</span>
         {question.text}
         {invalid && <span className="ml-2 text-sm font-medium text-red-600">（尚未作答）</span>}
       </legend>
 
-      <div role="radiogroup" aria-label={question.text} className="grid grid-cols-5 gap-1.5 sm:gap-2.5">
+      <div role="radiogroup" aria-label={question.text} className="clear-both grid grid-cols-5 gap-1.5 sm:gap-2.5">
         {SCALE_LABELS.map((opt) => {
           const selected = Number(value) === opt.value;
           return (

@@ -31,6 +31,9 @@ npm run dev          # 本機開發（Vite）
 npm test             # 跑 Vitest（CI 必須全綠）
 npm run build        # 產出 dist/
 npm run lint         # ESLint（提交前應為 0 problems）
+npm run test:e2e     # Playwright 端對端（先關掉本機 dev server）
+npm run manual:screenshots   # 重新產生使用手冊截圖到 docs/images/（見 PLATFORM_MANUAL「更新使用手冊與截圖」）
+npm run generate-manual      # 手冊 PDF → public/user-manual.pdf（再複製一份到 docs/）
 ```
 
 後端（`server/`）：
