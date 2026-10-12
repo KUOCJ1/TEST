@@ -16,7 +16,7 @@ function selfDonePhases(mySubmissions, groupId) {
 }
 
 /**
- * 首頁「下一步」卡片的優先序判斷（見 docs/SPRINT_PLAN.md Sprint 2 驗收條件 2.1，
+ * 首頁「下一步」卡片的優先序判斷（見 docs/archive/sprints-1-5.md Sprint 2 驗收條件 2.1，
  * ④ 是 Sprint 3 驗收條件 3.4 加的複測提醒）：
  *   ① 所屬班級課前未作答 → 開始課前評測
  *   ② 課前已完成、班級進行中 → 開始課後複測

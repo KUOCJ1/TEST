@@ -575,7 +575,7 @@ URL」的邏輯，那是脆弱且已被證明會壞的做法。
 ### 10.3 學習閉環：目標 × 延伸閱讀 × 複測
 
 把「看到推薦文章」接到「真的去學、排進目標、之後回來複測看有沒有變化」，串成
-一條路徑（對應 docs/SPRINT_PLAN.md Sprint 3）：
+一條路徑（對應 docs/archive/sprints-1-5.md Sprint 3）：
 
 - **加入學習清單**：`LearningResources.jsx` 每篇文章旁的「加入清單」呼叫
   `POST /api/reading-list`（`routes/readingList.js`）。同一篇文章重複加入是
@@ -847,6 +847,39 @@ Chromium 後跑 `npm run test:e2e`，失敗時上傳 trace 當 artifact）→ `n
 5. （建議）在 `server/src/lib/learningResourceTopics.js` 幫每個構面補上
    第二大腦搜尋關鍵字，否則延伸閱讀區塊該題庫會查不到任何文章。
 6. 跑 `npm test`（前後端）、`npm run lint`、`npm run build` 全綠再提交。
+
+### 修改既有題庫的構面、題目或評語
+
+> 先講結論：**教練與管理者都不能在後台改題庫內容**。管理者只能開關整套題庫
+> （`PATCH /api/admin/assessments/:id` 只接受 `enabled`）；教練只能對自己的班級挑
+> 「重點構面」與寫構面備註（`focusDimensionIds`／`dimensionNotes`）。構面、題目、
+> 計分與評語全在 `src/survey/data/assessments/<題庫>.js`，要改就是改程式碼、重新部署。
+
+**先弄清楚存什麼**：學員送出時，**前端**用 `buildResult()` 算好 `result`（總分、各構面
+分數與等級、落點），後端只驗形狀、不重算，連同 `answers` 一起存。所以：
+
+| 你改的東西 | 對**已作答**資料的影響 | 風險 |
+|---|---|---|
+| 題目文字（不改意思的潤飾） | 舊紀錄的分數不變；題目文字只影響之後的作答畫面 | 低 |
+| `COMMENTARY` 評語、`LEVELS` 的說明文字 | 舊紀錄存的分數與等級（`result.level`）不變；但敘事報告引用的評語文字可能在檢視時取自目前設定，舊報告措辭會跟著變（改之前請實際開一份舊報告確認） | 低～中：沒有版本留底 |
+| 題目數量、新增／刪除題目、改 `reversed`、改題目所屬 `subId`／構面 | 舊紀錄不會重算，新舊總分**不可直接比較**；歷次趨勢、課前課後增益、跨梯次比較都會混入不同口徑 | **高** |
+| `LEVELS` 的分數門檻、構面 `rating` 門檻 | 舊紀錄存的等級是當時的，新作答用新門檻；同分數可能落在不同級別 | **高** |
+| 構面 `id`、`subId`、題目 `id` | 目標（`goals`）、延伸閱讀統計、備註都用 id 關聯；改了就對不上 | **高**：避免改 id，要改請新增 |
+
+**建議作法**：
+1. 純文字潤飾直接改；會影響計分口徑的改動，**視為新版本題庫**——複製出一個新題庫（新 `ID`），
+   舊題庫在後台停用，已有班級繼續用舊的，新班級用新的。這樣歷史資料不會混口徑。
+2. 一定要原地改計分口徑時，先備份（`bash deploy/backup.sh`），並在更新日誌寫明「幾月起口徑變更，
+   此日期前後的分數不可直接比較」。
+3. 改動範圍通常包含：題庫檔、`server/src/lib/learningResourceTopics.js`（構面關鍵字）、
+   `src/survey/marketing/assessmentSummary.js`（行銷頁摘要，構面／題數有變時）、
+   `docs/leadership-9d-spec.md`（L9D 規格書）與使用手冊相關描述。
+4. 跑 `npm test`（前後端）、`npm run lint`、`npm run build`、`npm run test:e2e`；
+   用 L9D 改動時特別留意 `narrative.test.js` 與 `scoring` 相關測試是否仍符合新規格。
+5. 部署後依 `DEPLOYMENT.md` 的「上線檢查清單」驗收，並自己完整作答一次看報告。
+
+**如果希望教練／管理者能在後台直接改構面或題目**：這是新功能，不是設定。需要把題庫從程式碼搬進
+資料庫（含版本管理）、做編輯介面與權限，並決定舊作答怎麼對應新版本，請另立 Sprint 評估。
 
 ### 開關某套題庫是否對學員可見
 

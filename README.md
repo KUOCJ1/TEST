@@ -52,6 +52,7 @@ cd server && npm test  # 後端 API 測試（node --test + supertest）
 - **[docs/user-manual.md](./docs/user-manual.md)** — 給最終使用者（學員／教練／管理者）的操作手冊。
 - **[docs/leadership-9d-spec.md](./docs/leadership-9d-spec.md)** — L9D 評量的規格書（構面定義、計分公式）。
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** — 從零開始在全新 VPS 上架站的逐步指南。
+- **[CHANGELOG.md](./CHANGELOG.md)** — 更新日誌：每次上線使用者看得到的變化。
 - **[CLAUDE.md](./CLAUDE.md)** — 給 AI 協作工具的精簡速查表。
 
 ## 部署（VPS：Ubuntu + Nginx + HTTPS）

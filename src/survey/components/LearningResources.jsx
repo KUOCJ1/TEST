@@ -12,7 +12,7 @@ import AddToGoalButton from './AddToGoalButton';
  *
  * 每篇文章可以「加入我的學習清單」（見「我的學習」頁）或「加入目標」（變成某個
  * 發展目標的行動項目）——把「看到推薦」接到「真的去學、排進目標」，見
- * docs/SPRINT_PLAN.md Sprint 3。
+ * docs/archive/sprints-1-5.md Sprint 3。
  *
  * @param {string} assessmentId
  * @param {Array<{id:string, subtitle?:string}>} dimensions 最多同時查詢幾個構面

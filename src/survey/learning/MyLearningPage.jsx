@@ -7,7 +7,7 @@ import LoadingState from '../components/LoadingState';
 /**
  * 「我的學習」：把目前散落在各評量報告頁的「發展目標」與「延伸閱讀學習清單」
  * 彙整到同一頁，回答「我到底安排了哪些學習、進度到哪了」——見
- * docs/SPRINT_PLAN.md Sprint 3（3.3）。目標與清單本身的建立/編輯還是在
+ * docs/archive/sprints-1-5.md Sprint 3（3.3）。目標與清單本身的建立/編輯還是在
  * ResultPanel／LearningResources 進行，這裡是總覽 + 管理（標記已讀、移除）。
  */
 export default function MyLearningPage() {

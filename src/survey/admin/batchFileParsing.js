@@ -4,7 +4,7 @@ import { readSheet } from 'read-excel-file/universal';
 // 1. React Fast Refresh 只允許一個檔案單純只匯出元件，跟元件放在同一個檔案裡
 //    匯出這些純函式會讓 react-refresh/only-export-components 這條 lint 規則失敗。
 // 2. 這批解析邏輯是 xlsx 套件遷移（Sprint 5 驗收條件 5.1，見
-//    docs/SPRINT_PLAN.md）風險最高的部分，獨立成檔案也比較好直接寫測試
+//    docs/archive/sprints-1-5.md）風險最高的部分，獨立成檔案也比較好直接寫測試
 //    （src/test/batch-upload-parsing.test.jsx）。
 //
 // 選 read-excel-file 而不是先前試過的 exceljs：exceljs 是讀寫都支援的完整套件，

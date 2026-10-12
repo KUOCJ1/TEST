@@ -192,6 +192,38 @@ curl -s localhost:3101/api/health      # {"ok":true,"version":{"commit":"<目前
 進教練後台 → 選一個 `leadership-9d` 班別（需 ≥2 位成員已作答），確認雷達圖下方
 出現「🏢 整體組織評語」區塊。
 
+## 上線檢查清單（每次部署照著勾）
+
+> 這是 Sprint 6–8 第一次實際上線時走過的流程。**所有指令都在 VPS 上執行**，
+> 密碼與金鑰只寫在 VPS 的 `server/.env`，不要貼到對話、文件或提交訊息。
+
+**A. 部署前**
+- [ ] 手動備份一次：`bash deploy/backup.sh`，看到「備份成功」與完整性檢查通過。
+- [ ] `server/.env` 有必填鍵（`JWT_SECRET`、`PORT`、`DB_PATH`、`ADMIN_EMAIL`、`ADMIN_PASSWORD`、`NODE_ENV=production`）；
+      只列名稱檢查：`sudo grep -oE '^[A-Z_]+=' /opt/ai-assessment/server/.env`
+- [ ] 本次新增的設定鍵都補了（例如 SMTP 的五個鍵、`TRUST_PROXY=2`、`APP_URL`）。**不要**設 `AUTH_RATE_LIMIT`（只給 E2E 用）。
+- [ ] GitHub 上這個 commit 的 CI 是綠的。
+
+**B. 部署**
+- [ ] `git fetch` → `git checkout` → `git pull` 分支，`git log --oneline -1` 確認是要上線的 commit。
+- [ ] `bash deploy/deploy.sh` 跑完，結尾 `verify.sh` 結果為 **FAIL 0**。
+- [ ] 每個 **WARN** 都看過：該補的補（如 SMTP），可接受的記下原因。
+
+**C. 從 VPS 以外的網路驗收**
+- [ ] 「管理後台 → 系統狀態」前後端版本都等於剛部署的 commit。
+- [ ] 用**手機行動網路**開同一頁，「伺服器看到的你的 IP」是外部 IP（不是 `127.0.0.1` 或 `10.`／`172.`／`192.168.` 開頭）。
+- [ ] 設定了 SMTP 的話：教練後台挑測試班按「寄送提醒信」，信收得到、不在垃圾信匣。
+- [ ] 手機：登入、開始作答（選項一排五格、選完自動跳下一題）。
+- [ ] 切換深色模式，首頁與一份報告都看得清楚。
+- [ ] 用一個學員帳號與一個教練帳號各登入一次，頁首帳號選單可開啟、可登出。
+
+**D. 出問題時**
+- 服務起不來或 502：`sudo journalctl -u ai-assessment-api -n 50`，多半是 `.env` 缺鍵或埠不符。
+- 要回到上一版：`git checkout <上一個 commit>` 後再跑 `bash deploy/deploy.sh`（資料不受影響）。
+- 資料有疑慮：照下方「備份與還原」，用部署前那份備份還原。
+- 設定寄信後仍收不到：先看「管理後台 → 系統狀態」的寄信設定，再看 `journalctl` 有沒有 SMTP 錯誤；
+  VPS 可能擋了對外 SMTP 埠，改用 587 或換寄信服務。
+
 ## 備份與還原
 資料庫是 SQLite（WAL 模式），服務執行中直接 `cp` 主檔案可能漏掉尚未 checkpoint
 的 WAL 內容；用 `sqlite3` CLI 的線上備份指令才能在服務不停機的情況下拿到一致的
@@ -227,6 +259,6 @@ sudo systemctl start ai-assessment-api
 - 登入後一直登出：確認已啟用 HTTPS 且 `NODE_ENV=production`（Secure cookie 需要 HTTPS）。
 
 ## 安全備註
-- 這是檔案型儲存，適合課程／中小規模；若要更高併發或多機，請改接 PostgreSQL 等資料庫。
+- 資料存在單一 SQLite 檔案，適合課程／中小規模；若要更高併發或多機，請改接 PostgreSQL 等資料庫。
 - 務必設定強的 `ADMIN_PASSWORD` 與隨機 `JWT_SECRET`，且不要把 `.env` 提交到版本庫（已列入 `.gitignore`）。
 - 建議定期 `sudo apt-get upgrade` 並保持憑證自動續期正常。
