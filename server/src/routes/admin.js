@@ -8,6 +8,9 @@ import {
 import { getBuildInfo } from '../lib/buildInfo.js';
 import { deepHealthCheck } from '../lib/health.js';
 import { isMailConfigured } from '../lib/mailer.js';
+import {
+  sanitizeOverrides, sanitizeNote, getContentRecord, publishOverrides, isEmptyOverrides,
+} from '../lib/assessmentContent.js';
 
 const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
 
@@ -47,6 +50,77 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
     auditLog(req, 'toggle_assessment', { assessmentId: req.params.id, enabled: Boolean(enabled) });
     res.json({ assessment: list[idx] });
   });
+
+  // ── 題庫內容覆寫（Sprint 10）：草稿 → 發佈 → 還原 ──────────────────
+  // 只開放文字層欄位（白名單見 lib/assessmentContent.js），不碰計分。讀取已發佈版本的
+  // 公開端點在 routes/assessments.js；這裡全是管理者專用。
+  const knownAssessment = (id) => (db.data.assessments ?? []).some((a) => a.id === id);
+  const contentView = (rec) => ({
+    id: rec.id, draft: rec.draft, published: rec.published, history: rec.history,
+  });
+  const withAssessment = (handler) => (req, res) => {
+    if (!knownAssessment(req.params.id)) return res.status(404).json({ error: '評量不存在' });
+    return handler(req, res);
+  };
+
+  router.get('/assessment-content/:id', withAssessment((req, res) => {
+    res.json({ content: contentView(getContentRecord(db, req.params.id)) });
+  }));
+
+  router.put('/assessment-content/:id/draft', withAssessment((req, res) => {
+    let overrides;
+    try { overrides = sanitizeOverrides(req.body?.overrides); } catch (e) { return res.status(400).json({ error: e.message }); }
+    const rec = getContentRecord(db, req.params.id);
+    rec.draft = { overrides, updatedAt: new Date().toISOString(), updatedBy: req.user.id, updatedByName: req.user.name ?? '' };
+    db.persist();
+    res.json({ content: contentView(rec) });
+  }));
+
+  router.delete('/assessment-content/:id/draft', withAssessment((req, res) => {
+    const rec = getContentRecord(db, req.params.id);
+    rec.draft = null;
+    db.persist();
+    res.json({ content: contentView(rec) });
+  }));
+
+  router.post('/assessment-content/:id/publish', withAssessment((req, res) => {
+    const rec = getContentRecord(db, req.params.id);
+    if (!rec.draft) return res.status(400).json({ error: '沒有草稿可發佈' });
+    let note;
+    try { note = sanitizeNote(req.body?.note); } catch (e) { return res.status(400).json({ error: e.message }); }
+    const entry = publishOverrides(rec, { overrides: rec.draft.overrides, by: req.user.id, byName: req.user.name ?? '', note, kind: 'publish' });
+    rec.draft = null;
+    db.persist();
+    auditLog(req, 'publish_assessment_content', { assessmentId: req.params.id, version: entry.version });
+    res.json({ content: contentView(rec) });
+  }));
+
+  // 還原也是「發佈一個新版本」，歷史不會被改寫。version = 0 代表還原成程式碼內建原文。
+  router.post('/assessment-content/:id/rollback', withAssessment((req, res) => {
+    const rec = getContentRecord(db, req.params.id);
+    const target = Number(req.body?.version);
+    if (!Number.isInteger(target) || target < 0) return res.status(400).json({ error: '請指定要還原的版本' });
+    let overrides;
+    if (target === 0) {
+      overrides = sanitizeOverrides({});
+    } else {
+      const found = rec.history.find((h) => h.version === target);
+      if (!found) return res.status(404).json({ error: '找不到該版本（歷史只保留最近 20 筆）' });
+      overrides = found.overrides;
+    }
+    if (isEmptyOverrides(overrides) && !rec.published) return res.status(400).json({ error: '目前已經是內建原文' });
+    let note = null;
+    if (req.body?.note) {
+      try { note = sanitizeNote(req.body.note); } catch (e) { return res.status(400).json({ error: e.message }); }
+    }
+    const entry = publishOverrides(rec, {
+      overrides, by: req.user.id, byName: req.user.name ?? '', kind: 'rollback', rolledBackTo: target,
+      note: note ?? (target === 0 ? '還原成內建原文' : `還原到版本 ${target}`),
+    });
+    db.persist();
+    auditLog(req, 'rollback_assessment_content', { assessmentId: req.params.id, version: entry.version, rolledBackTo: target });
+    res.json({ content: contentView(rec) });
+  }));
 
   // 延伸閱讀使用情形：只回傳依「題庫+構面」彙總的點擊/加入清單次數，不揭露是
   // 誰點的、誰存的——個人的學習清單／閱讀紀錄設計上只有本人看得到（見

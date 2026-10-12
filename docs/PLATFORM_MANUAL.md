@@ -175,7 +175,7 @@ CREATE TABLE records (
 呼叫端介面因此跟舊版純 JSON 檔儲存完全相同，遷移對業務邏輯是透明的。這個
 設計適合**課程規模、低併發**的使用情境（見第 13 節的規模限制）。
 
-八個 collection 的角色：
+九個 collection 的角色：
 
 | Collection | 內容 | 誰寫入 |
 |---|---|---|
@@ -186,6 +186,7 @@ CREATE TABLE records (
 | `goals` | 個人發展目標（含 `baselineAverage`、`reviewDate`，見第 10.2 節學習閉環；`reviewReminderSentAt` 記錄複測提醒信已寄） | 學員自己 |
 | `readingList` | 學員從延伸閱讀加入的文章清單（url/title/excerpt/read…），只有本人讀得到（見 `routes/readingList.js`） | 學員自己 |
 | `learningResourceClicks` | 延伸閱讀文章點擊事件（純計數用，供管理後台彙總，不對外曝光個人身分） | 前端 fire-and-forget 記錄 |
+| `assessmentContent` | 題庫「文字層」覆寫（Sprint 10，見第 4.4 節）：每個題庫一筆，含 `draft`（草稿）、`published`（目前生效版本）、`history`（歷次發佈，最多 20 筆）。只存管理者改過的欄位，沒有紀錄＝完全用程式碼內建的題庫 | 管理者（後台「題庫內容」） |
 | `systemStatus` | 系統狀態（目前只有一筆 `deepHealth`：外部依賴上一次檢查的結果，供告警比對「有沒有變化」，見第 10.4 節） | 後端排程 |
 
 **新增題庫不需要寫遷移腳本**：`db.js` 開機時若 `assessments` 為空就用
@@ -276,6 +277,47 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 - `buildSuggestions(result, config)`（`utils/suggestions.js`）：依構面分數
   給「優先強化」「發揮優勢」的客製建議，不依賴 `COMMENTARY`，L9D 以外的
   題庫也有。
+
+### 4.4 題庫文字的後台覆寫（Sprint 10）
+
+題庫本體仍寫在 `src/survey/data/assessments/*.js`（那是預設值）；管理者可在「管理後台 → 題庫內容」
+修改**文字層**欄位，修改存在資料庫的 `assessmentContent`，載入時蓋在程式碼題庫上面。
+**不動計分**：題數、反向題、分數門檻、等級區間、風格型題庫的風格內容都不在範圍內。
+
+| 可覆寫（白名單） | 設定位置 |
+|---|---|
+| 構面名稱、副標 | `DIMENSIONS[].name`／`subtitle` |
+| 子能力名稱 | `DIMENSIONS[].subDimensions[].name` |
+| 題目文字 | `DIMENSIONS[].questions[].text` |
+| 子能力評語 | `COMMENTARY[subId].high／mid／low` |
+| 落點等級說明、發展建議 | `LEVELS[].desc`／`advice`（風格型題庫除外） |
+
+**資料流**
+
+1. 後端：`routes/admin.js` 的 `/api/admin/assessment-content/:id`（`GET`、`PUT .../draft`、`DELETE .../draft`、
+   `POST .../publish`、`POST .../rollback`）全部 `requireAdmin`；`GET /api/assessments/content`（任何登入者）
+   只回**已發佈**版本。白名單與字數上限在 `lib/assessmentContent.js`（伺服器不知道前端題庫有哪些 id，
+   所以只驗形狀、key 格式與長度；指向不存在 id 的覆寫由前端忽略）。發佈與還原寫稽核日誌；
+   還原＝以舊內容發佈成**新版本**（版本號單調遞增，歷史不改寫）；`version: 0` 還原成內建原文。
+2. 前端套用：`content/ContentProvider.jsx` 在 `AppShell` 最外層載入已發佈覆寫（逾時 4 秒就用內建，不擋畫面），
+   呼叫 `data/assessments/overrides.js` 的 `applyContentOverrides()`——**就地修改**題庫設定物件
+   （`ALL_QUESTIONS`、`COMMENTARY`、`LEVELS` 跟 `DIMENSIONS` 共用同一批物件，改一處全站一致）。
+   第一次動手前先存原始快照，之後每次都先還原再套用，所以可以重複套用，`getBuiltinContent()` 隨時能給編輯器內建原文。
+   套用後 `version` +1，`AppShell` 用它當 key 重新渲染已畫出的頁面（管理後台例外，避免洗掉編輯中的內容）。
+3. **舊報告的顯示用字**：作答結果（`result`）是送出當下存下來的快照，裡面有當時的構面／副標／子能力名稱與
+   等級說明。`api/client.js` 的 `request()` 會對每個回應呼叫 `refreshResultsInPlace()`
+   （`data/assessments/refreshResult.js`），以 id 對應、用**目前**題庫文字換掉這些顯示用字——
+   所以改錯字會傳到既有報告，也不會出現同一份報告「名稱是舊的、評語是新的」。**只換文字**，
+   分數、等級 id、落點、顏色、答案都不動。風格型題庫的等級說明維持快照。
+4. 預覽：`previewDraft()` 只在管理者自己分頁的記憶體套用草稿，頂端有橫幅，重新整理或「結束預覽」即恢復。
+
+**測試**：`server/test/assessment-content.test.js`（白名單、權限、草稿／發佈／還原／歷史上限、不影響已作答資料）、
+`src/test/content-overrides.test.jsx`（套用層、不碰計分欄位、Provider）、`content-editor.test.jsx`（編輯器）、
+`refresh-result.test.js`（舊報告用字更新）、`e2e/admin-content-edit.spec.js`（改文字 → 預覽 → 發佈 → 學員看到 →
+舊報告名稱更新 → 還原）。
+
+**已知限制**：目前只有文字層；要增刪題目、改反向題或分數門檻，仍是改程式碼並視為新版本題庫（見第 14 節）。
+覆寫是「蓋在程式碼上」的——程式碼裡的題庫文字之後若被工程師改了，沒有被覆寫的欄位會跟著變、被覆寫的欄位維持管理者的版本。
 
 ---
 
@@ -368,6 +410,8 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   前端／後端版本、外部依賴、寄信設定、告警排程最後執行時間、「伺服器看到的你的
   IP」（驗證 `TRUST_PROXY` 用，見第 8 節）。前後端版本不一致時管理後台頂端會
   出現警示——通常是只部署了一半，或瀏覽器的 PWA 快取還是舊版
+- **題庫內容**（`admin/ContentEditorTab.jsx`，Sprint 10）：改構面／子能力名稱、題目、評語、等級說明的
+  **文字**，草稿 → 預覽 → 發佈、歷史可還原；不能改題數、反向題、分數門檻（見第 4.4 節）
 - 風格型題庫（DISC／識己®）的「數據分析」不顯示總分、達成率，改為最常見風格、
   各構面傾向強度與風格人數分佈（沿用第 4.2 節「風格沒有高低」的原則）
 - AI 平台助理
@@ -420,7 +464,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 
 | Router | 路徑範例 | 說明 |
 |---|---|---|
-| `assessments.js` | `GET /assessments`、`GET /assessments/:id/benchmark` | 題庫清單、跨使用者 benchmark 平均（有快取） |
+| `assessments.js` | `GET /assessments`、`GET /assessments/content`、`GET /assessments/:id/benchmark` | 題庫清單、**已發佈的題庫文字覆寫**（第 4.4 節）、跨使用者 benchmark 平均（有快取） |
 | `auth.js` | `POST /auth/register`、`/login`、`/logout`、`GET /auth/me`、`GET /auth/session`（未登入回 200 `{user:null}`）、`PATCH /auth/profile`、`POST /auth/password`、`/reset-password` | 帳號生命週期，`register`/`login` 可帶 `joinCode` 自動入班 |
 | `submissions.js` | `POST /submissions`、`GET /submissions/me`、`GET /submissions/ratee/:rateeId`、`POST/DELETE /submissions/:id/comment` | 提交作答、查詢自己或（360°）被評者的紀錄、教練留言 |
 | `groups.js` | `POST /groups/join`、`GET /groups/mine`、`GET /groups/mine/members` | 學員視角的班級操作（已登入掃碼加入等） |
@@ -429,7 +473,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 | `chat.js` | `POST /chat` | AI 小幫手，串流代理到 OpenRouter（見第 10 節） |
 | `learning-resources` (`learningResources.js`) | `GET /learning-resources`、`POST /learning-resources/track-click` | 延伸閱讀，代理到第二大腦 API；後者記錄文章點擊供管理後台彙總（見第 10 節） |
 | `public.js` | `GET /public/join/:code` | **免登入**，QR 報到落地頁查班級資訊，獨立 rate limit |
-| `admin.js`（掛 `/api/admin`，`requireAdmin`） | `GET/PATCH /assessments`、`GET /overview`、`PATCH /users/:id/role`、`POST /users/:id/reset-token`、`POST /batch-import`、`GET /learning-resources/stats` | |
+| `admin.js`（掛 `/api/admin`，`requireAdmin`） | `GET/PATCH /assessments`、`GET /overview`、`PATCH /users/:id/role`、`POST /users/:id/reset-token`、`POST /batch-import`、`GET /learning-resources/stats`、`GET/PUT/DELETE /assessment-content/:id[/draft]`、`POST /assessment-content/:id/publish`、`/rollback` | 題庫文字草稿／發佈／還原（第 4.4 節） |
 | `coach.js`（掛 `/api/coach`，`requireCoach`） | `GET /overview`、`/directory`、`GET/POST /groups`、`GET/PUT/DELETE /groups/:id`、`POST /groups/:id/publish`、`POST/DELETE /groups/:id/join-code`、`POST /groups/:id/roster`、`POST /groups/:id/remind` | admin 角色也滿足 `requireCoach`，故管理者能用教練後台全部功能 |
 
 `admin`/`coach` 各自的 router 用 `router.use()` 統一掛驗證中介層，因此**必須**
@@ -850,18 +894,17 @@ Chromium 後跑 `npm run test:e2e`，失敗時上傳 trace 當 artifact）→ `n
 
 ### 修改既有題庫的構面、題目或評語
 
-> 先講結論：**教練與管理者都不能在後台改題庫內容**。管理者只能開關整套題庫
-> （`PATCH /api/admin/assessments/:id` 只接受 `enabled`）；教練只能對自己的班級挑
-> 「重點構面」與寫構面備註（`focusDimensionIds`／`dimensionNotes`）。構面、題目、
-> 計分與評語全在 `src/survey/data/assessments/<題庫>.js`，要改就是改程式碼、重新部署。
+> 先講結論：**文字**可以由管理者在後台改（見第 4.4 節）；**會影響計分的東西**（題數、反向題、分數門檻、
+> 等級區間、風格內容）仍然只能改程式碼。教練只能對自己的班級挑「重點構面」與寫構面備註
+> （`focusDimensionIds`／`dimensionNotes`），不能改題庫本身。管理者後台「題庫內容」只接受白名單文字欄位。
 
 **先弄清楚存什麼**：學員送出時，**前端**用 `buildResult()` 算好 `result`（總分、各構面
 分數與等級、落點），後端只驗形狀、不重算，連同 `answers` 一起存。所以：
 
 | 你改的東西 | 對**已作答**資料的影響 | 風險 |
 |---|---|---|
-| 題目文字（不改意思的潤飾） | 舊紀錄的分數不變；題目文字只影響之後的作答畫面 | 低 |
-| `COMMENTARY` 評語、`LEVELS` 的說明文字 | 舊紀錄存的分數與等級（`result.level`）不變；但敘事報告引用的評語文字可能在檢視時取自目前設定，舊報告措辭會跟著變（改之前請實際開一份舊報告確認） | 低～中：沒有版本留底 |
+| 題目文字（不改意思的潤飾） | 舊紀錄的分數不變；題目文字只影響之後的作答畫面。**建議直接用後台「題庫內容」改，不必改程式碼** | 低 |
+| `COMMENTARY` 評語、`LEVELS` 的說明文字、構面／子能力名稱 | 舊紀錄的分數與等級（`result.level.id`）不變；顯示用字會用**目前**文字更新（見第 4.4 節 `refreshResultsInPlace`），所以舊報告也會看到新字。**建議用後台「題庫內容」改**（有草稿、預覽、發佈歷史與還原） | 低 |
 | 題目數量、新增／刪除題目、改 `reversed`、改題目所屬 `subId`／構面 | 舊紀錄不會重算，新舊總分**不可直接比較**；歷次趨勢、課前課後增益、跨梯次比較都會混入不同口徑 | **高** |
 | `LEVELS` 的分數門檻、構面 `rating` 門檻 | 舊紀錄存的等級是當時的，新作答用新門檻；同分數可能落在不同級別 | **高** |
 | 構面 `id`、`subId`、題目 `id` | 目標（`goals`）、延伸閱讀統計、備註都用 id 關聯；改了就對不上 | **高**：避免改 id，要改請新增 |

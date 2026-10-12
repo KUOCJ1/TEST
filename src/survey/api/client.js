@@ -1,3 +1,5 @@
+import { refreshResultsInPlace } from '../data/assessments/refreshResult';
+
 const BASE = import.meta.env.VITE_API_BASE || '/api';
 
 async function request(path, { method = 'GET', body } = {}) {
@@ -23,7 +25,8 @@ async function request(path, { method = 'GET', body } = {}) {
     err.data = data;
     throw err;
   }
-  return data;
+  // 作答結果裡存的是送出當下的構面名稱與等級說明；改用目前題庫文字顯示（見 refreshResult.js）。
+  return refreshResultsInPlace(data);
 }
 
 export const api = {
@@ -40,6 +43,7 @@ export const api = {
   resetPassword: (payload) => request('/auth/reset-password', { method: 'POST', body: payload }),
 
   assessments: () => request('/assessments').then((d) => d.assessments),
+  assessmentContent: () => request('/assessments/content').then((d) => d.content),
   benchmark: (assessmentId) => request(`/assessments/${assessmentId}/benchmark`),
   // dimensionIds 可傳多個（一次評測結果常有不只一個值得延伸的構面），回傳
   // [{ dimensionId, articles }]，跟傳入順序一致。
@@ -68,6 +72,15 @@ export const api = {
   adminOverview: () => request('/admin/overview'),
   health: () => request('/health'),
   adminSystemStatus: () => request('/admin/system-status'),
+  adminAssessmentContent: (id) => request(`/admin/assessment-content/${id}`).then((d) => d.content),
+  adminSaveContentDraft: (id, overrides) =>
+    request(`/admin/assessment-content/${id}/draft`, { method: 'PUT', body: { overrides } }).then((d) => d.content),
+  adminDiscardContentDraft: (id) =>
+    request(`/admin/assessment-content/${id}/draft`, { method: 'DELETE' }).then((d) => d.content),
+  adminPublishContent: (id, note) =>
+    request(`/admin/assessment-content/${id}/publish`, { method: 'POST', body: { note } }).then((d) => d.content),
+  adminRollbackContent: (id, version, note) =>
+    request(`/admin/assessment-content/${id}/rollback`, { method: 'POST', body: { version, note } }).then((d) => d.content),
   batchImport: (payload) => request('/admin/batch-import', { method: 'POST', body: payload }),
   setUserRole: (userId, role) =>
     request(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role } }).then((d) => d.user),

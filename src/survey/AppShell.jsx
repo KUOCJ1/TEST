@@ -5,6 +5,8 @@ import {
   ClipboardList, ChartColumn, UsersRound, GraduationCap, Shield, BookOpen,
 } from 'lucide-react';
 import { useAuth } from './auth/useAuth';
+import { ContentProvider } from './content/ContentProvider';
+import { useContent } from './content/useContent';
 import { api } from './api/client';
 import { computeNextStep } from './utils/nextStep';
 import AssessmentCard from './components/AssessmentCard';
@@ -195,8 +197,18 @@ function RaterSetupRoute({ onConfirm, onCancel }) {
   );
 }
 
+// 題庫內容覆寫要先載入並套用，再渲染任何畫面（Sprint 10）；見 content/ContentProvider.jsx。
 export default function AppShell() {
+  return (
+    <ContentProvider>
+      <AppShellInner />
+    </ContentProvider>
+  );
+}
+
+function AppShellInner() {
   const { user, isAdmin, isCoach, logout } = useAuth();
+  const { version: contentVersion, previewing, stopPreview } = useContent();
   const navigate = useNavigate();
   const location = useLocation();
   const defaultAid = user?.preferences?.defaultAssessmentId || null;
@@ -326,12 +338,23 @@ export default function AppShell() {
         </div>
       </header>
 
+      {previewing && (
+        <div role="status" className="sticky top-[57px] z-20 border-b border-amber-300 bg-amber-100 px-4 py-2 text-center text-sm text-amber-900 print:hidden">
+          預覽草稿中——只有你看得到，重新整理頁面或
+          <button type="button" onClick={stopPreview} className="mx-1 font-semibold underline underline-offset-2">結束預覽</button>
+          即恢復已發佈的內容。
+        </div>
+      )}
+
       {/* 只包住路由內容，不含頁首與底部導覽——單一頁面出錯時，使用者仍能切換到
           其他分頁自救，而不是整個 App 變白畫面。resetKey 用路徑，換頁即自動復原。 */}
       <ErrorBoundary resetKey={location.pathname}>
       {/* 以第一層路徑當 key：切換功能頁時輕微淡入；同一頁內換參數（例如分析頁切換
           題庫）不重掛元件，保留狀態。 */}
-      <div key={location.pathname.split('/')[1] || 'root'} className="animate-page-in">
+      {/* 題庫內容覆寫套用／預覽／還原後，讓已畫出來的頁面重新渲染（設定是就地修改的物件，
+          React 不會自己知道）。管理後台例外：「題庫內容」編輯器有未存檔的編輯，不能被重掛
+          洗掉，它自己會重新抓資料。 */}
+      <div key={`${location.pathname.split('/')[1] || 'root'}${location.pathname.startsWith('/admin') ? '' : `:${contentVersion}`}`} className="animate-page-in">
       <Routes>
         <Route path="/" element={<Navigate to={defaultAid ? `/survey/${defaultAid}` : '/home'} replace />} />
 

@@ -79,6 +79,10 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - 敘事段落以 `seed = hash(總分 | 構面ID)` 選模板 → 同報告穩定、跨人有變化。
 - 三圈層：foundation / interpersonal / organizational（見 `leadership-9d.js` 的 `LAYERS`）。
 - 設定驅動、向後相容：題庫有 `COMMENTARY` 才顯示敘事報告，無則不顯示也不報錯。
+- **題庫文字可由管理者在後台覆寫**（Sprint 10，詳見 `docs/PLATFORM_MANUAL.md` 第 4.4 節）：只有名稱、題目文字、評語、
+  等級說明這類文字欄位，不含計分。覆寫存在 `assessmentContent` collection、前端載入後**就地修改**題庫設定物件
+  （`data/assessments/overrides.js`）；舊的作答結果是快照，`api/client.js` 會用目前文字更新其顯示用字
+  （`refreshResult.js`）。改題庫設定檔時不要在模組載入時把這些文字複製到別處快取，否則覆寫不會生效。
 
 ## 班級管理與 QR Code 報到
 

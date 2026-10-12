@@ -10,6 +10,17 @@ export function createAssessmentsRouter({ db, requireAuth }) {
     res.json({ assessments: list });
   });
 
+  // ── 題庫內容覆寫（Sprint 10）──────────────────────────────
+  // 只回「已發佈」的版本，任何登入者都能讀（作答畫面、報告都要用）。草稿只有管理者看得到。
+  // 沒有任何覆寫時回空物件，前端就用程式碼內建的題庫原文。
+  router.get('/assessments/content', requireAuth, (_req, res) => {
+    const content = {};
+    for (const rec of db.data.assessmentContent ?? []) {
+      if (rec.published) content[rec.id] = { version: rec.published.version, overrides: rec.published.overrides };
+    }
+    res.json({ content });
+  });
+
   // ── 母體基準（百分位 / Benchmark）─────────────────────────
   // 全量掃描 submissions 計算，成本隨資料量成長。用「全站 submissions 總筆數」當作簡易
   // 版本號快取：目前系統沒有刪除作答的功能，總筆數只會單調遞增，故「筆數不變 ⇒ 資料

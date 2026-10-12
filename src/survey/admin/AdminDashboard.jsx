@@ -6,6 +6,7 @@ import GroupsTab from './GroupsTab';
 import QuickAnalysisTab from '../analysis/QuickAnalysisTab';
 import LoadingState from '../components/LoadingState';
 import SystemStatusTab from './SystemStatusTab';
+import ContentEditorTab from './ContentEditorTab';
 import { FRONTEND_BUILD, isVersionMismatch } from '../utils/buildInfo';
 
 // 內含 xlsx（體積較大），只有點開「批次上傳」分頁才需要，獨立拆成自己的 chunk。
@@ -16,6 +17,7 @@ const TABS = [
   { id: 'analytics', label: '數據分析' },
   { id: 'users', label: '用戶管理' },
   { id: 'groups', label: '班別與發佈' },
+  { id: 'content', label: '題庫內容' },
   { id: 'import', label: '批次上傳' },
   { id: 'system', label: '系統狀態' },
 ];
@@ -167,6 +169,7 @@ export default function AdminDashboard() {
       {tab === 'groups' && (
         <GroupsTab groups={adminGroups} onGroupUpdated={handleGroupUpdated} />
       )}
+      {tab === 'content' && <ContentEditorTab />}
       {tab === 'system' && <SystemStatusTab />}
       {tab === 'import' && (
         <Suspense fallback={<LoadingState />}>

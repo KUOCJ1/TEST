@@ -124,6 +124,16 @@ test('產生使用手冊截圖', async ({ browser }) => {
   await adp.getByRole('button', { name: '管理後台', exact: true }).click();
   await expect(adp.getByRole('button', { name: '系統狀態' })).toBeVisible({ timeout: 20000 });
   await shot(adp, 'admin-overview');
+  // 題庫內容編輯器：改一題文字讓「已修改」標記與內建原文都出現（不儲存，只截圖）。
+  await adp.getByRole('button', { name: '題庫內容', exact: true }).click();
+  await expect(adp.getByText('不能在這裡修改')).toBeVisible({ timeout: 20000 });
+  await adp.getByText('題目文字', { exact: true }).click();
+  await adp.getByLabel('第 1 題', { exact: true }).fill('我能清楚說明 ChatGPT、Gemini、Claude 等主流 AI 模型各自適合的使用情境。');
+  await adp.getByLabel('第 1 題', { exact: true }).scrollIntoViewIfNeeded();
+  await adp.evaluate(() => window.scrollBy(0, 200));
+  await shot(adp, 'admin-content');
+  await adp.evaluate(() => window.scrollTo(0, 0));
+
   // 沙盒沒有對外網路，真實的系統狀態會顯示「第二大腦連不上」等異常，不適合放進手冊；
   // 這張圖用「全部正常」的模擬回應，只為了呈現畫面長相（IP 用文件保留網段 203.0.113.x）。
   await adp.route('**/api/admin/system-status', (route) => route.fulfill({
