@@ -218,3 +218,30 @@ describe('草稿 → 發佈 → 還原', () => {
     assert.ok(actions.includes('rollback_assessment_content'));
   });
 });
+
+describe('建立／更新班別時的題庫驗證', () => {
+  test('可以用任何已知題庫建班；不認得的題庫 id 回 400；沒帶時預設 ai-competency', async () => {
+    const { coach } = await setup();
+    for (const id of ['ai-competency', 'leadership-9d', 'disc', 'archetype']) {
+      const r = await coach.post('/api/coach/groups').send({ name: `班-${id}`, assessmentId: id });
+      assert.equal(r.status, 201, id);
+      assert.equal(r.body.group.assessmentId, id);
+    }
+    const bad = await coach.post('/api/coach/groups').send({ name: '壞班', assessmentId: 'no-such' });
+    assert.equal(bad.status, 400);
+    assert.match(bad.body.error, /評量不存在/);
+    const bad2 = await coach.post('/api/coach/groups').send({ name: '壞班2', assessmentId: { $ne: 1 } });
+    assert.equal(bad2.status, 400);
+    const dflt = await coach.post('/api/coach/groups').send({ name: '預設班' });
+    assert.equal(dflt.body.group.assessmentId, 'ai-competency');
+  });
+
+  test('更新班別時改成不存在的題庫也擋下', async () => {
+    const { coach } = await setup();
+    const g = await coach.post('/api/coach/groups').send({ name: '班', assessmentId: 'ai-competency' });
+    const ok = await coach.put(`/api/coach/groups/${g.body.group.id}`).send({ assessmentId: 'leadership-9d' });
+    assert.equal(ok.status, 200);
+    const bad = await coach.put(`/api/coach/groups/${g.body.group.id}`).send({ assessmentId: 'no-such' });
+    assert.equal(bad.status, 400);
+  });
+});

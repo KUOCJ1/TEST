@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Trash2, Plus, Star, Scale } from 'lucide-react';
 import { api } from '../api/client';
-import { getAssessment } from '../data/assessments/index.js';
+import { getAssessment, REGISTRY } from '../data/assessments/index.js';
 import PhaseBadge from '../components/PhaseBadge';
 
 // 左側「班別列表」欄位：班別清單 + 建立班別表單。從 GroupWorkspace 拆出
@@ -20,8 +20,22 @@ export default function GroupListPanel({
   const [savingGroup, setSavingGroup] = useState(false);
   const [error, setError] = useState('');
 
-  const assessmentIds = [...new Set(groups.map((g) => g.assessmentId ?? 'ai-competency'))];
-  const newDims = getAssessment(newAssessmentId)?.DIMENSIONS ?? [];
+  // 建立班別時可選的題庫：全部「已啟用」的題庫。以前是從現有班別用過的題庫湊出來的，
+  // 所以第一次建班只看得到 AI 職能、沒用過的題庫永遠選不到。載入前／載入失敗時退回
+  // 全部內建題庫，不讓下拉選單空掉。
+  const [enabledIds, setEnabledIds] = useState(null);
+  useEffect(() => {
+    let active = true;
+    Promise.resolve()
+      .then(() => api.assessments())
+      .then((list) => { if (active) setEnabledIds(list.map((a) => a.id)); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+  const assessmentIds = Object.keys(REGISTRY).filter((id) => !enabledIds || enabledIds.includes(id));
+  // 預設的 ai-competency 若被管理者停用就不在選項裡，改用第一個可選的，避免畫面顯示 A、實際送出 B。
+  const selectedId = assessmentIds.includes(newAssessmentId) ? newAssessmentId : (assessmentIds[0] ?? newAssessmentId);
+  const newDims = getAssessment(selectedId)?.DIMENSIONS ?? [];
   const toggleNewFocus = (dimId) =>
     setNewFocusDims((prev) => (prev.includes(dimId) ? prev.filter((id) => id !== dimId) : [...prev, dimId]));
 
@@ -33,7 +47,7 @@ export default function GroupListPanel({
       const group = await api.createGroup({
         name: newGroupName.trim(),
         companyName: newCompany.trim(),
-        assessmentId: newAssessmentId,
+        assessmentId: selectedId,
         memberIds: [],
         targetHeadcount: newTarget === '' ? null : Number(newTarget),
         focusDimensionIds: newFocusDims,
@@ -100,9 +114,9 @@ export default function GroupListPanel({
             placeholder="公司名稱（選填）"
             className="input"
           />
-          <select value={newAssessmentId} onChange={(e) => { setNewAssessmentId(e.target.value); setNewFocusDims([]); }}
+          <select aria-label="評量題庫" value={selectedId} onChange={(e) => { setNewAssessmentId(e.target.value); setNewFocusDims([]); }}
             className="input">
-            {(assessmentIds.length ? assessmentIds : ['ai-competency']).map((id) => (
+            {assessmentIds.map((id) => (
               <option key={id} value={id}>{getAssessment(id)?.NAME ?? id}</option>
             ))}
           </select>

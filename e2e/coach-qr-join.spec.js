@@ -35,6 +35,10 @@ test('教練建立班級、產生報到連結，學員可透過連結直接加�
   await expect(page.getByText('教練後台')).toBeVisible({ timeout: 15000 });
   await page.getByRole('button', { name: '教練後台', exact: true }).click();
   await page.getByRole('button', { name: '建立班別' }).click();
+  // 第一次建班（還沒有任何班別）也要能選到所有題庫，不只 AI 職能。
+  const picker = page.getByLabel('評量題庫');
+  await expect(picker.locator('option')).toHaveCount(4, { timeout: 10000 });
+  await expect(picker.locator('option[value="leadership-9d"]')).toHaveCount(1);
   await page.getByPlaceholder('班別名稱（必填）').fill(groupName);
   await page.getByRole('button', { name: '建立', exact: true }).click();
   await expect(page.getByText(groupName)).toBeVisible({ timeout: 10000 });

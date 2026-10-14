@@ -85,9 +85,13 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     res.json({ groups });
   });
 
+  const isKnownAssessment = (id) => typeof id === 'string' && (db.data.assessments ?? []).some((a) => a.id === id);
+
   router.post('/groups', (req, res) => {
     const { name, companyName, assessmentId, memberIds, focusDimensionIds, targetHeadcount, dimensionNotes } = req.body ?? {};
     if (!name?.trim()) return res.status(400).json({ error: '請輸入班別名稱' });
+    // 不認得的題庫 id 會讓前端整個班級畫面找不到題庫設定；沒帶時沿用預設的 ai-competency。
+    if (assessmentId !== undefined && !isKnownAssessment(assessmentId)) return res.status(400).json({ error: '評量不存在' });
     const group = {
       id: randomUUID(),
       name: name.trim(),
@@ -141,6 +145,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       return res.status(403).json({ error: '無權限' });
     }
     const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes, startDate, endDate } = req.body ?? {};
+    if (assessmentId !== undefined && !isKnownAssessment(assessmentId)) return res.status(400).json({ error: '評量不存在' });
     const isISODate = (v) => v === null || (typeof v === 'string' && !isNaN(Date.parse(v)));
     groups[idx] = {
       ...groups[idx],
