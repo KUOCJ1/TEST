@@ -139,6 +139,10 @@ export default function ProgressPanel({ group, members, submissions, onGroupUpda
   const remindPre = notStartedPre.length > 0 || pendingInvites.length > 0;
   const remindCount = remindPre ? notStartedPre.length + pendingInvites.length : pendingPost.length;
 
+  // 課前還有人沒交的階段，先不列「課後未完成」——課後還沒開始，那份名單只是干擾，
+  // 也容易讓人以為已經可以催課後。課前全交了、或已經有人交課後，才顯示。
+  const showPostList = notStartedPre.length === 0 || postDoneIds.size > 0;
+
   if (memberList.length === 0) return null;
 
   return (
@@ -192,7 +196,7 @@ export default function ProgressPanel({ group, members, submissions, onGroupUpda
           </div>
         </div>
       )}
-      {pendingPost.length > 0 && (
+      {showPostList && pendingPost.length > 0 && (
         <div>
           <p className="mb-1 text-xs font-semibold text-blue-600">課後未完成（{pendingPost.length}）</p>
           <div className="flex flex-wrap gap-1.5">
@@ -202,7 +206,7 @@ export default function ProgressPanel({ group, members, submissions, onGroupUpda
           </div>
         </div>
       )}
-      {notStartedPre.length === 0 && pendingPost.length === 0 && (
+      {notStartedPre.length === 0 && (!showPostList || pendingPost.length === 0) && (
         <p className="text-sm text-emerald-600">🎉 所有成員都已完成評測。</p>
       )}
     </div>

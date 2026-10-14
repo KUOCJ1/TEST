@@ -14,7 +14,7 @@ import { badgeBg } from '../utils/color';
 // 一起搬過來；父層在切換班別時用 key={group.id} 讓這裡的表單狀態自動重置，
 // 沿用本檔案原本 GroupTimelineCard／QrCodeCard 已經在用的作法。
 export default function GroupOverviewSection({
-  group, directory, groupStats, memberRows, strongestWeakest, commentedCount,
+  group, members, groupStats, memberRows, strongestWeakest, commentedCount,
   submissions, onGroupUpdated, showToast, confirm, onOpenMember,
 }) {
   const [groupComment, setGroupComment] = useState(group.groupComment ?? '');
@@ -43,7 +43,7 @@ export default function GroupOverviewSection({
     <div className="space-y-5">
       <ProgressPanel
         group={group}
-        members={directory}
+        members={members}
         submissions={submissions}
         onGroupUpdated={onGroupUpdated}
         showToast={showToast}

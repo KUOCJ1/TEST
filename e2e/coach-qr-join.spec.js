@@ -24,10 +24,12 @@ test('教練建立班級、產生報到連結，學員可透過連結直接加�
   await expect(page.getByText('管理後台')).toBeVisible({ timeout: 15000 });
   await page.getByRole('button', { name: '管理後台' }).click();
   await page.getByRole('button', { name: '用戶管理', exact: true }).click();
-  const coachRow = page.locator('tr', { hasText: coachEmail });
+  // 角色改成下拉選單＋確認對話框（Sprint 11）：改角色會讓對方被登出，所以先說明再確認。
+  const coachRow = page.getByRole('listitem').filter({ hasText: coachEmail });
   await expect(coachRow).toBeVisible({ timeout: 10000 });
-  await coachRow.getByRole('button', { name: '設為教練' }).click();
-  await expect(coachRow.getByText('教練', { exact: true })).toBeVisible({ timeout: 10000 });
+  await coachRow.getByLabel(/變更 .* 的角色/).selectOption('coach');
+  await page.getByRole('alertdialog').getByRole('button', { name: '確定變更' }).click();
+  await expect(coachRow.getByLabel(/變更 .* 的角色/)).toHaveValue('coach', { timeout: 10000 });
   await logout(page);
 
   // 3) 教練登入、建班、產生報到 QR / 連結。
@@ -41,7 +43,8 @@ test('教練建立班級、產生報到連結，學員可透過連結直接加�
   await expect(picker.locator('option[value="leadership-9d"]')).toHaveCount(1);
   await page.getByPlaceholder('班別名稱（必填）').fill(groupName);
   await page.getByRole('button', { name: '建立', exact: true }).click();
-  await expect(page.getByText(groupName)).toBeVisible({ timeout: 10000 });
+  // 建好之後自動選取，右側標題列（Sprint 11）顯示班名；清單卡片也有同名文字，所以用標題定位。
+  await expect(page.getByRole('heading', { name: groupName })).toBeVisible({ timeout: 10000 });
 
   // 無障礙檢查：教練工作台（班級總覽，Sprint 4 新增的作答進度／學習成效面板都在這頁）。
   const coachScan = await new AxeBuilder({ page }).analyze();

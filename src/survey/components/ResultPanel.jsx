@@ -42,7 +42,7 @@ const ResultPanel = forwardRef(function ResultPanel(
     <section
       ref={ref}
       aria-live="polite"
-      className="mt-8 overflow-hidden rounded-md ring-1 ring-paper-300 bg-paper-50 shadow-card"
+      className="mt-8 scroll-mt-20 overflow-hidden rounded-md ring-1 ring-paper-300 bg-paper-50 shadow-card"
     >
       <div className="bg-ink-700 px-6 py-7 text-center text-paper-50">
         <p className="text-sm font-medium text-paper-50/75">
@@ -104,15 +104,15 @@ const ResultPanel = forwardRef(function ResultPanel(
         <div className="mt-6 space-y-3">
           {dimensions.map((d) => (
             <div key={d.id}>
-              <div className="mb-1 flex items-center justify-between text-sm">
-                <span className="font-medium text-slate-700">
+              <div className="mb-1 flex items-start justify-between gap-3 text-sm">
+                <span className="min-w-0 font-medium text-slate-700">
                   <span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{d.subtitle}</span>
                   {/* DISC 這類題庫的 subtitle 已含名稱（「D 支配型」vs「支配型」），不重複顯示。 */}
-                  {!d.subtitle?.includes(d.name) && <span className="ml-2 text-slate-400">{d.name}</span>}
+                  {!d.subtitle?.includes(d.name) && <span className="block text-slate-500 sm:ml-2 sm:inline">{d.name}</span>}
                 </span>
-                <span className="font-semibold text-slate-600">
+                <span className="shrink-0 whitespace-nowrap font-semibold text-slate-600">
                   {d.score}/{d.max}
-                  <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+                  <span className="ml-2 whitespace-nowrap rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
                     {d.rating.label}
                   </span>
                 </span>

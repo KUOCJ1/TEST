@@ -93,13 +93,21 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
   // 班級狀態條優先顯示「下一步」正在講的那個班；沒有的話（例如下一步是 360°
   // 他評或看報告）退回顯示第一個進行中的班別，讓使用者至少知道自己現在的
   // 班級狀態，而不是完全不顯示。
+  // 班級指定的題庫排在最前面（Sprint 11）：四套題庫以前長得一模一樣，只有一個小小的
+  // 「進行中」標籤，學員要自己找「我這個班要做哪一份」。其餘維持原本順序。
+  const orderedAssessments = [
+    ...assessments.filter((a) => groupPhaseByAssessmentId[a.id] != null),
+    ...assessments.filter((a) => groupPhaseByAssessmentId[a.id] == null),
+  ];
   const statusGroup = myGroups.find((g) => g.id === nextStep?.groupId)
     ?? myGroups.find((g) => g.phase === 'in_progress')
     ?? null;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
-      <OnboardingBanner role="user" show={mySubmissions.length === 0} />
+      {/* 已加入班級的學員，下面的「下一步」卡片與班級狀態已經在講該做什麼，再疊一個新手引導
+          只是重複（Sprint 11 走查：掃 QR 加入的新學員首頁同時出現三個橫幅）。 */}
+      <OnboardingBanner role="user" show={mySubmissions.length === 0 && myGroups.length === 0} />
       <NextStepCard nextStep={nextStep} onStartSurvey={onStartSurvey} onGoTo360={onGoTo360} onViewAnalysis={onViewAnalysis} />
       {/* 班級狀態與目標摘要並排成一條資訊列（Sprint 8），不再各佔一整列。 */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row [&>*]:flex-1 [&:empty]:hidden">
@@ -116,7 +124,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {assessments.map((a) => (
+          {orderedAssessments.map((a) => (
             <AssessmentCard
               key={a.id}
               assessment={a}

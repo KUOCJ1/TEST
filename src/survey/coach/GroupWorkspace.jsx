@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, Copy } from 'lucide-react';
 import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
+import PhaseBadge from '../components/PhaseBadge';
+import { formatDay } from '../utils/format';
+import { pickDefaultGroup } from '../utils/groups';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
 import PrintableReport from '../components/PrintableReport';
 import BatchPrintableReport from '../components/BatchPrintableReport';
@@ -27,8 +30,26 @@ const SECTIONS = [
   { id: 'settings', label: '成員與設定' },
 ];
 
+// 選中班別的標題列（Sprint 11）：以前右側直接是「總覽／成員與設定」分頁，看不出現在看的是哪個班。
+function GroupHeader({ group, memberCount }) {
+  const assessmentName = getAssessment(group.assessmentId)?.NAME ?? group.assessmentId;
+  const range = group.startDate
+    ? `${formatDay(group.startDate)} – ${group.endDate ? formatDay(group.endDate) : '未設定截止日'}`
+    : '尚未設定施測日期';
+  return (
+    <div className="mb-4 border-b border-slate-100 pb-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="text-lg font-bold text-slate-800">{group.name}</h3>
+        <PhaseBadge phase={group.phase} />
+      </div>
+      <p className="mt-1 text-sm text-slate-500">
+        {group.companyName && <>{group.companyName} · </>}{assessmentName} · {memberCount} 人 · {range}
+      </p>
+    </div>
+  );
+}
+
 export default function GroupWorkspace({ users, currentUserId }) {
-  const [directory, setDirectory] = useState([]);
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [groupDetail, setGroupDetail] = useState(null);
@@ -42,11 +63,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
   const [showCohortCompare, setShowCohortCompare] = useState(false);
   const showToast = useToast();
   const confirm = useConfirm();
-
-  useEffect(() => {
-    api.coachGroups().then(setGroups).catch(() => {});
-    api.coachDirectory().then(setDirectory).catch(() => setDirectory([]));
-  }, []);
+  const detailRef = useRef(null);
 
   const loadGroup = async (id) => {
     setSelectedGroupId(id);
@@ -54,11 +71,34 @@ export default function GroupWorkspace({ users, currentUserId }) {
     setError('');
     setCommentPatch({});
     try {
-      const { group, submissions: subs } = await api.getGroup(id);
-      setGroupDetail({ group, submissions: subs });
+      const { group, submissions: subs, members } = await api.getGroup(id);
+      setGroupDetail({ group, submissions: subs, members: members ?? [] });
     } catch (e) {
       setError(e.message || '載入失敗');
     }
+  };
+
+  // 進頁面自動選一個班（Sprint 11）：以前右側是一大片空白，要自己點才有內容。優先選
+  // 「進行中」的班（多個時選最近更新的），沒有就選最新建立的。
+  useEffect(() => {
+    let active = true;
+    api.coachGroups()
+      .then((list) => {
+        if (!active) return;
+        setGroups(list);
+        const pick = pickDefaultGroup(list);
+        if (pick) loadGroup(pick.id);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  // 使用者「自己點」班別時，窄螢幕（詳情排在清單下方）要自動捲到詳情，否則看起來沒反應。
+  const handleSelectGroup = async (id) => {
+    await loadGroup(id);
+    if (typeof window === 'undefined' || !window.matchMedia?.('(max-width: 1023px)').matches) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }));
   };
 
   const handleGroupUpdated = (updated) => {
@@ -76,8 +116,8 @@ export default function GroupWorkspace({ users, currentUserId }) {
   const refreshSubmissions = async () => {
     if (!selectedGroupId) return;
     try {
-      const { submissions: subs } = await api.getGroup(selectedGroupId);
-      setGroupDetail((prev) => (prev ? { ...prev, submissions: subs } : prev));
+      const { submissions: subs, members } = await api.getGroup(selectedGroupId);
+      setGroupDetail((prev) => (prev ? { ...prev, submissions: subs, members: members ?? prev.members } : prev));
       setCommentPatch({});
     } catch {
       // 靜默失敗即可：使用者仍看得到已儲存的名單，只是分析要等下次重新整理。
@@ -165,7 +205,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
         groups={groups}
         setGroups={setGroups}
         selectedGroupId={selectedGroupId}
-        onSelectGroup={loadGroup}
+        onSelectGroup={handleSelectGroup}
         onGroupDeleted={handleGroupDeleted}
         showToast={showToast}
         confirm={confirm}
@@ -173,7 +213,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
       />
 
       {/* Right: group detail */}
-      <div className="min-w-0">
+      <div ref={detailRef} className="min-w-0 scroll-mt-20">
         {error && (
           <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
             {error}
@@ -185,6 +225,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
           </div>
         ) : (
           <div>
+            <GroupHeader group={groupDetail.group} memberCount={groupDetail.members.length} />
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm font-semibold">
                 {SECTIONS.map((s) => (
@@ -225,7 +266,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
               <GroupOverviewSection
                 key={`overview-${groupDetail.group.id}`}
                 group={groupDetail.group}
-                directory={directory}
+                members={groupDetail.members}
                 groupStats={groupStats}
                 memberRows={memberRows}
                 strongestWeakest={strongestWeakest}
@@ -242,7 +283,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
               <GroupSettingsSection
                 key={`settings-${groupDetail.group.id}`}
                 group={groupDetail.group}
-                directory={directory}
+                members={groupDetail.members}
                 users={users}
                 patchedSubmissions={patchedSubmissions}
                 onGroupUpdated={handleGroupUpdated}

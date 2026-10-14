@@ -51,7 +51,8 @@ test('教練打開有作答資料的班級：作答進度、KPI、成員比較�
   const page = await context.newPage();
   await page.goto('/');
   await page.getByRole('button', { name: '教練後台', exact: true }).click();
-  await page.getByText(groupName, { exact: true }).click();
+  // 進頁面會自動選取這個班（Sprint 11），右側標題列直接出現；不必再點清單。
+  await expect(page.getByRole('heading', { name: groupName })).toBeVisible({ timeout: 20000 });
 
   // 作答進度（Sprint 4／6）：Sprint 5 漏搬的就是這一塊。
   await expect(page.getByText('作答進度')).toBeVisible({ timeout: 15000 });

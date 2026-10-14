@@ -108,6 +108,10 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     if (!user || !(await verifyPassword(password || '', user.passwordHash))) {
       return res.status(401).json({ code: 'INVALID_CREDENTIALS', error: 'Email 或密碼錯誤' });
     }
+    // 密碼對才告知「已停用」，避免被拿來探測哪些 Email 有註冊。
+    if (user.disabled) {
+      return res.status(403).json({ code: 'ACCOUNT_DISABLED', error: '此帳號已停用，請聯絡管理員' });
+    }
     claimPendingGroups(db, user);
     // 既有學員重新掃碼加入新的一梯（例如回鍋上下一期課程）同樣適用。
     const joinedGroup = joinCode ? joinGroupByCode(db, user, joinCode) : null;
@@ -171,7 +175,7 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     const user = db.data.users.find(
       (u) => u.resetTokenHash === h && (u.resetTokenExpires || 0) > Date.now(),
     );
-    if (!user) return res.status(400).json({ code: 'INVALID_RESET_TOKEN', error: '重設連結無效或已過期，請向管理員重新索取' });
+    if (!user || user.disabled) return res.status(400).json({ code: 'INVALID_RESET_TOKEN', error: '重設連結無效或已過期，請向管理員重新索取' });
     user.passwordHash = await hashPassword(newPassword);
     delete user.resetTokenHash;
     delete user.resetTokenExpires;

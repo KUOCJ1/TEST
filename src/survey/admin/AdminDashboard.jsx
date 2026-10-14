@@ -167,7 +167,7 @@ export default function AdminDashboard() {
         <UsersTab users={users} onUserChanged={handleUserChanged} />
       )}
       {tab === 'groups' && (
-        <GroupsTab groups={adminGroups} onGroupUpdated={handleGroupUpdated} />
+        <GroupsTab groups={adminGroups} users={users} onGroupUpdated={handleGroupUpdated} />
       )}
       {tab === 'content' && <ContentEditorTab />}
       {tab === 'system' && <SystemStatusTab />}

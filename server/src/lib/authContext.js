@@ -24,6 +24,8 @@ export function createAuthContext({ db, jwtSecret, secureCookies = false }) {
     if (!payload) return null;
     const user = db.data.users.find((u) => u.id === payload.sub) || null;
     if (!user) return null;
+    // 停用的帳號即使手上還有有效 token 也立刻失效（Sprint 11）。
+    if (user.disabled) return null;
     // tokenVersion 不符：這支 token 是在密碼或角色變更「之前」簽發的，視為已撤銷。
     // 兩邊都用 ?? 0 是為了與尚未帶 tokenVersion 欄位的舊使用者／舊 token 相容，
     // 部署當下不會讓所有人被迫重新登入，只有實際被撤銷過的帳號才會生效。

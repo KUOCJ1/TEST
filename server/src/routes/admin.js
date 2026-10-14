@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { publicUser } from '../auth.js';
 import {
-  asyncHandler, normalizeSubmission, auditLog, hashToken, revokeUserTokens, validateResultShape,
+  asyncHandler, normalizeSubmission, auditLog, hashToken, revokeUserTokens, validateResultShape, getGroupPhase,
 } from '../lib/helpers.js';
 
 import { getBuildInfo } from '../lib/buildInfo.js';
@@ -176,15 +176,26 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
     });
   });
 
-  // ── 角色管理 ────────────────────────────────────────────
+  // ── 角色管理與帳號停用（Sprint 11）──────────────────────────
+  // 守門規則都在伺服器端（前端只是把按鈕藏起來，擋不住直接打 API）：
+  // 不能改自己的角色或停用自己；不能把最後一位「有效」管理員降級或停用——否則沒有人
+  // 能再進管理後台，只能去資料庫動手術。
+  const VALID_ROLES = ['user', 'coach', 'admin'];
+  const activeAdminCount = () => db.data.users.filter((u) => u.role === 'admin' && !u.disabled).length;
+
   router.patch('/users/:id/role', (req, res) => {
     const { role } = req.body ?? {};
-    if (!['user', 'coach'].includes(role)) {
-      return res.status(400).json({ error: '角色必須是 user 或 coach' });
+    if (!VALID_ROLES.includes(role)) {
+      return res.status(400).json({ error: '角色必須是 user、coach 或 admin' });
     }
     const user = db.data.users.find((u) => u.id === req.params.id);
     if (!user) return res.status(404).json({ error: '使用者不存在' });
-    if (user.role === 'admin') return res.status(400).json({ error: '不能修改管理員角色' });
+    if (user.id === req.user.id) return res.status(400).json({ error: '不能修改自己的角色' });
+    if (user.role === role) return res.status(400).json({ error: '角色沒有變更' });
+    if (role === 'admin' && user.disabled) return res.status(400).json({ error: '已停用的帳號不能設為管理員，請先重新啟用' });
+    if (user.role === 'admin' && role !== 'admin' && !user.disabled && activeAdminCount() <= 1) {
+      return res.status(400).json({ error: '至少要保留一位管理員' });
+    }
     const prevRole = user.role;
     user.role = role;
     // 角色（權限）變了，該帳號現有的登入 session 一併撤銷，下次請求會被要求重新登入
@@ -193,6 +204,43 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
     db.persist();
     auditLog(req, 'change_role', { targetUserId: user.id, from: prevRole, to: role });
     res.json({ user: publicUser(user) });
+  });
+
+  // 停用／重新啟用帳號：停用後無法登入、現有 session 立即失效、不寄通知信；
+  // 作答紀錄與班級成員資格都保留，重新啟用即恢復。
+  router.patch('/users/:id/disabled', (req, res) => {
+    if (typeof req.body?.disabled !== 'boolean') return res.status(400).json({ error: '請指定要停用或啟用' });
+    const disabled = req.body.disabled;
+    const user = db.data.users.find((u) => u.id === req.params.id);
+    if (!user) return res.status(404).json({ error: '使用者不存在' });
+    if (user.id === req.user.id) return res.status(400).json({ error: '不能停用自己的帳號' });
+    if (disabled && user.role === 'admin' && !user.disabled && activeAdminCount() <= 1) {
+      return res.status(400).json({ error: '至少要保留一位管理員' });
+    }
+    if (Boolean(user.disabled) === disabled) return res.status(400).json({ error: disabled ? '帳號已經是停用狀態' : '帳號沒有被停用' });
+    user.disabled = disabled;
+    revokeUserTokens(user);
+    db.persist();
+    auditLog(req, disabled ? 'disable_user' : 'enable_user', { targetUserId: user.id });
+    res.json({ user: publicUser(user) });
+  });
+
+  // 轉移班別給另一位教練（教練離職、換人帶班時用）。目標必須是有效的教練或管理員。
+  router.patch('/groups/:id/coach', (req, res) => {
+    const group = (db.data.groups ?? []).find((g) => g.id === req.params.id);
+    if (!group) return res.status(404).json({ error: '班別不存在' });
+    const target = db.data.users.find((u) => u.id === req.body?.coachId);
+    if (!target) return res.status(404).json({ error: '找不到指定的教練' });
+    if (target.role !== 'coach' && target.role !== 'admin') return res.status(400).json({ error: '只能轉給教練或管理員' });
+    if (target.disabled) return res.status(400).json({ error: '該帳號已停用' });
+    if (group.coachId === target.id) return res.status(400).json({ error: '這個班本來就由這位教練負責' });
+    const from = group.coachId;
+    group.coachId = target.id;
+    group.coachName = target.name;
+    group.updatedAt = new Date().toISOString();
+    db.persist();
+    auditLog(req, 'transfer_group', { groupId: group.id, from, to: target.id });
+    res.json({ group: { ...group, phase: getGroupPhase(group) } });
   });
 
   router.post('/users/:id/reset-token', (req, res) => {

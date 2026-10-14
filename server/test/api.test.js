@@ -431,12 +431,12 @@ describe('教練 / 班別 / 名單', () => {
     const idsAdmin = ovAdmin.body.users.map((u) => u.id);
     assert.ok(idsAdmin.includes(stuA.id) && idsAdmin.includes(stuB.id), 'admin 應看得到所有學員');
 
-    // 名冊（僅姓名/Email、不含成績）仍給完整清單，教練才能把新成員加進班別。
-    const dir = await coachA.agent.get('/api/coach/directory');
-    assert.equal(dir.status, 200);
-    const dirIds = dir.body.users.map((u) => u.id);
-    assert.ok(dirIds.includes(stuB.id), '名冊應包含尚未加入自己班級的使用者');
-    assert.ok(dir.body.users.every((u) => u.result === undefined), '名冊不應帶任何成績欄位');
+    // 全站名冊已移除（Sprint 11）：教練只能「搜尋」才找得到人，且不含成績。
+    assert.equal((await coachA.agent.get('/api/coach/directory')).status, 404, '全站名冊端點應已移除');
+    const found = await coachA.agent.get('/api/coach/user-search').query({ q: '學員B' });
+    assert.equal(found.status, 200);
+    assert.deepEqual(found.body.users.map((u) => u.id), [stuB.id], '搜尋應找得到尚未加入自己班級的使用者');
+    assert.ok(found.body.users.every((u) => u.result === undefined && u.role === undefined), '搜尋結果只有姓名與 Email');
   });
 
   test('教練可建立班別、寫評語', async () => {
@@ -565,7 +565,7 @@ describe('教練 / 班別 / 名單', () => {
     await other.post('/api/auth/register').send({ name: '別班教練', email: 'other-coach@b.co', password: 'abcdef12' });
     const admin2 = request.agent(app);
     await admin2.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
-    const otherReg = await admin2.get('/api/coach/directory').then((r) => r.body.users.find((u) => u.email === 'other-coach@b.co'));
+    const otherReg = await admin2.get('/api/admin/overview').then((r) => r.body.users.find((u) => u.email === 'other-coach@b.co'));
     await admin2.patch(`/api/admin/users/${otherReg.id}/role`).send({ role: 'coach' });
     await other.post('/api/auth/login').send({ email: 'other-coach@b.co', password: 'abcdef12' });
     assert.equal((await other.post(`/api/coach/groups/${g.body.group.id}/join-code`)).status, 403);

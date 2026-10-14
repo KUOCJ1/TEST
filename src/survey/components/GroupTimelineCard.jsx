@@ -121,6 +121,13 @@ export default function GroupTimelineCard({ group, onUpdated, showHeader = false
         )}
       </div>
 
+      {!group.publishedAt && (
+        <p className="mt-2 text-xs text-slate-500">
+          「發佈成果」＝讓這個班的學員可以查看自己的 <strong>360° 報告</strong>（主管、同儕、部屬對他的評分結果，他人評分一律匿名呈現）。
+          發佈前學員看不到；要等施測截止日之後才會生效。學員自己填的評測結果不受影響，送出後就看得到。
+        </p>
+      )}
+
       {/* 發佈只有在施測截止後才生效（phase 由日期與 publishedAt 共同決定）。
           已按發佈但尚未截止時，若不說明，教練會誤以為發佈失敗。 */}
       {group.publishedAt && group.phase !== 'published' && (

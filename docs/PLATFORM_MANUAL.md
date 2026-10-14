@@ -179,7 +179,7 @@ CREATE TABLE records (
 
 | Collection | 內容 | 誰寫入 |
 |---|---|---|
-| `users` | 帳號（email、密碼雜湊、role: user/coach/admin、所屬 groupId、`preferences`——只收白名單鍵：`darkMode`／`defaultAssessmentId`／`notifyAssessment`／`notifyComment`） | 註冊/登入、管理者改角色、本人改設定 |
+| `users` | 帳號（email、密碼雜湊、role: user/coach/admin、`disabled` 停用旗標（Sprint 11）、所屬 groupId、`preferences`——只收白名單鍵：`darkMode`／`defaultAssessmentId`／`notifyAssessment`／`notifyComment`） | 註冊/登入、管理者改角色、本人改設定 |
 | `submissions` | 每一次評測作答（answers、算出來的 result、groupId、raterId/rateeId 用於 360°、教練評語、`commentNotifiedAt` 評語通知冷卻用） | 學員提交、教練留言 |
 | `assessments` | 題庫 metadata（id/name/description/enabled），**不含題目本體**——題目在前端 `src/survey/data/assessments/*.js` | 開機自動種子（見下） |
 | `groups` | 班級（成員名單、joinCode、startDate、發佈狀態、`lastReminderSentAt` 催交信冷卻用） | 教練建立/管理 |
@@ -349,7 +349,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   （課前未作答 → 課後未作答 → 還有 360° 他評待完成 → 有目標到期該複測 → 看報告
   → 新帳號開始第一次評測），下方接班級狀態條（`GroupStatusBar.jsx`）與目標
   進度摘要（`GoalProgressChip.jsx`）
-- 首頁「我的評量」：列出可作答的題庫（依 `assessments.enabled` 過濾），每張
+- 首頁「我的評量」：列出可作答的題庫（依 `assessments.enabled` 過濾；**班級指定的題庫排最前面**、有「班級指定」標籤與外框；已加入班級的學員不顯示新手引導，因為「下一步」卡片已經在講該做什麼），每張
   卡片有狀態標籤（未作答／課前已完成／課後已完成／可重測）
 - 作答：Likert 量表逐題填答，支援中途離開續答。`QuestionCard.jsx` 的五個選項
   在手機上也是一列五格（48px 觸控目標，兩端標籤放在下方），第一次作答某題後
@@ -371,10 +371,10 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 - AI 評測小幫手：浮動聊天按鈕，依角色帶不同 system prompt 上下文
 
 ### 教練
-- 教練後台總覽：自己管理的班級列表
+- 教練後台總覽：自己管理的班級列表。進頁面**自動選取**一個班（`utils/groups.js` 的 `pickDefaultGroup`：進行中的優先、多個選最近更新的，否則最近建立的），右側有班別標題列（`GroupWorkspace.jsx` 的 `GroupHeader`：班名、階段、公司、題庫、人數、施測日期）；窄螢幕自己點班別時自動捲到詳情
 - 班級總覽與評語：整班雷達圖平均、落點分布、對個別學員最新一筆作答留言
 - **作答進度追蹤**（`coach/ProgressPanel.jsx`，放在班級「總覽」分頁最上方）：
-  課前／課後各自完成人數，未完成者名單，一鍵「複製提醒訊息」（含截止日、報到
+  課前／課後各自完成人數，未完成者名單（課前還有人沒交時先不列「課後未完成」，課後還沒開始，列出來是干擾），一鍵「複製提醒訊息」（含截止日、報到
   連結，可直接貼去 LINE／Email）；設定好 SMTP 後另有「寄送提醒信」直接寄出
   （見第 10.4 節）
 - **班級學習成效**（`coach/GroupGainReport.jsx`，邏輯在
@@ -386,7 +386,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 - **比較梯次**（`coach/CohortCompare.jsx`）：選同一題庫的兩個班級，疊圖比較
   平均雷達圖與落點分布
 - 匯出班級成績 CSV（`utils/csvExport.js`，純前端 Blob 產生，不依賴 Excel 解析套件）
-- 成員與設定：加人/移除、設定課前課後階段、QR Code 報到（產生/撤銷/投影）
+- 成員與設定：目前成員（可移除）＋**搜尋加人**（至少 2 字、最多 10 筆，不列全站名單，見第 8 節隱私說明）、設定課前課後階段、QR Code 報到（產生/撤銷/投影）
 - 360° 進度追蹤：誰已評完誰還沒
 - AI 教練助理：協助撰寫評語
 
@@ -401,7 +401,8 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   達成率與「最新一梯比第一梯差幾個百分點」，PROFILE_MODE 題庫改列各梯風格
   分布、不算差距。跟教練端「比較梯次」的差別：那個一次選兩班、只限自己名下
   的班級；這個是全站所有梯次的長期趨勢
-- 用戶角色管理：改 user/coach/admin
+- **用戶與權限**（`admin/UsersTab.jsx`）：列出所有帳號、角色篩選／搜尋／排序、各角色說明；角色用下拉選單改（user／coach／admin，先確認並提醒「對方會被登出」）；停用／重新啟用帳號；守門規則見第 8 節。同一份 DOM 用 CSS 切換成桌機列表與手機卡片
+- **班別與發佈**（`admin/GroupsTab.jsx`）：所有班別的施測時間軸與發佈，顯示負責教練，可轉移班別給其他有效的教練／管理者
 - 批次匯入：CSV/Excel（`.xlsx`，`read-excel-file` 套件解析）匯入名單，
   獨立 lazy chunk（`BatchUploadSection.jsx`，解析邏輯抽在
   `batchFileParsing.js`），避免拖慢一般管理後台載入；不支援舊版二進位 `.xls`
@@ -473,8 +474,8 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 | `chat.js` | `POST /chat` | AI 小幫手，串流代理到 OpenRouter（見第 10 節） |
 | `learning-resources` (`learningResources.js`) | `GET /learning-resources`、`POST /learning-resources/track-click` | 延伸閱讀，代理到第二大腦 API；後者記錄文章點擊供管理後台彙總（見第 10 節） |
 | `public.js` | `GET /public/join/:code` | **免登入**，QR 報到落地頁查班級資訊，獨立 rate limit |
-| `admin.js`（掛 `/api/admin`，`requireAdmin`） | `GET/PATCH /assessments`、`GET /overview`、`PATCH /users/:id/role`、`POST /users/:id/reset-token`、`POST /batch-import`、`GET /learning-resources/stats`、`GET/PUT/DELETE /assessment-content/:id[/draft]`、`POST /assessment-content/:id/publish`、`/rollback` | 題庫文字草稿／發佈／還原（第 4.4 節） |
-| `coach.js`（掛 `/api/coach`，`requireCoach`） | `GET /overview`、`/directory`、`GET/POST /groups`、`GET/PUT/DELETE /groups/:id`、`POST /groups/:id/publish`、`POST/DELETE /groups/:id/join-code`、`POST /groups/:id/roster`、`POST /groups/:id/remind` | admin 角色也滿足 `requireCoach`，故管理者能用教練後台全部功能 |
+| `admin.js`（掛 `/api/admin`，`requireAdmin`） | `GET/PATCH /assessments`、`GET /overview`、`PATCH /users/:id/role`、`PATCH /users/:id/disabled`、`PATCH /groups/:id/coach`、`POST /users/:id/reset-token`、`POST /batch-import`、`GET /learning-resources/stats`、`GET/PUT/DELETE /assessment-content/:id[/draft]`、`POST /assessment-content/:id/publish`、`/rollback` | 題庫文字草稿／發佈／還原（第 4.4 節） |
+| `coach.js`（掛 `/api/coach`，`requireCoach`） | `GET /overview`、`GET /user-search?q=`（成員搜尋，取代已移除的全站名冊 `/directory`）、`GET/POST /groups`、`GET/PUT/DELETE /groups/:id`、`POST /groups/:id/publish`、`POST/DELETE /groups/:id/join-code`、`POST /groups/:id/roster`、`POST /groups/:id/remind` | admin 角色也滿足 `requireCoach`，故管理者能用教練後台全部功能 |
 
 `admin`/`coach` 各自的 router 用 `router.use()` 統一掛驗證中介層，因此**必須**
 掛在專屬前綴（`/api/admin`、`/api/coach`）下，否則會攔截其他掛在 `/api` 的
@@ -499,6 +500,29 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   寫評語（`submissions.js`，Sprint 7 補上——以前只檢查身分是教練，任何教練拿到
   作答 id 就能對別班學員留言，而且會觸發通知信寄給對方學員）都以「受評者在不在
   自己的班上」為準；管理者不受限。
+- **權限矩陣與守門規則（Sprint 11）**：
+
+  | 能力 | 一般用戶 | 教練 | 管理者 |
+  |---|---|---|---|
+  | 作答、看自己的報告與目標 | ✓ | ✓ | ✓ |
+  | 建立／管理**自己名下**的班別、看班上成績、寫評語、寄催交信 | — | ✓ | ✓（所有班別） |
+  | 搜尋已註冊用戶以加入班級（`GET /coach/user-search`） | — | ✓ | ✓ |
+  | 開關題庫、改題庫文字、改角色、停用帳號、轉移班別、系統狀態 | — | — | ✓ |
+
+  守門規則都在**伺服器端**（`routes/admin.js`），前端只是把按鈕藏起來：不能改自己的角色或停用自己；
+  最後一位有效（未停用）的管理者不能被降級或停用；已停用的帳號不能升為管理者；轉移班別的目標必須是
+  有效的教練或管理者。角色變更與停用都會 `revokeUserTokens`，被改的人立即登出。全部寫稽核日誌
+  （`change_role`／`disable_user`／`enable_user`／`transfer_group`）。
+- **停用帳號**（`user.disabled`）：`currentUser()` 直接回 null，所以既有 session 立即失效；登入回
+  `403 ACCOUNT_DISABLED`（密碼對才告知，不讓人探測哪些 Email 有註冊）；重設密碼連結失效；通知信
+  （複測提醒、評語通知、催交信）略過；教練成員搜尋與新加入班級都排除。**作答、班級成員資格都保留**，
+  重新啟用即恢復。
+- **教練看不到全站用戶名單（Sprint 11 隱私修正）**：以前 `GET /coach/directory` 回傳全站所有非管理者的
+  姓名與 Email 給任何教練。現在移除，班級成員的名字由 `GET /coach/groups/:id` 的 `members` 帶（只有這個班
+  的人）；要加人只能 `GET /coach/user-search?q=`——至少 2 個字、最多 10 筆、只回姓名與 Email、不含管理者與
+  已停用帳號。`memberIds` 在伺服器端只收「存在、非管理者」的帳號（原本就在班上的已停用者保留）。
+  **仍然沒變**：教練可以把已註冊的人直接加進自己的班（不需學員同意），加進去後看得到該學員在這個班的作答；
+  這是產品決定維持的，要改成「需學員同意」是另一項功能。
 - **密碼**：bcryptjs 雜湊，絕不明文儲存或記錄。
 - **Rate limiting**（`express-rate-limit`）：
   - 註冊/登入：預設每 5 分鐘 10 次；帶有效 `joinCode` 時放寬到 100 次。

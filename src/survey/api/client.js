@@ -84,11 +84,16 @@ export const api = {
   batchImport: (payload) => request('/admin/batch-import', { method: 'POST', body: payload }),
   setUserRole: (userId, role) =>
     request(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role } }).then((d) => d.user),
+  setUserDisabled: (userId, disabled) =>
+    request(`/admin/users/${userId}/disabled`, { method: 'PATCH', body: { disabled } }).then((d) => d.user),
+  transferGroup: (groupId, coachId) =>
+    request(`/admin/groups/${groupId}/coach`, { method: 'PATCH', body: { coachId } }).then((d) => d.group),
   generateResetToken: (userId) =>
     request(`/admin/users/${userId}/reset-token`, { method: 'POST' }),
 
   coachOverview: () => request('/coach/overview'),
-  coachDirectory: () => request('/coach/directory').then((d) => d.users),
+  // 全站名冊已移除（Sprint 11）：教練只能搜尋，至少 2 個字、最多 10 筆。
+  coachUserSearch: (q) => request(`/coach/user-search?q=${encodeURIComponent(q)}`).then((d) => d.users),
   coachGroups: () => request('/coach/groups').then((d) => d.groups),
   createGroup: (payload) => request('/coach/groups', { method: 'POST', body: payload }).then((d) => d.group),
   getGroup: (id) => request(`/coach/groups/${id}`),

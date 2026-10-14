@@ -11,7 +11,8 @@ import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from './mail
 // 同一份作答的評語在這段時間內反覆修改只通知一次：教練常常存了又改。
 export const COMMENT_NOTIFY_COOLDOWN_MS = 60 * 60 * 1000;
 
-const wants = (user, key) => Boolean(user?.email) && user?.preferences?.[key] !== false;
+// 停用的帳號不寄通知信（Sprint 11）。
+const wants = (user, key) => Boolean(user?.email) && !user?.disabled && user?.preferences?.[key] !== false;
 const truncate = (text, n) => (text.length > n ? `${text.slice(0, n)}…` : text);
 const footer = (toggleName) =>
   `（不想再收到這類信？到平台「個人設定 → 通知偏好」關閉「${toggleName}」。）`;

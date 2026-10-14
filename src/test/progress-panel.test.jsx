@@ -40,11 +40,26 @@ describe('ProgressPanel', () => {
     expect(screen.getByText('小美')).toBeInTheDocument();
   });
 
-  it('課前完成但課後未完成的人只出現在課後未完成名單，不會同時出現在課前名單', () => {
+  it('課前還有人沒交時，已完成課前的人不會出現在課前名單，也先不列課後未完成名單', () => {
     const submissions = [sub('u1', 'pre')];
     render(<ProgressPanel group={group} members={members} submissions={submissions} />);
     const preSection = screen.getByText('課前未完成（2）').closest('div');
     expect(preSection).not.toHaveTextContent('小明');
+    // 課後還沒開始，列出來只是干擾（Sprint 11）。
+    expect(screen.queryByText(/課後未完成/)).not.toBeInTheDocument();
+  });
+
+  it('課前全部完成後，才列出課後未完成名單', () => {
+    const submissions = [sub('u1', 'pre'), sub('u2', 'pre'), sub('u3', 'pre')];
+    render(<ProgressPanel group={group} members={members} submissions={submissions} />);
+    expect(screen.queryByText(/課前未完成/)).not.toBeInTheDocument();
+    expect(screen.getByText('課後未完成（3）')).toBeInTheDocument();
+  });
+
+  it('已經有人交了課後，就算還有人沒交課前，也顯示課後未完成名單', () => {
+    const submissions = [sub('u1', 'pre'), sub('u1', 'post'), sub('u2', 'pre')];
+    render(<ProgressPanel group={group} members={members} submissions={submissions} />);
+    expect(screen.getByText('課前未完成（1）')).toBeInTheDocument();
     expect(screen.getByText('課後未完成（1）')).toBeInTheDocument();
   });
 

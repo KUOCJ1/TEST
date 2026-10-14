@@ -42,5 +42,7 @@ export function publicUser(user) {
     role: user.role,
     createdAt: user.createdAt,
     preferences: user.preferences ?? {},
+    // 管理者停用的帳號（Sprint 11）：不能登入、不收通知信、不出現在教練的成員搜尋。
+    disabled: Boolean(user.disabled),
   };
 }

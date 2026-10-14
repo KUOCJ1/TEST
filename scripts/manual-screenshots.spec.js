@@ -42,6 +42,11 @@ test('產生使用手冊截圖', async ({ browser }) => {
   const { group: g } = await ok(await coach.post(`/api/coach/groups/${group.id}/join-code`), 'join code');
 
   const EMAILS = ['mei', 'daming', 'yating', 'zhihao', 'yijun'];
+  // 還沒加入任何班的已註冊用戶：給「成員搜尋」截圖有東西可搜。
+  const outsider = await pwRequest.newContext({ baseURL: API });
+  await ok(await outsider.post('/api/auth/register', { data: { name: '王小華', email: 'hua@example.com', password: 'abcdef12' } }), 'outsider');
+  await outsider.dispose();
+
   const students = [['林小美', 2], ['王大明', 4], ['張雅婷', 3], ['李志豪', 5], ['黃怡君', null]];
   const ctxs = [];
   for (const [i, [name, value]] of students.entries()) {
@@ -103,7 +108,8 @@ test('產生使用手冊截圖', async ({ browser }) => {
   const cp = await cc.newPage();
   await cp.goto('/');
   await cp.getByRole('button', { name: '教練後台', exact: true }).click();
-  await cp.getByText(group.name, { exact: true }).click();
+  // 進頁面會自動選取這個班（Sprint 11），標題列直接出現。
+  await expect(cp.getByRole('heading', { name: group.name })).toBeVisible({ timeout: 20000 });
   await expect(cp.getByText('作答進度')).toBeVisible({ timeout: 20000 });
   await expect(cp.getByRole('heading', { name: '成員比較' })).toBeVisible();
   await shot(cp, 'coach-overview');
@@ -115,6 +121,13 @@ test('產生使用手冊截圖', async ({ browser }) => {
   await cp.locator('canvas, img[alt*="QR"], svg').first().waitFor({ timeout: 10000 }).catch(() => {});
   await qr.scrollIntoViewIfNeeded();
   await shot(cp, 'coach-qr');
+  // 成員管理：目前成員＋搜尋加入（Sprint 11）。
+  const searchBox = cp.getByLabel('搜尋並加入已註冊的用戶');
+  await searchBox.fill('王小');
+  await expect(cp.getByRole('button', { name: '加入 王小華' })).toBeVisible({ timeout: 10000 });
+  await cp.getByRole('heading', { name: '成員管理' }).evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await cp.evaluate(() => window.scrollBy(0, -90));
+  await shot(cp, 'coach-members-search');
   await cc.close();
 
   // ── 5. 管理者：總覽、系統狀態 ──
@@ -124,6 +137,12 @@ test('產生使用手冊截圖', async ({ browser }) => {
   await adp.getByRole('button', { name: '管理後台', exact: true }).click();
   await expect(adp.getByRole('button', { name: '系統狀態' })).toBeVisible({ timeout: 20000 });
   await shot(adp, 'admin-overview');
+  // 用戶與權限（Sprint 11）：角色篩選與每人的角色／停用操作。
+  await adp.getByRole('button', { name: '用戶管理', exact: true }).click();
+  await expect(adp.getByText('用戶與權限')).toBeVisible({ timeout: 20000 });
+  await adp.waitForTimeout(500);
+  await shot(adp, 'admin-users');
+
   // 題庫內容編輯器：改一題文字讓「已修改」標記與內建原文都出現（不儲存，只截圖）。
   await adp.getByRole('button', { name: '題庫內容', exact: true }).click();
   await expect(adp.getByText('不能在這裡修改')).toBeVisible({ timeout: 20000 });

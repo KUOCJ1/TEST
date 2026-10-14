@@ -67,23 +67,44 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     });
   });
 
-  // 建立／編輯班別時的「可加入成員」名冊。只有姓名與 Email，不含任何成績，
-  // 因此不受上面的成績可見範圍限制——否則教練無從把新成員加進自己的班別。
-  router.get('/directory', (_req, res) => {
-    res.json({
-      users: db.data.users
-        .filter((u) => u.role !== 'admin')
-        .map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role })),
-    });
+  // 成員搜尋（Sprint 11）：取代以前「回傳全站所有用戶姓名與 Email」的名冊——那讓任何教練
+  // 都能翻閱全站的 Email，用戶一多教練也根本找不到人。現在要輸入至少 2 個字、一次最多
+  // 10 筆，只回姓名與 Email（不含成績），並排除管理者與已停用的帳號。
+  const SEARCH_MIN_CHARS = 2;
+  const SEARCH_LIMIT = 10;
+  router.get('/user-search', (req, res) => {
+    const q = String(req.query.q ?? '').trim().toLowerCase();
+    if (q.length < SEARCH_MIN_CHARS) return res.json({ users: [], limit: SEARCH_LIMIT, minChars: SEARCH_MIN_CHARS });
+    const matches = db.data.users
+      .filter((u) => u.role !== 'admin' && !u.disabled
+        && (String(u.name ?? '').toLowerCase().includes(q) || String(u.email ?? '').toLowerCase().includes(q)))
+      .slice(0, SEARCH_LIMIT)
+      .map((u) => ({ id: u.id, name: u.name, email: u.email }));
+    res.json({ users: matches, limit: SEARCH_LIMIT, minChars: SEARCH_MIN_CHARS });
   });
 
-  // ── 班別 CRUD ─────────────────────────────────────────────
   router.get('/groups', (req, res) => {
     const groups = (db.data.groups ?? [])
       .filter((g) => g.coachId === req.user.id || req.user.role === 'admin')
       .map((g) => ({ ...g, phase: getGroupPhase(g) }));
     res.json({ groups });
   });
+
+  // 成員 id 只收「存在、非管理者」的帳號，去重；已停用的帳號不能新加入（但原本就在班上的保留，
+  // 停用不該讓人從班級與成績中消失）。
+  const sanitizeMemberIds = (ids, existing = []) => {
+    if (!Array.isArray(ids)) return [];
+    const keep = new Set(existing);
+    const out = [];
+    for (const id of ids) {
+      if (typeof id !== 'string' || out.includes(id)) continue;
+      const u = db.data.users.find((x) => x.id === id);
+      if (!u || u.role === 'admin') continue;
+      if (u.disabled && !keep.has(id)) continue;
+      out.push(id);
+    }
+    return out;
+  };
 
   const isKnownAssessment = (id) => typeof id === 'string' && (db.data.assessments ?? []).some((a) => a.id === id);
 
@@ -99,7 +120,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       assessmentId: typeof assessmentId === 'string' ? assessmentId : 'ai-competency',
       coachId: req.user.id,
       coachName: req.user.name,
-      memberIds: Array.isArray(memberIds) ? memberIds : [],
+      memberIds: sanitizeMemberIds(memberIds),
       focusDimensionIds: sanitizeFocusDimensionIds(focusDimensionIds),
       targetHeadcount: sanitizeTargetHeadcount(targetHeadcount),
       dimensionNotes: sanitizeDimensionNotes(dimensionNotes),
@@ -134,7 +155,12 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
         ? n.groupId === group.id
         : group.memberIds.includes(n.userId) && n.assessmentId === group.assessmentId))
       .map((n) => ({ ...n, answers: undefined }));
-    res.json({ group: { ...group, phase: getGroupPhase(group) }, submissions: memberSubs });
+    // 班級成員的姓名與 Email（Sprint 11）：取代以前的全站名冊，前端只需要「這個班的人」。
+    const members = (group.memberIds ?? [])
+      .map((id) => db.data.users.find((u) => u.id === id))
+      .filter(Boolean)
+      .map((u) => ({ id: u.id, name: u.name, email: u.email, disabled: Boolean(u.disabled) }));
+    res.json({ group: { ...group, phase: getGroupPhase(group) }, submissions: memberSubs, members });
   });
 
   router.put('/groups/:id', (req, res) => {
@@ -152,7 +178,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       ...(name !== undefined && { name: name.trim() }),
       ...(companyName !== undefined && { companyName: companyName.trim() }),
       ...(assessmentId !== undefined && { assessmentId }),
-      ...(memberIds !== undefined && { memberIds: Array.isArray(memberIds) ? memberIds : [] }),
+      ...(memberIds !== undefined && { memberIds: sanitizeMemberIds(memberIds, groups[idx].memberIds) }),
       ...(groupComment !== undefined && { groupComment: String(groupComment).slice(0, 10000) }),
       ...(groupTips !== undefined && {
         groupTips: Array.isArray(groupTips)
@@ -277,7 +303,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     const postDone = new Set(selfSubs.filter((n) => n.phase === 'post').map((n) => n.userId));
     const members = (group.memberIds ?? [])
       .map((id) => db.data.users.find((u) => u.id === id))
-      .filter(Boolean);
+      .filter((u) => u && !u.disabled);
 
     const notStartedPre = members.filter((m) => !preDone.has(m.id));
     const pending = group.pendingMembers ?? [];
@@ -337,6 +363,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       const name = (raw.name || '').trim();
       if (!emailRe.test(email)) { result.invalid.push(raw.email || '(空白)'); continue; }
       const existing = db.data.users.find((u) => u.email === email && u.role !== 'admin');
+      if (existing?.disabled) { result.invalid.push(email); continue; }
       if (existing) {
         if (!group.memberIds.includes(existing.id)) { group.memberIds.push(existing.id); result.added += 1; }
       } else if (!group.pendingMembers.some((p) => p.email === email)) {

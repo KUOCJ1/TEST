@@ -13,7 +13,7 @@ const group = {
   id: 'g1', name: '測試班', assessmentId: 'ai-competency', phase: 'in_progress',
   memberIds: ['u1', 'u2'], groupComment: '', groupTips: [],
 };
-const directory = [
+const members = [
   { id: 'u1', name: '小明', email: 'ming@x.com' },
   { id: 'u2', name: '小華', email: 'hua@x.com' },
 ];
@@ -22,7 +22,7 @@ function renderSection() {
   render(
     <GroupOverviewSection
       group={group}
-      directory={directory}
+      members={members}
       groupStats={null}
       memberRows={[]}
       strongestWeakest={null}
@@ -60,7 +60,7 @@ describe('GroupOverviewSection：成員比較表', () => {
     render(
       <GroupOverviewSection
         group={group}
-        directory={directory}
+        members={members}
         groupStats={stats}
         memberRows={[{ submission: sub, userId: 'u1', name: '小明', total: result.total, percent: result.percent, level: result.level, hasMyComment: false }]}
         strongestWeakest={null}

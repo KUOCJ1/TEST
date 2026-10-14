@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Target, Star, Download } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Target, Star, Download, Search, UserPlus, X } from 'lucide-react';
 import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
 import { latestPerUser } from '../utils/analytics';
@@ -22,11 +22,11 @@ function parseRoster(text) {
 }
 
 // 「成員與設定」分頁內容：報到 QR、開課時間軸、評量設定（目標人數／重點構面）、
-// 成員管理（勾選＋CSV 匯出）、批量匯入名單。從 GroupWorkspace 拆出（Sprint
+// 成員管理（目前成員＋搜尋加入＋CSV 匯出）、批量匯入名單。從 GroupWorkspace 拆出（Sprint
 // 5.6）——這些欄位的輸入狀態只在這個分頁存在，切換到「總覽」分頁時本來就該
 // 歸零，獨立成元件、由父層在切換班別時 key={group.id} 掛載，行為和拆分前一致。
 export default function GroupSettingsSection({
-  group, directory, users, patchedSubmissions, onGroupUpdated, refreshSubmissions, showToast,
+  group, members, users, patchedSubmissions, onGroupUpdated, refreshSubmissions, showToast,
 }) {
   const [targetHeadcount, setTargetHeadcount] = useState(group.targetHeadcount == null ? '' : String(group.targetHeadcount));
   const [focusDims, setFocusDims] = useState(group.focusDimensionIds ?? []);
@@ -34,6 +34,14 @@ export default function GroupSettingsSection({
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState('');
   const [selectedMembers, setSelectedMembers] = useState(group.memberIds ?? []);
+  // 姓名／Email 的對照：目前班上的人，加上這次搜尋加入的人（搜尋結果點「加入」時補進來）。
+  const [known, setKnown] = useState(() => Object.fromEntries((members ?? []).map((m) => [m.id, m])));
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState(null); // null＝還沒搜尋；[]＝沒有結果
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const searchTimer = useRef(null);
+  const searchSeq = useRef(0);
   const [savingMembers, setSavingMembers] = useState(false);
   const [membersError, setMembersError] = useState('');
   const [rosterText, setRosterText] = useState('');
@@ -42,8 +50,29 @@ export default function GroupSettingsSection({
 
   const toggleFocus = (dimId) =>
     setFocusDims((prev) => (prev.includes(dimId) ? prev.filter((id) => id !== dimId) : [...prev, dimId]));
-  const toggleMember = (userId) =>
-    setSelectedMembers((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
+  const removeMember = (userId) => setSelectedMembers((prev) => prev.filter((id) => id !== userId));
+  const addMember = (user) => {
+    setKnown((prev) => ({ ...prev, [user.id]: user }));
+    setSelectedMembers((prev) => (prev.includes(user.id) ? prev : [...prev, user.id]));
+  };
+
+  // 成員搜尋（Sprint 11）：不再一次列出全站名單。至少 2 個字才查、停手 300ms 後才送出，
+  // 用序號丟掉過期的回應（慢的舊請求不能蓋掉新結果）。
+  const SEARCH_MIN = 2;
+  const handleQueryChange = (value) => {
+    setQuery(value);
+    setSearchError('');
+    clearTimeout(searchTimer.current);
+    const q = value.trim();
+    if (q.length < SEARCH_MIN) { searchSeq.current += 1; setResults(null); setSearching(false); return; }
+    setSearching(true);
+    const seq = ++searchSeq.current;
+    searchTimer.current = setTimeout(() => {
+      api.coachUserSearch(q)
+        .then((list) => { if (seq === searchSeq.current) { setResults(list); setSearching(false); } })
+        .catch((e) => { if (seq === searchSeq.current) { setSearchError(e.message || '搜尋失敗'); setSearching(false); } });
+    }, 300);
+  };
 
   const handleSaveSettings = async () => {
     setSavingSettings(true);
@@ -106,7 +135,9 @@ export default function GroupSettingsSection({
     e.target.value = '';
   };
 
-  const nonAdminUsers = directory.filter((u) => u.role !== 'admin');
+  const membersDirty = selectedMembers.length !== (group.memberIds ?? []).length
+    || selectedMembers.some((id) => !(group.memberIds ?? []).includes(id));
+  const candidates = (results ?? []).filter((u) => !selectedMembers.includes(u.id));
   const dims = getAssessment(group.assessmentId)?.DIMENSIONS ?? [];
 
   return (
@@ -210,15 +241,71 @@ export default function GroupSettingsSection({
           </p>
         )}
 
-        <div className="max-h-40 overflow-y-auto space-y-1">
-          {nonAdminUsers.map((u) => (
-            <label key={u.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-50">
-              <input type="checkbox" checked={selectedMembers.includes(u.id)} onChange={() => toggleMember(u.id)}
-                className="accent-ink-700" />
-              <span className="text-sm font-medium text-slate-700">{u.name}</span>
-              <span className="text-xs text-slate-400">{u.email}</span>
-            </label>
-          ))}
+        <p className="mb-1.5 text-xs font-semibold text-slate-600">
+          目前成員（{selectedMembers.length}）
+          {membersDirty && <span className="ml-2 font-semibold text-amber-700">· 有尚未儲存的變更</span>}
+        </p>
+        {selectedMembers.length === 0 ? (
+          <p className="mb-3 rounded-lg bg-white px-3 py-3 text-sm text-slate-500">
+            還沒有成員。用下方搜尋加入已註冊的人，或給學員報到 QR Code／匯入名單。
+          </p>
+        ) : (
+          <ul className="mb-3 max-h-64 divide-y divide-slate-100 overflow-y-auto rounded-lg bg-white px-3">
+            {selectedMembers.map((id) => {
+              const m = known[id];
+              return (
+                <li key={id} className="flex items-center justify-between gap-3 py-2">
+                  <div className="min-w-0">
+                    <span className="text-sm font-medium text-slate-700">{m?.name ?? '（未知用戶）'}</span>
+                    {m?.disabled && <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">已停用</span>}
+                    <span className="ml-2 break-all text-xs text-slate-500">{m?.email}</span>
+                  </div>
+                  <button type="button" onClick={() => removeMember(id)} aria-label={`移除 ${m?.name ?? '成員'}`}
+                    className="inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">
+                    <X aria-hidden="true" className="h-3.5 w-3.5" /> 移除
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <div className="rounded-lg border border-slate-200 bg-white p-3">
+          <label htmlFor="member-search" className="mb-1 block text-xs font-semibold text-slate-600">搜尋並加入已註冊的用戶</label>
+          <div className="relative">
+            <Search aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input id="member-search" type="search" value={query} onChange={(e) => handleQueryChange(e.target.value)}
+              placeholder="輸入姓名或 Email（至少 2 個字）" className="input py-1.5 pl-8 text-sm" autoComplete="off" />
+          </div>
+          <div aria-live="polite" className="mt-2 text-sm">
+            {query.trim().length < SEARCH_MIN && (
+              <p className="text-xs text-slate-500">為了保護用戶隱私，不會列出全部用戶；輸入至少 {SEARCH_MIN} 個字才會搜尋，一次最多顯示 10 筆。</p>
+            )}
+            {searching && <p className="text-xs text-slate-500">搜尋中…</p>}
+            {searchError && <p role="alert" className="text-xs text-red-600">{searchError}</p>}
+            {!searching && results && results.length === 0 && (
+              <p className="text-xs text-slate-500">找不到符合的已註冊用戶。要邀請還沒註冊的人，請用下方「批量匯入名單」，或讓他掃報到 QR Code。</p>
+            )}
+            {!searching && results && results.length > 0 && candidates.length === 0 && (
+              <p className="text-xs text-slate-500">符合的用戶都已經在這個班了。</p>
+            )}
+            {candidates.length > 0 && (
+              <ul className="mt-1 divide-y divide-slate-100">
+                {candidates.map((u) => (
+                  <li key={u.id} className="flex items-center justify-between gap-3 py-2">
+                    <div className="min-w-0">
+                      <span className="font-medium text-slate-700">{u.name}</span>
+                      <span className="ml-2 break-all text-xs text-slate-500">{u.email}</span>
+                    </div>
+                    <button type="button" onClick={() => addMember(u)} aria-label={`加入 ${u.name}`}
+                      className="btn-secondary btn-sm shrink-0 whitespace-nowrap">
+                      <UserPlus aria-hidden="true" className="h-3.5 w-3.5" /> 加入
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         {group.pendingMembers?.length > 0 && (
@@ -237,7 +324,7 @@ export default function GroupSettingsSection({
           </div>
         )}
 
-        <button type="button" onClick={handleSaveMembers} disabled={savingMembers}
+        <button type="button" onClick={handleSaveMembers} disabled={savingMembers || !membersDirty}
           className="btn-primary btn-sm mt-3">
           {savingMembers ? '儲存中…' : '儲存成員名單'}
         </button>

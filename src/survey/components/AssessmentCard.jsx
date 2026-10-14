@@ -31,7 +31,7 @@ export default function AssessmentCard({
   }
 
   return (
-    <div className="card flex flex-col transition-shadow hover:shadow-card-hover">
+    <div className={`card flex flex-col transition-shadow hover:shadow-card-hover ${inGroup ? 'ring-2 ring-brass-300' : ''}`}>
       <div className="flex-1">
         <div className="mb-2 flex items-start justify-between gap-2">
           <h3 className="text-lg font-extrabold text-slate-800">{assessment.name}</h3>
@@ -44,6 +44,7 @@ export default function AssessmentCard({
           </p>
         )}
         <div className="mt-2 flex flex-wrap gap-1.5">
+          {inGroup && <span className="chip bg-ink-700 text-white">班級指定</span>}
           <span className={`chip ${statusClass}`}>{statusLabel}</span>
           {supports360 && (
             <span className="chip bg-brass-50 text-brass-600">支援 360° 多元評測</span>
