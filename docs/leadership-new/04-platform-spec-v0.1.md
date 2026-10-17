@@ -342,3 +342,19 @@ FORMS = { full:{...}, short:{...} }                  // 以題目的 form 欄位
 - **備份還原演練** `deploy/restore-drill.sh`：把最新備份複製到暫存目錄，檢查完整性、資料筆數與正式庫的差距、備份新舊，不動正式資料庫；結束代碼 0／1。本機用替身 `sqlite3` 指令（正常、無備份、壞備份三種情境）驗證過腳本邏輯，**尚未在 VPS 上用真正的 `sqlite3` CLI 跑過**，第一次請在 VPS 上實跑確認。
 - **未做**：手冊截圖（`scripts/manual-screenshots.spec.js`）沒有加入兩個新評量——它們預設停用，截圖流程需要先啟用並建測試資料；啟用驗收時再補。
 - **上線順序建議**：部署 → 檢查兩個新評量是停用 → 管理者啟用並用測試班驗收（`DEPLOYMENT.md` C2）→ 專家審題與認知前測結果回來、必要時修題（`scripts/build-compass-config.mjs` 重新產生）→ 對真實班級啟用。
+
+## 23. 審題與前測結果的彙整（2026-10-17）
+
+專家審題與認知前測已由使用者完成。彙整用 `scripts/analyze-compass-review.mjs`（有測試）：
+
+```bash
+# 把填好的專家審題表（每位專家一份 CSV）與前測紀錄表（每位受訪者一份 CSV）放進資料夾後：
+node scripts/analyze-compass-review.mjs \
+  --experts docs/leadership-new/review/experts \
+  --pretest docs/leadership-new/review/pretest \
+  --out docs/leadership-new/review/analysis.md
+```
+
+- 專家：每題相關性與清晰度的 I-CVI（評 3–4 分的專家比例）、S-CVI/Ave、被指出像他牌題目者；專家 ≥6 位門檻 0.78，少於 6 位為 1.0（⚠️ 經驗法則，正式報告前請對照文獻）。
+- 前測：依 `03-cognitive-pretest-guide.md` 第 6 節規則——同一題 2 位以上 A／B／C／G → 必改；1 位 → 觀察；D、E、H 各有處理建議。
+- 修題流程：改 `items-candidates-*.json`（升版為 v0.3 並在檔內註記修訂理由）→ `node scripts/build-compass-config.mjs` → 重跑相似度檢查與全部測試 → 若他評版措辭或「難觀察」標記有變，同步更新審題表與前測紀錄表（`export-leadership-*-sheet.mjs`）。
