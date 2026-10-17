@@ -45,7 +45,8 @@ export default function LandingPage({ onEnter, loggedIn = false }) {
   // 平台級指標：刻意不放任何單一題庫的規格（構面數、題數那些），
   // 那些屬於各自的評測工具，列在下方的「評測工具庫」。
   const stats = [
-    ['評測工具 Assessments', String(ASSESSMENT_SUMMARIES.filter((a) => !a.hidden).length)],
+    // 含「即將推出」的評測（已完成、尚待管理者開放）；各評測是否對你開放，依所屬組織與班級設定。
+    ['評測工具 Assessments', String(ASSESSMENT_SUMMARIES.length)],
     ['評測角色 Rater Types', '4'],
     ['平台角色 Roles', '3'],
     ['歷程追蹤 Retakes', '不限次'],
@@ -72,7 +73,7 @@ export default function LandingPage({ onEnter, loggedIn = false }) {
   const steps = [
     { step: '01', title: '選擇評量', desc: '從管理者開放的評測工具中，選取這次要進行的評量。' },
     { step: '02', title: '完成作答', desc: '以 5 點量表作答行為情境題，系統自動處理正向與反向題計分，進度隨時自動存檔。' },
-    { step: '03', title: '查看成果', desc: '立即取得構面分析、落點等級與雷達圖，並在同一頁看到歷程與教練評語。' },
+    { step: '03', title: '查看成果', desc: '立即取得構面分析、雷達圖與結果解讀，並在同一頁看到歷程與教練評語。' },
     { step: '04', title: '持續發展', desc: '訂下目標、追蹤行動，日後回測比對成長幅度，形成完整的發展循環。' },
   ];
 
@@ -140,9 +141,12 @@ export default function LandingPage({ onEnter, loggedIn = false }) {
             </p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
-            {ASSESSMENT_SUMMARIES.filter((a) => !a.hidden).map((a) => (
+            {ASSESSMENT_SUMMARIES.map((a) => (
               <div key={a.id} className="flex flex-col border-t border-ink-700/20 pt-6">
-                <h3 className="font-serif mb-1 text-xl font-bold text-ink-700">{a.name}</h3>
+                <h3 className="font-serif mb-1 flex flex-wrap items-center gap-2 text-xl font-bold text-ink-700">
+                  {a.name}
+                  {a.comingSoon && <span className="rounded-full bg-brass-50 px-2.5 py-0.5 text-xs font-semibold text-brass-600">即將推出</span>}
+                </h3>
                 <p className="mb-5 text-sm leading-relaxed text-ink-100">{a.tagline}</p>
                 <dl className="mb-5 flex gap-8">
                   <div>
@@ -160,7 +164,7 @@ export default function LandingPage({ onEnter, loggedIn = false }) {
                     <dd className="font-serif text-2xl font-semibold text-ink-700">{a.items}</dd>
                   </div>
                 </dl>
-                <Link to={`/guide/${a.id}`} className="mb-4 text-sm font-semibold text-brass-500 underline">了解這份評測 →</Link>
+                <Link to={a.guidePath ?? `/guide/${a.id}`} className="mb-4 text-sm font-semibold text-brass-500 underline">了解這份評測 →</Link>
                 <ul className="mt-auto space-y-2">
                   {a.features.map((f) => (
                     <li key={f} className="flex items-start gap-2.5 text-sm text-ink-400">

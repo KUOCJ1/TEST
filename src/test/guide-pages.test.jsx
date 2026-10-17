@@ -85,11 +85,17 @@ describe('入口連結', () => {
     render(<MemoryRouter><ConfirmProvider><SurveyApp assessmentId="disc" user={{ id: 'u', name: 'x' }} /></ConfirmProvider></MemoryRouter>);
     expect(screen.getByRole('link', { name: /先看這份評測在看什麼/ })).toHaveAttribute('href', '/guide/disc');
   });
-  it('首頁評測工具庫每張卡片連到說明頁（隱藏中的評量不出現）', () => {
+  it('首頁評測工具庫：六份評測都有卡片與說明連結；尚未開放的標示「即將推出」', () => {
     render(<MemoryRouter><LandingPage loggedIn={false} onEnter={() => {}} /></MemoryRouter>);
     const links = screen.getAllByRole('link', { name: /了解這份評測/ }).map((l) => l.getAttribute('href'));
-    expect(links).toEqual(expect.arrayContaining(['/guide/ai-competency', '/guide/leadership-9d', '/guide/disc', '/guide/archetype']));
-    expect(links).not.toContain('/guide/leadership-compass');
-    expect(links).not.toContain('/guide/succession-intent');
+    expect(links).toEqual(expect.arrayContaining(['/guide/ai-competency', '/guide/leadership-9d', '/guide/disc', '/guide/archetype', '/framework', '/guide/succession-intent']));
+    expect(screen.getAllByText('即將推出')).toHaveLength(2);
+    expect(screen.getByText('雙環領導羅盤八大構面評測')).toBeInTheDocument();
+    expect(screen.getByText('接班準備度評測')).toBeInTheDocument();
+  });
+  it('首頁統計的評測工具數等於摘要的數量', () => {
+    render(<MemoryRouter><LandingPage loggedIn={false} onEnter={() => {}} /></MemoryRouter>);
+    const label = screen.getByText('評測工具 Assessments');
+    expect(label.nextElementSibling.textContent).toBe(String(Object.keys(REGISTRY).length));
   });
 });

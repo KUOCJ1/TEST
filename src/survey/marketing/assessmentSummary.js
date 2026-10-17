@@ -49,18 +49,19 @@ export const ASSESSMENT_SUMMARIES = [
     features: ['4 組性格光譜', '40 題李克特量表', '16 種原創性格原型'],
   },
   {
-    // 尚未正式推出：hidden 為 true 時不在首頁評測工具庫顯示（正式啟用後移除此旗標）。
+    // comingSoon：已完成但尚未對學員開放，首頁卡片會標示「即將推出」。管理者在後台啟用後，把這個旗標拿掉。
     id: 'leadership-compass',
+    guidePath: '/framework',
     name: '雙環領導羅盤八大構面評測',
     tagline: '看見快環與永環的領導行為輪廓',
     dimensions: 8,
     items: 69,
     subCompetencies: 24,
     features: ['8 構面（快環 × 永環）', '精簡版 32 題／完整版 69 題', '支援 360° 多元評測'],
-    hidden: true,
+    comingSoon: true,
   },
   {
-    // 尚未正式推出：hidden 為 true 時不在首頁評測工具庫顯示。
+    // comingSoon：同上，啟用後移除。
     id: 'succession-intent',
     name: '接班準備度評測',
     tagline: '整理對升任與長期方向的想法',
@@ -68,6 +69,6 @@ export const ASSESSMENT_SUMMARIES = [
     items: 20,
     subCompetencies: 0,
     features: ['4 個面向', '20 題自評', '作為發展對話的素材'],
-    hidden: true,
+    comingSoon: true,
   },
 ];
