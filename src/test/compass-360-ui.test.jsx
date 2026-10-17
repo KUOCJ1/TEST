@@ -6,7 +6,7 @@ import MultiRaterTab from '../survey/coach/MultiRaterTab.jsx';
 
 const { rateeSubmissions, setShare } = vi.hoisted(() => ({ rateeSubmissions: vi.fn(), setShare: vi.fn() }));
 vi.mock('../survey/api/client', () => ({ api: { rateeSubmissions } }));
-vi.mock('../survey/auth/AuthContext', () => ({ useAuth: () => ({ setCompassManagerShare: setShare }) }));
+vi.mock('../survey/auth/useAuth', () => ({ useAuth: () => ({ setCompassManagerShare: setShare }) }));
 
 const dim = (id, name, avg) => ({ id, name, subtitle: name, color: '#2b6cb0', score: avg * 4, max: 20, percent: Math.round((avg / 5) * 100), average: avg, answered: 4, rating: { label: '熟練' } });
 const dims = (avg) => ['find', 'aim'].map((id) => dim(id, id === 'find' ? '洞察情勢' : '聚焦應變', avg));

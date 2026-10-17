@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../../auth/AuthContext';
+import { useAuth } from '../../auth/useAuth';
 
 /**
  * 受評者決定「上級（主管）的評分」是否顯示在自己的 360° 報告中。
