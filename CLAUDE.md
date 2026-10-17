@@ -84,9 +84,9 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
   （`data/assessments/overrides.js`）；舊的作答結果是快照，`api/client.js` 會用目前文字更新其顯示用字
   （`refreshResult.js`）。改題庫設定檔時不要在模組載入時把這些文字複製到別處快取，否則覆寫不會生效。
 
-## 雙環領導羅盤與接班補充問卷（Sprint 13–18，預設停用）
+## 雙環領導羅盤與接班準備度評測（Sprint 13–18，預設停用）
 
-- 原創的領導力評量（取代 L9D 是長期方向，**目前 L9D 不動、兩者並存**）與獨立的接班補充問卷；設計、決策與實作紀錄都在 `docs/leadership-new/`（`04-platform-spec-v0.1.md` 第 16–22 節最重要）。
+- 原創的領導力評量（取代 L9D 是長期方向，**目前 L9D 不動、兩者並存**）與獨立的接班準備度評測；設計、決策與實作紀錄都在 `docs/leadership-new/`（`04-platform-spec-v0.1.md` 第 16–22 節最重要）。
 - 題庫設定由 `scripts/build-compass-config.mjs` 從 `docs/leadership-new/items-candidates-*.json` 產生 `compass-items.generated.js`（勿手改）；計分是各自獨立的純函式（`utils/compassScoring.js`、`utils/successionScoring.js`），**不走共用的 `scoring.js`**，題庫以 `SCORING`／`selectForm`／`REPORT` 讓 `SurveyApp`、`ResultPanel`、`PrintableReport` 分派到專屬元件。
 - 沒有總分與排名；切分點（`THRESHOLDS`、`NARRATIVE_BANDS`、`STANCE_BANDS`）都是暫定值，試測後校準。
 - 360° 隱私由伺服器強制（`server/src/lib/compassPrivacy.js`）：同類 ≥3 位才單獨顯示、上級評分須受評者同意、教練看不到評分者身分、管理員還原須填理由並留稽核。改動這些規則要同步改政策文字與測試。

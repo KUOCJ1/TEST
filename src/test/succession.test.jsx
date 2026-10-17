@@ -24,7 +24,7 @@ beforeEach(() => { localStorage.clear(); createSubmission.mockReset(); createSub
 const answersAll = (v) => Object.fromEntries(si.ALL_QUESTIONS.map((q) => [q.id, v]));
 const build = (a) => si.SCORING.buildResult(a, si);
 
-describe('接班補充問卷：設定', () => {
+describe('接班準備度評測：設定', () => {
   it('已註冊；4 面向各 5 題共 20 題；名稱皆為四字；不支援 360°', () => {
     expect(REGISTRY['succession-intent']).toBeTruthy();
     expect(si.TOTAL_QUESTIONS).toBe(20);
@@ -53,7 +53,7 @@ describe('接班補充問卷：設定', () => {
   });
 });
 
-describe('接班補充問卷：計分', () => {
+describe('接班準備度評測：計分', () => {
   it('傾向切分', () => {
     expect(stanceOf(4).label).toBe('明確');
     expect(stanceOf(3.99).label).toBe('開放');
@@ -92,7 +92,7 @@ describe('接班補充問卷：計分', () => {
   });
 });
 
-describe('接班補充問卷：作答頁與報告', () => {
+describe('接班準備度評測：作答頁與報告', () => {
   const renderSurvey = () => render(<MemoryRouter><ConfirmProvider><SurveyApp assessmentId="succession-intent" user={{ id: 'u', name: '測試' }} /></ConfirmProvider></MemoryRouter>);
   it('單頁 20 題；長期意向每題有「不想回答」', () => {
     renderSurvey();

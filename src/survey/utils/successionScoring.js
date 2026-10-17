@@ -1,4 +1,4 @@
-// 接班補充問卷（succession-intent）的計分。不做總分分級與排名；每個面向只輸出平均與「傾向」描述。
+// 接班準備度評測（succession-intent）的計分。不做總分分級與排名；每個面向只輸出平均與「傾向」描述。
 // 規格：docs/leadership-new/06-succession-questionnaire-v0.1.md
 // 「長期意向」面向的題目可選答（NA_VALUE），不影響完成度。
 

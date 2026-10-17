@@ -50,12 +50,12 @@ describe('政策版本與同意判斷', () => {
 describe('政策內容與實際行為一致（關鍵揭露都在）', () => {
   const textOf = (sections) => JSON.stringify(sections);
 
-  it('雙環領導羅盤與接班補充問卷（2026-10-18 改版）：揭露新增的資料與可見對象', () => {
+  it('雙環領導羅盤與接班準備度評測（2026-10-18 改版）：揭露新增的資料與可見對象', () => {
     const t = textOf(PRIVACY_SECTIONS);
     for (const k of ['職涯意向資料', '去留想法', '上級評分顯示同意', '同一類評分者達 3 位', '須由你同意', '稽核紀錄', '教練只看到彙整結果', '不是人才評分']) expect(t).toContain(k);
     const terms = textOf(TERMS_SECTIONS);
     expect(terms).toContain('雙環領導羅盤');
-    expect(terms).toContain('接班補充問卷');
+    expect(terms).toContain('接班準備度評測');
     expect(POLICY_VERSION).toBe('2026-10-18');
   });
 

@@ -12,13 +12,13 @@ function Bar({ value, color, label }) {
   );
 }
 
-/** 接班補充問卷的結果頁：四個面向的「傾向」與對話建議。沒有總分、排名或比較。 */
+/** 接班準備度評測的結果頁：四個面向的「傾向」與對話建議。沒有總分、排名或比較。 */
 const SuccessionResultPanel = forwardRef(function SuccessionResultPanel({ result, onRetake, onCopy, copied, readOnly = false }, ref) {
   const { dimensions, level, assessmentName } = result;
   return (
     <section ref={ref} aria-live="polite" className="mt-8 scroll-mt-20 overflow-hidden rounded-md bg-paper-50 shadow-card ring-1 ring-paper-300">
       <div className="bg-ink-700 px-6 py-7 text-center text-paper-50">
-        <p className="text-sm font-medium text-paper-50/75">{assessmentName ?? '接班補充問卷'}</p>
+        <p className="text-sm font-medium text-paper-50/75">{assessmentName ?? '接班準備度評測'}</p>
         {level && (
           <span className="mt-3 inline-block rounded-sm px-4 py-1.5 text-lg font-bold" style={{ background: badgeBg(level.color), color: '#fff' }}>
             {level.badge}<span className="ml-2 text-sm font-normal">{level.badgeEn}</span>

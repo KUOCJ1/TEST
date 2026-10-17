@@ -65,7 +65,7 @@ describe('A2 報告頁有「看這份評測怎麼讀」', () => {
     render(<MemoryRouter><ResultPanel result={rd} onRetake={() => {}} onCopy={() => {}} copied={false} /></MemoryRouter>);
     expect(screen.getByRole('link', { name: '看這份評測怎麼讀' })).toHaveAttribute('href', '/guide/disc');
   });
-  it('接班補充問卷的報告也有', () => {
+  it('接班準備度評測的報告也有', () => {
     const r = si.SCORING.buildResult(Object.fromEntries(si.ALL_QUESTIONS.map((q) => [q.id, 4])), si);
     render(<MemoryRouter><SuccessionResultPanel result={r} onRetake={() => {}} onCopy={() => {}} copied={false} /></MemoryRouter>);
     expect(screen.getByRole('link', { name: '看這份問卷的完整說明' })).toHaveAttribute('href', '/guide/succession-intent');

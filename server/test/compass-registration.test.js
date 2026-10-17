@@ -68,7 +68,7 @@ describe('前端計分結果可通過後端驗證', () => {
   });
 });
 
-describe('接班補充問卷登錄', () => {
+describe('接班準備度評測登錄', () => {
   test('預設停用；既有四個題庫不受影響', () => {
     const db = createDb(':memory:');
     const a = db.data.assessments.find((x) => x.id === 'succession-intent');
@@ -103,5 +103,22 @@ describe('評量改名的資料庫遷移', () => {
     assert.equal(third.data.assessments.find((x) => x.id === ID).name, '我們公司的領導力評測');
     // 種入的紀錄不帶多餘的 renamedFrom 欄位
     assert.equal('renamedFrom' in third.data.assessments.find((x) => x.id === ID), false);
+  });
+});
+
+describe('接班評量改名的資料庫遷移', () => {
+  test('舊名稱「接班補充問卷」會換成「接班準備度評測」；自訂名稱不動', async () => {
+    const { mkdtempSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const file = join(mkdtempSync(join(tmpdir(), 'rename2-')), 'db.sqlite3');
+    const first = createDb(file);
+    first.data.assessments.find((x) => x.id === 'succession-intent').name = '接班補充問卷';
+    first.persist();
+    const second = createDb(file);
+    assert.equal(second.data.assessments.find((x) => x.id === 'succession-intent').name, '接班準備度評測');
+    second.data.assessments.find((x) => x.id === 'succession-intent').name = '我們的接班評測';
+    second.persist();
+    assert.equal(createDb(file).data.assessments.find((x) => x.id === 'succession-intent').name, '我們的接班評測');
   });
 });

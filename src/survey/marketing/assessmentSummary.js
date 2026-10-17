@@ -62,7 +62,7 @@ export const ASSESSMENT_SUMMARIES = [
   {
     // 尚未正式推出：hidden 為 true 時不在首頁評測工具庫顯示。
     id: 'succession-intent',
-    name: '接班補充問卷',
+    name: '接班準備度評測',
     tagline: '整理對升任與長期方向的想法',
     dimensions: 4,
     items: 20,

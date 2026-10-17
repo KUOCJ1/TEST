@@ -2,13 +2,13 @@ import { formatDate } from '../../utils/format';
 import { HBar, PageMeta, PageFooter, SectionTitle } from '../printable-report/primitives.jsx';
 import { SUCCESSION_READING, SUCCESSION_TEXT } from '../../utils/successionText.js';
 
-/** 接班補充問卷的列印版（一頁）。沒有總分、排名與比較。 */
+/** 接班準備度評測的列印版（一頁）。沒有總分、排名與比較。 */
 export default function SuccessionReportPages({ result, user, submittedAt }) {
   const date = formatDate(submittedAt);
   return (
     <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif', padding: '32px 52px' }}>
       <PageMeta name={user?.name ?? '—'} section="接班想法" date={date} assessmentName={result.assessmentName} />
-      <SectionTitle sub="用來支持發展對話，不是評分">接班補充問卷</SectionTitle>
+      <SectionTitle sub="用來支持發展對話，不是評分">接班準備度評測</SectionTitle>
       <ul style={{ margin: '0 0 16px', paddingLeft: 18, fontSize: 10.5, color: '#475569', lineHeight: 1.9 }}>
         {SUCCESSION_READING.map((t) => <li key={t}>{t}</li>)}
       </ul>

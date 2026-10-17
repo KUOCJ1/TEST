@@ -1,12 +1,12 @@
 import { NA_VALUE, completeness, unansweredQuestionIds, buildResult } from '../../utils/successionScoring.js';
 
-// 接班補充問卷。規格：docs/leadership-new/06-succession-questionnaire-v0.1.md
+// 接班準備度評測。規格：docs/leadership-new/06-succession-questionnaire-v0.1.md
 // 只自評；不做總分與排名；「長期意向」面向的題目可選答。
 export const ID = 'succession-intent';
 export const SUPPORTS_360 = false;
-export const NAME = '接班補充問卷';
-export const NAME_EN = 'Succession Intent Questionnaire';
-export const ABBR = 'SIQ';
+export const NAME = '接班準備度評測';
+export const NAME_EN = 'Succession Readiness Assessment';
+export const ABBR = 'SRA';
 export const DESCRIPTION = '整理您對升任、準備程度、可接受的條件與長期方向的想法，作為發展對話的素材。不是評分，沒有對錯。共 20 題，長期意向的題目可選擇不回答。';
 
 export const SCALE_MIN = 1;
