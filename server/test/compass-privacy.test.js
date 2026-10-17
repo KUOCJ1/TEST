@@ -201,3 +201,21 @@ describe('其他題庫完全不受影響（L9D）', () => {
     assert.ok(peers.every((s) => /^peer\d$/.test(s.userName) && !s.aggregate));
   });
 });
+
+describe('比較基準（benchmark）只算自評', () => {
+  test('雙環領導羅盤：評分者的他評不會被當成他本人的最新成績', async () => {
+    const { agents, db } = await setup({ peers: 3 });
+    // setup：1 份自評（平均 4）＋ 3 份同儕他評（平均 2、3、4）。他評提交的 userId 是評分者。
+    const res = await agents.ratee.get(`/api/assessments/${COMPASS}/benchmark`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.count, 1);
+    assert.equal(res.body.dimensionAverages.find((d) => d.id === 'find').percent, 80);
+    assert.equal(db.data.submissions.length, 4);
+  });
+
+  test('L9D 維持原本算法（決策待產品確認：他評提交仍會被算入）', async () => {
+    const { agents } = await setup({ peers: 3, assessmentId: 'leadership-9d' });
+    const res = await agents.ratee.get('/api/assessments/leadership-9d/benchmark');
+    assert.equal(res.body.count, 4);
+  });
+});
