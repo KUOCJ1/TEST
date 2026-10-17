@@ -100,14 +100,15 @@ describe('bandOf / 變體選擇', () => {
 });
 
 describe('buildCompassNarrative', () => {
-  it('只產生已撰寫文字的構面（目前只有洞察情勢），且穩定', () => {
+  it('八個構面都產生解讀，且穩定', () => {
     const r = resultOf(withEffective(4));
     const a = buildCompassNarrative(r);
     const b = buildCompassNarrative(r);
-    expect(a.map((x) => x.id)).toEqual(['find']);
+    expect(a.map((x) => x.id)).toEqual(compass.DIMENSIONS.map((d) => d.id));
     expect(a).toEqual(b);
     expect(a[0].subs).toHaveLength(4);
-    expect(a[0].band).toBe('high');
+    expect(a.reduce((n, d) => n + d.subs.length, 0)).toBe(24);
+    a.forEach((d) => expect(d.band).toBe('high'));
   });
   it('依平均分段：2→low、3.5→mid（子面向各自分段）', () => {
     expect(buildCompassNarrative(resultOf(withEffective(2)))[0].band).toBe('low');
@@ -126,7 +127,7 @@ describe('buildCompassNarrative', () => {
 
 describe('報告中的解讀區塊', () => {
   const renderPanel = (result) => render(<MemoryRouter><ResultPanel result={result} onRetake={() => {}} onCopy={() => {}} copied={false} /></MemoryRouter>);
-  it('顯示洞察情勢的解讀與子面向文字，並出現在章節導覽', () => {
+  it('顯示各構面的解讀與子面向文字，並出現在章節導覽', () => {
     renderPanel(resultOf(withEffective(2)));
     expect(screen.getByText('各構面的解讀')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '解讀' })).toBeInTheDocument();
