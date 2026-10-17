@@ -2,32 +2,32 @@
  {
   "id": "find-1",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "情勢與風險",
+  "dimensionName": "洞察情勢",
+  "sub": "風險預見",
   "self": "我會在問題變大之前，就先察覺到局勢出現不對勁的徵兆。",
   "other": "這位主管會在問題變大之前，就先察覺到局勢出現不對勁的徵兆。"
  },
  {
   "id": "find-2",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "情勢與風險",
+  "dimensionName": "洞察情勢",
+  "sub": "風險預見",
   "self": "做重要決定前，我會先想過「最可能出錯的地方在哪裡」。",
   "other": "做重要決定前，這位主管會先想過「最可能出錯的地方在哪裡」。"
  },
  {
   "id": "find-3",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "情勢與風險",
+  "dimensionName": "洞察情勢",
+  "sub": "風險預見",
   "self": "我會定期把外部環境的變化（客戶、同業、法規）和團隊的工作連起來看。",
   "other": "這位主管會定期把外部環境的變化（客戶、同業、法規）和團隊的工作連起來看。"
  },
  {
   "id": "find-4",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "情勢與風險",
+  "dimensionName": "洞察情勢",
+  "sub": "風險預見",
   "self": "我多半等到事情已經出狀況，才發現它的嚴重性。",
   "other": "這位主管多半等到事情已經出狀況，才發現它的嚴重性。",
   "reverse": true
@@ -35,32 +35,32 @@
  {
   "id": "find-5",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "聽見真話",
+  "dimensionName": "洞察情勢",
+  "sub": "傾聽真話",
   "self": "團隊成員會主動告訴我壞消息，不需要我去追問。",
   "other": "團隊成員會主動告訴這位主管壞消息，不需要這位主管去追問。"
  },
  {
   "id": "find-6",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "聽見真話",
+  "dimensionName": "洞察情勢",
+  "sub": "傾聽真話",
   "self": "當有人提出和我相反的看法，我會先弄清楚對方看到了什麼，再回應。",
   "other": "當有人提出和這位主管相反的看法，這位主管會先弄清楚對方看到了什麼，再回應。"
  },
  {
   "id": "find-7",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "聽見真話",
+  "dimensionName": "洞察情勢",
+  "sub": "傾聽真話",
   "self": "我會刻意找第一線的人聊，了解報告裡看不到的實際狀況。",
   "other": "這位主管會刻意找第一線的人聊，了解報告裡看不到的實際狀況。"
  },
  {
   "id": "find-8",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "聽見真話",
+  "dimensionName": "洞察情勢",
+  "sub": "傾聽真話",
   "self": "別人跟我說的內容，常常是經過修飾、我想聽的版本。",
   "other": "別人跟這位主管說的內容，常常是經過修飾、這位主管想聽的版本。",
   "reverse": true
@@ -68,7 +68,7 @@
  {
   "id": "find-9",
   "dimension": "find",
-  "dimensionName": "看清",
+  "dimensionName": "洞察情勢",
   "sub": "辨識限制",
   "self": "我能分辨一件事卡住，是因為層級、人際關係，還是世代間的做法差異。",
   "other": "這位主管能分辨一件事卡住，是因為層級、人際關係，還是世代間的做法差異。"
@@ -76,7 +76,7 @@
  {
   "id": "find-10",
   "dimension": "find",
-  "dimensionName": "看清",
+  "dimensionName": "洞察情勢",
   "sub": "辨識限制",
   "self": "我會留意哪些人因為資歷或職位，而不敢在會議上說話。",
   "other": "這位主管會留意哪些人因為資歷或職位，而不敢在會議上說話。"
@@ -84,7 +84,7 @@
  {
   "id": "find-11",
   "dimension": "find",
-  "dimensionName": "看清",
+  "dimensionName": "洞察情勢",
   "sub": "辨識限制",
   "self": "我在下判斷前，會先確認自己的位置與經驗讓我看不到哪些事。",
   "other": "這位主管在下判斷前，會先確認自己的位置與經驗讓這位主管看不到哪些事。"
@@ -92,7 +92,7 @@
  {
   "id": "find-12",
   "dimension": "find",
-  "dimensionName": "看清",
+  "dimensionName": "洞察情勢",
   "sub": "辨識限制",
   "self": "我習慣以「我當年也是這樣過來的」來看待年輕同事遇到的困難。",
   "other": "這位主管習慣以「這位主管當年也是這樣過來的」來看待年輕同事遇到的困難。",
@@ -101,16 +101,16 @@
  {
   "id": "find-13",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "資料與工具輔助判斷",
+  "dimensionName": "洞察情勢",
+  "sub": "數據判斷",
   "self": "做判斷時，我會把數據或工具的分析結果和自己的直覺一起對照。",
   "other": "做判斷時，這位主管會把數據或工具的分析結果和自己的直覺一起對照。"
  },
  {
   "id": "find-14",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "資料與工具輔助判斷",
+  "dimensionName": "洞察情勢",
+  "sub": "數據判斷",
   "self": "我會檢查 AI 或自動化工具給的結論是否有依據，而不是直接採用。",
   "other": "這位主管會檢查 AI 或自動化工具給的結論是否有依據，而不是直接採用。",
   "ai": true
@@ -118,8 +118,8 @@
  {
   "id": "find-15",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "資料與工具輔助判斷",
+  "dimensionName": "洞察情勢",
+  "sub": "數據判斷",
   "self": "我清楚知道哪些判斷可以交給工具輔助、哪些必須由我自己負責。",
   "other": "這位主管清楚知道哪些判斷可以交給工具輔助、哪些必須由這位主管自己負責。",
   "ai": true
@@ -127,8 +127,8 @@
  {
   "id": "find-16",
   "dimension": "find",
-  "dimensionName": "看清",
-  "sub": "資料與工具輔助判斷",
+  "dimensionName": "洞察情勢",
+  "sub": "數據判斷",
   "self": "只要資料看起來很完整，我就不會再追問它是怎麼來的。",
   "other": "只要資料看起來很完整，這位主管就不會再追問它是怎麼來的。",
   "reverse": true
@@ -136,8 +136,8 @@
  {
   "id": "aim-1",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "聚焦",
+  "dimensionName": "聚焦應變",
+  "sub": "聚焦取捨",
   "self": "我能清楚說出這個階段團隊最重要的三件事。",
   "other": "這位主管能清楚說出這個階段團隊最重要的三件事。",
   "pole": "focus"
@@ -145,8 +145,8 @@
  {
   "id": "aim-2",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "聚焦",
+  "dimensionName": "聚焦應變",
+  "sub": "聚焦取捨",
   "self": "當新要求不斷進來，我會明確決定哪些事這次先不做。",
   "other": "當新要求不斷進來，這位主管會明確決定哪些事這次先不做。",
   "pole": "focus"
@@ -154,8 +154,8 @@
  {
   "id": "aim-3",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "聚焦",
+  "dimensionName": "聚焦應變",
+  "sub": "聚焦取捨",
   "self": "團隊成員都能用自己的話說明團隊現在要達成什麼。",
   "other": "團隊成員都能用自己的話說明團隊現在要達成什麼。",
   "pole": "focus"
@@ -163,8 +163,8 @@
  {
   "id": "aim-4",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "聚焦",
+  "dimensionName": "聚焦應變",
+  "sub": "聚焦取捨",
   "self": "我會把大目標拆成團隊能立刻採取行動的下一步。",
   "other": "這位主管會把大目標拆成團隊能立刻採取行動的下一步。",
   "pole": "focus"
@@ -172,8 +172,8 @@
  {
   "id": "aim-5",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "聚焦",
+  "dimensionName": "聚焦應變",
+  "sub": "聚焦取捨",
   "self": "我會在會議中把偏離主題的討論拉回主軸。",
   "other": "這位主管會在會議中把偏離主題的討論拉回主軸。",
   "pole": "focus"
@@ -181,8 +181,8 @@
  {
   "id": "aim-6",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "聚焦",
+  "dimensionName": "聚焦應變",
+  "sub": "聚焦取捨",
   "self": "我會讓團隊清楚知道「做到什麼程度就算完成」。",
   "other": "這位主管會讓團隊清楚知道「做到什麼程度就算完成」。",
   "pole": "focus"
@@ -190,8 +190,8 @@
  {
   "id": "aim-7",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "彈性",
+  "dimensionName": "聚焦應變",
+  "sub": "彈性調整",
   "self": "當情況改變，我會願意公開調整先前說過的方向。",
   "other": "當情況改變，這位主管會願意公開調整先前說過的方向。",
   "pole": "flex"
@@ -199,8 +199,8 @@
  {
   "id": "aim-8",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "彈性",
+  "dimensionName": "聚焦應變",
+  "sub": "彈性調整",
   "self": "我會預留一部分時間與資源，讓團隊能處理計畫外出現的機會。",
   "other": "這位主管會預留一部分時間與資源，讓團隊能處理計畫外出現的機會。",
   "pole": "flex"
@@ -208,8 +208,8 @@
  {
   "id": "aim-9",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "彈性",
+  "dimensionName": "聚焦應變",
+  "sub": "彈性調整",
   "self": "我會事先想好「如果A不行，改走B」的備案。",
   "other": "這位主管會事先想好「如果A不行，改走B」的備案。",
   "pole": "flex"
@@ -217,8 +217,8 @@
  {
   "id": "aim-10",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "彈性",
+  "dimensionName": "聚焦應變",
+  "sub": "彈性調整",
   "self": "我會鼓勵團隊試做小規模的新方法，再決定是否擴大。",
   "other": "這位主管會鼓勵團隊試做小規模的新方法，再決定是否擴大。",
   "pole": "flex"
@@ -226,8 +226,8 @@
  {
   "id": "aim-11",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "彈性",
+  "dimensionName": "聚焦應變",
+  "sub": "彈性調整",
   "self": "我能接受計畫在執行中被修正，而不覺得是失敗。",
   "other": "這位主管能接受計畫在執行中被修正，而不覺得是失敗。",
   "pole": "flex"
@@ -235,8 +235,8 @@
  {
   "id": "aim-12",
   "dimension": "aim",
-  "dimensionName": "定準",
-  "sub": "彈性",
+  "dimensionName": "聚焦應變",
+  "sub": "彈性調整",
   "self": "當證據顯示原本的決定不對，我會及早停損。",
   "other": "當證據顯示原本的決定不對，這位主管會及早停損。",
   "pole": "flex"
@@ -244,7 +244,7 @@
  {
   "id": "staff-1",
   "dimension": "staff",
-  "dimensionName": "配置",
+  "dimensionName": "知人授權",
   "sub": "知人善任",
   "self": "我知道每位成員目前最擅長的工作，以及他們想嘗試的方向。",
   "other": "這位主管知道每位成員目前最擅長的工作，以及他們想嘗試的方向。"
@@ -252,7 +252,7 @@
  {
   "id": "staff-2",
   "dimension": "staff",
-  "dimensionName": "配置",
+  "dimensionName": "知人授權",
   "sub": "知人善任",
   "self": "指派任務時，我會同時考慮對方的能力、負荷與成長機會。",
   "other": "指派任務時，這位主管會同時考慮對方的能力、負荷與成長機會。"
@@ -260,7 +260,7 @@
  {
   "id": "staff-3",
   "dimension": "staff",
-  "dimensionName": "配置",
+  "dimensionName": "知人授權",
   "sub": "知人善任",
   "self": "我會把適合的人放到能發揮其強項的位置，即使他不是最資深的人。",
   "other": "這位主管會把適合的人放到能發揮其強項的位置，即使他不是最資深的人。"
@@ -268,7 +268,7 @@
  {
   "id": "staff-4",
   "dimension": "staff",
-  "dimensionName": "配置",
+  "dimensionName": "知人授權",
   "sub": "知人善任",
   "self": "我傾向把重要的工作交給同一批我最熟悉的人。",
   "other": "這位主管傾向把重要的工作交給同一批這位主管最熟悉的人。",
@@ -277,8 +277,8 @@
  {
   "id": "staff-5",
   "dimension": "staff",
-  "dimensionName": "配置",
-  "sub": "授權與當責",
+  "dimensionName": "知人授權",
+  "sub": "授權當責",
   "self": "交付任務時，我會說明預期成果和決策範圍，而不是只交代做法。",
   "other": "交付任務時，這位主管會說明預期成果和決策範圍，而不是只交代做法。",
   "pole": "delegate"
@@ -286,8 +286,8 @@
  {
   "id": "staff-6",
   "dimension": "staff",
-  "dimensionName": "配置",
-  "sub": "授權與當責",
+  "dimensionName": "知人授權",
+  "sub": "授權當責",
   "self": "被授權的事項，我能忍住不去干預對方的做法。",
   "other": "被授權的事項，這位主管能忍住不去干預對方的做法。",
   "pole": "delegate"
@@ -295,8 +295,8 @@
  {
   "id": "staff-7",
   "dimension": "staff",
-  "dimensionName": "配置",
-  "sub": "授權與當責",
+  "dimensionName": "知人授權",
+  "sub": "授權當責",
   "self": "對高風險的事項，我會保留關鍵決定的把關，並讓團隊知道原因。",
   "other": "對高風險的事項，這位主管會保留關鍵決定的把關，並讓團隊知道原因。",
   "pole": "hold"
@@ -304,8 +304,8 @@
  {
   "id": "staff-8",
   "dimension": "staff",
-  "dimensionName": "配置",
-  "sub": "授權與當責",
+  "dimensionName": "知人授權",
+  "sub": "授權當責",
   "self": "我會定期檢視授出去的工作進度，並在需要時及時介入。",
   "other": "這位主管會定期檢視授出去的工作進度，並在需要時及時介入。",
   "pole": "hold"
@@ -313,7 +313,7 @@
  {
   "id": "staff-9",
   "dimension": "staff",
-  "dimensionName": "配置",
+  "dimensionName": "知人授權",
   "sub": "人機配置",
   "self": "我會有意識地盤點，哪些工作適合交給 AI 或自動化，哪些需要人來做。",
   "other": "這位主管會有意識地盤點，哪些工作適合交給 AI 或自動化，哪些需要人來做。",
@@ -322,7 +322,7 @@
  {
   "id": "staff-10",
   "dimension": "staff",
-  "dimensionName": "配置",
+  "dimensionName": "知人授權",
   "sub": "人機配置",
   "self": "我會明確指定每個 AI 工具的任務範圍，以及由誰負責檢查結果。",
   "other": "這位主管會明確指定每個 AI 工具的任務範圍，以及由誰負責檢查結果。",
@@ -331,7 +331,7 @@
  {
   "id": "staff-11",
   "dimension": "staff",
-  "dimensionName": "配置",
+  "dimensionName": "知人授權",
   "sub": "人機配置",
   "self": "我會調整團隊的分工，讓成員把時間花在更需要判斷與關係的工作上。",
   "other": "這位主管會調整團隊的分工，讓成員把時間花在更需要判斷與關係的工作上。",
@@ -340,7 +340,7 @@
  {
   "id": "staff-12",
   "dimension": "staff",
-  "dimensionName": "配置",
+  "dimensionName": "知人授權",
   "sub": "人機配置",
   "self": "我引進新工具後，很少回頭檢視它是否真的讓分工變得更好。",
   "other": "這位主管引進新工具後，很少回頭檢視它是否真的讓分工變得更好。",
@@ -350,32 +350,32 @@
  {
   "id": "team-1",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "激勵與認可",
+  "dimensionName": "凝聚帶動",
+  "sub": "激勵認可",
   "self": "我會具體說出成員做對了什麼，而不只是說「做得好」。",
   "other": "這位主管會具體說出成員做對了什麼，而不只是說「做得好」。"
  },
  {
   "id": "team-2",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "激勵與認可",
+  "dimensionName": "凝聚帶動",
+  "sub": "激勵認可",
   "self": "我清楚每位成員在意的是什麼（成就感、穩定、被信任、學習等），並據以回應。",
   "other": "這位主管清楚每位成員在意的是什麼（成就感、穩定、被信任、學習等），並據以回應。"
  },
  {
   "id": "team-3",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "激勵與認可",
+  "dimensionName": "凝聚帶動",
+  "sub": "激勵認可",
   "self": "我會讓幕後的貢獻也被團隊看見。",
   "other": "這位主管會讓幕後的貢獻也被團隊看見。"
  },
  {
   "id": "team-4",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "激勵與認可",
+  "dimensionName": "凝聚帶動",
+  "sub": "激勵認可",
   "self": "我覺得完成工作是理所當然，不需要特別表達肯定。",
   "other": "這位主管覺得完成工作是理所當然，不需要特別表達肯定。",
   "reverse": true
@@ -383,8 +383,8 @@
  {
   "id": "team-5",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "整合與衝突",
+  "dimensionName": "凝聚帶動",
+  "sub": "整合衝突",
   "self": "當兩位成員意見衝突，我會讓雙方都完整表達後再協助找出共同點。",
   "other": "當兩位成員意見衝突，這位主管會讓雙方都完整表達後再協助找出共同點。",
   "pole": "relation"
@@ -392,8 +392,8 @@
  {
   "id": "team-6",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "整合與衝突",
+  "dimensionName": "凝聚帶動",
+  "sub": "整合衝突",
   "self": "我會處理團隊裡長期存在但沒人想碰的摩擦。",
   "other": "這位主管會處理團隊裡長期存在但沒人想碰的摩擦。",
   "pole": "relation"
@@ -401,8 +401,8 @@
  {
   "id": "team-7",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "整合與衝突",
+  "dimensionName": "凝聚帶動",
+  "sub": "整合衝突",
   "self": "面對必須有人讓步的情況，我能做出決定並說明理由，即使有人不滿意。",
   "other": "面對必須有人讓步的情況，這位主管能做出決定並說明理由，即使有人不滿意。",
   "pole": "result"
@@ -410,8 +410,8 @@
  {
   "id": "team-8",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "整合與衝突",
+  "dimensionName": "凝聚帶動",
+  "sub": "整合衝突",
   "self": "在期限壓力下，我會優先確保成果，同時說明對關係的影響並事後修補。",
   "other": "在期限壓力下，這位主管會優先確保成果，同時說明對關係的影響並事後修補。",
   "pole": "result"
@@ -419,39 +419,39 @@
  {
   "id": "team-9",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "跨階層關係",
+  "dimensionName": "凝聚帶動",
+  "sub": "跨層關係",
   "self": "我與不同層級的同事（上級、同儕、基層）都能維持坦誠的溝通。",
   "other": "這位主管與不同層級的同事（上級、同儕、基層）都能維持坦誠的溝通。"
  },
  {
   "id": "team-10",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "跨階層關係",
+  "dimensionName": "凝聚帶動",
+  "sub": "跨層關係",
   "self": "我會把上層的決策背景，用團隊聽得懂的方式轉述。",
   "other": "這位主管會把上層的決策背景，用團隊聽得懂的方式轉述。"
  },
  {
   "id": "team-11",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "跨階層關係",
+  "dimensionName": "凝聚帶動",
+  "sub": "跨層關係",
   "self": "我會把團隊的困難與想法，有條理地反映給上層。",
   "other": "這位主管會把團隊的困難與想法，有條理地反映給上層。"
  },
  {
   "id": "team-12",
   "dimension": "team",
-  "dimensionName": "帶動",
-  "sub": "跨階層關係",
+  "dimensionName": "凝聚帶動",
+  "sub": "跨層關係",
   "self": "我能與不同世代的同事合作，並尊重彼此不同的工作習慣。",
   "other": "這位主管能與不同世代的同事合作，並尊重彼此不同的工作習慣。"
  },
  {
   "id": "learn-1",
   "dimension": "learn",
-  "dimensionName": "快學",
+  "dimensionName": "敏捷學習",
   "sub": "學習速度",
   "self": "遇到沒做過的課題，我會先快速取得基本理解，再邊做邊修正。",
   "other": "遇到沒做過的課題，這位主管會先快速取得基本理解，再邊做邊修正。"
@@ -459,7 +459,7 @@
  {
   "id": "learn-2",
   "dimension": "learn",
-  "dimensionName": "快學",
+  "dimensionName": "敏捷學習",
   "sub": "學習速度",
   "self": "我會每個月安排時間，學習一個和工作相關的新知識或技能。",
   "other": "這位主管會每個月安排時間，學習一個和工作相關的新知識或技能。"
@@ -467,7 +467,7 @@
  {
   "id": "learn-3",
   "dimension": "learn",
-  "dimensionName": "快學",
+  "dimensionName": "敏捷學習",
   "sub": "學習速度",
   "self": "我願意向比我資淺的人請教，他們比我熟悉的事。",
   "other": "這位主管願意向比這位主管資淺的人請教，他們比這位主管熟悉的事。"
@@ -475,7 +475,7 @@
  {
   "id": "learn-4",
   "dimension": "learn",
-  "dimensionName": "快學",
+  "dimensionName": "敏捷學習",
   "sub": "學習速度",
   "self": "我偏好用過去已證明有效的做法，而不太花時間試新的。",
   "other": "這位主管偏好用過去已證明有效的做法，而不太花時間試新的。",
@@ -484,8 +484,8 @@
  {
   "id": "learn-5",
   "dimension": "learn",
-  "dimensionName": "快學",
-  "sub": "用工具與AI學習",
+  "dimensionName": "敏捷學習",
+  "sub": "工具學習",
   "self": "我會使用 AI 或其他工具協助我更快理解陌生的主題。",
   "other": "這位主管會使用 AI 或其他工具協助這位主管更快理解陌生的主題。",
   "ai": true
@@ -493,8 +493,8 @@
  {
   "id": "learn-6",
   "dimension": "learn",
-  "dimensionName": "快學",
-  "sub": "用工具與AI學習",
+  "dimensionName": "敏捷學習",
+  "sub": "工具學習",
   "self": "我會以不同方式驗證 AI 提供的內容是否正確，再用於決策。",
   "other": "這位主管會以不同方式驗證 AI 提供的內容是否正確，再用於決策。",
   "ai": true
@@ -502,8 +502,8 @@
  {
   "id": "learn-7",
   "dimension": "learn",
-  "dimensionName": "快學",
-  "sub": "用工具與AI學習",
+  "dimensionName": "敏捷學習",
+  "sub": "工具學習",
   "self": "我鼓勵團隊分享各自使用工具的心得與技巧。",
   "other": "這位主管鼓勵團隊分享各自使用工具的心得與技巧。",
   "ai": true
@@ -511,8 +511,8 @@
  {
   "id": "learn-8",
   "dimension": "learn",
-  "dimensionName": "快學",
-  "sub": "用工具與AI學習",
+  "dimensionName": "敏捷學習",
+  "sub": "工具學習",
   "self": "我認為使用 AI 學習，會讓人失去自己思考的能力，所以盡量避免。",
   "other": "這位主管認為使用 AI 學習，會讓人失去自己思考的能力，所以盡量避免。",
   "ai": true,
@@ -521,32 +521,32 @@
  {
   "id": "learn-9",
   "dimension": "learn",
-  "dimensionName": "快學",
-  "sub": "復盤",
+  "dimensionName": "敏捷學習",
+  "sub": "復盤檢討",
   "self": "專案或事件結束後，我會帶團隊檢視「當初預期什麼、實際發生什麼、為什麼」。",
   "other": "專案或事件結束後，這位主管會帶團隊檢視「當初預期什麼、實際發生什麼、為什麼」。"
  },
  {
   "id": "learn-10",
   "dimension": "learn",
-  "dimensionName": "快學",
-  "sub": "復盤",
+  "dimensionName": "敏捷學習",
+  "sub": "復盤檢討",
   "self": "我會在復盤中先談流程與條件，而不是先找出誰的錯。",
   "other": "這位主管會在復盤中先談流程與條件，而不是先找出誰的錯。"
  },
  {
   "id": "learn-11",
   "dimension": "learn",
-  "dimensionName": "快學",
-  "sub": "復盤",
+  "dimensionName": "敏捷學習",
+  "sub": "復盤檢討",
   "self": "我會把復盤的結論，變成下一次實際會改變的做法。",
   "other": "這位主管會把復盤的結論，變成下一次實際會改變的做法。"
  },
  {
   "id": "learn-12",
   "dimension": "learn",
-  "dimensionName": "快學",
-  "sub": "復盤",
+  "dimensionName": "敏捷學習",
+  "sub": "復盤檢討",
   "self": "事情做完就往下一件事走，我很少安排回頭檢討。",
   "other": "事情做完就往下一件事走，這位主管很少安排回頭檢討。",
   "reverse": true
@@ -554,7 +554,7 @@
  {
   "id": "anchor-1",
   "dimension": "anchor",
-  "dimensionName": "穩住",
+  "dimensionName": "穩定當責",
   "sub": "危機穩定",
   "self": "突發狀況出現時，我能先讓團隊知道目前的事實、下一步與分工。",
   "other": "突發狀況出現時，這位主管能先讓團隊知道目前的事實、下一步與分工。"
@@ -562,7 +562,7 @@
  {
   "id": "anchor-2",
   "dimension": "anchor",
-  "dimensionName": "穩住",
+  "dimensionName": "穩定當責",
   "sub": "危機穩定",
   "self": "壓力很大的時候，我仍能把先後順序排清楚。",
   "other": "壓力很大的時候，這位主管仍能把先後順序排清楚。"
@@ -570,7 +570,7 @@
  {
   "id": "anchor-3",
   "dimension": "anchor",
-  "dimensionName": "穩住",
+  "dimensionName": "穩定當責",
   "sub": "危機穩定",
   "self": "我會在危機中定期更新進度，即使還沒有完整答案。",
   "other": "這位主管會在危機中定期更新進度，即使還沒有完整答案。"
@@ -578,7 +578,7 @@
  {
   "id": "anchor-4",
   "dimension": "anchor",
-  "dimensionName": "穩住",
+  "dimensionName": "穩定當責",
   "sub": "危機穩定",
   "self": "情況混亂時，我的情緒常常影響團隊的氣氛。",
   "other": "情況混亂時，這位主管的情緒常常影響團隊的氣氛。",
@@ -587,32 +587,32 @@
  {
   "id": "anchor-5",
   "dimension": "anchor",
-  "dimensionName": "穩住",
-  "sub": "當責而非指責",
+  "dimensionName": "穩定當責",
+  "sub": "承擔責任",
   "self": "出現錯誤時，我會先說明自己在其中的責任。",
   "other": "出現錯誤時，這位主管會先說明自己在其中的責任。"
  },
  {
   "id": "anchor-6",
   "dimension": "anchor",
-  "dimensionName": "穩住",
-  "sub": "當責而非指責",
+  "dimensionName": "穩定當責",
+  "sub": "承擔責任",
   "self": "我讓成員敢於承認失誤，並不用擔心被公開責備。",
   "other": "這位主管讓成員敢於承認失誤，並不用擔心被公開責備。"
  },
  {
   "id": "anchor-7",
   "dimension": "anchor",
-  "dimensionName": "穩住",
-  "sub": "當責而非指責",
+  "dimensionName": "穩定當責",
+  "sub": "承擔責任",
   "self": "我會把失誤當作調整流程的線索，而不只是個人表現問題。",
   "other": "這位主管會把失誤當作調整流程的線索，而不只是個人表現問題。"
  },
  {
   "id": "anchor-8",
   "dimension": "anchor",
-  "dimensionName": "穩住",
-  "sub": "當責而非指責",
+  "dimensionName": "穩定當責",
+  "sub": "承擔責任",
   "self": "出了問題，我習慣先找出該負責的人。",
   "other": "出了問題，這位主管習慣先找出該負責的人。",
   "reverse": true
@@ -620,64 +620,64 @@
  {
   "id": "anchor-9",
   "dimension": "anchor",
-  "dimensionName": "穩住",
-  "sub": "自我調節與感染力",
+  "dimensionName": "穩定當責",
+  "sub": "情緒調節",
   "self": "我知道自己在什麼情況下容易失去耐性，並事先調整。",
   "other": "這位主管知道自己在什麼情況下容易失去耐性，並事先調整。"
  },
  {
   "id": "anchor-10",
   "dimension": "anchor",
-  "dimensionName": "穩住",
-  "sub": "自我調節與感染力",
+  "dimensionName": "穩定當責",
+  "sub": "情緒調節",
   "self": "我的情緒狀態，會讓團隊更願意面對困難。",
   "other": "這位主管的情緒狀態，會讓團隊更願意面對困難。"
  },
  {
   "id": "anchor-11",
   "dimension": "anchor",
-  "dimensionName": "穩住",
-  "sub": "自我調節與感染力",
+  "dimensionName": "穩定當責",
+  "sub": "情緒調節",
   "self": "感到疲憊或壓力很大時，我會主動調整工作節奏或尋求協助。",
   "other": "感到疲憊或壓力很大時，這位主管會主動調整工作節奏或尋求協助。"
  },
  {
   "id": "anchor-12",
   "dimension": "anchor",
-  "dimensionName": "穩住",
-  "sub": "自我調節與感染力",
+  "dimensionName": "穩定當責",
+  "sub": "情緒調節",
   "self": "我會注意自己說話的語氣和表情，對團隊可能產生的影響。",
   "other": "這位主管會注意自己說話的語氣和表情，對團隊可能產生的影響。"
  },
  {
   "id": "sow-1",
   "dimension": "sow",
-  "dimensionName": "育才",
-  "sub": "識才",
+  "dimensionName": "識才育才",
+  "sub": "發掘潛力",
   "self": "我能在日常工作中看出，誰具有未來承擔更大責任的潛力。",
   "other": "這位主管能在日常工作中看出，誰具有未來承擔更大責任的潛力。"
  },
  {
   "id": "sow-2",
   "dimension": "sow",
-  "dimensionName": "育才",
-  "sub": "識才",
+  "dimensionName": "識才育才",
+  "sub": "發掘潛力",
   "self": "我評估潛力時，看的是學習與成長的軌跡，而不只是目前的績效。",
   "other": "這位主管評估潛力時，看的是學習與成長的軌跡，而不只是目前的績效。"
  },
  {
   "id": "sow-3",
   "dimension": "sow",
-  "dimensionName": "育才",
-  "sub": "識才",
+  "dimensionName": "識才育才",
+  "sub": "發掘潛力",
   "self": "我會刻意留意那些安靜、不爭取表現的人。",
   "other": "這位主管會刻意留意那些安靜、不爭取表現的人。"
  },
  {
   "id": "sow-4",
   "dimension": "sow",
-  "dimensionName": "育才",
-  "sub": "識才",
+  "dimensionName": "識才育才",
+  "sub": "發掘潛力",
   "self": "我主要根據與我相處的熟悉程度，判斷誰值得栽培。",
   "other": "這位主管主要根據與這位主管相處的熟悉程度，判斷誰值得栽培。",
   "reverse": true
@@ -685,7 +685,7 @@
  {
   "id": "sow-5",
   "dimension": "sow",
-  "dimensionName": "育才",
+  "dimensionName": "識才育才",
   "sub": "分層培育",
   "self": "我會依成員不同的階段（新手、獨立執行、帶人），安排不同的培養方式。",
   "other": "這位主管會依成員不同的階段（新手、獨立執行、帶人），安排不同的培養方式。"
@@ -693,7 +693,7 @@
  {
   "id": "sow-6",
   "dimension": "sow",
-  "dimensionName": "育才",
+  "dimensionName": "識才育才",
   "sub": "分層培育",
   "self": "我會有意識地提供「稍微超出舒適區」的任務，並在旁支持。",
   "other": "這位主管會有意識地提供「稍微超出舒適區」的任務，並在旁支持。"
@@ -701,7 +701,7 @@
  {
   "id": "sow-7",
   "dimension": "sow",
-  "dimensionName": "育才",
+  "dimensionName": "識才育才",
   "sub": "分層培育",
   "self": "我會為值得培養的人，安排接觸更高層次的場合或決策。",
   "other": "這位主管會為值得培養的人，安排接觸更高層次的場合或決策。"
@@ -709,7 +709,7 @@
  {
   "id": "sow-8",
   "dimension": "sow",
-  "dimensionName": "育才",
+  "dimensionName": "識才育才",
   "sub": "分層培育",
   "self": "我會和成員一起訂定具體的發展計畫，並定期回顧。",
   "other": "這位主管會和成員一起訂定具體的發展計畫，並定期回顧。"
@@ -717,7 +717,7 @@
  {
   "id": "sow-9",
   "dimension": "sow",
-  "dimensionName": "育才",
+  "dimensionName": "識才育才",
   "sub": "成長對話",
   "self": "我會定期和成員談他們的職涯想法，而不只是談工作進度。",
   "other": "這位主管會定期和成員談他們的職涯想法，而不只是談工作進度。"
@@ -725,7 +725,7 @@
  {
   "id": "sow-10",
   "dimension": "sow",
-  "dimensionName": "育才",
+  "dimensionName": "識才育才",
   "sub": "成長對話",
   "self": "我給的回饋會具體指出行為，並說明對成果的影響。",
   "other": "這位主管給的回饋會具體指出行為，並說明對成果的影響。"
@@ -733,7 +733,7 @@
  {
   "id": "sow-11",
   "dimension": "sow",
-  "dimensionName": "育才",
+  "dimensionName": "識才育才",
   "sub": "成長對話",
   "self": "我會用提問引導成員自己找到答案，而不總是直接給建議。",
   "other": "這位主管會用提問引導成員自己找到答案，而不總是直接給建議。"
@@ -741,7 +741,7 @@
  {
   "id": "sow-12",
   "dimension": "sow",
-  "dimensionName": "育才",
+  "dimensionName": "識才育才",
   "sub": "成長對話",
   "self": "我與成員的對話，多半集中在眼前的任務與問題。",
   "other": "這位主管與成員的對話，多半集中在眼前的任務與問題。",
@@ -750,7 +750,7 @@
  {
   "id": "transfer-1",
   "dimension": "transfer",
-  "dimensionName": "留能",
+  "dimensionName": "傳承留能",
   "sub": "經驗沉澱",
   "self": "我會把重要的做法、判斷原則與教訓，整理成團隊可以重複使用的文件。",
   "other": "這位主管會把重要的做法、判斷原則與教訓，整理成團隊可以重複使用的文件。"
@@ -758,7 +758,7 @@
  {
   "id": "transfer-2",
   "dimension": "transfer",
-  "dimensionName": "留能",
+  "dimensionName": "傳承留能",
   "sub": "經驗沉澱",
   "self": "我會要求重要工作的知識不只存在某個人腦中。",
   "other": "這位主管會要求重要工作的知識不只存在某個人腦中。"
@@ -766,7 +766,7 @@
  {
   "id": "transfer-3",
   "dimension": "transfer",
-  "dimensionName": "留能",
+  "dimensionName": "傳承留能",
   "sub": "經驗沉澱",
   "self": "我整理的知識，會考慮讓新人與 AI 工具都能使用。",
   "other": "這位主管整理的知識，會考慮讓新人與 AI 工具都能使用。",
@@ -775,7 +775,7 @@
  {
   "id": "transfer-4",
   "dimension": "transfer",
-  "dimensionName": "留能",
+  "dimensionName": "傳承留能",
   "sub": "經驗沉澱",
   "self": "我會定期檢查給 AI 使用的資料是否正確、最新，並指定負責維護的人。",
   "other": "這位主管會定期檢查給 AI 使用的資料是否正確、最新，並指定負責維護的人。",
@@ -784,8 +784,8 @@
  {
   "id": "transfer-5",
   "dimension": "transfer",
-  "dimensionName": "留能",
-  "sub": "可延續機制",
+  "dimensionName": "傳承留能",
+  "sub": "機制延續",
   "self": "我會把決策流程與標準寫清楚，讓我不在時團隊也能運作。",
   "other": "這位主管會把決策流程與標準寫清楚，讓這位主管不在時團隊也能運作。",
   "pole": "system"
@@ -793,8 +793,8 @@
  {
   "id": "transfer-6",
   "dimension": "transfer",
-  "dimensionName": "留能",
-  "sub": "可延續機制",
+  "dimensionName": "傳承留能",
+  "sub": "機制延續",
   "self": "我為重要職務培養了至少一位可以接手的人。",
   "other": "這位主管為重要職務培養了至少一位可以接手的人。",
   "pole": "system"
@@ -802,8 +802,8 @@
  {
   "id": "transfer-7",
   "dimension": "transfer",
-  "dimensionName": "留能",
-  "sub": "可延續機制",
+  "dimensionName": "傳承留能",
+  "sub": "機制延續",
   "self": "遇到緊急或模糊的狀況，我會果斷地以個人判斷拍板，再事後補上依據。",
   "other": "遇到緊急或模糊的狀況，這位主管會果斷地以個人判斷拍板，再事後補上依據。",
   "pole": "authority"
@@ -811,8 +811,8 @@
  {
   "id": "transfer-8",
   "dimension": "transfer",
-  "dimensionName": "留能",
-  "sub": "可延續機制",
+  "dimensionName": "傳承留能",
+  "sub": "機制延續",
   "self": "我的經驗與直覺，是團隊在關鍵時刻的重要依靠。",
   "other": "這位主管的經驗與直覺，是團隊在關鍵時刻的重要依靠。",
   "pole": "authority"
@@ -820,32 +820,32 @@
  {
   "id": "transfer-9",
   "dimension": "transfer",
-  "dimensionName": "留能",
-  "sub": "對外分享與連結",
+  "dimensionName": "傳承留能",
+  "sub": "對外分享",
   "self": "我會把團隊學到的經驗，分享給其他部門或組織外的人。",
   "other": "這位主管會把團隊學到的經驗，分享給其他部門或組織外的人。"
  },
  {
   "id": "transfer-10",
   "dimension": "transfer",
-  "dimensionName": "留能",
-  "sub": "對外分享與連結",
+  "dimensionName": "傳承留能",
+  "sub": "對外分享",
   "self": "我會參與業界或社會的交流，把外部觀點帶回團隊。",
   "other": "這位主管會參與業界或社會的交流，把外部觀點帶回團隊。"
  },
  {
   "id": "transfer-11",
   "dimension": "transfer",
-  "dimensionName": "留能",
-  "sub": "對外分享與連結",
+  "dimensionName": "傳承留能",
+  "sub": "對外分享",
   "self": "我鼓勵成員在內部或外部分享他們的專長。",
   "other": "這位主管鼓勵成員在內部或外部分享他們的專長。"
  },
  {
   "id": "transfer-12",
   "dimension": "transfer",
-  "dimensionName": "留能",
-  "sub": "對外分享與連結",
+  "dimensionName": "傳承留能",
+  "sub": "對外分享",
   "self": "我認為培養人才的成果，應該幫助到比所屬組織更廣的範圍。",
   "other": "這位主管認為培養人才的成果，應該幫助到比所屬組織更廣的範圍。"
  }
