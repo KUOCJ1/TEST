@@ -11,6 +11,7 @@ import QuestionCard from './components/QuestionCard';
 import ResultPanel from './components/ResultPanel';
 import { useConfirm } from './components/useConfirm';
 import { badgeBg } from './utils/color';
+import CompassIntro from './components/compass/CompassIntro.jsx';
 
 const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
 const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmentId}_v2`;
@@ -203,6 +204,8 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           <h1 className="text-2xl font-extrabold text-slate-800 sm:text-3xl">{config.NAME}</h1>
           <p className="mt-2 text-sm text-slate-400">{config.DESCRIPTION}</p>
         </header>
+
+        {baseConfig.REPORT === 'compass' && !result && <CompassIntro rater={rater} />}
 
         <div className="mt-5 rounded-xl bg-slate-50 p-4 text-[15px] leading-relaxed text-slate-600">
           歡迎填寫本評測系統。共 <strong className="text-slate-700">{TOTAL_QUESTIONS} 題</strong>

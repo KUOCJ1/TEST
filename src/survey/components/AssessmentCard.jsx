@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { getAssessment } from '../data/assessments/index.js';
 import { formatDate } from '../utils/format';
 import PhaseBadge from './PhaseBadge';
@@ -38,6 +39,11 @@ export default function AssessmentCard({
           {inGroup && <span className="shrink-0"><PhaseBadge phase={groupPhase} /></span>}
         </div>
         <p className="mt-1 text-sm text-slate-500">{assessment.description}</p>
+        {config?.FRAMEWORK_PATH && (
+          <p className="mt-2 text-sm">
+            <Link to={config.FRAMEWORK_PATH} className="font-semibold text-brass-600 underline">先了解這份評測的框架</Link>
+          </p>
+        )}
         {config && (
           <p className="mt-1 text-xs text-slate-400">
             {config.TOTAL_QUESTIONS} 題 · {config.DIMENSIONS.length} 大構面

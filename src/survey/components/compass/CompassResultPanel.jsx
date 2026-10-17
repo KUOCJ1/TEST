@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import { Link } from 'react-router-dom';
 import { Copy, Check, RotateCcw, Info } from 'lucide-react';
 import RadarChart from '../RadarChart';
 import LearningResources from '../LearningResources';
@@ -158,7 +159,8 @@ const CompassResultPanel = forwardRef(function CompassResultPanel(
         </div>
 
         <div id="section-radar" className="mt-6 scroll-mt-14 flex flex-col items-center">
-          <h3 className="mb-2 text-base font-bold text-slate-700">8 大構面雷達圖</h3>
+          <h3 className="mb-1 text-base font-bold text-slate-700">8 大構面雷達圖</h3>
+          <p className="mb-2 text-xs text-slate-500">不確定每個構面在看什麼？<Link to="/framework" target="_blank" rel="noreferrer" className="font-semibold text-brass-600 underline">看框架說明</Link></p>
           <RadarChart dimensions={radarDims} />
         </div>
 
@@ -167,7 +169,7 @@ const CompassResultPanel = forwardRef(function CompassResultPanel(
             <div key={d.id}>
               <div className="mb-1 flex items-start justify-between gap-3 text-sm">
                 <span className="min-w-0 font-medium text-slate-700">
-                  <span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{d.name}</span>
+                  <Link to={`/framework#${d.id}`} target="_blank" rel="noreferrer" title="看這個構面在說什麼" className="font-semibold dim-text underline decoration-dotted underline-offset-2" style={dimTextStyle(d.color)}>{d.name}</Link>
                   <span className="ml-2 text-xs text-slate-500">{d.subtitle}</span>
                 </span>
                 <span className="shrink-0 whitespace-nowrap font-semibold text-slate-600">

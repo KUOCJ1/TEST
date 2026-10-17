@@ -40,6 +40,9 @@ export const PAGINATE = true;
 // 結果頁使用專屬報告元件（components/compass/CompassResultPanel.jsx）。
 export const REPORT = 'compass';
 
+// 框架說明頁（公開）；作答前導讀、評量卡片與報告都連到這裡。內容在 compass-framework.js。
+export const FRAMEWORK_PATH = '/framework';
+
 // 360° 評分者隱私（伺服器端強制，見 server/src/lib/compassPrivacy.js）；前端據此不顯示「還原身分」類功能。
 export const STRICT_RATER_PRIVACY = true;
 export const RATER_TARGET = { min: 2, max: 3, threshold: 3 }; // 每類建議邀請 2–3 位；單獨顯示需 ≥3 位

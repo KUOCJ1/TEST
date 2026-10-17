@@ -50,8 +50,8 @@ describe('雙環領導羅盤：作答頁', () => {
     expect(screen.getByText('8 段')).toBeInTheDocument();
     expect(document.querySelectorAll('fieldset[data-question-id]')).toHaveLength(4);
     expect(screen.getByText(/1 分（從不）～ 5 分（總是）/)).toBeInTheDocument();
-    expect(screen.getByText(/不是能力高低/)).toBeInTheDocument();
-    expect(screen.getByText('洞察情勢', { exact: false })).toBeInTheDocument();
+    expect(screen.getAllByText(/不是能力高低/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('洞察情勢', { exact: false }).length).toBeGreaterThan(0);
   });
 
   it('可切換完整版：69 題', () => {

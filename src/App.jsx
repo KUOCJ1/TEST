@@ -20,6 +20,7 @@ const HowItWorksPage = lazy(() => import('./survey/marketing/HowItWorksPage'));
 const ShowcasePage = lazy(() => import('./survey/marketing/ShowcasePage'));
 const FaqPage = lazy(() => import('./survey/marketing/FaqPage'));
 const LegalPage = lazy(() => import('./survey/marketing/LegalPage'));
+const FrameworkPage = lazy(() => import('./survey/marketing/FrameworkPage'));
 
 // AppShell（整個已登入後的系統：作答、雷達圖、教練／管理後台）過去是靜態 import，
 // 跟 LandingPage／LoginPage 綁在一起，導致每個訪客（含還沒登入、只是看首頁的人）
@@ -27,7 +28,7 @@ const LegalPage = lazy(() => import('./survey/marketing/LegalPage'));
 // lazy() 之後這些只在真的登入成功、掛載 AppShell 時才下載。
 const AppShell = lazy(() => import('./survey/AppShell'));
 
-const MARKETING_PATHS = ['/about', '/how-it-works', '/showcase', '/faq', '/privacy', '/terms'];
+const MARKETING_PATHS = ['/about', '/how-it-works', '/showcase', '/faq', '/privacy', '/terms', '/framework'];
 
 function MarketingFallback() {
   return <LoadingState fullScreen />;
@@ -45,7 +46,7 @@ function readJoinCode() {
 
 const MARKETING_TITLES = {
   '/about': '平台理念', '/how-it-works': '功能總覽', '/showcase': '範例報告', '/faq': '常見問題',
-  '/privacy': '隱私權政策', '/terms': '服務條款',
+  '/privacy': '隱私權政策', '/terms': '服務條款', '/framework': '雙環領導羅盤八大構面評測',
 };
 
 function AppRoutes() {
@@ -130,6 +131,7 @@ function AppRoutes() {
           <Route path="/faq" element={<FaqPage loggedIn={!!user} onEnter={enterLogin} />} />
           <Route path="/privacy" element={<LegalPage kind="privacy" loggedIn={!!user} onEnter={enterLogin} />} />
           <Route path="/terms" element={<LegalPage kind="terms" loggedIn={!!user} onEnter={enterLogin} />} />
+          <Route path="/framework" element={<FrameworkPage loggedIn={!!user} onEnter={enterLogin} />} />
         </Routes>
       </Suspense>
     );
