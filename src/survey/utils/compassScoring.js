@@ -285,6 +285,7 @@ export function buildCompassResult(answers = {}, config, { form = 'full', rater 
     weakest,
     loops: computeLoops(dimensions, fc),
     tensions: computeTensions(answers, fc),
+    aiProfile: computeAiProfile(answers, fc),
     form,
     rater,
     answeredCount: comp.valid,
@@ -294,6 +295,23 @@ export function buildCompassResult(answers = {}, config, { form = 'full', rater 
     assessmentId: config.ID,
     assessmentName: config.NAME,
   };
+}
+
+// ── 人機協作剖面 ───────────────────────────────────────────
+
+/** 標記為 ai 的題目（散布在各構面）的整體與分構面平均；沒有有效題目時回傳 null。 */
+export function computeAiProfile(answers = {}, formConfig) {
+  const byDimension = [];
+  const all = [];
+  formConfig.DIMENSIONS.forEach((d) => {
+    const scores = scoreQuestions(d.questions.filter((q) => q.ai), answers, formConfig);
+    if (scores.length > 0) {
+      byDimension.push({ id: d.id, name: d.name, average: meanOf(scores), count: scores.length });
+      all.push(...scores);
+    }
+  });
+  if (all.length === 0) return null;
+  return { average: meanOf(all), count: all.length, byDimension };
 }
 
 // ── 自評與他評落差 ─────────────────────────────────────────

@@ -7,14 +7,19 @@ import { getAssessment } from '../data/assessments/index.js';
 import { buildSuggestions } from '../utils/suggestions';
 import InfoTip from './InfoTip';
 import { badgeBg, dimTextStyle } from '../utils/color';
+import CompassResultPanel from './compass/CompassResultPanel.jsx';
 
 const ResultPanel = forwardRef(function ResultPanel(
   { result, onRetake, onCopy, copied, percentile = null, benchmarkDims = null, readOnly = false, focusDimensionIds = [] },
   ref,
 ) {
+  const config = getAssessment(result.assessmentId);
+  // 題庫宣告專屬報告（雙環領導羅盤）時，改用專屬元件；其他題庫的畫面完全不變。
+  if (config?.REPORT === 'compass') {
+    return <CompassResultPanel ref={ref} result={result} onRetake={onRetake} onCopy={onCopy} copied={copied} readOnly={readOnly} />;
+  }
   const { total, maxScore, percent, level, dimensions, strongest, weakest, assessmentName } = result;
   const dimCount = dimensions.length;
-  const config = getAssessment(result.assessmentId);
   const profileMode = !!config?.PROFILE_MODE;
   // PROFILE_MODE 的「次要風格」要的是分數第二高的構面，不是 result.weakest（最低分
   // 的構面）——那是完全不同的東西，跟 getProfileLevel() 判斷風格組合用的邏輯一致。

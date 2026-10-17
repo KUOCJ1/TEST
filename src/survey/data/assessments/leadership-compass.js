@@ -37,6 +37,9 @@ export const DEFAULT_FORM = 'short';
 // 分頁：完整版有 8 個構面，精簡版雖然只有 32 題，也維持 8 段，避免畫面一次太長。
 export const PAGINATE = true;
 
+// 結果頁使用專屬報告元件（components/compass/CompassResultPanel.jsx）。
+export const REPORT = 'compass';
+
 const DIM_META = [
   { id: 'find', index: 1, name: '洞察情勢', subtitle: 'Find', color: '#2b6cb0', loop: 'fast' },
   { id: 'aim', index: 2, name: '聚焦應變', subtitle: 'Aim', color: '#2c7a7b', loop: 'fast' },
