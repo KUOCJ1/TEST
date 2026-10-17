@@ -20,9 +20,12 @@ export function createGroupsRouter({ db, requireAuth }) {
   });
 
   router.get('/groups/mine', requireAuth, (req, res) => {
+    // 學員只拿到「自己需要的班級資訊」。班級物件裡還有教練才該看的東西：待加入名單
+    // （尚未註冊者的姓名與 Email）、報到代碼、催交信時間——以前整包 {...g} 回傳，同班的任何
+    // 學員都讀得到其他人登記的 Email。
     const myGroups = (db.data.groups ?? [])
       .filter((g) => g.memberIds.includes(req.user.id))
-      .map((g) => ({ ...g, phase: getGroupPhase(g) }));
+      .map(({ pendingMembers, joinCode, joinCodeCreatedAt, lastReminderSentAt, ...g }) => ({ ...g, phase: getGroupPhase(g) }));
     res.json({ groups: myGroups });
   });
 

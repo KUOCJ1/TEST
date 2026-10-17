@@ -8,7 +8,8 @@ import {
   publicUser,
   MIN_PASSWORD_LENGTH,
 } from '../auth.js';
-import { asyncHandler, hashToken, revokeUserTokens } from '../lib/helpers.js';
+import { asyncHandler, auditLog, hashToken, revokeUserTokens } from '../lib/helpers.js';
+import { POLICY_VERSION } from '../lib/policy.js';
 import { findGroupByJoinCode, joinGroupByCode } from '../lib/joinCode.js';
 
 // register/login 回傳的「剛加入的班級」只給前端導頁需要的最小資訊，不含成員、
@@ -74,11 +75,15 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
   // Hash password BEFORE checking for duplicate email so the synchronous
   // check+push+persist block has no await (atomic under Node.js single thread).
   router.post('/auth/register', authLimiter, asyncHandler(async (req, res) => {
-    const { name, email, password, joinCode } = req.body || {};
+    const { name, email, password, joinCode, acceptPolicy } = req.body || {};
     try {
       validateRegistration({ name, email, password });
     } catch (e) {
       return res.status(400).json({ code: 'VALIDATION_ERROR', error: e.message });
+    }
+    // 同意要在伺服器端強制：只靠前端勾選框，直接打 API 就能繞過。
+    if (acceptPolicy !== true) {
+      return res.status(400).json({ code: 'CONSENT_REQUIRED', error: '請先閱讀並同意隱私權政策與服務條款' });
     }
     const normEmail = email.trim().toLowerCase();
     const passwordHash = await hashPassword(password);
@@ -92,6 +97,7 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
       passwordHash,
       role: 'user',
       createdAt: new Date().toISOString(),
+      consent: { version: POLICY_VERSION, acceptedAt: new Date().toISOString() },
     };
     db.data.users.push(user);
     db.persist();
@@ -130,6 +136,17 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
   router.get('/auth/session', (req, res) => {
     const user = currentUser(req);
     res.json({ user: user ? publicUser(user) : null });
+  });
+
+  // 既有用戶（沒有同意紀錄，或政策升版後）登入後補同意（Sprint 12）。
+  router.post('/auth/consent', requireAuth, (req, res) => {
+    if (req.body?.accept !== true) {
+      return res.status(400).json({ code: 'CONSENT_REQUIRED', error: '請先閱讀並同意隱私權政策與服務條款' });
+    }
+    req.user.consent = { version: POLICY_VERSION, acceptedAt: new Date().toISOString() };
+    db.persist();
+    auditLog(req, 'accept_policy', { version: POLICY_VERSION });
+    res.json({ user: publicUser(req.user) });
   });
 
   router.get('/auth/me', requireAuth, (req, res) => {

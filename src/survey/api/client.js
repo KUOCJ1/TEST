@@ -35,6 +35,8 @@ export const api = {
   register: (payload) => request('/auth/register', { method: 'POST', body: payload }),
   login: (payload) => request('/auth/login', { method: 'POST', body: payload }),
   logout: () => request('/auth/logout', { method: 'POST' }),
+  // 既有用戶補同意隱私權政策與服務條款（Sprint 12）。
+  acceptPolicy: () => request('/auth/consent', { method: 'POST', body: { accept: true } }).then((d) => d.user),
   me: () => request('/auth/me').then((d) => d.user),
   // 啟動時查登入狀態：未登入回 { user: null }（200），不會在 console 留 401。
   session: () => request('/auth/session').then((d) => d.user),

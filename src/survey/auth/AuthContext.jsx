@@ -39,6 +39,12 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const acceptPolicy = useCallback(async () => {
+    const u = await api.acceptPolicy();
+    setUser(u);
+    return u;
+  }, []);
+
   const updateProfile = useCallback(async (payload) => {
     const u = await api.updateProfile(payload);
     setUser(u);
@@ -62,8 +68,9 @@ export function AuthProvider({ children }) {
       login,
       logout,
       updateProfile,
+      acceptPolicy,
     }),
-    [user, ready, register, login, logout, updateProfile],
+    [user, ready, register, login, logout, updateProfile, acceptPolicy],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

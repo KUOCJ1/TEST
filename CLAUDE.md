@@ -84,6 +84,13 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
   （`data/assessments/overrides.js`）；舊的作答結果是快照，`api/client.js` 會用目前文字更新其顯示用字
   （`refreshResult.js`）。改題庫設定檔時不要在模組載入時把這些文字複製到別處快取，否則覆寫不會生效。
 
+## 隱私權政策與註冊同意（Sprint 12）
+
+- 公開頁 `/privacy`、`/terms`；內容、版本、草稿狀態在 `src/survey/legal/policy.js`（經營者與聯絡信箱要填，`status` 改 `'published'` 才會拿掉草稿標記並對既有用戶開始詢問同意）。
+- 註冊要帶 `acceptPolicy: true`（伺服器強制）；`user.consent = { version, acceptedAt }`；`POST /auth/consent` 給既有用戶補同意。
+- `POLICY_VERSION` 前後端各一份（`server/src/lib/policy.js`、`src/survey/legal/policy.js`）必須一致，有測試檢查。
+- 政策文字要對照程式行為：改了資料處理方式（第三方、蒐集欄位、保存）就要回來改文字。
+
 ## 班級管理與 QR Code 報到
 
 - 每筆作答提交都會寫入 `groupId`，精準對應提交當下所屬的班級（同一梯次）。班級報告

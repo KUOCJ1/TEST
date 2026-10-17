@@ -25,7 +25,7 @@ test('管理者改題庫文字並發佈，學員看到新文字；還原後恢�
   // 先有一位學員在「改文字之前」就送出過作答（舊紀錄、快照裡存的是舊構面名稱）。
   const old = await pwRequest.newContext({ baseURL: 'http://localhost:3001' });
   const oldEmail = `e2e-old-report-${stamp}@example.com`;
-  expect((await old.post('/api/auth/register', { data: { name: 'E2E 舊報告學員', email: oldEmail, password: 'abcdef12' } })).ok()).toBeTruthy();
+  expect((await old.post('/api/auth/register', { data: { acceptPolicy: true, name: 'E2E 舊報告學員', email: oldEmail, password: 'abcdef12' } })).ok()).toBeTruthy();
   const result = buildResult(Object.fromEntries(ai.ALL_QUESTIONS.map((q) => [q.id, 4])), ai);
   expect((await old.post('/api/submissions', { data: { assessmentId: 'ai-competency', phase: 'pre', result, answers: {} } })).ok()).toBeTruthy();
 

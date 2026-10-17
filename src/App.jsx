@@ -9,6 +9,8 @@ import LandingPage from './survey/LandingPage';
 import { ToastProvider } from './survey/components/Toast';
 import { ConfirmProvider } from './survey/components/ConfirmDialog';
 import LoadingState from './survey/components/LoadingState';
+import ConsentGate from './survey/legal/ConsentGate';
+import { needsConsentGate } from './survey/legal/policy';
 
 // 行銷頁不是首次進站的關鍵路徑（大多數訪客只會看到 LandingPage／登入頁），
 // 獨立拆成各自的 chunk，避免 ShowcasePage 引入的圖表元件（雷達圖／熱力圖）
@@ -17,6 +19,7 @@ const AboutPage = lazy(() => import('./survey/marketing/AboutPage'));
 const HowItWorksPage = lazy(() => import('./survey/marketing/HowItWorksPage'));
 const ShowcasePage = lazy(() => import('./survey/marketing/ShowcasePage'));
 const FaqPage = lazy(() => import('./survey/marketing/FaqPage'));
+const LegalPage = lazy(() => import('./survey/marketing/LegalPage'));
 
 // AppShell（整個已登入後的系統：作答、雷達圖、教練／管理後台）過去是靜態 import，
 // 跟 LandingPage／LoginPage 綁在一起，導致每個訪客（含還沒登入、只是看首頁的人）
@@ -24,7 +27,7 @@ const FaqPage = lazy(() => import('./survey/marketing/FaqPage'));
 // lazy() 之後這些只在真的登入成功、掛載 AppShell 時才下載。
 const AppShell = lazy(() => import('./survey/AppShell'));
 
-const MARKETING_PATHS = ['/about', '/how-it-works', '/showcase', '/faq'];
+const MARKETING_PATHS = ['/about', '/how-it-works', '/showcase', '/faq', '/privacy', '/terms'];
 
 function MarketingFallback() {
   return <LoadingState fullScreen />;
@@ -42,6 +45,7 @@ function readJoinCode() {
 
 const MARKETING_TITLES = {
   '/about': '平台理念', '/how-it-works': '功能總覽', '/showcase': '範例報告', '/faq': '常見問題',
+  '/privacy': '隱私權政策', '/terms': '服務條款',
 };
 
 function AppRoutes() {
@@ -124,6 +128,8 @@ function AppRoutes() {
           <Route path="/how-it-works" element={<HowItWorksPage loggedIn={!!user} onEnter={enterLogin} />} />
           <Route path="/showcase" element={<ShowcasePage loggedIn={!!user} onEnter={enterLogin} />} />
           <Route path="/faq" element={<FaqPage loggedIn={!!user} onEnter={enterLogin} />} />
+          <Route path="/privacy" element={<LegalPage kind="privacy" loggedIn={!!user} onEnter={enterLogin} />} />
+          <Route path="/terms" element={<LegalPage kind="terms" loggedIn={!!user} onEnter={enterLogin} />} />
         </Routes>
       </Suspense>
     );
@@ -137,6 +143,8 @@ function AppRoutes() {
   if (!ready || joining) {
     return <LoadingState fullScreen />;
   }
+  // 還沒同意目前版本政策的既有用戶：先看到同意畫面（政策還是草稿時不擋，見 legal/policy.js）。
+  if (user && needsConsentGate(user)) return <ConsentGate />;
   if (user) {
     return (
       <Suspense fallback={<LoadingState fullScreen />}>

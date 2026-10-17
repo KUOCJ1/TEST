@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, CircleHelp, Download, LogOut, User } from 'lucide-react';
+import { ChevronDown, CircleHelp, Download, LogOut, ShieldCheck, User } from 'lucide-react';
 
 /**
  * 頁首右上角的使用者選單（Sprint 8 驗收條件 8.2）：個人設定、使用說明、手冊下載、
@@ -88,6 +88,9 @@ export default function UserMenu({ user, roleLabel, onProfile, onHelp, manualHre
           </button>
           <a role="menuitem" className={itemCls} href={manualHref} download="職能評測平台使用手冊.pdf" onClick={() => close(false)}>
             <Download aria-hidden="true" className="h-4 w-4 text-slate-500" /> 手冊下載（PDF）
+          </a>
+          <a role="menuitem" className={itemCls} href={`${import.meta.env.BASE_URL}privacy`} target="_blank" rel="noopener noreferrer" onClick={() => close(false)}>
+            <ShieldCheck aria-hidden="true" className="h-4 w-4 text-slate-500" /> 隱私權政策
           </a>
           <div className="my-1 border-t border-slate-100" />
           <button type="button" role="menuitem" className={itemCls} onClick={() => choose(onLogout)}>

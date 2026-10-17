@@ -24,7 +24,7 @@ test('管理者停用帳號：對方立即被登出且無法登入，重新啟�
 
   // 學員先註冊並登入（API）：稍後驗證「既有登入」會被立即踢掉。
   const student = await pwRequest.newContext({ baseURL: API });
-  await ok(await student.post('/api/auth/register', { data: { name, email, password: PW } }), 'register');
+  await ok(await student.post('/api/auth/register', { data: { acceptPolicy: true, name, email, password: PW } }), 'register');
   expect((await student.get('/api/auth/me')).status()).toBe(200);
 
   // 管理者在畫面上停用。
@@ -72,7 +72,7 @@ test('教練只能搜尋才找得到人：1 個字不搜尋、不會列出全站
   const admin = await adminApi();
   const coach = await pwRequest.newContext({ baseURL: API });
   const coachEmail = `e2e-search-coach-${suffix}@example.com`;
-  const reg = await ok(await coach.post('/api/auth/register', { data: { name: '搜尋教練', email: coachEmail, password: PW } }), 'coach');
+  const reg = await ok(await coach.post('/api/auth/register', { data: { acceptPolicy: true, name: '搜尋教練', email: coachEmail, password: PW } }), 'coach');
   await ok(await admin.patch(`/api/admin/users/${reg.user.id}/role`, { data: { role: 'coach' } }), 'promote');
   await ok(await coach.post('/api/auth/login', { data: { email: coachEmail, password: PW } }), 'coach login');
   const groupName = `E2E 搜尋班 ${suffix}`;
@@ -82,7 +82,7 @@ test('教練只能搜尋才找得到人：1 個字不搜尋、不會列出全站
   const bystander = `路人${suffix}`;
   for (const [n, e] of [[target, `target-${suffix}@example.com`], [bystander, `bystander-${suffix}@example.com`]]) {
     const s = await pwRequest.newContext({ baseURL: API });
-    await ok(await s.post('/api/auth/register', { data: { name: n, email: e, password: PW } }), n);
+    await ok(await s.post('/api/auth/register', { data: { acceptPolicy: true, name: n, email: e, password: PW } }), n);
     await s.dispose();
   }
 
@@ -126,7 +126,7 @@ test('管理者轉移班別：原教練看不到、新教練看得到', async ({
   const mk = async (label) => {
     const c = await pwRequest.newContext({ baseURL: API });
     const email = `e2e-transfer-${label}-${suffix}@example.com`;
-    const reg = await ok(await c.post('/api/auth/register', { data: { name: `轉移教練${label}${suffix}`, email, password: PW } }), label);
+    const reg = await ok(await c.post('/api/auth/register', { data: { acceptPolicy: true, name: `轉移教練${label}${suffix}`, email, password: PW } }), label);
     await ok(await admin.patch(`/api/admin/users/${reg.user.id}/role`, { data: { role: 'coach' } }), 'promote');
     await ok(await c.post('/api/auth/login', { data: { email, password: PW } }), 'login');
     return { c, name: `轉移教練${label}${suffix}` };

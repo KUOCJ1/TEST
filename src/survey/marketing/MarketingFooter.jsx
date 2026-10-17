@@ -15,6 +15,10 @@ export default function MarketingFooter() {
           </Link>
         ))}
       </nav>
+      <p className="mb-2 flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
+        <Link to="/privacy" className="text-ink-100 hover:text-ink-700">隱私權政策</Link>
+        <Link to="/terms" className="text-ink-100 hover:text-ink-700">服務條款</Link>
+      </p>
       <p>© {new Date().getFullYear()} 全方位職能評測平台．All rights reserved.</p>
     </footer>
   );

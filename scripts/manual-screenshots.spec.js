@@ -35,7 +35,7 @@ test('產生使用手冊截圖', async ({ browser }) => {
   await ok(await admin.post('/api/auth/login', { data: { email: 'admin@e2e.test', password: 'E2eTest1234' } }), 'admin login');
   const coach = await pwRequest.newContext({ baseURL: API });
   const coachEmail = 'coach@example.com';
-  const reg = await ok(await coach.post('/api/auth/register', { data: { name: '陳教練', email: coachEmail, password: 'abcdef12' } }), 'coach');
+  const reg = await ok(await coach.post('/api/auth/register', { data: { acceptPolicy: true, name: '陳教練', email: coachEmail, password: 'abcdef12' } }), 'coach');
   await ok(await admin.patch(`/api/admin/users/${reg.user.id}/role`, { data: { role: 'coach' } }), 'promote');
   await ok(await coach.post('/api/auth/login', { data: { email: coachEmail, password: 'abcdef12' } }), 'coach login');
   const { group } = await ok(await coach.post('/api/coach/groups', { data: { name: 'AI 職能實戰班 第 1 梯', companyName: '示範股份有限公司', assessmentId: 'ai-competency', targetHeadcount: 12 } }), 'group');
@@ -44,14 +44,14 @@ test('產生使用手冊截圖', async ({ browser }) => {
   const EMAILS = ['mei', 'daming', 'yating', 'zhihao', 'yijun'];
   // 還沒加入任何班的已註冊用戶：給「成員搜尋」截圖有東西可搜。
   const outsider = await pwRequest.newContext({ baseURL: API });
-  await ok(await outsider.post('/api/auth/register', { data: { name: '王小華', email: 'hua@example.com', password: 'abcdef12' } }), 'outsider');
+  await ok(await outsider.post('/api/auth/register', { data: { acceptPolicy: true, name: '王小華', email: 'hua@example.com', password: 'abcdef12' } }), 'outsider');
   await outsider.dispose();
 
   const students = [['林小美', 2], ['王大明', 4], ['張雅婷', 3], ['李志豪', 5], ['黃怡君', null]];
   const ctxs = [];
   for (const [i, [name, value]] of students.entries()) {
     const s = await pwRequest.newContext({ baseURL: API });
-    await ok(await s.post('/api/auth/register', { data: { name, email: `${EMAILS[i]}@example.com`, password: 'abcdef12', joinCode: g.joinCode } }), `student ${i}`);
+    await ok(await s.post('/api/auth/register', { data: { acceptPolicy: true, name, email: `${EMAILS[i]}@example.com`, password: 'abcdef12', joinCode: g.joinCode } }), `student ${i}`);
     if (value !== null) {
       await ok(await s.post('/api/submissions', { data: { assessmentId: 'ai-competency', phase: 'pre', result: resultOf(value), answers: {} } }), `submit ${i}`);
     }

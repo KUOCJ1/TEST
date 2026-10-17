@@ -44,5 +44,7 @@ export function publicUser(user) {
     preferences: user.preferences ?? {},
     // 管理者停用的帳號（Sprint 11）：不能登入、不收通知信、不出現在教練的成員搜尋。
     disabled: Boolean(user.disabled),
+    // 隱私權政策同意紀錄（Sprint 12）：沒有＝還沒同意過，登入後前端會先要求同意。
+    consent: user.consent ? { version: user.consent.version, acceptedAt: user.consent.acceptedAt } : null,
   };
 }

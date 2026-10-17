@@ -18,7 +18,7 @@ describe('UserMenu', () => {
     fireEvent.click(trigger());
     expect(trigger()).toHaveAttribute('aria-expanded', 'true');
     const items = screen.getAllByRole('menuitem').map((el) => el.textContent.trim());
-    expect(items).toEqual(['個人設定', '使用說明', '手冊下載（PDF）', '登出']);
+    expect(items).toEqual(['個人設定', '使用說明', '手冊下載（PDF）', '隱私權政策', '登出']);
     expect(screen.getByRole('menuitem', { name: '個人設定' })).toHaveFocus();
     expect(screen.getByRole('menuitem', { name: /手冊下載/ })).toHaveAttribute('href', '/manual.pdf');
   });

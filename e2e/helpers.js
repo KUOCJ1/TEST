@@ -29,6 +29,8 @@ export async function register(page, name, email, password, opts) {
   await page.getByPlaceholder('您的姓名').fill(name);
   await page.getByPlaceholder('you@example.com').fill(email);
   await page.getByPlaceholder('至少 8 碼').fill(password);
+  // 註冊要先勾選同意隱私權政策與服務條款（Sprint 12）。
+  await page.getByRole('checkbox', { name: /隱私權政策/ }).check();
   await page.getByRole('button', { name: /建立帳號/ }).click();
 }
 

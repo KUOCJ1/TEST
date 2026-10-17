@@ -165,7 +165,7 @@ describe('sanitizePreferences()（偏好設定白名單）', () => {
   test('PATCH /auth/profile 不會存入未知鍵', async () => {
     const db = createDb(':memory:');
     const agent = request.agent(createApp({ db, jwtSecret: 'test-secret-please-change' }));
-    await agent.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'u@b.co', password: 'abcdef12' });
     const res = await agent.patch('/api/auth/profile').send({ preferences: { notifyComment: false, junk: 1 } });
     assert.equal(res.status, 200);
     assert.deepEqual(res.body.user.preferences, { notifyComment: false });

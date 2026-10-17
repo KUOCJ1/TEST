@@ -32,7 +32,7 @@ test('GET /auth/session：未登入回 200 + null（不再用 401 表示「沒�
   assert.equal(anon.status, 200);
   assert.equal(anon.body.user, null);
   const agent = request.agent(app);
-  await agent.post('/api/auth/register').send({ name: '小明', email: 'm@b.co', password: 'abcdef12' });
+  await agent.post('/api/auth/register').send({ acceptPolicy: true, name: '小明', email: 'm@b.co', password: 'abcdef12' });
   const me = await agent.get('/api/auth/session');
   assert.equal(me.body.user.email, 'm@b.co');
   assert.equal(me.body.user.passwordHash, undefined);

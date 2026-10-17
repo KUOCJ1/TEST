@@ -50,7 +50,7 @@ describe('認證', () => {
     const app = await setup();
     const res = await request(app)
       .post('/api/auth/register')
-      .send({ name: '小明', email: 'ming@example.com', password: 'abcdef12' });
+      .send({ acceptPolicy: true, name: '小明', email: 'ming@example.com', password: 'abcdef12' });
     assert.equal(res.status, 201);
     assert.equal(res.body.user.email, 'ming@example.com');
     assert.equal(res.body.user.role, 'user');
@@ -60,15 +60,15 @@ describe('認證', () => {
 
   test('擋下不合法 email、過短密碼與重複註冊', async () => {
     const app = await setup();
-    assert.equal((await request(app).post('/api/auth/register').send({ name: 'a', email: 'bad', password: 'abcdef12' })).status, 400);
-    assert.equal((await request(app).post('/api/auth/register').send({ name: 'a', email: 'a@b.co', password: '123' })).status, 400);
-    await request(app).post('/api/auth/register').send({ name: 'a', email: 'dup@b.co', password: 'abcdef12' });
-    assert.equal((await request(app).post('/api/auth/register').send({ name: 'b', email: 'dup@b.co', password: 'abcdef12' })).status, 409);
+    assert.equal((await request(app).post('/api/auth/register').send({ acceptPolicy: true, name: 'a', email: 'bad', password: 'abcdef12' })).status, 400);
+    assert.equal((await request(app).post('/api/auth/register').send({ acceptPolicy: true, name: 'a', email: 'a@b.co', password: '123' })).status, 400);
+    await request(app).post('/api/auth/register').send({ acceptPolicy: true, name: 'a', email: 'dup@b.co', password: 'abcdef12' });
+    assert.equal((await request(app).post('/api/auth/register').send({ acceptPolicy: true, name: 'b', email: 'dup@b.co', password: 'abcdef12' })).status, 409);
   });
 
   test('密碼錯誤回 401；正確則可登入並讀取 /me', async () => {
     const app = await setup();
-    await request(app).post('/api/auth/register').send({ name: 'z', email: 'z@b.co', password: 'abcdef12' });
+    await request(app).post('/api/auth/register').send({ acceptPolicy: true, name: 'z', email: 'z@b.co', password: 'abcdef12' });
     const agent = request.agent(app);
     assert.equal((await agent.post('/api/auth/login').send({ email: 'z@b.co', password: 'wrong' })).status, 401);
     assert.equal((await agent.post('/api/auth/login').send({ email: 'z@b.co', password: 'abcdef12' })).status, 200);
@@ -81,7 +81,7 @@ describe('認證', () => {
     const app = await setup();
     assert.equal((await request(app).get('/api/auth/me')).status, 401);
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'z', email: 'z@b.co', password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'z', email: 'z@b.co', password: 'abcdef12' });
     assert.equal((await agent.get('/api/auth/me')).status, 200);
     await agent.post('/api/auth/logout');
     assert.equal((await agent.get('/api/auth/me')).status, 401);
@@ -93,11 +93,11 @@ describe('認證', () => {
     // 第 11 次應該被擋下——這是「一般情況下限流仍然有效」的基本保證。
     for (let i = 0; i < 10; i++) {
       const res = await request(app).post('/api/auth/register')
-        .send({ name: 'u', email: `nolimit-${i}@b.co`, password: 'abcdef12' });
+        .send({ acceptPolicy: true, name: 'u', email: `nolimit-${i}@b.co`, password: 'abcdef12' });
       assert.equal(res.status, 201, `第 ${i + 1} 次註冊不應被擋`);
     }
     const eleventh = await request(app).post('/api/auth/register')
-      .send({ name: 'u', email: 'nolimit-11@b.co', password: 'abcdef12' });
+      .send({ acceptPolicy: true, name: 'u', email: 'nolimit-11@b.co', password: 'abcdef12' });
     assert.equal(eleventh.status, 429, '沒有代碼時，第 11 次應被限流擋下');
 
     // 帶一組真實存在的報到代碼，額度應放寬到 100 次（用另一組 email 起算，
@@ -105,13 +105,13 @@ describe('認證', () => {
     db.data.groups.push({ id: 'g1', joinCode: 'TESTCODE1', memberIds: [] });
     for (let i = 0; i < 15; i++) {
       const res = await request(app).post('/api/auth/register')
-        .send({ name: 'u', email: `withcode-${i}@b.co`, password: 'abcdef12', joinCode: 'testcode1' });
+        .send({ acceptPolicy: true, name: 'u', email: `withcode-${i}@b.co`, password: 'abcdef12', joinCode: 'testcode1' });
       assert.equal(res.status, 201, `帶有效代碼時，第 ${i + 1} 次不應被擋（大小寫應被正規化）`);
     }
 
     // 代碼錯誤／不存在時，仍套用一般的 10 次額度（此時已用完，直接擋下）。
     const badCode = await request(app).post('/api/auth/register')
-      .send({ name: 'u', email: 'badcode@b.co', password: 'abcdef12', joinCode: 'NOSUCHCODE' });
+      .send({ acceptPolicy: true, name: 'u', email: 'badcode@b.co', password: 'abcdef12', joinCode: 'NOSUCHCODE' });
     assert.equal(badCode.status, 429, '代碼不存在時不應享有放寬額度');
   });
 });
@@ -120,7 +120,7 @@ describe('個人檔案 / 密碼', () => {
   test('可更新姓名與偏好設定', async () => {
     const app = await setup();
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: '舊名', email: 'p@b.co', password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: '舊名', email: 'p@b.co', password: 'abcdef12' });
     const res = await agent.patch('/api/auth/profile').send({ name: '新名', preferences: { darkMode: true } });
     assert.equal(res.status, 200);
     assert.equal(res.body.user.name, '新名');
@@ -130,7 +130,7 @@ describe('個人檔案 / 密碼', () => {
   test('變更密碼需驗證目前密碼，成功後可用新密碼登入', async () => {
     const app = await setup();
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'u', email: 'pw@b.co', password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'pw@b.co', password: 'abcdef12' });
     assert.equal((await agent.post('/api/auth/password').send({ currentPassword: 'wrong', newPassword: 'newpass1' })).status, 401);
     assert.equal((await agent.post('/api/auth/password').send({ currentPassword: 'abcdef12', newPassword: 'newpass1' })).status, 200);
     const fresh = request.agent(app);
@@ -140,7 +140,7 @@ describe('個人檔案 / 密碼', () => {
   test('變更密碼會撤銷舊 token（舊 cookie 失效），但當下請求本身重發新 cookie 不會被登出', async () => {
     const app = await setup();
     const agent = request.agent(app);
-    const reg = await agent.post('/api/auth/register').send({ name: 'u', email: 'rv@b.co', password: 'abcdef12' });
+    const reg = await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'rv@b.co', password: 'abcdef12' });
     const staleCookie = reg.headers['set-cookie'][0].split(';')[0];
 
     // 用「變更密碼前」的舊 cookie 手動發請求，此時應該還有效。
@@ -157,7 +157,7 @@ describe('個人檔案 / 密碼', () => {
   test('管理員變更角色會撤銷該使用者舊 token', async () => {
     const app = await setup({ withAdmin: true });
     const agent = request.agent(app);
-    const reg = await agent.post('/api/auth/register').send({ name: 'u', email: 'role-rv@b.co', password: 'abcdef12' });
+    const reg = await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'role-rv@b.co', password: 'abcdef12' });
     const staleCookie = reg.headers['set-cookie'][0].split(';')[0];
 
     const admin = request.agent(app);
@@ -174,7 +174,7 @@ describe('個人檔案 / 密碼', () => {
   test('管理員產生重設 token，使用者可用其設定新密碼', async () => {
     const app = await setup({ withAdmin: true });
     const u = request.agent(app);
-    const reg = await u.post('/api/auth/register').send({ name: 'u', email: 'r@b.co', password: 'abcdef12' });
+    const reg = await u.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'r@b.co', password: 'abcdef12' });
 
     const admin = request.agent(app);
     await admin.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
@@ -206,7 +206,7 @@ describe('作答', () => {
     assert.equal((await request(app).post('/api/submissions').send({ result: sampleResult() })).status, 401);
 
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'u@b.co', password: 'abcdef12' });
     const created = await agent.post('/api/submissions').send({ answers: { q1: 4 }, result: sampleResult(124) });
     assert.equal(created.status, 201);
     assert.equal(created.body.submission.result.total, 124);
@@ -219,14 +219,14 @@ describe('作答', () => {
   test('作答結果格式不正確回 400', async () => {
     const app = await setup();
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'u@b.co', password: 'abcdef12' });
     assert.equal((await agent.post('/api/submissions').send({ result: { total: 'x' } })).status, 400);
   });
 
   test('構面缺少欄位的結果會被擋下（避免寫入後讓分析頁 crash）', async () => {
     const app = await setup();
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'u', email: 'shape@b.co', password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'shape@b.co', password: 'abcdef12' });
 
     // 前端報告會讀 dimension.rating.label / score / max，缺任一都應在寫入前擋下。
     const cases = [
@@ -258,7 +258,7 @@ describe('作答', () => {
   test('不屬於任何班級時可重複作答（重新作答／歷次趨勢不受阻擋）', async () => {
     const app = await setup();
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'u', email: 'retake@b.co', password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'retake@b.co', password: 'abcdef12' });
 
     const first = await agent.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(100) });
     assert.equal(first.status, 201);
@@ -274,12 +274,12 @@ describe('作答', () => {
     const admin = request.agent(app);
     await admin.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
     const coach = request.agent(app);
-    const creg = await coach.post('/api/auth/register').send({ name: '教練', email: 'dedup-coach@b.co', password: 'abcdef12' });
+    const creg = await coach.post('/api/auth/register').send({ acceptPolicy: true, name: '教練', email: 'dedup-coach@b.co', password: 'abcdef12' });
     await admin.patch(`/api/admin/users/${creg.body.user.id}/role`).send({ role: 'coach' });
     await coach.post('/api/auth/login').send({ email: 'dedup-coach@b.co', password: 'abcdef12' });
 
     const student = request.agent(app);
-    const sreg = await student.post('/api/auth/register').send({ name: '學員', email: 'dedup-stu@b.co', password: 'abcdef12' });
+    const sreg = await student.post('/api/auth/register').send({ acceptPolicy: true, name: '學員', email: 'dedup-stu@b.co', password: 'abcdef12' });
 
     const openWindow = () => ({
       startDate: new Date(Date.now() - 864e5).toISOString(),
@@ -337,11 +337,11 @@ describe('母體基準 / 百分位', () => {
     const app = await setup();
     for (const [email, total] of [['a@b.co', 80], ['c@b.co', 155], ['d@b.co', 124]]) {
       const agent = request.agent(app);
-      await agent.post('/api/auth/register').send({ name: email, email, password: 'abcdef12' });
+      await agent.post('/api/auth/register').send({ acceptPolicy: true, name: email, email, password: 'abcdef12' });
       await agent.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(total) });
     }
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'q', email: 'q@b.co', password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'q', email: 'q@b.co', password: 'abcdef12' });
     const res = await agent.get('/api/assessments/ai-competency/benchmark');
     assert.equal(res.status, 200);
     assert.equal(res.body.count, 3);
@@ -351,11 +351,11 @@ describe('母體基準 / 百分位', () => {
   test('benchmark 有快取：重複查詢命中快取，新增作答後立即反映最新資料', async () => {
     const app = await setup();
     const a = request.agent(app);
-    await a.post('/api/auth/register').send({ name: 'a', email: 'a@b.co', password: 'abcdef12' });
+    await a.post('/api/auth/register').send({ acceptPolicy: true, name: 'a', email: 'a@b.co', password: 'abcdef12' });
     await a.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(80) });
 
     const q = request.agent(app);
-    await q.post('/api/auth/register').send({ name: 'q', email: 'q@b.co', password: 'abcdef12' });
+    await q.post('/api/auth/register').send({ acceptPolicy: true, name: 'q', email: 'q@b.co', password: 'abcdef12' });
 
     const first = await q.get('/api/assessments/ai-competency/benchmark');
     assert.equal(first.body.count, 1);
@@ -364,7 +364,7 @@ describe('母體基準 / 百分位', () => {
     assert.deepEqual(second.body, first.body);
 
     const b = request.agent(app);
-    await b.post('/api/auth/register').send({ name: 'b', email: 'b@b.co', password: 'abcdef12' });
+    await b.post('/api/auth/register').send({ acceptPolicy: true, name: 'b', email: 'b@b.co', password: 'abcdef12' });
     await b.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(150) });
 
     // 新增作答後，快取應失效並反映最新總數，而非沿用舊快取。
@@ -379,7 +379,7 @@ describe('教練 / 班別 / 名單', () => {
     const admin = request.agent(app);
     await admin.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
     const coach = request.agent(app);
-    const reg = await coach.post('/api/auth/register').send({ name: '教練', email: 'coach@b.co', password: 'abcdef12' });
+    const reg = await coach.post('/api/auth/register').send({ acceptPolicy: true, name: '教練', email: 'coach@b.co', password: 'abcdef12' });
     await admin.patch(`/api/admin/users/${reg.body.user.id}/role`).send({ role: 'coach' });
     return { admin, coach };
   }
@@ -387,7 +387,7 @@ describe('教練 / 班別 / 名單', () => {
   test('一般使用者無法存取教練 API（403）', async () => {
     const app = await setup({ withAdmin: true });
     const user = request.agent(app);
-    await user.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef12' });
+    await user.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'u@b.co', password: 'abcdef12' });
     assert.equal((await user.get('/api/coach/overview')).status, 403);
   });
 
@@ -399,7 +399,7 @@ describe('教練 / 班別 / 名單', () => {
     // 兩位教練，各帶一位學員。
     const mk = async (name, email) => {
       const a = request.agent(app);
-      const r = await a.post('/api/auth/register').send({ name, email, password: 'abcdef12' });
+      const r = await a.post('/api/auth/register').send({ acceptPolicy: true, name, email, password: 'abcdef12' });
       return { agent: a, id: r.body.user.id };
     };
     const coachA = await mk('教練A', 'ca@b.co');
@@ -446,7 +446,7 @@ describe('教練 / 班別 / 名單', () => {
     await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef12' });
 
     const u = request.agent(app);
-    const ureg = await u.post('/api/auth/register').send({ name: '學員', email: 's@b.co', password: 'abcdef12' });
+    const ureg = await u.post('/api/auth/register').send({ acceptPolicy: true, name: '學員', email: 's@b.co', password: 'abcdef12' });
     const sub = await u.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(124) });
 
     // 教練只能對自己班上的學員留評語（Sprint 7 起）：先把學員收進班上。
@@ -469,7 +469,7 @@ describe('教練 / 班別 / 名單', () => {
     const { admin, coach } = await makeCoach(app);
     await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef12' });
     const u = request.agent(app);
-    await u.post('/api/auth/register').send({ name: '別班學員', email: 'other@b.co', password: 'abcdef12' });
+    await u.post('/api/auth/register').send({ acceptPolicy: true, name: '別班學員', email: 'other@b.co', password: 'abcdef12' });
     const sub = await u.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(124) });
     const id = sub.body.submission.id;
 
@@ -486,7 +486,7 @@ describe('教練 / 班別 / 名單', () => {
     await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef12' });
 
     const existing = request.agent(app);
-    const ereg = await existing.post('/api/auth/register').send({ name: '已註冊', email: 'have@b.co', password: 'abcdef12' });
+    const ereg = await existing.post('/api/auth/register').send({ acceptPolicy: true, name: '已註冊', email: 'have@b.co', password: 'abcdef12' });
 
     const g = await coach.post('/api/coach/groups').send({ name: 'B 班', assessmentId: 'ai-competency' });
     const gid = g.body.group.id;
@@ -506,7 +506,7 @@ describe('教練 / 班別 / 名單', () => {
 
     // 未註冊者註冊後應自動成為成員
     const fresh = request.agent(app);
-    const freg = await fresh.post('/api/auth/register').send({ name: '未註冊', email: 'new@b.co', password: 'abcdef12' });
+    const freg = await fresh.post('/api/auth/register').send({ acceptPolicy: true, name: '未註冊', email: 'new@b.co', password: 'abcdef12' });
     const myGroups = await fresh.get('/api/groups/mine');
     assert.equal(myGroups.body.groups.length, 1);
     assert.ok(myGroups.body.groups[0].memberIds.includes(freg.body.user.id));
@@ -562,7 +562,7 @@ describe('教練 / 班別 / 名單', () => {
 
     // 別班教練不能動這個班。
     const other = request.agent(app);
-    await other.post('/api/auth/register').send({ name: '別班教練', email: 'other-coach@b.co', password: 'abcdef12' });
+    await other.post('/api/auth/register').send({ acceptPolicy: true, name: '別班教練', email: 'other-coach@b.co', password: 'abcdef12' });
     const admin2 = request.agent(app);
     await admin2.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
     const otherReg = await admin2.get('/api/admin/overview').then((r) => r.body.users.find((u) => u.email === 'other-coach@b.co'));
@@ -638,7 +638,7 @@ describe('教練 / 班別 / 名單', () => {
     // 新學員帶代碼註冊：一次到位（建立帳號 + 加入班級），回應要帶班級資訊供前端導頁。
     const stu = request.agent(app);
     const reg = await stu.post('/api/auth/register')
-      .send({ name: '學員', email: 'qr-stu@b.co', password: 'abcdef12', joinCode: code1 });
+      .send({ acceptPolicy: true, name: '學員', email: 'qr-stu@b.co', password: 'abcdef12', joinCode: code1 });
     assert.equal(reg.status, 201);
     assert.equal(reg.body.joinedGroup.id, g1.body.group.id);
     assert.equal(reg.body.joinedGroup.assessmentId, 'ai-competency');
@@ -661,7 +661,7 @@ describe('教練 / 班別 / 名單', () => {
     // 代碼無效時不阻擋正常註冊／登入，只是不會加入任何班級。
     const noGroup = request.agent(app);
     const regBad = await noGroup.post('/api/auth/register')
-      .send({ name: '無代碼', email: 'no-code@b.co', password: 'abcdef12', joinCode: 'BADCODE1' });
+      .send({ acceptPolicy: true, name: '無代碼', email: 'no-code@b.co', password: 'abcdef12', joinCode: 'BADCODE1' });
     assert.equal(regBad.status, 201);
     assert.equal(regBad.body.joinedGroup, null);
   });
@@ -674,7 +674,7 @@ describe('教練 / 班別 / 名單', () => {
     const code = (await coach.post(`/api/coach/groups/${g.body.group.id}/join-code`)).body.group.joinCode;
 
     const stu = request.agent(app);
-    await stu.post('/api/auth/register').send({ name: '學員', email: 'walkin@b.co', password: 'abcdef12' });
+    await stu.post('/api/auth/register').send({ acceptPolicy: true, name: '學員', email: 'walkin@b.co', password: 'abcdef12' });
 
     const unauth = await request(app).post('/api/groups/join').send({ joinCode: code });
     assert.equal(unauth.status, 401, '未登入應被拒絕');
@@ -697,7 +697,7 @@ describe('360° 多元評測', () => {
     const admin = request.agent(app);
     await admin.post('/api/auth/login').send({ email: 'admin@demo.tw', password: 'admin1234' });
     const coach = request.agent(app);
-    const reg = await coach.post('/api/auth/register').send({ name: '教練', email: 'coach@b.co', password: 'abcdef12' });
+    const reg = await coach.post('/api/auth/register').send({ acceptPolicy: true, name: '教練', email: 'coach@b.co', password: 'abcdef12' });
     await admin.patch(`/api/admin/users/${reg.body.user.id}/role`).send({ role: 'coach' });
     await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef12' });
     return { admin, coach };
@@ -706,11 +706,11 @@ describe('360° 多元評測', () => {
   test('POST /api/submissions 帶 rateeId 與 raterType 後正確存入', async () => {
     const app = await setup();
     const ratee = request.agent(app);
-    const rateeReg = await ratee.post('/api/auth/register').send({ name: '被評者', email: 'ratee@b.co', password: 'abcdef12' });
+    const rateeReg = await ratee.post('/api/auth/register').send({ acceptPolicy: true, name: '被評者', email: 'ratee@b.co', password: 'abcdef12' });
     const rateeId = rateeReg.body.user.id;
 
     const rater = request.agent(app);
-    await rater.post('/api/auth/register').send({ name: '同儕', email: 'rater@b.co', password: 'abcdef12' });
+    await rater.post('/api/auth/register').send({ acceptPolicy: true, name: '同儕', email: 'rater@b.co', password: 'abcdef12' });
     const res = await rater.post('/api/submissions').send({
       answers: { q1: 4 }, result: sampleResult(124),
       assessmentId: 'leadership-9d', rateeId, raterType: 'peer',
@@ -724,7 +724,7 @@ describe('360° 多元評測', () => {
   test('raterType=self 時強制 rateeId 為登入者自己', async () => {
     const app = await setup();
     const user = request.agent(app);
-    const reg = await user.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef12' });
+    const reg = await user.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'u@b.co', password: 'abcdef12' });
     const res = await user.post('/api/submissions').send({
       result: sampleResult(), rateeId: 'someone-else-id', raterType: 'self',
     });
@@ -735,7 +735,7 @@ describe('360° 多元評測', () => {
   test('本人可取得自己的 360° 評測集', async () => {
     const app = await setup();
     const user = request.agent(app);
-    const reg = await user.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef12' });
+    const reg = await user.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'u@b.co', password: 'abcdef12' });
     await user.post('/api/submissions').send({ result: sampleResult(), assessmentId: 'leadership-9d' });
     const res = await user.get(`/api/submissions/ratee/${reg.body.user.id}`);
     assert.equal(res.status, 200);
@@ -745,22 +745,22 @@ describe('360° 多元評測', () => {
   test('他人無法取得別人的 ratee 資料（403）', async () => {
     const app = await setup();
     const userA = request.agent(app);
-    const regA = await userA.post('/api/auth/register').send({ name: 'A', email: 'a@b.co', password: 'abcdef12' });
+    const regA = await userA.post('/api/auth/register').send({ acceptPolicy: true, name: 'A', email: 'a@b.co', password: 'abcdef12' });
     await userA.post('/api/submissions').send({ result: sampleResult() });
 
     const userB = request.agent(app);
-    await userB.post('/api/auth/register').send({ name: 'B', email: 'b@b.co', password: 'abcdef12' });
+    await userB.post('/api/auth/register').send({ acceptPolicy: true, name: 'B', email: 'b@b.co', password: 'abcdef12' });
     assert.equal((await userB.get(`/api/submissions/ratee/${regA.body.user.id}`)).status, 403);
   });
 
   test('同儕評的評分者身份被匿名化，管理員評與自評不被匿名', async () => {
     const app = await setup();
     const ratee = request.agent(app);
-    const rateeReg = await ratee.post('/api/auth/register').send({ name: '被評者', email: 'ratee@b.co', password: 'abcdef12' });
+    const rateeReg = await ratee.post('/api/auth/register').send({ acceptPolicy: true, name: '被評者', email: 'ratee@b.co', password: 'abcdef12' });
     const rateeId = rateeReg.body.user.id;
 
     const peer = request.agent(app);
-    await peer.post('/api/auth/register').send({ name: '同儕', email: 'peer@b.co', password: 'abcdef12' });
+    await peer.post('/api/auth/register').send({ acceptPolicy: true, name: '同儕', email: 'peer@b.co', password: 'abcdef12' });
     await peer.post('/api/submissions').send({
       result: sampleResult(), assessmentId: 'leadership-9d', rateeId, raterType: 'peer',
     });
@@ -784,14 +784,14 @@ describe('360° 多元評測', () => {
     const { coach } = await makeCoach360(app);
 
     const member = request.agent(app);
-    const memReg = await member.post('/api/auth/register').send({ name: '學員', email: 'mem@b.co', password: 'abcdef12' });
+    const memReg = await member.post('/api/auth/register').send({ acceptPolicy: true, name: '學員', email: 'mem@b.co', password: 'abcdef12' });
     const memId = memReg.body.user.id;
 
     const g = await coach.post('/api/coach/groups').send({ name: 'G', assessmentId: 'leadership-9d' });
     await coach.post(`/api/coach/groups/${g.body.group.id}/roster`).send({ entries: [{ name: '學員', email: 'mem@b.co' }] });
 
     const peer = request.agent(app);
-    await peer.post('/api/auth/register').send({ name: '同儕', email: 'peer@b.co', password: 'abcdef12' });
+    await peer.post('/api/auth/register').send({ acceptPolicy: true, name: '同儕', email: 'peer@b.co', password: 'abcdef12' });
     await peer.post('/api/submissions').send({
       result: sampleResult(), assessmentId: 'leadership-9d', rateeId: memId, raterType: 'peer',
     });
@@ -810,10 +810,10 @@ describe('360° 多元評測', () => {
     const { coach } = await makeCoach360(app);
 
     const userA = request.agent(app);
-    const regA = await userA.post('/api/auth/register').send({ name: 'A', email: 'a@b.co', password: 'abcdef12' });
+    const regA = await userA.post('/api/auth/register').send({ acceptPolicy: true, name: 'A', email: 'a@b.co', password: 'abcdef12' });
 
     const userB = request.agent(app);
-    const regB = await userB.post('/api/auth/register').send({ name: 'B', email: 'b@b.co', password: 'abcdef12' });
+    const regB = await userB.post('/api/auth/register').send({ acceptPolicy: true, name: 'B', email: 'b@b.co', password: 'abcdef12' });
 
     const g = await coach.post('/api/coach/groups').send({ name: 'G', assessmentId: 'leadership-9d' });
     await coach.post(`/api/coach/groups/${g.body.group.id}/roster`).send({
@@ -832,7 +832,7 @@ describe('管理後台', () => {
     const app = await setup({ withAdmin: true });
 
     const user = request.agent(app);
-    await user.post('/api/auth/register').send({ name: 'u', email: 'u@b.co', password: 'abcdef12' });
+    await user.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email: 'u@b.co', password: 'abcdef12' });
     await user.post('/api/submissions').send({ result: sampleResult(93) });
     assert.equal((await user.get('/api/admin/overview')).status, 403);
 
@@ -849,7 +849,7 @@ describe('管理後台', () => {
 describe('個人發展目標', () => {
   async function userAgent(app, email = 'g@b.co') {
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'g', email, password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'g', email, password: 'abcdef12' });
     return agent;
   }
 
@@ -998,7 +998,7 @@ describe('個人發展目標', () => {
 describe('學習資源（第二大腦整合）', () => {
   async function agentFor(app) {
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'l', email: 'l@b.co', password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'l', email: 'l@b.co', password: 'abcdef12' });
     return agent;
   }
 
@@ -1138,7 +1138,7 @@ describe('學習資源（第二大腦整合）', () => {
 describe('我的學習清單', () => {
   async function agentFor(app, email = 'reader@b.co') {
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'r', email, password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'r', email, password: 'abcdef12' });
     return agent;
   }
 
@@ -1224,7 +1224,7 @@ describe('我的學習清單', () => {
 describe('管理後台：延伸閱讀使用情形彙總', () => {
   async function userAgent(app, email) {
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'u', email, password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'u', email, password: 'abcdef12' });
     return agent;
   }
   async function adminAgent(app) {
@@ -1263,7 +1263,7 @@ describe('管理後台：延伸閱讀使用情形彙總', () => {
 describe('AI 聊天小幫手', () => {
   async function agentFor(app, email = 'chat@b.co') {
     const agent = request.agent(app);
-    await agent.post('/api/auth/register').send({ name: 'c', email, password: 'abcdef12' });
+    await agent.post('/api/auth/register').send({ acceptPolicy: true, name: 'c', email, password: 'abcdef12' });
     return agent;
   }
 

@@ -18,6 +18,7 @@ export default function LoginPage({ onBack, joinCode, joinInfo }) {
   const [form, setForm] = useState({ name: prefillName, email: prefillEmail, password: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -28,9 +29,14 @@ export default function LoginPage({ onBack, joinCode, joinInfo }) {
   const submit = async (e) => {
     e.preventDefault();
     setError('');
+    // 註冊一定要同意隱私權政策與服務條款（伺服器端也會擋；這裡先講清楚原因）。
+    if (mode === 'register' && !agreed) {
+      setError('請先勾選「我已閱讀並同意隱私權政策與服務條款」');
+      return;
+    }
     setBusy(true);
     try {
-      if (mode === 'register') await register(joinCode ? { ...form, joinCode } : form);
+      if (mode === 'register') await register({ ...form, acceptPolicy: true, ...(joinCode ? { joinCode } : {}) });
       else await login(joinCode ? { email: form.email, password: form.password, joinCode } : { email: form.email, password: form.password });
     } catch (err) {
       setError(err.message || '發生錯誤，請稍後再試');
@@ -129,6 +135,23 @@ export default function LoginPage({ onBack, joinCode, joinInfo }) {
                 placeholder="至少 8 碼"
               />
             </Field>
+
+            {mode === 'register' && (
+              <label className="flex items-start gap-2 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-1 h-4 w-4 shrink-0 accent-ink-700"
+                />
+                <span>
+                  我已閱讀並同意
+                  <a href={`${import.meta.env.BASE_URL}privacy`} target="_blank" rel="noopener noreferrer" className="mx-0.5 font-semibold text-ink-700 underline underline-offset-2">隱私權政策</a>
+                  與
+                  <a href={`${import.meta.env.BASE_URL}terms`} target="_blank" rel="noopener noreferrer" className="mx-0.5 font-semibold text-ink-700 underline underline-offset-2">服務條款</a>
+                </span>
+              </label>
+            )}
 
             {error && (
               <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">

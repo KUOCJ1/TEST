@@ -17,8 +17,9 @@ vi.mock('../survey/api/client', () => {
   const pub = (u) => u && { id: u.id, name: u.name, email: u.email, role: u.role };
   return {
     api: {
-      async register({ name, email, password }) {
+      async register({ name, email, password, acceptPolicy }) {
         if (!name?.trim()) throw new Error('請輸入姓名');
+        if (acceptPolicy !== true) throw new Error('請先閱讀並同意隱私權政策與服務條款');
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((email || '').toLowerCase())) throw new Error('Email 格式不正確');
         if ((password || '').length < 8) throw new Error('密碼至少需 8 碼');
         const e = email.toLowerCase();
@@ -136,6 +137,7 @@ async function registerUser(name, email, password) {
   fireEvent.click(screen.getByRole('tab', { name: '註冊' }));
   fireEvent.change(screen.getByPlaceholderText('您的姓名'), { target: { value: name } });
   fillLogin(email, password);
+  fireEvent.click(screen.getByRole('checkbox', { name: /隱私權政策/ }));
   fireEvent.click(screen.getByRole('button', { name: /建立帳號/ }));
 }
 

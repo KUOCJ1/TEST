@@ -28,7 +28,7 @@ test('教練打開有作答資料的班級：作答進度、KPI、成員比較�
   const admin = await pwRequest.newContext({ baseURL: API });
   await ok(await admin.post('/api/auth/login', { data: { email: 'admin@e2e.test', password: 'E2eTest1234' } }), 'admin login');
   const coach = await pwRequest.newContext({ baseURL: API });
-  const reg = await ok(await coach.post('/api/auth/register', { data: { name: 'E2E 總覽教練', email: coachEmail, password: 'abcdef12' } }), 'coach register');
+  const reg = await ok(await coach.post('/api/auth/register', { data: { acceptPolicy: true, name: 'E2E 總覽教練', email: coachEmail, password: 'abcdef12' } }), 'coach register');
   await ok(await admin.patch(`/api/admin/users/${reg.user.id}/role`, { data: { role: 'coach' } }), 'promote');
   await ok(await coach.post('/api/auth/login', { data: { email: coachEmail, password: 'abcdef12' } }), 'coach login');
   const { group } = await ok(await coach.post('/api/coach/groups', { data: { name: groupName, assessmentId: 'ai-competency' } }), 'create group');
@@ -38,7 +38,7 @@ test('教練打開有作答資料的班級：作答進度、KPI、成員比較�
   for (const [i, value] of [[1, 2], [2, 4], [3, null]]) {
     const s = await pwRequest.newContext({ baseURL: API });
     await ok(await s.post('/api/auth/register', {
-      data: { name: `總覽學員${i}`, email: `e2e-ov-s${i}-${suffix}@example.com`, password: 'abcdef12', joinCode: withCode.joinCode },
+      data: { acceptPolicy: true, name: `總覽學員${i}`, email: `e2e-ov-s${i}-${suffix}@example.com`, password: 'abcdef12', joinCode: withCode.joinCode },
     }), `student ${i}`);
     if (value !== null) {
       await ok(await s.post('/api/submissions', { data: { assessmentId: 'ai-competency', phase: 'pre', result: resultOf(value), answers: {} } }), `submit ${i}`);
