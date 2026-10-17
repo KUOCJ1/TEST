@@ -245,7 +245,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
                   </button>
                 ))}
               </div>
-              {section === 'overview' && groupStats && groupStats.respondents > 0 && (
+              {section === 'overview' && groupStats && groupStats.respondents > 0 && getAssessment(groupDetail.group.assessmentId)?.REPORT !== 'compass' && (
                 <div className="flex shrink-0 gap-2">
                   <button
                     type="button"

@@ -17,10 +17,15 @@ import QuadrantPage from './printable-report/QuadrantPage.jsx';
 import LayerPage from './printable-report/LayerPage.jsx';
 import CoachPage from './printable-report/CoachPage.jsx';
 import DevPlanPage from './printable-report/DevPlanPage.jsx';
+import CompassReportPages from './compass/CompassReportPages.jsx';
 
 // ─── Report body (reusable — single member or part of a batch run) ──────
 export function ReportPages({ result, benchmark, user, submittedAt, comments = [] }) {
   const config = getAssessment(result.assessmentId);
+  // 雙環領導羅盤有專屬列印版面（不做總分、達成率與百分位）。
+  if (config?.REPORT === 'compass') {
+    return <CompassReportPages result={result} user={user} submittedAt={submittedAt} comments={comments} />;
+  }
   const percentile = benchmark?.totals?.length >= 2
     ? computePercentile(result.total, benchmark.totals)
     : null;
@@ -50,7 +55,8 @@ export function ReportPages({ result, benchmark, user, submittedAt, comments = [
 
 // ─── Main export ───────────────────────────────────────────────
 export default function PrintableReport({ result, benchmark, user, submittedAt, onClose, comments = [] }) {
-  const percentile = benchmark?.totals?.length >= 2
+  const isCompass = getAssessment(result.assessmentId)?.REPORT === 'compass';
+  const percentile = !isCompass && benchmark?.totals?.length >= 2
     ? computePercentile(result.total, benchmark.totals)
     : null;
 

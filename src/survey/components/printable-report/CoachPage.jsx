@@ -5,7 +5,7 @@ import { TONE_BG, TONE_BORDER, TONE_COLOR } from './tokens.js';
 import { toneOf } from './helpers.js';
 import { RatingPill, PageMeta, PageFooter, SectionTitle } from './primitives.jsx';
 
-function CoachFeedbackBlock({ comments }) {
+export function CoachFeedbackBlock({ comments }) {
   if (!comments?.length) return null;
   return (
     <div style={{ marginBottom: 20 }}>

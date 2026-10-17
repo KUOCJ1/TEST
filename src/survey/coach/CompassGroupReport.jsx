@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, FileText } from 'lucide-react';
+import CompassGroupPrintable from './CompassGroupPrintable.jsx';
 import { buildCompassGroupReport, latestSelfByUser, FULL_MIN, BASIC_MIN } from '../utils/compassGroup.js';
 import { TENSION_TYPE_LABEL } from '../utils/compassText.js';
 
@@ -24,6 +25,7 @@ export default function CompassGroupReport({ group, members, submissions }) {
     return ['pre', 'post'].filter((p) => set.has(p));
   }, [submissions]);
   const [phase, setPhase] = useState(null);
+  const [printing, setPrinting] = useState(false);
   const activePhase = phase ?? (phases.includes('post') ? 'post' : phases[0] ?? 'pre');
 
   const report = useMemo(() => {
@@ -35,6 +37,7 @@ export default function CompassGroupReport({ group, members, submissions }) {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-bold text-slate-800">組織診斷</h3>
+        <button type="button" onClick={() => setPrinting(true)} className="btn-primary btn-sm"><FileText className="h-3.5 w-3.5" /> 列印報告</button>
         {phases.length > 1 && (
           <div role="group" aria-label="階段" className="flex gap-1 text-sm">
             {phases.map((p) => (
@@ -115,6 +118,7 @@ export default function CompassGroupReport({ group, members, submissions }) {
       )}
 
       <p className="text-xs text-slate-400">自評與他評落差的群體分布需要伺服器彙整，目前尚未提供。</p>
+      {printing && <CompassGroupPrintable report={report} group={group} phaseLabel={activePhase === 'pre' ? '課前' : '課後'} onClose={() => setPrinting(false)} />}
     </div>
   );
 }
