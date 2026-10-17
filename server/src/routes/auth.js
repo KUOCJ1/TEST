@@ -149,6 +149,18 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     res.json({ user: publicUser(req.user) });
   });
 
+  // 雙環領導羅盤：受評者決定「上級（主管）的評分」是否顯示在自己的報告中（預設不顯示，可撤回）。
+  // 上級通常只有一位，無法匿名，所以需要受評者同意。見 server/src/lib/compassPrivacy.js。
+  router.put('/auth/compass-manager-share', requireAuth, (req, res) => {
+    if (typeof req.body?.granted !== 'boolean') {
+      return res.status(400).json({ error: 'granted 必須是 true 或 false' });
+    }
+    req.user.compassManagerShare = { granted: req.body.granted, at: new Date().toISOString() };
+    db.persist();
+    auditLog(req, 'compass_manager_share', { granted: req.body.granted });
+    res.json({ user: publicUser(req.user) });
+  });
+
   router.get('/auth/me', requireAuth, (req, res) => {
     res.json({ user: publicUser(req.user) });
   });

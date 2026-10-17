@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
-import { asyncHandler, normalizeSubmission, getGroupPhase, validateResultShape } from '../lib/helpers.js';
+import { asyncHandler, normalizeSubmission, getGroupPhase, validateResultShape, auditLog } from '../lib/helpers.js';
 import { notifyNewComment } from '../lib/notifications.js';
+import { isStrictPrivacy, presentRateeSubmissions } from '../lib/compassPrivacy.js';
 
 const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
 
@@ -116,18 +117,36 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
       return res.json({ submissions: [], phase: groupPhase });
     }
 
-    const subs = db.data.submissions
+    const rows = db.data.submissions
       .filter((s) => {
         const rid = s.rateeId ?? s.userId;
         const matchRatee = rid === rateeId;
         const matchAssessment = !assessmentId || (s.assessmentId ?? 'ai-competency') === assessmentId;
         return matchRatee && matchAssessment;
       })
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .map((s) => {
-        const n = normalizeSubmission(s);
-        // Coach/Admin 可看真實身份（含 manager）；使用者本人看到的他評一律匿名。
-        if (!canDeanonymize && n.raterType !== 'self') {
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // 嚴格隱私題庫（雙環領導羅盤）：評分者身分與個別分數不對教練與本人開放。
+    // 只有管理員能還原身分，且要填理由、留稽核紀錄。其他題庫維持下面的既有行為。
+    const hasStrict = rows.some((s) => isStrictPrivacy(s.assessmentId ?? 'ai-competency'));
+    const wantsIdentity = isAdmin && deanonymize && deanonymize !== '0' && deanonymize !== 'false';
+    if (hasStrict && wantsIdentity) {
+      const reason = typeof req.query.reason === 'string' ? req.query.reason.trim() : '';
+      if (reason.length < 5) {
+        return res.status(400).json({ code: 'REASON_REQUIRED', error: '還原評分者身分前，請填寫理由（至少 5 個字）。' });
+      }
+      auditLog(req, 'view_rater_identity', { rateeId, assessmentId: assessmentId ?? null, reason });
+    }
+    const ratee = db.data.users.find((u) => u.id === rateeId);
+    const managerConsent = Boolean(ratee?.compassManagerShare?.granted);
+    const present = (list) => (hasStrict && !wantsIdentity ? presentRateeSubmissions(list, { managerConsent }) : list);
+
+    const subs = present(rows.map((s) => normalizeSubmission(s)))
+      .map((n) => {
+        const strict = isStrictPrivacy(n.assessmentId);
+        // Coach/Admin 可看真實身分（含 manager）；使用者本人看到的他評一律匿名。
+        // 嚴格隱私題庫的教練也一律匿名（上面 presentRateeSubmissions 已處理，這裡不再放寬）。
+        if (n.raterType !== 'self' && !n.aggregate && !(canDeanonymize && (!strict || wantsIdentity))) {
           return { ...n, userId: 'anonymous', userName: '匿名', answers: undefined };
         }
         return { ...n, answers: undefined };

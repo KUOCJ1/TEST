@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { publicUser } from '../auth.js';
+import { stripRaterDetails } from '../lib/compassPrivacy.js';
 import {
   asyncHandler,
   normalizeSubmission,
@@ -60,10 +61,11 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
         .filter((u) => u.role !== 'admin' && canSee(u.id))
         .map(publicUser),
       // 受評者或評分者其中一方在可見範圍內才回傳，360 他評才不會漏掉。
-      submissions: db.data.submissions
+      // 嚴格隱私題庫的他評只回傳「誰收到哪一類評分」的計數用欄位（見 compassPrivacy.js）。
+      submissions: stripRaterDetails(db.data.submissions
         .map(normalizeSubmission)
         .filter((s) => canSee(s.rateeId) || canSee(s.userId))
-        .map((s) => ({ ...s, answers: undefined })),
+        .map((s) => ({ ...s, answers: undefined }))),
     });
   });
 
@@ -160,7 +162,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       .map((id) => db.data.users.find((u) => u.id === id))
       .filter(Boolean)
       .map((u) => ({ id: u.id, name: u.name, email: u.email, disabled: Boolean(u.disabled) }));
-    res.json({ group: { ...group, phase: getGroupPhase(group) }, submissions: memberSubs, members });
+    res.json({ group: { ...group, phase: getGroupPhase(group) }, submissions: stripRaterDetails(memberSubs), members });
   });
 
   router.put('/groups/:id', (req, res) => {
