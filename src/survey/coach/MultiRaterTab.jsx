@@ -6,6 +6,8 @@ import MultiRaterDashboard from '../analysis/MultiRaterDashboard';
 import InfoTip from '../components/InfoTip';
 import { RATER_TYPES, RATER_LABELS } from '../constants/raterTypes';
 
+const STRICT_NOTE = '此評量的評分者身分與個別分數對教練不公開；同儕與部屬各類滿 3 位才會單獨顯示，不足時併入他評合計。這裡只顯示回收份數，方便您提醒補足。';
+
 const RATER_TIPS = {
   peer: '同儕與部屬評分在被評者端以匿名方式呈現，保護填答者隱私。',
   subordinate: '同儕與部屬評分在被評者端以匿名方式呈現，保護填答者隱私。',
@@ -29,18 +31,21 @@ export default function MultiRaterTab({ users, submissions }) {
     return q ? list.filter((u) => u.name.toLowerCase().includes(q)) : list;
   }, [users, search]);
 
-  const progressMap = useMemo(() => {
+  // 每位受評者各類評分者的回收份數（嚴格隱私題庫的他評只剩計數用欄位，沒有身分與分數）。
+  const countMap = useMemo(() => {
     const map = new Map();
     for (const u of nonAdminUsers) {
-      const types = new Set();
+      const counts = {};
       for (const s of filteredSubs) {
         const rateeId = s.rateeId ?? s.userId;
-        if (rateeId === u.id) types.add(s.raterType ?? 'self');
+        if (rateeId === u.id) counts[s.raterType ?? 'self'] = (counts[s.raterType ?? 'self'] ?? 0) + 1;
       }
-      map.set(u.id, types);
+      map.set(u.id, counts);
     }
     return map;
   }, [nonAdminUsers, filteredSubs]);
+  const strict = Boolean(getAssessment(assessmentId)?.STRICT_RATER_PRIVACY);
+  const threshold = getAssessment(assessmentId)?.RATER_TARGET?.threshold ?? 3;
 
   const selectedUser = selectedUserId ? users.find((u) => u.id === selectedUserId) : null;
 
@@ -67,6 +72,7 @@ export default function MultiRaterTab({ users, submissions }) {
 
       {getAssessment(assessmentId)?.SUPPORTS_360 && (
         <>
+          {strict && <p className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">{STRICT_NOTE}</p>}
           <div className="mb-3 relative w-56">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
@@ -94,13 +100,18 @@ export default function MultiRaterTab({ users, submissions }) {
               </thead>
               <tbody>
                 {nonAdminUsers.map((u) => {
-                  const types = progressMap.get(u.id) ?? new Set();
+                  const counts = countMap.get(u.id) ?? {};
                   return (
                     <tr key={u.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                       <td className="py-2.5 pr-4 font-semibold text-slate-700">{u.name}</td>
                       {RATER_TYPES.map((t) => (
                         <td key={t} className="py-2.5 px-2 text-center">
-                          {types.has(t) ? (
+                          {strict && t !== 'self' && counts[t] ? (
+                            // 嚴格隱私題庫：顯示回收份數，未達單獨顯示門檻者標示「不足」。
+                            <span className={`text-xs font-semibold ${t === 'manager' || counts[t] >= threshold ? 'text-emerald-600' : 'text-amber-600'}`}>
+                              {counts[t]} 份{t !== 'manager' && counts[t] < threshold ? '（不足）' : ''}
+                            </span>
+                          ) : counts[t] ? (
                             <Check className="mx-auto h-4 w-4 text-emerald-500" />
                           ) : (
                             <span className="text-slate-300">—</span>
@@ -133,7 +144,7 @@ export default function MultiRaterTab({ users, submissions }) {
                 rateeId={selectedUser.id}
                 rateeName={selectedUser.name}
                 assessmentId={assessmentId}
-                canDeanonymize
+                canDeanonymize={!strict}
               />
             </div>
           )}

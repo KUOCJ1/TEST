@@ -40,6 +40,16 @@ export const PAGINATE = true;
 // 結果頁使用專屬報告元件（components/compass/CompassResultPanel.jsx）。
 export const REPORT = 'compass';
 
+// 360° 評分者隱私（伺服器端強制，見 server/src/lib/compassPrivacy.js）；前端據此不顯示「還原身分」類功能。
+export const STRICT_RATER_PRIVACY = true;
+export const RATER_TARGET = { min: 2, max: 3, threshold: 3 }; // 每類建議邀請 2–3 位；單獨顯示需 ≥3 位
+
+// 評分者作答前的說明（依評分者類型）。
+export const RATER_NOTICE = {
+  default: '您的個別回答不會顯示給受評者或教練，結果只以多位評分者的平均呈現；同類評分者少於 3 位時不會單獨顯示。平台管理員在必要時（例如處理申訴）可查看評分者身分，並會留下紀錄。',
+  manager: '您是受評者的上級：您的評分無法匿名，您的身分可被辨識。受評者同意後，您的評分才會出現在他的報告中。',
+};
+
 const DIM_META = [
   { id: 'find', index: 1, name: '洞察情勢', subtitle: 'Find', color: '#2b6cb0', loop: 'fast' },
   { id: 'aim', index: 2, name: '聚焦應變', subtitle: 'Aim', color: '#2c7a7b', loop: 'fast' },

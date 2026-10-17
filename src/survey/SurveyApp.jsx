@@ -241,6 +241,13 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           </div>
         )}
 
+        {rater === 'other' && baseConfig.RATER_NOTICE && (
+          <div role="note" className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-600">
+            <p className="font-semibold text-slate-700">關於您的匿名</p>
+            <p className="mt-1">{baseConfig.RATER_NOTICE[raterType] ?? baseConfig.RATER_NOTICE.default}</p>
+          </div>
+        )}
+
         {raterType && raterType !== 'self' && rateeName && (
           <div className="mt-4 rounded-xl border border-brass-200 bg-brass-50 px-4 py-3 text-sm">
             <span className="font-semibold text-brass-600">您正在評估「{rateeName}」</span>

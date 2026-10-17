@@ -4,6 +4,9 @@ import { api } from '../api/client';
 import RadarChart from '../components/RadarChart';
 import { RATER_LABELS } from '../constants/raterTypes';
 import { dimTextStyle } from '../utils/color';
+import { getAssessment } from '../data/assessments/index.js';
+import { gapsFromAverages } from '../utils/compassScoring.js';
+import CompassGapSection from '../components/compass/CompassGapSection.jsx';
 
 const RATER_COLORS = {
   self: '#7c3aed',
@@ -12,24 +15,24 @@ const RATER_COLORS = {
   subordinate: '#d97706',
 };
 
-// Average an array of numbers
-function avg(nums) {
-  if (!nums.length) return null;
-  return nums.reduce((a, b) => a + b, 0) / nums.length;
-}
+// 一筆提交代表幾位評分者：一般提交是 1 份；嚴格隱私題庫的彙整項目（aggregate）帶有 count。
+const weightOf = (s) => (s.aggregate && s.count > 0 ? s.count : 1);
 
 // Given a list of submissions, compute per-dimension average score (1-5 scale) and percent.
+// 彙整項目依評分者人數加權；一般提交的權重都是 1，結果與過去相同。
 function avgDimensions(subs) {
   if (!subs.length) return [];
   const dimMap = new Map();
   for (const s of subs) {
+    const w = weightOf(s);
     for (const d of s.result?.dimensions ?? []) {
-      if (!dimMap.has(d.id)) dimMap.set(d.id, { ...d, percents: [], averages: [] });
+      if (!dimMap.has(d.id)) dimMap.set(d.id, { ...d, wSum: 0, pSum: 0, aSum: 0 });
       const entry = dimMap.get(d.id);
-      entry.percents.push(d.percent ?? 0);
+      entry.wSum += w;
+      entry.pSum += (d.percent ?? 0) * w;
       // score / max * 5 to get 1-5 scale average
       const max = d.max ?? 1;
-      entry.averages.push((d.score / max) * 5);
+      entry.aSum += ((d.score / max) * 5) * w;
     }
   }
   return [...dimMap.values()].map((e) => ({
@@ -37,13 +40,17 @@ function avgDimensions(subs) {
     name: e.name,
     subtitle: e.subtitle,
     color: e.color,
-    percent: Math.round(avg(e.percents)),
-    avgScore: Math.round(avg(e.averages) * 10) / 10,
+    percent: Math.round(e.pSum / e.wSum),
+    avgScore: Math.round((e.aSum / e.wSum) * 10) / 10,
   }));
 }
 
+const countOf = (subs) => subs.reduce((n, s) => n + weightOf(s), 0);
+
 // Composite "others" = all non-self rater types together
 function compositeOthers(byType) {
+  // 嚴格隱私題庫：伺服器已經算好「他評合計」，直接用它（再把各類加起來會重複計算）。
+  if (byType.others?.length) return avgDimensions(byType.others);
   const otherSubs = Object.entries(byType)
     .filter(([t]) => t !== 'self')
     .flatMap(([, subs]) => subs);
@@ -84,7 +91,7 @@ function BarPanel({ byType, dimensions }) {
         {types.map((t) => (
           <span key={t} className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
             <span className="inline-block h-3 w-3 rounded-sm" style={{ background: RATER_COLORS[t] }} />
-            {RATER_LABELS[t]}（{byType[t].length} 份）
+            {RATER_LABELS[t]}（{countOf(byType[t])} 份）
           </span>
         ))}
       </div>
@@ -309,6 +316,16 @@ export default function MultiRaterDashboard({ rateeId, rateeName, assessmentId, 
   const allDimsRef = selfDims.length ? selfDims : othersDims;
 
   const hasOthers = Object.entries(byType).some(([t, s]) => t !== 'self' && s.length > 0);
+  const strict = Boolean(getAssessment(assessmentId)?.STRICT_RATER_PRIVACY);
+  const othersCount = byType.others?.length ? countOf(byType.others) : 0;
+  const compassGaps = strict && selfDims.length > 0
+    ? gapsFromAverages({
+      selfDimensions: selfDims.map((d) => ({ id: d.id, name: d.name, average: d.avgScore, answered: d.answered })),
+      otherDimensions: othersDims.map((d) => ({ id: d.id, average: d.avgScore })),
+      raters: othersCount,
+    })
+    : null;
+  const dimColors = Object.fromEntries(allDimsRef.map((d) => [d.id, d.color]));
 
   if (!selfSubs.length && !hasOthers) {
     return (
@@ -328,7 +345,7 @@ export default function MultiRaterDashboard({ rateeId, rateeName, assessmentId, 
           {selfSubs.length > 0 && `自評 1 份`}
           {Object.entries(byType)
             .filter(([t, s]) => t !== 'self' && s.length)
-            .map(([t, s]) => `  ${RATER_LABELS[t]} ${s.length} 份`)
+            .map(([t, s]) => `  ${RATER_LABELS[t]} ${countOf(s)} 份`)
             .join('')}
         </p>
       </header>
@@ -341,11 +358,13 @@ export default function MultiRaterDashboard({ rateeId, rateeName, assessmentId, 
         <BarPanel byType={byType} dimensions={allDimsRef} />
       )}
 
-      {selfDims.length > 0 && othersDims.length > 0 && (
+      {strict && <CompassGapSection gaps={compassGaps} colors={dimColors} />}
+
+      {!strict && selfDims.length > 0 && othersDims.length > 0 && (
         <GapPanel selfDims={selfDims} othersDims={othersDims} />
       )}
 
-      {selfDims.length > 0 && othersDims.length > 0 && (
+      {!strict && selfDims.length > 0 && othersDims.length > 0 && (
         <QuadrantPanel selfDims={selfDims} othersDims={othersDims} />
       )}
 

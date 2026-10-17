@@ -7,6 +7,7 @@ import MultiRaterDashboard from './MultiRaterDashboard';
 import { RATER_LABELS } from '../constants/raterTypes';
 import { resolveActiveAssessmentId } from '../utils/multiRaterHome';
 import LoadingState from '../components/LoadingState';
+import ManagerShareToggle from '../components/compass/ManagerShareToggle.jsx';
 
 const OTHER_RATER_TYPES = ['manager', 'peer', 'subordinate'];
 
@@ -17,6 +18,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
   const [mySubs, setMySubs] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
   const [selectedId, setSelectedId] = useState(initialAssessmentId ?? null);
+  const [dashboardKey, setDashboardKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -187,7 +189,18 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
             )}
           </div>
         ) : (
-          <MultiRaterDashboard rateeId={user.id} rateeName={user.name} assessmentId={activeId} />
+          <>
+            {getAssessment(activeId)?.STRICT_RATER_PRIVACY && (
+              <>
+                <p className="mb-3 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  建議邀請的評分者：同儕 2–3 位、部屬 2–3 位，另有上級 1–2 位，合計約 10 位（含自評）。
+                  為保護匿名，同一類評分者達 3 位才會單獨顯示，不足時併入「他評合計」，合計也要 3 位以上才會顯示。
+                </p>
+                <ManagerShareToggle user={user} onChanged={() => setDashboardKey((k) => k + 1)} />
+              </>
+            )}
+            <MultiRaterDashboard key={dashboardKey} rateeId={user.id} rateeName={user.name} assessmentId={activeId} />
+          </>
         )}
       </section>
     </main>

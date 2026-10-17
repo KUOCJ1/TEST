@@ -7,6 +7,7 @@ import { formatDay } from '../utils/format';
 import { pickDefaultGroup } from '../utils/groups';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
 import PrintableReport from '../components/PrintableReport';
+import CompassGroupReport from './CompassGroupReport.jsx';
 import BatchPrintableReport from '../components/BatchPrintableReport';
 import GroupPrintableReport from '../components/GroupPrintableReport';
 import GroupListPanel from './GroupListPanel';
@@ -29,6 +30,8 @@ const SECTIONS = [
   { id: 'overview', label: '總覽' },
   { id: 'settings', label: '成員與設定' },
 ];
+// 雙環領導羅盤的班級多一個「組織診斷」分頁（依 REPORT 旗標判斷，其他評量不受影響）。
+const DIAGNOSIS_SECTION = { id: 'diagnosis', label: '組織診斷' };
 
 // 選中班別的標題列（Sprint 11）：以前右側直接是「總覽／成員與設定」分頁，看不出現在看的是哪個班。
 function GroupHeader({ group, memberCount }) {
@@ -228,7 +231,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
             <GroupHeader group={groupDetail.group} memberCount={groupDetail.members.length} />
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm font-semibold">
-                {SECTIONS.map((s) => (
+                {(getAssessment(groupDetail.group.assessmentId)?.REPORT === 'compass' ? [SECTIONS[0], DIAGNOSIS_SECTION, SECTIONS[1]] : SECTIONS).map((s) => (
                   <button
                     key={s.id}
                     type="button"
@@ -276,6 +279,15 @@ export default function GroupWorkspace({ users, currentUserId }) {
                 showToast={showToast}
                 confirm={confirm}
                 onOpenMember={setDrawerIndex}
+              />
+            )}
+
+            {section === 'diagnosis' && (
+              <CompassGroupReport
+                key={`diagnosis-${groupDetail.group.id}`}
+                group={groupDetail.group}
+                members={groupDetail.members}
+                submissions={patchedSubmissions}
               />
             )}
 

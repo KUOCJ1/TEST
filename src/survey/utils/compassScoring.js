@@ -349,6 +349,28 @@ export function computeGaps({ selfAnswers, othersAnswers, config, form = 'full',
   return { available: true, raters: usable.length, minRaters, dimensions, index: meanOf(gaps) };
 }
 
+/**
+ * 以「已彙整的構面平均」計算落差（給只拿得到彙整資料的畫面用，例如受評者端與教練端——
+ * 後端不會回傳個別評分者的作答）。回傳形狀與 computeGaps 相同。
+ * @param {{selfDimensions: Array<{id,name,average,answered?}>, otherDimensions: Array<{id,average}>, raters: number, minRaters?: number}} p
+ */
+export function gapsFromAverages({ selfDimensions, otherDimensions, raters, minRaters = THRESHOLDS.minRatersCombined }) {
+  if (!Array.isArray(otherDimensions) || otherDimensions.length === 0 || raters < minRaters) {
+    return { available: false, reason: 'not_enough_raters', raters: raters ?? 0, minRaters, dimensions: [], index: null };
+  }
+  const dimensions = (selfDimensions ?? []).map((sd) => {
+    const od = otherDimensions.find((x) => x.id === sd.id);
+    const selfOk = Number.isFinite(sd.average) && (sd.answered ?? 1) > 0;
+    if (!selfOk || !od || !Number.isFinite(od.average)) {
+      return { id: sd.id, name: sd.name, self: selfOk ? sd.average : null, others: null, gap: null, type: null };
+    }
+    const gap = sd.average - od.average;
+    return { id: sd.id, name: sd.name, self: sd.average, others: od.average, gap, type: classifyGap(gap) };
+  });
+  const gaps = dimensions.filter((d) => d.gap !== null).map((d) => Math.abs(d.gap));
+  return { available: true, raters, minRaters, dimensions, index: meanOf(gaps) };
+}
+
 // ── 評分者彙整與匿名門檻 ──────────────────────────────────
 
 /**

@@ -294,3 +294,27 @@ FORMS = { full:{...}, short:{...} }                  // 以題目的 form 欄位
   - 每構面 × 等級的敘事評語（S15b，約 72 段以上原創文字，需要你審稿）。
   - 列印版（`PrintableReport`／教練端）尚未做專屬版面；目前不會當掉但會是通用版面。
   - 後台 `textOther` 文字覆寫、題目順序隨機、班級層級版本設定（見第 17 節）。
+
+## 19. S16（360° 強化與組織診斷）實作紀錄（2026-10-17）
+
+**後端（`server/src/lib/compassPrivacy.js`，只對 `leadership-compass` 生效，L9D 等行為不變）**
+- 受評者端與教練端的 `GET /api/submissions/ratee/:id`：他評一律回傳「彙整項目」（`aggregate: true`，附 `count`），不含個別評分者的身分、分數、時間。同儕／部屬同類 ≥3 位才單獨顯示；不足併入 `others`（他評合計），合計 ≥3 位才顯示。
+- 上級評分須受評者同意：`PUT /api/auth/compass-manager-share {granted}`（預設未同意，可撤回，寫稽核紀錄）；同意後上級單獨顯示並併入合計。`publicUser` 回傳 `compassManagerShare`。
+- 教練的 `/api/coach/overview`、`/api/coach/groups/:id`：他評去識別化並移除分數與時間，只留 ratee／類型／班級／階段計數欄位，教練仍可看回收進度。
+- 管理員還原身分：必須 `deanonymize=1` 且 `reason` ≥5 字，否則 400 `REASON_REQUIRED`；成功時寫入稽核紀錄 `view_rater_identity`（含 rateeId 與理由）。沒帶 deanonymize 時管理員看到的也是彙整。
+- 後端不重算分數（部署目錄沒有前端程式碼），彙整只對結果內的構面平均做通用加權平均。
+- 測試：`server/test/compass-privacy.test.js`（17 個），含教練帶 `deanonymize` 也拿不到身分、L9D 行為不變。
+
+**前端**
+- `MultiRaterDashboard`：支援彙整項目（依人數加權）、「他評合計」；雙環領導羅盤改用 `CompassGapSection`（`gapsFromAverages`），不顯示舊版 ±0.5 落差表與四象限；他評不足時只顯示說明。
+- `ManagerShareToggle`（受評者的 360° 頁）、評分者作答前的匿名說明（`RATER_NOTICE`，上級另有「您的身分可被辨識」說明）、建議邀請人數說明。
+- 教練端 `MultiRaterTab`：不傳 `canDeanonymize`，顯示各類回收份數與「不足」。
+- 班級「組織診斷」分頁（`CompassGroupReport`、`utils/compassGroup.js`）：≥5 位完整（兩環、八構面、張力取向分布、最強與最少）；3–4 位只有平均；<3 位只有完成率。
+- 測試：前端新增 19 個（共 443 個），後端共 189 個，lint、build 通過。
+
+**已知限制／留待處理**
+- 班級組織診斷目前只彙整**自評**；自評—他評落差的群體分布需要伺服器端彙整（後端無法重算分數，需另設計），尚未提供。
+- 管理員還原身分目前只有 API，後台沒有操作介面（刻意：先留稽核，需求明確再做）。
+- 評分者仍須是同班成員（已決定不做跨班）。
+- **上線前必做：更新隱私權政策並提升 `POLICY_VERSION`**。現行政策寫「教練可辨識評分者身分」，與雙環領導羅盤的行為不同；改版會觸發全體用戶重新同意，應與雙環領導羅盤的正式啟用一起做，不要提前。
+- 既有的 `/assessments/:id/benchmark` 以「每位使用者最新一份提交」計算，會把評分者的他評提交混進去（對所有 360 題庫皆然）；雙環領導羅盤啟用前建議修正。

@@ -71,6 +71,9 @@ export const api = {
     return request(`/submissions/ratee/${rateeId}?${qs}`).then((d) => d.submissions);
   },
 
+  setCompassManagerShare: (granted) =>
+    request('/auth/compass-manager-share', { method: 'PUT', body: { granted } }).then((d) => d.user),
+
   adminOverview: () => request('/admin/overview'),
   health: () => request('/health'),
   adminSystemStatus: () => request('/admin/system-status'),

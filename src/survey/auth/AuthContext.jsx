@@ -45,6 +45,12 @@ export function AuthProvider({ children }) {
     return u;
   }, []);
 
+  const setCompassManagerShare = useCallback(async (granted) => {
+    const u = await api.setCompassManagerShare(granted);
+    setUser(u);
+    return u;
+  }, []);
+
   const updateProfile = useCallback(async (payload) => {
     const u = await api.updateProfile(payload);
     setUser(u);
@@ -69,8 +75,9 @@ export function AuthProvider({ children }) {
       logout,
       updateProfile,
       acceptPolicy,
+      setCompassManagerShare,
     }),
-    [user, ready, register, login, logout, updateProfile, acceptPolicy],
+    [user, ready, register, login, logout, updateProfile, acceptPolicy, setCompassManagerShare],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
