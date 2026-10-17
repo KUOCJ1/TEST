@@ -3,6 +3,7 @@ import { Copy, Check, RotateCcw, Info } from 'lucide-react';
 import RadarChart from '../RadarChart';
 import LearningResources from '../LearningResources';
 import CompassGapSection from './CompassGapSection.jsx';
+import { buildCompassNarrative, BAND_LABEL } from '../../utils/compassNarrative.js';
 import { badgeBg, dimTextStyle } from '../../utils/color';
 import {
   loopBalanceText, tensionLabel, tensionText, READING_GUIDE,
@@ -81,6 +82,7 @@ const CompassResultPanel = forwardRef(function CompassResultPanel(
   const subBottom = allSubs.length > 6 ? [...allSubs].sort((a, b) => a.average - b.average).slice(0, 3) : [];
   const balanceText = loopBalanceText(loops);
   const learningDims = bottom.slice(0, 3);
+  const narrative = buildCompassNarrative(result);
 
   const sections = [
     { id: 'section-loops', label: '兩個環' },
@@ -88,6 +90,7 @@ const CompassResultPanel = forwardRef(function CompassResultPanel(
     { id: 'section-tensions', label: '張力' },
     ...(aiProfile ? [{ id: 'section-ai', label: '人機協作' }] : []),
     { id: 'section-highlights', label: '常用與待發展' },
+    ...(narrative.length ? [{ id: 'section-narrative', label: '解讀' }] : []),
   ];
 
   return (
@@ -235,6 +238,34 @@ const CompassResultPanel = forwardRef(function CompassResultPanel(
           </div>
           <p className="mt-3 text-xs text-slate-500">「相對較少」是和您自己的其他構面比較，並非與他人比較。</p>
         </div>
+
+        {narrative.length > 0 && (
+          <div id="section-narrative" className="mt-8 scroll-mt-14">
+            <h3 className="text-base font-bold text-slate-700">各構面的解讀</h3>
+            <p className="mt-1 text-xs text-slate-500">依您的行為頻率撰寫；同一份結果每次看到的內容相同。</p>
+            <div className="mt-3 space-y-4">
+              {narrative.map((n) => (
+                <article key={n.id} className="rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-100">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h4 className="font-bold dim-text" style={dimTextStyle(colors[n.id])}>{n.name}</h4>
+                    <span className="rounded-full bg-paper-100 px-2.5 py-0.5 text-xs font-semibold text-ink-700 ring-1 ring-paper-300">{BAND_LABEL[n.band]}</span>
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-700">{n.intro}</p>
+                  {n.subs.length > 0 && (
+                    <dl className="mt-3 space-y-3 border-t border-slate-100 pt-3 text-sm">
+                      {n.subs.map((s) => (
+                        <div key={s.id}>
+                          <dt className="font-semibold text-slate-700">{s.name}<span className="ml-2 text-xs font-normal text-slate-500">{BAND_LABEL[s.band]}</span></dt>
+                          <dd className="mt-0.5 leading-relaxed text-slate-600">{s.text}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                </article>
+              ))}
+            </div>
+          </div>
+        )}
 
         <CompassGapSection gaps={gaps} colors={colors} />
 
