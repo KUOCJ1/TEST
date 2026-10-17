@@ -66,6 +66,8 @@ function Block({ block, meta }) {
 export default function LegalPage({ kind, loggedIn = false, onEnter, meta = POLICY_META }) {
   const doc = DOCS[kind];
   const draft = isPolicyDraft(meta);
+  // 草稿說明只講「實際還缺什麼」：欄位填好之後不能還說「還沒填」。
+  const missing = [!meta.operatorName?.trim() && '經營者名稱', !meta.contactEmail?.trim() && '聯絡信箱'].filter(Boolean);
   return (
     <div className="min-h-screen bg-paper-100 font-sans text-ink-700">
       <MarketingNav loggedIn={loggedIn} onEnter={onEnter} />
@@ -73,7 +75,9 @@ export default function LegalPage({ kind, loggedIn = false, onEnter, meta = POLI
         {draft && (
           <div role="note" className="mb-8 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
             <strong className="font-semibold">草稿，尚待確認。</strong>
-            這份文件是依系統實際行為整理的草稿，經營者名稱與聯絡信箱還沒填，內容也還沒經過確認；正式公開前請以經營者確認後的版本為準。
+            這份文件是依系統實際行為整理的草稿
+            {missing.length > 0 ? `，${missing.join('與')}還沒填` : ''}
+            ，內容也還沒經過經營者確認；正式公開前請以確認後的版本為準。
           </div>
         )}
         <header className="mb-8 border-b border-ink-700/10 pb-6">

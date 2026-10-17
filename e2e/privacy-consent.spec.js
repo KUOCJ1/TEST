@@ -9,9 +9,9 @@ for (const [path, title] of [['/privacy', '隱私權政策'], ['/terms', '服務
   test(`${path} 不需登入就能開，內容完整、無嚴重無障礙問題`, async ({ page }) => {
     await page.goto(path);
     await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible({ timeout: 20000 });
-    // 目前政策還是草稿（經營者與聯絡信箱待填）：標記要在，待填欄位要醒目——不能偽裝成正式文件。
+    // 政策還沒確認（status 仍是 draft）：草稿標記要在——不能偽裝成正式文件。
+    // （欄位沒填時的「待填」標記由單元測試以空設定驗證，這裡不依賴目前填了哪些欄位。）
     await expect(page.getByRole('note')).toContainText('草稿');
-    await expect(page.getByText(/【待填：/).first()).toBeVisible();
     await expect(page).toHaveTitle(new RegExp(title));
     // 頁尾有兩份文件的連結。
     await expect(page.getByRole('link', { name: '隱私權政策' }).last()).toBeVisible();

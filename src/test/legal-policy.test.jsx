@@ -88,6 +88,20 @@ describe('LegalPage', () => {
     expect(screen.getByRole('heading', { name: '隱私權政策', level: 1 })).toBeInTheDocument();
   });
 
+  it('草稿說明只講實際還缺的欄位：兩個都填了就不再說「還沒填」，但仍標示草稿', () => {
+    renderPage('privacy', { ...READY, status: 'draft' });
+    const note = screen.getByRole('note');
+    expect(note).toHaveTextContent('草稿，尚待確認');
+    expect(note).not.toHaveTextContent('還沒填');
+    expect(screen.queryByText(/【待填/)).not.toBeInTheDocument();
+  });
+
+  it('只缺聯絡信箱時，說明裡點名缺的是聯絡信箱', () => {
+    renderPage('privacy', { ...READY, status: 'draft', contactEmail: '' });
+    expect(screen.getByRole('note')).toHaveTextContent('聯絡信箱還沒填');
+    expect(screen.getByRole('note')).not.toHaveTextContent('經營者名稱還沒填');
+  });
+
   it('填好並 published 後：沒有草稿標記，經營者與聯絡信箱出現在內文', () => {
     renderPage('privacy', READY);
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
