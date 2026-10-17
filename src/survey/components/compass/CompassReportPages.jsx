@@ -22,7 +22,7 @@ function Cover({ result, user, submittedAt, date }) {
       <div style={{ background: '#241f18', padding: '44px 52px 38px', color: '#fff' }}>
         <div style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.12em', marginBottom: 10 }}>Confidential · 個人評測報告</div>
         <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.25 }}>
-          {assessmentName ?? '雙環領導羅盤'}
+          {assessmentName ?? '雙環領導羅盤八大構面評測'}
           <br />
           <span style={{ fontSize: 20, fontWeight: 600, opacity: 0.85 }}>個人報告</span>
         </div>

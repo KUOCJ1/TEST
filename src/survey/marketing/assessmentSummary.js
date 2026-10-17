@@ -51,7 +51,7 @@ export const ASSESSMENT_SUMMARIES = [
   {
     // 尚未正式推出：hidden 為 true 時不在首頁評測工具庫顯示（正式啟用後移除此旗標）。
     id: 'leadership-compass',
-    name: '雙環領導羅盤',
+    name: '雙環領導羅盤八大構面評測',
     tagline: '看見快環與永環的領導行為輪廓',
     dimensions: 8,
     items: 69,

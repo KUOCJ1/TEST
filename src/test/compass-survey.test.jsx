@@ -45,7 +45,7 @@ function answerPage(value = 4) {
 describe('雙環領導羅盤：作答頁', () => {
   it('預設精簡版：共 32 題，分 8 段，第一段只顯示 4 題與頻率量表', () => {
     renderSurvey();
-    expect(screen.getByText('雙環領導羅盤')).toBeInTheDocument();
+    expect(screen.getByText('雙環領導羅盤八大構面評測')).toBeInTheDocument();
     expect(screen.getByText('32 題')).toBeInTheDocument();
     expect(screen.getByText('8 段')).toBeInTheDocument();
     expect(document.querySelectorAll('fieldset[data-question-id]')).toHaveLength(4);

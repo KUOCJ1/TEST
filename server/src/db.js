@@ -74,19 +74,27 @@ export function createDb(file) {
     { id: 'disc', name: 'DISC 行為風格評測', description: '4 大構面、32 題，風格輪廓型評量', enabled: true },
     { id: 'archetype', name: '識己®性格原型評測', description: '4 組性格光譜、40 題，16 種原創性格原型', enabled: true },
     // 雙環領導羅盤：預設停用，管理者在後台驗收後再啟用（enabled 只對「資料庫還沒有這筆」時作為初值）
-    { id: 'leadership-compass', name: '雙環領導羅盤', description: '8 構面、精簡版 32 題／完整版 69 題，含人機協作與張力指標', enabled: false },
+    { id: 'leadership-compass', name: '雙環領導羅盤八大構面評測', renamedFrom: ['雙環領導羅盤'], description: '8 構面、精簡版 32 題／完整版 69 題，含人機協作與張力指標', enabled: false },
     // 接班補充問卷：預設停用；涉及職涯與去留意向，啟用前須完成隱私政策更新與重新同意（見 docs/leadership-new/06）
     { id: 'succession-intent', name: '接班補充問卷', description: '4 面向、20 題，整理升任企圖、準備程度、可接受條件與長期意向（自評）', enabled: false },
   ];
   if (data.assessments.length === 0) {
-    data.assessments = KNOWN_ASSESSMENTS;
+    data.assessments = KNOWN_ASSESSMENTS.map(({ renamedFrom: _r, ...rest }) => rest);
     freshlySeeded = true;
   } else {
     const existingIds = new Set(data.assessments.map((a) => a.id));
     const missing = KNOWN_ASSESSMENTS.filter((a) => !existingIds.has(a.id));
     if (missing.length > 0) {
-      data.assessments.push(...missing);
+      data.assessments.push(...missing.map(({ renamedFrom: _r, ...rest }) => rest));
       freshlySeeded = true;
+    }
+    // 改名：資料庫裡已經有的題庫，若名稱還是「舊的預設名」就換成新名稱（管理者自己改過的名稱不動）。
+    for (const known of KNOWN_ASSESSMENTS) {
+      const existing = data.assessments.find((a) => a.id === known.id);
+      if (existing && known.renamedFrom?.includes(existing.name)) {
+        existing.name = known.name;
+        freshlySeeded = true;
+      }
     }
   }
 

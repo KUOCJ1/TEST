@@ -30,7 +30,7 @@ export default function CompassGroupPrintable({ report, group, phaseLabel, onClo
         </div>
       </div>
       <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif', padding: '32px 52px' }}>
-        <PageMeta name={group.name} section="組織診斷" date={date} assessmentName="雙環領導羅盤" />
+        <PageMeta name={group.name} section="組織診斷" date={date} assessmentName="雙環領導羅盤八大構面評測" />
         <SectionTitle sub={`${phaseLabel}，已完成自評 ${report.n} / ${report.memberCount} 人（${Math.round(report.completion * 100)}%）`}>班級組織診斷</SectionTitle>
         <p style={{ fontSize: 10, color: '#475569', lineHeight: 1.8, marginBottom: 16 }}>
           這份報告描述的是「這群人的行為模式」，不是組織文化的診斷結論，也不會顯示任何個人的分數。

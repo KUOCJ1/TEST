@@ -7,7 +7,7 @@ import { selectForm } from '../survey/utils/compassScoring.js';
 describe('雙環領導羅盤：題庫設定完整性', () => {
   it('已註冊，且 ID 與名稱符合決定', () => {
     expect(getAssessment('leadership-compass')).toBe(REGISTRY['leadership-compass']);
-    expect(compass.NAME).toBe('雙環領導羅盤');
+    expect(compass.NAME).toBe('雙環領導羅盤八大構面評測');
   });
 
   it('8 構面、四字名稱；24 個子面向皆為四字', () => {

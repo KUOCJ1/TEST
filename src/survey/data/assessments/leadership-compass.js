@@ -9,7 +9,7 @@ import {
 export const ID = 'leadership-compass';
 export const ITEM_VERSION = 'compass-0.3';
 export const SUPPORTS_360 = true;
-export const NAME = '雙環領導羅盤';
+export const NAME = '雙環領導羅盤八大構面評測';
 export const NAME_EN = 'Dual-Loop Leadership Compass';
 export const ABBR = 'DLLC';
 export const DESCRIPTION = '以行為頻率衡量領導力：快環（洞察、聚焦、授權、凝聚）與永環（學習、穩定、育才、傳承）共 8 構面，含人機協作與四組張力指標。預設精簡版 32 題，亦可選完整版 69 題。';

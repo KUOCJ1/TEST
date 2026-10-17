@@ -21,7 +21,7 @@ describe('雙環領導羅盤：個人列印報告', () => {
     const { container } = render(<ReportPages result={resultOf(varied)} user={{ name: '王小明' }} submittedAt="2026-10-17T00:00:00Z" benchmark={{ totals: [100, 200, 300], count: 3, dimensionAverages: [] }} />);
     const text = container.textContent;
     expect(text).toContain('王小明');
-    expect(text).toContain('雙環領導羅盤');
+    expect(text).toContain('雙環領導羅盤八大構面評測');
     expect(text).not.toMatch(/總得分|能力達成率|百分位|超越/);
     ['洞察情勢', '聚焦應變', '知人授權', '凝聚帶動', '敏捷學習', '穩定當責', '識才育才', '傳承留能'].forEach((n) => expect(text).toContain(n));
     expect(text).toContain('四組張力');

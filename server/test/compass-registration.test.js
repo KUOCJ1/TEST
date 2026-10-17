@@ -18,7 +18,7 @@ describe('題庫登錄', () => {
     const a = db.data.assessments.find((x) => x.id === ID);
     assert.ok(a);
     assert.equal(a.enabled, false);
-    assert.equal(a.name, '雙環領導羅盤');
+    assert.equal(a.name, '雙環領導羅盤八大構面評測');
   });
 
   test('既有 L9D 等四個題庫維持啟用，完全不受影響', () => {
@@ -77,5 +77,31 @@ describe('接班補充問卷登錄', () => {
     for (const id of ['ai-competency', 'leadership-9d', 'disc', 'archetype']) {
       assert.equal(db.data.assessments.find((x) => x.id === id)?.enabled, true, id);
     }
+  });
+});
+
+describe('評量改名的資料庫遷移', () => {
+  test('舊的預設名稱會被換成新名稱；管理者自己改過的名稱不動', async () => {
+    const { mkdtempSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const dir = mkdtempSync(join(tmpdir(), 'rename-'));
+    const file = join(dir, 'db.sqlite3');
+
+    // 模擬已上線的資料庫：羅盤還是舊名稱
+    const first = createDb(file);
+    first.data.assessments.find((x) => x.id === ID).name = '雙環領導羅盤';
+    first.persist();
+
+    const second = createDb(file);
+    assert.equal(second.data.assessments.find((x) => x.id === ID).name, '雙環領導羅盤八大構面評測');
+
+    // 管理者自訂的名稱不會被覆蓋
+    second.data.assessments.find((x) => x.id === ID).name = '我們公司的領導力評測';
+    second.persist();
+    const third = createDb(file);
+    assert.equal(third.data.assessments.find((x) => x.id === ID).name, '我們公司的領導力評測');
+    // 種入的紀錄不帶多餘的 renamedFrom 欄位
+    assert.equal('renamedFrom' in third.data.assessments.find((x) => x.id === ID), false);
   });
 });

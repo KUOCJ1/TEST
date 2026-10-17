@@ -101,7 +101,7 @@ const CompassResultPanel = forwardRef(function CompassResultPanel(
     >
       <div className="bg-ink-700 px-6 py-7 text-center text-paper-50">
         <p className="text-sm font-medium text-paper-50/75">
-          {assessmentName ?? '雙環領導羅盤'}
+          {assessmentName ?? '雙環領導羅盤八大構面評測'}
           {form && <span className="ml-2 rounded-sm bg-paper-50/20 px-2 py-0.5 text-xs">{FORM_LABEL[form] ?? form}</span>}
         </p>
         {level && (
