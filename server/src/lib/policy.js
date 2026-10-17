@@ -6,4 +6,4 @@
 //
 // ⚠️ 前端有一份相同的常數：src/survey/legal/policy.js 的 POLICY_VERSION。兩邊必須一致，
 // 前端測試（src/test/legal-policy.test.jsx）會讀這個檔案確認，不一致 CI 就會失敗。
-export const POLICY_VERSION = '2026-10-17';
+export const POLICY_VERSION = '2026-10-18';
