@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
@@ -117,6 +117,14 @@ vi.mock('../survey/api/client', () => {
   };
 });
 
+// AppShell／AdminDashboard 是 lazy() 載入的大塊（含全部題庫資料、題庫內容編輯器…）。CI 冷啟動時
+// 第一次轉譯整條相依鏈要好幾秒，會把「等畫面出現」的時間吃光而偶發失敗（Sprint 7、8、9、10、12 都遇過）。
+// 在所有測試開始前先載入一次：之後 lazy() 拿到的是快取好的模組，測試本身只剩渲染的時間。
+beforeAll(async () => {
+  await import('../survey/AppShell');
+  await import('../survey/admin/AdminDashboard');
+}, 60000);
+
 beforeEach(() => {
   h.state.user = null;
   h.state.users = [{ id: 'admin', name: '系統管理員', email: 'admin@demo.tw', role: 'admin' }];
@@ -176,7 +184,7 @@ describe('App 流程', () => {
     fireEvent.click(adminTab);
     // AdminDashboard 是 lazy() 載入的獨立 chunk：CI 的冷啟動要先編譯整條相依鏈，
     // 超過 findBy 預設的 1 秒是常態（Sprint 7 在 CI 上因此失敗過一次），給足時間。
-    expect(await screen.findByRole('heading', { name: '管理後台' }, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '管理後台' }, { timeout: 15000 })).toBeInTheDocument();
     expect(screen.getByText('註冊人數')).toBeInTheDocument();
   });
 
