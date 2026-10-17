@@ -181,6 +181,25 @@ describe('App 流程', () => {
     expect(await screen.findByText('尚無評測紀錄')).toBeInTheDocument();
   });
 
+  it('作答中點左上角的名稱可以回到首頁（行銷首頁），首頁的按鈕改成「前往我的評量」', async () => {
+    renderApp();
+    await navigateToLogin();
+    await registerUser('小華', 'hua@example.com', 'abcdef12');
+    fireEvent.click(await screen.findByRole('button', { name: '開始作答' }));
+    expect(await screen.findByRole('button', { name: /送出評測/ })).toBeInTheDocument();
+
+    const brand = screen.getByRole('link', { name: '回到首頁' });
+    expect(brand).toHaveAttribute('href', '/welcome');
+    fireEvent.click(brand);
+
+    expect(await screen.findByRole('heading', { level: 1, name: /先看清楚現在/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '立即開始' })).not.toBeInTheDocument();
+    const toApp = await screen.findAllByRole('link', { name: '前往我的評量' });
+    expect(toApp.length).toBeGreaterThan(0);
+    // 行銷導覽列的名稱在已登入時也回到 /welcome，不會被導進預設評量。
+    expect(screen.getAllByRole('link', { name: /全方位職能評測/ })[0]).toHaveAttribute('href', '/welcome');
+  });
+
   it('沒有同意紀錄的既有用戶登入後先看到同意畫面，同意後才進入首頁', async () => {
     h.state.users.push({ id: 'old', name: '舊學員', email: 'old@demo.tw', role: 'user' });
     renderApp();

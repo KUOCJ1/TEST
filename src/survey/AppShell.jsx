@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate, Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   ClipboardList, ChartColumn, UsersRound, GraduationCap, Shield, BookOpen,
@@ -296,11 +296,12 @@ function AppShellInner() {
     <div className={`min-h-screen ${showBottomNav ? 'pb-[calc(8rem+env(safe-area-inset-bottom))] sm:pb-20' : ''}`}>
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-2.5 sm:px-6">
-          <span className="flex shrink-0 items-center gap-2 text-base font-extrabold tracking-tight text-slate-800">
+          {/* 點名稱回到首頁（行銷首頁）。作答進度會自動儲存在瀏覽器，離開不會遺失。 */}
+          <Link to="/welcome" aria-label="回到首頁" title="回到首頁" className="flex shrink-0 items-center gap-2 rounded text-base font-extrabold tracking-tight text-slate-800 hover:text-brass-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-400">
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
             <span className="hidden lg:inline">全方位職能評測</span>
             <span className="lg:hidden">職能評測</span>
-          </span>
+          </Link>
 
           {isSurveyOrRaterSetup ? (
             <button

@@ -9,7 +9,8 @@ export default function MarketingNav({ loggedIn = false, onEnter }) {
   return (
     <nav className="sticky top-0 z-30 border-b border-ink-700/10 bg-paper-100/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5">
-        <Link to="/" className="flex shrink-0 items-center gap-3">
+        {/* 已登入時 "/" 是 AppShell（可能直接導進預設評量），所以回「首頁」要走 /welcome。 */}
+        <Link to={loggedIn ? '/welcome' : '/'} className="flex shrink-0 items-center gap-3">
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
           <span className="font-serif text-lg font-semibold tracking-tight text-ink-700">
             全方位職能評測

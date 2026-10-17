@@ -29,7 +29,8 @@ const GuidePage = lazy(() => import('./survey/marketing/GuidePage'));
 // lazy() 之後這些只在真的登入成功、掛載 AppShell 時才下載。
 const AppShell = lazy(() => import('./survey/AppShell'));
 
-const MARKETING_PATHS = ['/about', '/how-it-works', '/showcase', '/faq', '/privacy', '/terms', '/framework'];
+// '/welcome'：登入後也能回到首頁（行銷首頁）；'/' 對已登入的人是 AppShell（會導到我的評量或預設評量）。
+const MARKETING_PATHS = ['/about', '/how-it-works', '/showcase', '/faq', '/privacy', '/terms', '/framework', '/welcome'];
 // 各評測的說明頁（/guide/:評量 id）是動態路徑，另外以前綴判斷。
 const isMarketingPath = (p) => MARKETING_PATHS.includes(p) || p.startsWith('/guide/');
 
@@ -49,7 +50,7 @@ function readJoinCode() {
 
 const MARKETING_TITLES = {
   '/about': '平台理念', '/how-it-works': '功能總覽', '/showcase': '範例報告', '/faq': '常見問題',
-  '/privacy': '隱私權政策', '/terms': '服務條款', '/framework': '雙環領導羅盤八大構面評測',
+  '/privacy': '隱私權政策', '/terms': '服務條款', '/framework': '雙環領導羅盤八大構面評測', '/welcome': '首頁',
 };
 
 function AppRoutes() {
@@ -134,6 +135,7 @@ function AppRoutes() {
           <Route path="/faq" element={<FaqPage loggedIn={!!user} onEnter={enterLogin} />} />
           <Route path="/privacy" element={<LegalPage kind="privacy" loggedIn={!!user} onEnter={enterLogin} />} />
           <Route path="/terms" element={<LegalPage kind="terms" loggedIn={!!user} onEnter={enterLogin} />} />
+          <Route path="/welcome" element={<LandingPage loggedIn={!!user} onEnter={enterLogin} />} />
           <Route path="/framework" element={<FrameworkPage loggedIn={!!user} onEnter={enterLogin} />} />
           <Route path="/guide/:assessmentId" element={<GuidePage loggedIn={!!user} onEnter={enterLogin} />} />
         </Routes>

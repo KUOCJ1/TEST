@@ -4,7 +4,7 @@ import MarketingFooter from './marketing/MarketingFooter';
 import CtaBanner from './marketing/CtaBanner';
 import { ASSESSMENT_SUMMARIES } from './marketing/assessmentSummary';
 
-export default function LandingPage({ onEnter }) {
+export default function LandingPage({ onEnter, loggedIn = false }) {
   const scrollToFeatures = () => {
     document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -78,7 +78,7 @@ export default function LandingPage({ onEnter }) {
 
   return (
     <div className="min-h-screen bg-paper-100 font-sans text-ink-700">
-      <MarketingNav loggedIn={false} onEnter={onEnter} />
+      <MarketingNav loggedIn={loggedIn} onEnter={onEnter} />
 
       {/* Hero — 報告式排版：左文右數據欄 */}
       <section className="px-6 pt-20 pb-4">
@@ -97,9 +97,13 @@ export default function LandingPage({ onEnter }) {
               不只給你一份報告，而是陪你把每一次的改變累積成看得見的軌跡。
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-8">
-              <button onClick={onEnter} className="btn-primary px-7 py-3 text-base">
-                立即開始
-              </button>
+              {loggedIn ? (
+                <Link to="/home" className="btn-primary px-7 py-3 text-base">前往我的評量</Link>
+              ) : (
+                <button onClick={onEnter} className="btn-primary px-7 py-3 text-base">
+                  立即開始
+                </button>
+              )}
               <button
                 onClick={scrollToFeatures}
                 className="border-b border-ink-700/40 pb-0.5 text-[15px] font-medium text-ink-700 transition-colors hover:border-ink-700"
@@ -258,7 +262,7 @@ export default function LandingPage({ onEnter }) {
         </div>
       </section>
 
-      <CtaBanner loggedIn={false} onEnter={onEnter} />
+      <CtaBanner loggedIn={loggedIn} onEnter={onEnter} />
 
       <MarketingFooter />
     </div>
