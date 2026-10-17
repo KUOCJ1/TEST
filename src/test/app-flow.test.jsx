@@ -4,8 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
 import { POLICY_VERSION } from '../survey/legal/policy';
 
-function renderApp() {
-  return render(<MemoryRouter><App /></MemoryRouter>);
+function renderApp(initialPath = '/') {
+  return render(<MemoryRouter initialEntries={[initialPath]}><App /></MemoryRouter>);
 }
 
 // 以記憶體假後端取代真實 API client，模擬註冊/登入/作答/後台流程。
@@ -181,23 +181,29 @@ describe('App 流程', () => {
     expect(await screen.findByText('尚無評測紀錄')).toBeInTheDocument();
   });
 
-  it('作答中點左上角的名稱可以回到首頁（行銷首頁），首頁的按鈕改成「前往我的評量」', async () => {
+  it('作答中點左上角的名稱回到「我的評量」；行銷首頁在登入狀態下可以連回「我的評量」', async () => {
     renderApp();
     await navigateToLogin();
     await registerUser('小華', 'hua@example.com', 'abcdef12');
     fireEvent.click(await screen.findByRole('button', { name: '開始作答' }));
     expect(await screen.findByRole('button', { name: /送出評測/ })).toBeInTheDocument();
 
-    const brand = screen.getByRole('link', { name: '回到首頁' });
-    expect(brand).toHaveAttribute('href', '/welcome');
+    const brand = screen.getByRole('link', { name: '回到我的評量' });
+    expect(brand).toHaveAttribute('href', '/home');
     fireEvent.click(brand);
+    expect(await screen.findByRole('heading', { name: '選擇評量' })).toBeInTheDocument();
+  });
 
+  it('已登入看行銷首頁（/welcome）：按鈕是「前往我的評量」，導覽列名稱也連回我的評量', async () => {
+    h.state.users.push({ id: 'u9', name: '小美', email: 'mei@demo.tw', role: 'user', consent: { version: POLICY_VERSION, acceptedAt: '2026-10-17T00:00:00Z' } });
+    h.state.user = h.state.users.find((u) => u.id === 'u9');
+    renderApp('/welcome');
     expect(await screen.findByRole('heading', { level: 1, name: /先看清楚現在/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '立即開始' })).not.toBeInTheDocument();
     const toApp = await screen.findAllByRole('link', { name: '前往我的評量' });
-    expect(toApp.length).toBeGreaterThan(0);
-    // 行銷導覽列的名稱在已登入時也回到 /welcome，不會被導進預設評量。
-    expect(screen.getAllByRole('link', { name: /全方位職能評測/ })[0]).toHaveAttribute('href', '/welcome');
+    expect(toApp.length).toBeGreaterThan(1); // 導覽列、首頁主按鈕、頁尾橫幅
+    toApp.forEach((l) => expect(l).toHaveAttribute('href', '/home'));
+    expect(screen.getAllByRole('link', { name: /全方位職能評測/ })[0]).toHaveAttribute('href', '/home');
   });
 
   it('沒有同意紀錄的既有用戶登入後先看到同意畫面，同意後才進入首頁', async () => {
