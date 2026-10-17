@@ -1,5 +1,5 @@
 import { getAssessment } from '../data/assessments/index.js';
-import { GUIDES, guidePathFor } from '../data/assessment-guides.js';
+import { GUIDES, guidePathFor, cardSize } from '../data/assessment-guides.js';
 import { formatDate } from '../utils/format';
 import PhaseBadge from './PhaseBadge';
 import { badgeBg } from '../utils/color';
@@ -38,7 +38,8 @@ export default function AssessmentCard({
           <h3 className="text-lg font-extrabold text-slate-800">{assessment.name}</h3>
           {inGroup && <span className="shrink-0"><PhaseBadge phase={groupPhase} /></span>}
         </div>
-        <p className="mt-1 text-sm text-slate-500">{assessment.description}</p>
+        {/* 白話的一句話（做完會得到什麼）優先；沒有編輯層說明的評量沿用資料庫裡的描述。 */}
+        <p className="mt-1 text-sm text-slate-500">{GUIDES[assessment.id]?.blurb ?? assessment.description}</p>
         {(config?.FRAMEWORK_PATH || GUIDES[assessment.id]) && (
           // 用一般連結並在新分頁開啟：說明頁不需要路由情境，也不會中斷目前頁面的狀態。
           <p className="mt-2 text-sm">
@@ -49,7 +50,7 @@ export default function AssessmentCard({
         )}
         {config && (
           <p className="mt-1 text-xs text-slate-400">
-            {config.TOTAL_QUESTIONS} 題 · {config.DIMENSIONS.length} 大構面
+            {cardSize(config)} · {config.DIMENSIONS.length} 大構面
           </p>
         )}
         <div className="mt-2 flex flex-wrap gap-1.5">

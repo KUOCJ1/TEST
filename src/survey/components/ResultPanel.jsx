@@ -5,6 +5,7 @@ import NarrativeReport from './NarrativeReport';
 import LearningResources from './LearningResources';
 import { getAssessment } from '../data/assessments/index.js';
 import { buildSuggestions } from '../utils/suggestions';
+import { GUIDES, guidePathFor } from '../data/assessment-guides.js';
 import InfoTip from './InfoTip';
 import { badgeBg, dimTextStyle } from '../utils/color';
 import CompassResultPanel from './compass/CompassResultPanel.jsx';
@@ -101,6 +102,12 @@ const ResultPanel = forwardRef(function ResultPanel(
       )}
 
       <div className="px-5 py-6 sm:px-7">
+        {GUIDES[result.assessmentId] && (
+          <p className="mb-4 text-sm text-slate-500">
+            不確定怎麼讀這份結果？
+            <a href={guidePathFor(result.assessmentId, config)} target="_blank" rel="noreferrer" className="ml-1 font-semibold text-brass-600 underline">看這份評測怎麼讀</a>（新分頁開啟）
+          </p>
+        )}
         <div id="section-radar" className="scroll-mt-14 flex flex-col items-center">
           <h3 className="mb-2 text-base font-bold text-slate-700">{dimCount} 大構面落點雷達圖</h3>
           <RadarChart

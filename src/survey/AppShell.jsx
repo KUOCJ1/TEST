@@ -234,10 +234,10 @@ function AppShellInner() {
 
   // shortLabel 供手機底部導覽使用（寬度有限，取最短可辨識的字樣）。
   const tabs = [
-    { id: 'home', label: '我的評量', shortLabel: '評量', path: '/home', Icon: ClipboardList },
-    { id: 'analysis', label: '我的分析', shortLabel: '分析', path: '/analysis', Icon: ChartColumn },
-    { id: '360', label: '360° 評測', shortLabel: '360°', path: '/360', Icon: UsersRound },
-    { id: 'learning', label: '我的學習', shortLabel: '學習', path: '/learning', Icon: BookOpen },
+    { id: 'home', label: '我的評量', shortLabel: '評量', path: '/home', Icon: ClipboardList, hint: '選擇評量並作答' },
+    { id: 'analysis', label: '我的分析', shortLabel: '分析', path: '/analysis', Icon: ChartColumn, hint: '查看結果與歷次趨勢' },
+    { id: '360', label: '360° 評測', shortLabel: '360°', path: '/360', Icon: UsersRound, hint: '請同班的人評分，並看自評與他評的落差' },
+    { id: 'learning', label: '我的學習', shortLabel: '學習', path: '/learning', Icon: BookOpen, hint: '延伸閱讀、發展目標與學習清單' },
     ...(isCoach && !isAdmin ? [{ id: 'coach', label: '教練後台', shortLabel: '教練', path: '/coach', Icon: GraduationCap }] : []),
     ...(isAdmin ? [
       { id: 'coach', label: '教練後台', shortLabel: '教練', path: '/coach', Icon: GraduationCap },
@@ -321,6 +321,7 @@ function AppShellInner() {
                   key={t.id}
                   type="button"
                   aria-current={isTabActive(t.path) ? 'page' : undefined}
+                  title={t.hint}
                   onClick={() => navigate(t.path)}
                   className={`shrink-0 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-semibold transition-colors ${
                     isTabActive(t.path)

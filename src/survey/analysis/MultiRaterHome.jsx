@@ -85,6 +85,10 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
         <p className="mt-1 text-sm text-slate-500">
           除了自己填答，也可以評測您的主管、同儕或部屬，並在下方查看整合多方回饋的分析報告。
         </p>
+        <p className="mt-2 text-sm text-slate-500">
+          360° 是請別人也回答同一份評量，讓您看見「自己眼中的自己」和「別人眼中的您」有什麼落差。
+          評分對象限定為<strong className="text-slate-700">同一個班級</strong>的成員。
+        </p>
       </header>
 
       {supported.length > 1 && (
@@ -114,9 +118,15 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
         <p className="mb-4 text-xs text-slate-400">選擇一位同班成員與您的角色關係，開始為對方評測</p>
 
         {members.length === 0 ? (
-          <p className="rounded-lg bg-slate-50 px-4 py-3 text-center text-sm text-slate-500">
-            目前尚未加入任何班別，沒有可以評測的成員。請洽詢您的教練或平台管理者加入班級。
-          </p>
+          <div className="rounded-lg bg-slate-50 px-4 py-4 text-sm text-slate-600">
+            <p className="font-semibold text-slate-700">您目前還沒有可以評測的對象</p>
+            <p className="mt-1">因為您尚未加入任何班級（或班上還沒有其他成員）。加入班級的方式：</p>
+            <ol className="mt-2 list-decimal space-y-1 pl-5">
+              <li>向您的教練索取班級的<strong>報到 QR Code 或連結</strong>，掃描後登入即自動加入；</li>
+              <li>或請教練／平台管理者直接把您的 Email 加入班級。</li>
+            </ol>
+            <p className="mt-2 text-slate-500">在那之前，您仍然可以自己作答並查看分析。</p>
+          </div>
         ) : (
           <div className="space-y-3">
             {members.map((m) => (

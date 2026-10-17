@@ -6,6 +6,7 @@
 
 export const GUIDES = {
   'ai-competency': {
+    blurb: '看看你現在把 AI 用在工作裡的深度。做完拿到各構面的強弱與一個整體落點，課後再做一次可以看到進步。',
     tagline: '盤點你目前運用 AI 工具的實戰程度。',
     purpose: '看見你現在把 AI 用在工作裡的深度：從基本操作、提示詞、工作流程，到客製化與風險意識。常用在 AI 相關課程的課前評測，課後再做一次，就能看見學習帶來的增益。',
     forWhom: '即將參加或已參加 AI 職能培訓的人，或想知道自己目前 AI 運用程度的人。',
@@ -18,6 +19,7 @@ export const GUIDES = {
     cautions: ['部分題目的語氣是相反的，請逐題照實作答，不要一律勾同一個分數。'],
   },
   'leadership-9d': {
+    blurb: '從九個構面看你的領導行為。做完拿到每個構面的等級、整體落點，並可邀請別人評分、比較自評與他評。',
     tagline: '從九個構面看領導行為的成熟度。',
     purpose: '依評量設計，涵蓋 9 個構面與 20 個子能力，用行為描述的題目了解你在溝通、協作、任務與執行、領導影響、思辨決策、人才發展與接班成熟度等面向的表現，適用於接班人才與中高階管理者的發展評量。',
     forWhom: '管理者、接班人才，或正在規劃領導力發展的人。',
@@ -30,6 +32,7 @@ export const GUIDES = {
     cautions: ['題目描述的是行為，請依你「實際上常做」的程度作答，而不是你「認為應該」怎麼做。'],
   },
   disc: {
+    blurb: '認識你在工作中的行為風格。做完拿到你的風格組合與和不同風格合作的建議，沒有高低之分。',
     tagline: '認識自己與他人的行為風格組合。',
     purpose: '呈現你在工作中比較常展現的行為風格輪廓：支配、影響、穩定、謹慎四個面向各自的傾向，再由其中最突出的兩個組合成你的風格。沒有哪一型比較好，只有比較像你。',
     forWhom: '想更了解自己的溝通與合作方式，或想理解不同風格的同事如何互補的人。',
@@ -42,6 +45,7 @@ export const GUIDES = {
     cautions: ['請依「平常在工作中的樣子」作答，而不是你希望自己成為的樣子。'],
   },
   archetype: {
+    blurb: '認識你天生比較自在的性格傾向。做完拿到你的原型與四組光譜的位置，沒有好壞。',
     tagline: '認識自己天生比較自在的性格傾向。',
     purpose: '這是一份自陳偏好的量表，測的是你天生比較自在的內在傾向：怎麼充電、怎麼吸收資訊、怎麼做決定、怎麼安排生活，而不是外顯的行為表現。四組光譜各自落在哪一端，組合成 16 種原創性格原型之一。',
     forWhom: '想更了解自己內在傾向、或想和夥伴交換彼此工作節奏的人。',
@@ -56,6 +60,7 @@ export const GUIDES = {
     ],
   },
   'succession-intent': {
+    blurb: '整理你對升任與長期方向的想法。做完拿到四個面向的傾向，作為和主管或教練對話的素材，不是評分。',
     tagline: '整理你對升任與長期方向的想法。',
     purpose: '整理你對升任企圖、準備程度、可接受的職務條件與長期方向的想法，作為與主管或教練進行發展對話的素材。這不是評分，沒有對錯，也不是人才排名。',
     forWhom: '正在與主管或教練討論下一步職涯發展的人。',
@@ -76,4 +81,25 @@ export const GUIDE_PATH_PREFIX = '/guide/';
 /** 某個評測的說明頁路徑；雙環領導羅盤使用專屬的 /framework。 */
 export function guidePathFor(id, config) {
   return config?.FRAMEWORK_PATH ?? `${GUIDE_PATH_PREFIX}${id}`;
+}
+
+/** 作答時間的粗估（每題約 15–20 秒）。⚠️ 估計值，累積實際作答時間後再校正。 */
+export const SECONDS_PER_ITEM = [15, 20];
+export function estimateMinutes(questionCount) {
+  const [lo, hi] = SECONDS_PER_ITEM;
+  const a = Math.max(1, Math.round((questionCount * lo) / 60));
+  const b = Math.max(a, Math.round((questionCount * hi) / 60));
+  return a === b ? `約 ${a} 分鐘` : `約 ${a}–${b} 分鐘`;
+}
+
+/** 評量卡片用的「題數與時間」：有精簡版／完整版的評量（雙環領導羅盤）兩個都列出。 */
+export function cardSize(config) {
+  if (!config) return '';
+  if (typeof config.selectForm === 'function' && config.FORMS?.length) {
+    return config.FORMS.map((f) => {
+      const n = config.selectForm(f.id).TOTAL_QUESTIONS;
+      return `${f.name} ${n} 題（${estimateMinutes(n)}）`;
+    }).join('／');
+  }
+  return `${config.TOTAL_QUESTIONS} 題（${estimateMinutes(config.TOTAL_QUESTIONS)}）`;
 }

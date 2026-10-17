@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, CircleHelp, Download, LogOut, ShieldCheck, User } from 'lucide-react';
+import { ChevronDown, CircleHelp, Download, FileText, LogOut, MessageCircleQuestion, ShieldCheck, User } from 'lucide-react';
 
 /**
  * 頁首右上角的使用者選單（Sprint 8 驗收條件 8.2）：個人設定、使用說明、手冊下載、
@@ -91,6 +91,12 @@ export default function UserMenu({ user, roleLabel, onProfile, onHelp, manualHre
           </a>
           <a role="menuitem" className={itemCls} href={`${import.meta.env.BASE_URL}privacy`} target="_blank" rel="noopener noreferrer" onClick={() => close(false)}>
             <ShieldCheck aria-hidden="true" className="h-4 w-4 text-slate-500" /> 隱私權政策
+          </a>
+          <a role="menuitem" className={itemCls} href={`${import.meta.env.BASE_URL}terms`} target="_blank" rel="noopener noreferrer" onClick={() => close(false)}>
+            <FileText aria-hidden="true" className="h-4 w-4 text-slate-500" /> 服務條款
+          </a>
+          <a role="menuitem" className={itemCls} href={`${import.meta.env.BASE_URL}faq`} target="_blank" rel="noopener noreferrer" onClick={() => close(false)}>
+            <MessageCircleQuestion aria-hidden="true" className="h-4 w-4 text-slate-500" /> 常見問題
           </a>
           <div className="my-1 border-t border-slate-100" />
           <button type="button" role="menuitem" className={itemCls} onClick={() => choose(onLogout)}>

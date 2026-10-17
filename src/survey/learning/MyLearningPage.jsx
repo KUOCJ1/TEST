@@ -49,6 +49,7 @@ export default function MyLearningPage() {
         <h2 className="text-2xl font-extrabold text-slate-800">我的學習</h2>
         <p className="mt-1 text-sm text-slate-500">
           彙整你在各評量報告裡設定的發展目標，與從延伸閱讀加入的學習清單。
+          這裡是「看完分析之後，接下來怎麼做」的地方：把想讀的文章存起來、把想改變的事變成目標與行動。
         </p>
       </header>
 

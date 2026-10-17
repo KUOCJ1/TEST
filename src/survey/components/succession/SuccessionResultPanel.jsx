@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { Copy, Check, RotateCcw } from 'lucide-react';
 import { badgeBg, dimTextStyle } from '../../utils/color';
 import { SUCCESSION_READING, SUCCESSION_TEXT } from '../../utils/successionText.js';
+import { guidePathFor } from '../../data/assessment-guides.js';
 
 function Bar({ value, color, label }) {
   return (
@@ -28,6 +29,7 @@ const SuccessionResultPanel = forwardRef(function SuccessionResultPanel({ result
         <div className="rounded-xl bg-white p-4 text-sm leading-relaxed text-slate-600 ring-1 ring-slate-100">
           <p className="mb-1 font-semibold text-slate-700">怎麼讀這份整理</p>
           <ul className="list-disc space-y-1 pl-5">{SUCCESSION_READING.map((t) => <li key={t}>{t}</li>)}</ul>
+          <p className="mt-2"><a href={guidePathFor('succession-intent')} target="_blank" rel="noreferrer" className="font-semibold text-brass-600 underline">看這份問卷的完整說明</a>（新分頁開啟）</p>
         </div>
         <div className="mt-6 space-y-5">
           {dimensions.map((d) => {

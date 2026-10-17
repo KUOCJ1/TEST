@@ -298,9 +298,10 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
         )}
 
         <ProgressBar answered={answered} total={TOTAL_QUESTIONS} />
-        {answered > 0 && !result && (
+        {!result && (
           <p className="mt-1 flex items-center justify-end gap-1 text-xs text-slate-400">
-            <Check className="h-3 w-3" /> 作答進度已自動儲存於本機，離開後可繼續填寫
+            <Check className="h-3 w-3" />
+            {answered > 0 ? '作答進度已自動儲存於本機，離開後可繼續填寫' : '進度會自動儲存在這個瀏覽器，可以隨時離開、之後繼續'}
           </p>
         )}
 
