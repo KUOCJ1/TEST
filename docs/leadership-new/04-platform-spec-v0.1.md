@@ -325,3 +325,12 @@ FORMS = { full:{...}, short:{...} }                  // 以題目的 form 欄位
 - 班級列印：組織診斷分頁新增「列印報告」（`CompassGroupPrintable`），沿用畫面上的匿名分級；羅盤班級不再顯示通用的「產出班級專業分析報告」按鈕（通用版以總分與百分位為主，不適用）。
 - 敘事解讀文字：使用者看過後回覆可用（2026-10-17），試測後再依分數分布校準分段切分點。
 - 測試：前端新增 9 個（共 466 個）；lint、build 通過。
+
+## 21. S17（接班補充問卷）實作紀錄（2026-10-17）
+
+- 新增獨立評量 `succession-intent`（`data/assessments/succession-intent.js`，題目與設計見 `06-succession-questionnaire-v0.1.md`）：4 面向（升任企圖、準備程度、條件接受、長期意向）× 5 題，只自評、不做 360°、不做總分與排名；長期意向的題目可選「不想回答」（不影響完成度；全部不答時該面向不顯示）。
+- 計分 `utils/successionScoring.js`；報告 `components/succession/SuccessionResultPanel.jsx`（四個面向的「傾向」描述，語氣中性）與一頁列印版；`ResultPanel`／`PrintableReport` 依 `REPORT === 'succession'` 分派。
+- **預設停用**（後端 `enabled: false`、首頁摘要 `hidden: true`）；啟用前必須先完成 S18 的政策更新與重新同意。
+- 可見對象沿用平台既有權限：受評者本人、所屬班級教練、管理員（教練端總覽已有此行為；沒有新增客戶管理員角色）。
+- 順帶修正：`resultSummaryText`（複製結果摘要）改為可由題庫提供 `summaryText`；雙環領導羅盤此前複製出的摘要會含「總得分／最強構面」，現已改為各構面平均、兩環與張力。
+- 測試：前端新增 15 個、後端新增 1 個；全數通過。

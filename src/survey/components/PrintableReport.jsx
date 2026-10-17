@@ -18,6 +18,7 @@ import LayerPage from './printable-report/LayerPage.jsx';
 import CoachPage from './printable-report/CoachPage.jsx';
 import DevPlanPage from './printable-report/DevPlanPage.jsx';
 import CompassReportPages from './compass/CompassReportPages.jsx';
+import SuccessionReportPages from './succession/SuccessionReportPages.jsx';
 
 // ─── Report body (reusable — single member or part of a batch run) ──────
 export function ReportPages({ result, benchmark, user, submittedAt, comments = [] }) {
@@ -25,6 +26,9 @@ export function ReportPages({ result, benchmark, user, submittedAt, comments = [
   // 雙環領導羅盤有專屬列印版面（不做總分、達成率與百分位）。
   if (config?.REPORT === 'compass') {
     return <CompassReportPages result={result} user={user} submittedAt={submittedAt} comments={comments} />;
+  }
+  if (config?.REPORT === 'succession') {
+    return <SuccessionReportPages result={result} user={user} submittedAt={submittedAt} />;
   }
   const percentile = benchmark?.totals?.length >= 2
     ? computePercentile(result.total, benchmark.totals)
@@ -55,7 +59,7 @@ export function ReportPages({ result, benchmark, user, submittedAt, comments = [
 
 // ─── Main export ───────────────────────────────────────────────
 export default function PrintableReport({ result, benchmark, user, submittedAt, onClose, comments = [] }) {
-  const isCompass = getAssessment(result.assessmentId)?.REPORT === 'compass';
+  const isCompass = ['compass', 'succession'].includes(getAssessment(result.assessmentId)?.REPORT);
   const percentile = !isCompass && benchmark?.totals?.length >= 2
     ? computePercentile(result.total, benchmark.totals)
     : null;

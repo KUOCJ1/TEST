@@ -59,4 +59,15 @@ export const ASSESSMENT_SUMMARIES = [
     features: ['8 構面（快環 × 永環）', '精簡版 32 題／完整版 69 題', '支援 360° 多元評測'],
     hidden: true,
   },
+  {
+    // 尚未正式推出：hidden 為 true 時不在首頁評測工具庫顯示。
+    id: 'succession-intent',
+    name: '接班補充問卷',
+    tagline: '整理對升任與長期方向的想法',
+    dimensions: 4,
+    items: 20,
+    subCompetencies: 0,
+    features: ['4 個面向', '20 題自評', '作為發展對話的素材'],
+    hidden: true,
+  },
 ];

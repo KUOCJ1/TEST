@@ -1,5 +1,9 @@
-/** 將 buildResult() 結果整理成可複製的純文字摘要。 */
+import { getAssessment } from '../data/assessments/index.js';
+
+/** 將 buildResult() 結果整理成可複製的純文字摘要。題庫可提供自己的 summaryText（沒有總分的評量）。 */
 export function resultSummaryText(result) {
+  const custom = getAssessment(result?.assessmentId)?.summaryText;
+  if (typeof custom === 'function') return custom(result);
   return [
     `${result.assessmentName ?? '職能評測'} — 結果摘要`,
     `總得分：${result.total} / ${result.maxScore}（達成率 ${result.percent}%）`,

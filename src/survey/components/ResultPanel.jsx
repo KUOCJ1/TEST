@@ -8,6 +8,7 @@ import { buildSuggestions } from '../utils/suggestions';
 import InfoTip from './InfoTip';
 import { badgeBg, dimTextStyle } from '../utils/color';
 import CompassResultPanel from './compass/CompassResultPanel.jsx';
+import SuccessionResultPanel from './succession/SuccessionResultPanel.jsx';
 
 const ResultPanel = forwardRef(function ResultPanel(
   { result, onRetake, onCopy, copied, percentile = null, benchmarkDims = null, readOnly = false, focusDimensionIds = [] },
@@ -17,6 +18,9 @@ const ResultPanel = forwardRef(function ResultPanel(
   // 題庫宣告專屬報告（雙環領導羅盤）時，改用專屬元件；其他題庫的畫面完全不變。
   if (config?.REPORT === 'compass') {
     return <CompassResultPanel ref={ref} result={result} onRetake={onRetake} onCopy={onCopy} copied={copied} readOnly={readOnly} />;
+  }
+  if (config?.REPORT === 'succession') {
+    return <SuccessionResultPanel ref={ref} result={result} onRetake={onRetake} onCopy={onCopy} copied={copied} readOnly={readOnly} />;
   }
   const { total, maxScore, percent, level, dimensions, strongest, weakest, assessmentName } = result;
   const dimCount = dimensions.length;

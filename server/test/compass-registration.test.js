@@ -67,3 +67,15 @@ describe('前端計分結果可通過後端驗證', () => {
     assert.equal(stored.result.tensions.length, 4);
   });
 });
+
+describe('接班補充問卷登錄', () => {
+  test('預設停用；既有四個題庫不受影響', () => {
+    const db = createDb(':memory:');
+    const a = db.data.assessments.find((x) => x.id === 'succession-intent');
+    assert.ok(a);
+    assert.equal(a.enabled, false);
+    for (const id of ['ai-competency', 'leadership-9d', 'disc', 'archetype']) {
+      assert.equal(db.data.assessments.find((x) => x.id === id)?.enabled, true, id);
+    }
+  });
+});

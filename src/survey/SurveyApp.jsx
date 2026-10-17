@@ -345,7 +345,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
                     question={q}
                     text={rater === 'other' ? q.textOther : undefined}
                     scale={baseConfig.SCALE_LABELS}
-                    naLabel={rater === 'other' && q.observability === 'low' ? baseConfig.NA_LABEL : undefined}
+                    naLabel={(rater === 'other' && q.observability === 'low') || q.optional ? baseConfig.NA_LABEL : undefined}
                     naValue={baseConfig.NA_VALUE}
                     value={answers[q.id]}
                     onChange={handleChange}

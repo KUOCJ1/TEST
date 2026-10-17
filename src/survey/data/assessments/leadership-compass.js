@@ -107,6 +107,21 @@ export const MAX_SCORE = TOTAL_QUESTIONS * SCALE_MAX;
 
 export const dimensionRating = compassRating;
 
+/** 複製結果摘要：此評量沒有總分與排名，只列各構面平均、兩環與張力取向。 */
+export function summaryText(result) {
+  return [
+    `${result.assessmentName ?? NAME} — 結果摘要`,
+    '',
+    ...(result.loops ?? []).map((l) => `${l.name}平均：${l.average.toFixed(1)}`),
+    '',
+    '各構面平均（行為頻率 1–5）：',
+    ...result.dimensions.map((d) => `・${d.name}：${d.answered > 0 ? d.average.toFixed(1) : '—'}`),
+    '',
+    '四組張力：',
+    ...(result.tensions ?? []).map((t) => `・${t.nameA} ↔ ${t.nameB}：${t.available ? `${t.a.toFixed(1)} / ${t.b.toFixed(1)}` : '資料不足'}`),
+  ].join('\n');
+}
+
 // 此評量不做總分分級（見規格第 1、4 節）：結果元件需要一個 level 物件，這裡給固定的中性說明。
 export const PROFILE_MODE = true;
 export const PROFILE_LEVEL = {
