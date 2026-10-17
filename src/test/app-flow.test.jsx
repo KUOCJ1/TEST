@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
+import { POLICY_VERSION } from '../survey/legal/policy';
 
 function renderApp() {
   return render(<MemoryRouter><App /></MemoryRouter>);
@@ -10,11 +11,13 @@ function renderApp() {
 // 以記憶體假後端取代真實 API client，模擬註冊/登入/作答/後台流程。
 const h = vi.hoisted(() => ({
   state: { user: null, users: [], submissions: [] },
+  consentVersion: null,
 }));
+h.consentVersion = POLICY_VERSION;
 
 vi.mock('../survey/api/client', () => {
   const { state } = h;
-  const pub = (u) => u && { id: u.id, name: u.name, email: u.email, role: u.role };
+  const pub = (u) => u && { id: u.id, name: u.name, email: u.email, role: u.role, consent: u.consent ?? null };
   return {
     api: {
       async register({ name, email, password, acceptPolicy }) {
@@ -24,7 +27,7 @@ vi.mock('../survey/api/client', () => {
         if ((password || '').length < 8) throw new Error('密碼至少需 8 碼');
         const e = email.toLowerCase();
         if (state.users.some((u) => u.email === e)) throw new Error('此 Email 已被註冊');
-        const u = { id: `u${state.users.length + 1}`, name: name.trim(), email: e, role: 'user' };
+        const u = { id: `u${state.users.length + 1}`, name: name.trim(), email: e, role: 'user', consent: { version: h.consentVersion, acceptedAt: new Date().toISOString() } };
         state.users.push(u);
         state.user = u;
         return { user: pub(u), joinedGroup: null };
@@ -37,6 +40,10 @@ vi.mock('../survey/api/client', () => {
       },
       async logout() {
         state.user = null;
+      },
+      async acceptPolicy() {
+        state.user.consent = { version: h.consentVersion, acceptedAt: new Date().toISOString() };
+        return pub(state.user);
       },
       async me() {
         if (!state.user) throw new Error('尚未登入');
@@ -127,7 +134,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   h.state.user = null;
-  h.state.users = [{ id: 'admin', name: '系統管理員', email: 'admin@demo.tw', role: 'admin' }];
+  h.state.users = [{ id: 'admin', name: '系統管理員', email: 'admin@demo.tw', role: 'admin', consent: { version: POLICY_VERSION, acceptedAt: '2026-10-17T00:00:00Z' } }];
   h.state.submissions = [];
 });
 
@@ -172,6 +179,30 @@ describe('App 流程', () => {
     fireEvent.click(screen.getByRole('button', { name: '返回評量列表' }));
     fireEvent.click(await screen.findByRole('button', { name: '我的分析' }));
     expect(await screen.findByText('尚無評測紀錄')).toBeInTheDocument();
+  });
+
+  it('沒有同意紀錄的既有用戶登入後先看到同意畫面，同意後才進入首頁', async () => {
+    h.state.users.push({ id: 'old', name: '舊學員', email: 'old@demo.tw', role: 'user' });
+    renderApp();
+    await navigateToLogin();
+    fillLogin('old@demo.tw', 'abcdef12');
+    fireEvent.click(screen.getByRole('button', { name: '登入帳號' }));
+    expect(await screen.findByRole('heading', { name: /請閱讀並同意隱私權政策與服務條款/ })).toBeInTheDocument();
+    // 同意之前看不到系統。
+    expect(screen.queryByRole('heading', { name: '選擇評量' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '我同意並繼續' }));
+    expect(await screen.findByRole('heading', { name: '選擇評量' }, { timeout: 15000 })).toBeInTheDocument();
+  });
+
+  it('同意版本落後的用戶也會再被詢問；不同意可以登出回到登入頁', async () => {
+    h.state.users.push({ id: 'old', name: '舊學員', email: 'old@demo.tw', role: 'user', consent: { version: '2020-01-01', acceptedAt: '2020-01-01T00:00:00Z' } });
+    renderApp();
+    await navigateToLogin();
+    fillLogin('old@demo.tw', 'abcdef12');
+    fireEvent.click(screen.getByRole('button', { name: '登入帳號' }));
+    fireEvent.click(await screen.findByRole('button', { name: '不同意，登出' }));
+    expect(await screen.findByRole('button', { name: '登入帳號' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '選擇評量' })).not.toBeInTheDocument();
   });
 
   it('管理員登入後可見管理後台儀表板', async () => {

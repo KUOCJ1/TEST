@@ -27,8 +27,12 @@ describe('政策版本與同意判斷', () => {
     expect(isPolicyDraft({ ...READY, status: 'draft' })).toBe(true);
     expect(isPolicyDraft({ ...READY, operatorName: '  ' })).toBe(true);
     expect(isPolicyDraft({ ...READY, contactEmail: '' })).toBe(true);
-    // 目前 repo 預設是草稿（要負責人填好才公開）。
-    expect(isPolicyDraft(POLICY_META)).toBe(true);
+    // 負責人確認後已公開（2026-10-17）：經營者與聯絡信箱都填了，狀態是 published，閘門對既有用戶生效。
+    expect(POLICY_META.status).toBe('published');
+    expect(POLICY_META.operatorName.trim()).not.toBe('');
+    expect(POLICY_META.contactEmail.trim()).not.toBe('');
+    expect(isPolicyDraft(POLICY_META)).toBe(false);
+    expect(needsConsentGate({}, POLICY_META)).toBe(true);
   });
 
   it('needsConsent：沒有紀錄或版本落後才需要；needsConsentGate 在草稿時不擋既有用戶', () => {
@@ -108,7 +112,7 @@ describe('LegalPage', () => {
     expect(screen.queryByText(/【待填/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/範例顧問股份有限公司/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/privacy@example\.com/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/版本 2026-10-16/)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`版本 ${POLICY_VERSION}`))).toBeInTheDocument();
   });
 
   it('每個章節都有標題與目錄連結；表格容器可用鍵盤捲動；粗體標記被轉成強調', () => {

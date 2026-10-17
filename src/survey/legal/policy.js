@@ -11,14 +11,14 @@
 // 所有用戶下次登入會被再詢問一次同意。只改錯字不用調。
 // ⚠️ 伺服器有一份相同的常數 server/src/lib/policy.js，兩邊必須一致（有測試檢查）。
 
-export const POLICY_VERSION = '2026-10-16';
+export const POLICY_VERSION = '2026-10-17';
 
 export const POLICY_META = {
   // 'draft'＝草稿（頁面顯示草稿標記）；確認內容並填好下面兩個欄位後改成 'published'。
-  status: 'draft',
+  status: 'published',
   operatorName: '榕耀人才永續顧問有限公司', // 經營者名稱（公司或單位全名）
   contactEmail: 'kuocj1@gmail.com', // 個資相關問題與權利行使的聯絡信箱
-  effectiveDate: '2026-10-16',
+  effectiveDate: '2026-10-17',
 };
 
 /** 這位用戶是否還沒同意目前版本的政策（沒有紀錄，或版本落後）。 */

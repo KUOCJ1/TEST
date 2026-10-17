@@ -33,6 +33,8 @@ test('產生使用手冊截圖', async ({ browser }) => {
   // ── 種資料：管理者、教練、班級、三位示範學員 ──
   const admin = await pwRequest.newContext({ baseURL: API });
   await ok(await admin.post('/api/auth/login', { data: { email: 'admin@e2e.test', password: 'E2eTest1234' } }), 'admin login');
+  // 管理者種子帳號沒有同意紀錄；政策公開後登入會先看到同意畫面，截圖前先補同意。
+  await ok(await admin.post('/api/auth/consent', { data: { accept: true } }), 'admin consent');
   const coach = await pwRequest.newContext({ baseURL: API });
   const coachEmail = 'coach@example.com';
   const reg = await ok(await coach.post('/api/auth/register', { data: { acceptPolicy: true, name: '陳教練', email: coachEmail, password: 'abcdef12' } }), 'coach');

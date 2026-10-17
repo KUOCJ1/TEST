@@ -526,7 +526,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 - **隱私權政策與註冊同意（Sprint 12）**：
   - 兩份公開文件 `/privacy`、`/terms`（`marketing/LegalPage.jsx`，任何人不需登入就能開）。**內容、版本與草稿狀態都在
     `src/survey/legal/policy.js`**：`POLICY_META.operatorName`／`contactEmail` 要填好、`status` 改成 `'published'`，
-    頁面頂端的「草稿」標記與待填欄位才會消失；在那之前頁面顯示草稿標記，不會有編造的公司資訊。
+    頁面頂端的「草稿」標記與待填欄位才會消失；草稿期間頁面顯示草稿標記，不會有編造的公司資訊。**目前已公開（2026-10-17，經營者與聯絡信箱已填、`status: 'published'`）**。
   - 政策文字是**依程式實際行為整理的草稿，不是法律意見**，公開前要由經營者（或法務）確認。每一條都對照過程式
     （蒐集欄位、誰看得到、送給第三方什麼、cookie／localStorage、備份保留）；**改了程式行為就要回來改文字**——
     例如新增分析工具、換 AI 服務、加刪除／匯出功能、改備份保留份數。
@@ -536,7 +536,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
     **必須一致**——`src/test/legal-policy.test.jsx` 會讀伺服器那個檔案比對，不一致 CI 會失敗。政策有實質修改
     （蒐集的資料、用途、第三方、保存期限）時，兩邊一起調高版本，所有人下次登入就會再被詢問；只改錯字不用調。
   - **既有用戶閘門**：沒有同意紀錄（或版本落後）的用戶登入後，`App.jsx` 會先顯示 `legal/ConsentGate.jsx`，同意
-    （`POST /auth/consent`，寫稽核日誌 `accept_policy`）才能進系統，不同意可登出。**政策還是草稿時（`isPolicyDraft`）
+    （`POST /auth/consent`，寫稽核日誌 `accept_policy`）才能進系統，不同意可登出。**若政策被改回草稿（`isPolicyDraft`）
     這個閘門不會出現**，避免要求所有現有學員同意一份寫著「待填」的文件；新註冊不受影響。**改成 published 後，
     第一次登入的每個既有用戶都會看到一次**。
   - **資料外洩修正（同 Sprint）**：`GET /groups/mine`（學員端）以前整包回傳班級物件，同班學員讀得到教練登記的

@@ -16,11 +16,23 @@ export async function goToLoginForm(page, { fromLanding = true } = {}) {
   }
 }
 
-export async function login(page, email, password, opts) {
-  await goToLoginForm(page, opts);
+// 沒有同意紀錄（或版本落後）的既有帳號，登入後會先看到「請閱讀並同意」畫面（Sprint 12）。
+// 大多數測試只是要「登入進系統」，所以登入後若出現這個畫面就順手按同意；要測閘門本身時傳
+// `acceptConsent: false`。用 race 等「同意畫面」或「已進入系統（帳號選單）」其中之一，不會多等。
+export async function acceptConsentIfAsked(page) {
+  const gate = page.getByRole('button', { name: '我同意並繼續' });
+  const app = page.getByRole('button', { name: /的帳號選單/ });
+  await Promise.race([gate.waitFor({ timeout: 20000 }), app.waitFor({ timeout: 20000 })]).catch(() => {});
+  if (await gate.isVisible()) await gate.click();
+}
+
+export async function login(page, email, password, opts = {}) {
+  const { acceptConsent = true, ...rest } = opts;
+  await goToLoginForm(page, rest);
   await page.getByPlaceholder('you@example.com').fill(email);
   await page.getByPlaceholder('至少 8 碼').fill(password);
   await page.getByRole('button', { name: '登入帳號' }).click();
+  if (acceptConsent) await acceptConsentIfAsked(page);
 }
 
 export async function register(page, name, email, password, opts) {
