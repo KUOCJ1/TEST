@@ -21,6 +21,7 @@ const ShowcasePage = lazy(() => import('./survey/marketing/ShowcasePage'));
 const FaqPage = lazy(() => import('./survey/marketing/FaqPage'));
 const LegalPage = lazy(() => import('./survey/marketing/LegalPage'));
 const FrameworkPage = lazy(() => import('./survey/marketing/FrameworkPage'));
+const GuidePage = lazy(() => import('./survey/marketing/GuidePage'));
 
 // AppShell（整個已登入後的系統：作答、雷達圖、教練／管理後台）過去是靜態 import，
 // 跟 LandingPage／LoginPage 綁在一起，導致每個訪客（含還沒登入、只是看首頁的人）
@@ -29,6 +30,8 @@ const FrameworkPage = lazy(() => import('./survey/marketing/FrameworkPage'));
 const AppShell = lazy(() => import('./survey/AppShell'));
 
 const MARKETING_PATHS = ['/about', '/how-it-works', '/showcase', '/faq', '/privacy', '/terms', '/framework'];
+// 各評測的說明頁（/guide/:評量 id）是動態路徑，另外以前綴判斷。
+const isMarketingPath = (p) => MARKETING_PATHS.includes(p) || p.startsWith('/guide/');
 
 function MarketingFallback() {
   return <LoadingState fullScreen />;
@@ -105,17 +108,17 @@ function AppRoutes() {
 
   // 分頁標題（Sprint 8 驗收條件 8.8）：只管行銷頁與未登入畫面；登入後由 AppShell
   // 依功能頁設定——effect 是子元件先跑，這裡若也寫就會把 AppShell 的蓋掉。
-  const isMarketing = MARKETING_PATHS.includes(location.pathname);
+  const isMarketing = isMarketingPath(location.pathname);
   useEffect(() => {
     if (user && !isMarketing) return;
-    const name = MARKETING_TITLES[location.pathname] ?? (!user && view === 'auth' ? '登入／註冊' : null);
+    const name = MARKETING_TITLES[location.pathname] ?? (location.pathname.startsWith('/guide/') ? '評測說明' : null) ?? (!user && view === 'auth' ? '登入／註冊' : null);
     document.title = name ? `${name}｜全方位職能評測` : '全方位職能評測｜職能評量與發展平台';
   }, [user, isMarketing, location.pathname, view]);
 
   // 行銷／說明頁（理念、功能總覽、範例報告、常見問題）不論登入與否都能直接用
   // 網址開啟——登入後導覽列的 CTA 會自動改成「前往我的評量」，不強制導回
   // AppShell，讓已登入的使用者也能把連結分享給還沒有帳號的同事。
-  if (MARKETING_PATHS.includes(location.pathname)) {
+  if (isMarketingPath(location.pathname)) {
     // 登入畫面目前是首頁的一個 view 狀態，不是獨立路由，所以由行銷頁觸發登入時
     // 要先導回首頁，再切換到 view === 'auth'，下一次渲染才會顯示 LoginPage。
     const enterLogin = () => {
@@ -132,6 +135,7 @@ function AppRoutes() {
           <Route path="/privacy" element={<LegalPage kind="privacy" loggedIn={!!user} onEnter={enterLogin} />} />
           <Route path="/terms" element={<LegalPage kind="terms" loggedIn={!!user} onEnter={enterLogin} />} />
           <Route path="/framework" element={<FrameworkPage loggedIn={!!user} onEnter={enterLogin} />} />
+          <Route path="/guide/:assessmentId" element={<GuidePage loggedIn={!!user} onEnter={enterLogin} />} />
         </Routes>
       </Suspense>
     );

@@ -156,6 +156,7 @@ export default function LandingPage({ onEnter }) {
                     <dd className="font-serif text-2xl font-semibold text-ink-700">{a.items}</dd>
                   </div>
                 </dl>
+                <Link to={`/guide/${a.id}`} className="mb-4 text-sm font-semibold text-brass-500 underline">了解這份評測 →</Link>
                 <ul className="mt-auto space-y-2">
                   {a.features.map((f) => (
                     <li key={f} className="flex items-start gap-2.5 text-sm text-ink-400">

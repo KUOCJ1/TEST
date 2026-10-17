@@ -12,6 +12,7 @@ import ResultPanel from './components/ResultPanel';
 import { useConfirm } from './components/useConfirm';
 import { badgeBg } from './utils/color';
 import CompassIntro from './components/compass/CompassIntro.jsx';
+import { GUIDES, guidePathFor } from './data/assessment-guides.js';
 
 const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
 const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmentId}_v2`;
@@ -206,6 +207,11 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
         </header>
 
         {baseConfig.REPORT === 'compass' && !result && <CompassIntro rater={rater} />}
+        {baseConfig.REPORT !== 'compass' && GUIDES[assessmentId] && !result && (
+          <p className="mt-4 text-center text-sm text-slate-500">
+            第一次作答？<a href={guidePathFor(assessmentId, baseConfig)} target="_blank" rel="noreferrer" className="font-semibold text-brass-600 underline">先看這份評測在看什麼、結果怎麼讀</a>（新分頁開啟）
+          </p>
+        )}
 
         <div className="mt-5 rounded-xl bg-slate-50 p-4 text-[15px] leading-relaxed text-slate-600">
           歡迎填寫本評測系統。共 <strong className="text-slate-700">{TOTAL_QUESTIONS} 題</strong>

@@ -341,6 +341,9 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 
 ---
 
+### 5.4.1 各評測的說明頁（`/guide/:id`）
+`marketing/GuidePage.jsx` 依題庫設定產生每份評測的說明頁（構面與子面向、題數、量表、等級或原型清單、是否支援 360°），用途與讀法來自 `data/assessment-guides.js`（編輯層，只寫題庫設定本身已經說過的事）。新增評測時一定要同時補 `GUIDES`（或像雙環領導羅盤一樣提供 `FRAMEWORK_PATH` 專屬頁），`src/test/guide-pages.test.jsx` 會檢查。`/guide/leadership-compass` 會導向 `/framework`。
+
 ### 5.5 雙環領導羅盤與接班補充問卷（2026-10-18 起，預設停用）
 完整的設計、決策紀錄與實作紀錄在 [`docs/leadership-new/`](leadership-new/)（尤其 `04-platform-spec-v0.1.md` 第 16–22 節）。維運要知道的重點：
 - **設定檔**：`src/survey/data/assessments/leadership-compass.js`（題目由 `scripts/build-compass-config.mjs` 從 `docs/leadership-new/items-candidates-*.json` 產生到 `compass-items.generated.js`，**不要手改**）、`succession-intent.js`；敘事文字在 `compass-narrative.js`、`utils/successionText.js`。

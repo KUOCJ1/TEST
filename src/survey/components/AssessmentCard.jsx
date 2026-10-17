@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
 import { getAssessment } from '../data/assessments/index.js';
+import { GUIDES, guidePathFor } from '../data/assessment-guides.js';
 import { formatDate } from '../utils/format';
 import PhaseBadge from './PhaseBadge';
 import { badgeBg } from '../utils/color';
@@ -39,9 +39,12 @@ export default function AssessmentCard({
           {inGroup && <span className="shrink-0"><PhaseBadge phase={groupPhase} /></span>}
         </div>
         <p className="mt-1 text-sm text-slate-500">{assessment.description}</p>
-        {config?.FRAMEWORK_PATH && (
+        {(config?.FRAMEWORK_PATH || GUIDES[assessment.id]) && (
+          // 用一般連結並在新分頁開啟：說明頁不需要路由情境，也不會中斷目前頁面的狀態。
           <p className="mt-2 text-sm">
-            <Link to={config.FRAMEWORK_PATH} className="font-semibold text-brass-600 underline">先了解這份評測的框架</Link>
+            <a href={guidePathFor(assessment.id, config)} target="_blank" rel="noreferrer" className="font-semibold text-brass-600 underline">
+              {config?.FRAMEWORK_PATH ? '先了解這份評測的框架' : '先了解這份評測'}
+            </a>
           </p>
         )}
         {config && (
