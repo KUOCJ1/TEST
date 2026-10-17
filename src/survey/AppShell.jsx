@@ -114,7 +114,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
         <GroupStatusBar group={statusGroup} />
         <GoalProgressChip goals={goals} onClick={() => navigate('/learning')} />
       </div>
-      <header className="mb-6">
+      <header id="assessment-cards" className="mb-6 scroll-mt-20">
         <h2 className="text-2xl font-extrabold text-slate-800">選擇評量</h2>
         <p className="mt-1 text-sm text-slate-500">選擇一個題庫開始作答，或點擊「查看分析」瀏覽歷次結果。</p>
       </header>
@@ -454,8 +454,10 @@ function AppShellInner() {
                   key={t.id}
                   type="button"
                   aria-current={active ? 'page' : undefined}
+                  aria-label={t.label}
+                  title={t.hint}
                   onClick={() => navigate(t.path)}
-                  className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold transition-colors ${
+                  className={`flex min-h-[48px] flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-semibold transition-colors ${
                     active ? 'text-ink-700' : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >

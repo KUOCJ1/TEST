@@ -136,7 +136,7 @@ export default function QuickAnalysisTab({ users }) {
 
         {!loading && !groupDetail && (
           <div className="flex items-center justify-center py-20 text-slate-400">
-            選擇左側班別以查看快速分析
+            選擇左側班別以查看班級分析
           </div>
         )}
 
@@ -150,7 +150,7 @@ export default function QuickAnalysisTab({ users }) {
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-slate-700">{groupDetail.group.name} · 快速分析</h3>
+                <h3 className="font-semibold text-slate-700">{groupDetail.group.name} · 班級分析</h3>
                 <p className="text-xs text-slate-400">{config.NAME}</p>
               </div>
               <button

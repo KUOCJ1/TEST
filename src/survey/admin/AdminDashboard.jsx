@@ -12,14 +12,16 @@ import { FRONTEND_BUILD, isVersionMismatch } from '../utils/buildInfo';
 // 內含 xlsx（體積較大），只有點開「批次上傳」分頁才需要，獨立拆成自己的 chunk。
 const BatchUploadSection = lazy(() => import('./BatchUploadSection'));
 
+// 分頁名稱依「你要看什麼／做什麼」命名；hint 顯示在分頁列下方，說明這一頁的用途。
+// 「班級分析」是選一個班看那一班；「各評量統計」是依評量看所有填答者的整體（原名「快速分析」「數據分析」）。
 const TABS = [
-  { id: 'quickAnalysis', label: '快速分析' },
-  { id: 'analytics', label: '數據分析' },
-  { id: 'users', label: '用戶管理' },
-  { id: 'groups', label: '班別與發佈' },
-  { id: 'content', label: '題庫內容' },
-  { id: 'import', label: '批次上傳' },
-  { id: 'system', label: '系統狀態' },
+  { id: 'quickAnalysis', label: '班級分析', hint: '選一個班級，看這一班的分數、強弱項與每位成員。' },
+  { id: 'analytics', label: '各評量統計', hint: '選一份評量，看所有填答者的整體分佈、趨勢與明細（可匯出 CSV）。' },
+  { id: 'users', label: '用戶管理', hint: '調整角色、停用帳號、產生重設密碼連結。' },
+  { id: 'groups', label: '班別與發佈', hint: '管理所有班別的負責教練、施測期間，並發佈成果。（評量要不要對學員開放，在頁面最上方的「題庫啟用狀態」。）' },
+  { id: 'content', label: '題庫內容', hint: '修改題目、構面與評語的文字（草稿、預覽、發佈、還原）；不影響計分。' },
+  { id: 'import', label: '批次上傳', hint: '用 CSV 匯入既有的作答與 360° 評分資料。' },
+  { id: 'system', label: '系統狀態', hint: '版本、外部服務連線、寄信設定與伺服器看到的 IP。' },
 ];
 
 export default function AdminDashboard() {
@@ -151,6 +153,8 @@ export default function AdminDashboard() {
           ))}
         </div>
       </div>
+
+      <p className="mb-4 text-sm text-slate-500">{TABS.find((t) => t.id === tab)?.hint}</p>
 
       {tab === 'quickAnalysis' && (
         <QuickAnalysisTab users={users} />

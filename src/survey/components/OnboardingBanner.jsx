@@ -5,9 +5,9 @@ const STORAGE_KEY = 'aiassess_onboarded_v1';
 
 const STEPS = {
   user: [
-    { num: '1', title: '選擇評量', desc: '從首頁選取適合的評量題庫開始作答。' },
-    { num: '2', title: '完成作答', desc: '依題目說明填寫，系統自動計分，可多次重測追蹤成長。' },
-    { num: '3', title: '查看分析', desc: '進入「我的分析」查看構面落點、成長幅度與教練評語。' },
+    { num: '1', title: '先認識評測', desc: '每張評量卡片都有「先了解這份評測」，看它在看什麼、結果怎麼讀、大約要多久。', action: { label: '看評量卡片 ↓', href: '#assessment-cards' } },
+    { num: '2', title: '完成作答', desc: '挑一份開始。進度會自動儲存，可以分段完成；沒有標準答案，照實回答就好。' },
+    { num: '3', title: '看結果，再往下做', desc: '在「我的分析」看結果；想改變什麼，到「我的學習」設成目標。若有班級，也可以請同班的人做 360°。' },
   ],
   coach: [
     { num: '1', title: '建立班別並邀請學員', desc: '在「班級」按「建立班別」，到「成員與設定」產生報到 QR Code 讓學員掃碼加入，或搜尋、匯入名單。' },
@@ -58,6 +58,9 @@ export default function OnboardingBanner({ role = 'user', show = true }) {
             <div>
               <p className="text-xs font-semibold text-brass-600">{s.title}</p>
               <p className="text-xs text-slate-500">{s.desc}</p>
+              {s.action && (
+                <a href={s.action.href} className="mt-1 inline-block text-xs font-semibold text-brass-600 underline">{s.action.label}</a>
+              )}
             </div>
           </li>
         ))}

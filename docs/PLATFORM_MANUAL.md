@@ -408,7 +408,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 - 評量開關：`enabled` 開關題庫是否對學員可見
 - 整體統計：跨題庫/跨班級分析
 - **跨班級／跨梯次比較**（`admin/CohortTrendSection.jsx`，邏輯在
-  `utils/analytics.js` 的 `computeCohortTrend()`）：「數據分析」分頁下方，所選
+  `utils/analytics.js` 的 `computeCohortTrend()`）：「各評量統計」分頁下方，所選
   題庫的全部班級（不限教練）依開課日排序，一次只看課前或課後（混在一起會把
   「進來時的程度」跟「上完課的成果」攪在同一個平均），一般題庫顯示各梯平均
   達成率與「最新一梯比第一梯差幾個百分點」，PROFILE_MODE 題庫改列各梯風格
@@ -426,7 +426,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   出現警示——通常是只部署了一半，或瀏覽器的 PWA 快取還是舊版
 - **題庫內容**（`admin/ContentEditorTab.jsx`，Sprint 10）：改構面／子能力名稱、題目、評語、等級說明的
   **文字**，草稿 → 預覽 → 發佈、歷史可還原；不能改題數、反向題、分數門檻（見第 4.4 節）
-- 風格型題庫（DISC／識己®）的「數據分析」不顯示總分、達成率，改為最常見風格、
+- 風格型題庫（DISC／識己®）的「各評量統計」不顯示總分、達成率，改為最常見風格、
   各構面傾向強度與風格人數分佈（沿用第 4.2 節「風格沒有高低」的原則）
 - AI 平台助理
 

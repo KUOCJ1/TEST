@@ -177,7 +177,8 @@ describe('App 流程', () => {
 
     // 返回首頁後點「我的分析」確認無紀錄訊息。
     fireEvent.click(screen.getByRole('button', { name: '返回評量列表' }));
-    fireEvent.click(await screen.findByRole('button', { name: '我的分析' }));
+    // 頂部分頁與手機底部導覽在 jsdom 裡同時存在（CSS 不生效），取第一個。
+    fireEvent.click((await screen.findAllByRole('button', { name: '我的分析' }))[0]);
     expect(await screen.findByText('尚無評測紀錄')).toBeInTheDocument();
   });
 
@@ -236,12 +237,28 @@ describe('App 流程', () => {
     fillLogin('admin@demo.tw', 'admin1234');
     fireEvent.click(screen.getByRole('button', { name: '登入帳號' }));
 
-    const adminTab = await screen.findByRole('button', { name: '管理後台' });
+    const adminTab = (await screen.findAllByRole('button', { name: '管理後台' }))[0];
     fireEvent.click(adminTab);
     // AdminDashboard 是 lazy() 載入的獨立 chunk：CI 的冷啟動要先編譯整條相依鏈，
     // 超過 findBy 預設的 1 秒是常態（Sprint 7 在 CI 上因此失敗過一次），給足時間。
     expect(await screen.findByRole('heading', { name: '管理後台' }, { timeout: 15000 })).toBeInTheDocument();
     expect(screen.getByText('註冊人數')).toBeInTheDocument();
+  });
+
+  it('管理後台分頁依用途命名並附說明：班級分析／各評量統計；切換後說明跟著換', async () => {
+    renderApp();
+    await navigateToLogin();
+    fillLogin('admin@demo.tw', 'admin1234');
+    fireEvent.click(screen.getByRole('button', { name: '登入帳號' }));
+    fireEvent.click((await screen.findAllByRole('button', { name: '管理後台' }))[0]);
+    expect(await screen.findByRole('heading', { name: '管理後台' }, { timeout: 15000 })).toBeInTheDocument();
+    ['班級分析', '各評量統計', '用戶管理', '班別與發佈', '題庫內容', '批次上傳', '系統狀態'].forEach((n) => expect(screen.getByRole('button', { name: n })).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: '快速分析' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '數據分析' })).not.toBeInTheDocument();
+    expect(screen.getByText(/選一份評量，看所有填答者的整體分佈/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '班級分析' }));
+    expect(screen.getByText(/選一個班級，看這一班的分數/)).toBeInTheDocument();
+    expect(screen.getByText(/題庫啟用狀態/)).toBeInTheDocument();
   });
 
   it('完成評測後我的分析顯示總分與雷達圖', async () => {

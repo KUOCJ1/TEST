@@ -110,3 +110,14 @@ describe('B 說明系統', () => {
     expect(screen.getByText(/仍然可以自己作答並查看分析/)).toBeInTheDocument();
   });
 });
+
+describe('批次 C：首次使用路徑與導覽', () => {
+  it('學員的新手引導：三步都有具體做法，第一步連到評量卡片', async () => {
+    const { default: OnboardingBanner } = await import('../survey/components/OnboardingBanner.jsx');
+    render(<OnboardingBanner role="user" />);
+    expect(screen.getByText('先認識評測')).toBeInTheDocument();
+    expect(screen.getByText('看結果，再往下做')).toBeInTheDocument();
+    expect(screen.getByText(/進度會自動儲存/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /看評量卡片/ })).toHaveAttribute('href', '#assessment-cards');
+  });
+});
