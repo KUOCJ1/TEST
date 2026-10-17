@@ -30,6 +30,16 @@ export const DIMENSION_TOPICS = {
   'leadership-9d:critical-thinking': '決策',
   'leadership-9d:succession-readiness': '接班',
 
+  // 雙環領導羅盤
+  'leadership-compass:find': '決策',
+  'leadership-compass:aim': '策略思考', // low confidence
+  'leadership-compass:staff': '授權',
+  'leadership-compass:team': '團隊信任',
+  'leadership-compass:learn': '學習',
+  'leadership-compass:anchor': '自我覺察',
+  'leadership-compass:sow': '人才發展',
+  'leadership-compass:transfer': '接班',
+
   // DISC 行為風格評測
   'disc:dominance': '決斷力',
   'disc:influence': '影響力',

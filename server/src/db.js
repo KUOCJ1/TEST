@@ -73,6 +73,8 @@ export function createDb(file) {
     { id: 'leadership-9d', name: '經贏® 領導力九大構面行為評量', description: '9 大構面、90 題，含反向題', enabled: true },
     { id: 'disc', name: 'DISC 行為風格評測', description: '4 大構面、32 題，風格輪廓型評量', enabled: true },
     { id: 'archetype', name: '識己®性格原型評測', description: '4 組性格光譜、40 題，16 種原創性格原型', enabled: true },
+    // 雙環領導羅盤：預設停用，管理者在後台驗收後再啟用（enabled 只對「資料庫還沒有這筆」時作為初值）
+    { id: 'leadership-compass', name: '雙環領導羅盤', description: '8 構面、精簡版 32 題／完整版 69 題，含人機協作與張力指標', enabled: false },
   ];
   if (data.assessments.length === 0) {
     data.assessments = KNOWN_ASSESSMENTS;

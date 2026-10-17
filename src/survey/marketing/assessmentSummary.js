@@ -48,4 +48,15 @@ export const ASSESSMENT_SUMMARIES = [
     subCompetencies: 0,
     features: ['4 組性格光譜', '40 題李克特量表', '16 種原創性格原型'],
   },
+  {
+    // 尚未正式推出：hidden 為 true 時不在首頁評測工具庫顯示（正式啟用後移除此旗標）。
+    id: 'leadership-compass',
+    name: '雙環領導羅盤',
+    tagline: '看見快環與永環的領導行為輪廓',
+    dimensions: 8,
+    items: 69,
+    subCompetencies: 24,
+    features: ['8 構面（快環 × 永環）', '精簡版 32 題／完整版 69 題', '支援 360° 多元評測'],
+    hidden: true,
+  },
 ];

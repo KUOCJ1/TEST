@@ -59,10 +59,13 @@ function inForm(question, form) {
  */
 export function selectForm(config, form = 'full') {
   if (!FORMS.includes(form)) throw new Error(`未知的題集版本：${form}`);
-  const dimensions = config.DIMENSIONS.map((d) => ({
-    ...d,
-    questions: form === 'full' ? d.questions : d.questions.filter((q) => inForm(q, form)),
-  }));
+  // 完整版直接沿用原本的構面物件；精簡版用 Object.create 建立「讀得到原構面欄位、但題目被過濾」
+  // 的視圖——後台覆寫（overrides.js）是就地修改原構面物件，這樣視圖不會讀到過期的名稱。
+  const dimensions = form === 'full'
+    ? config.DIMENSIONS
+    : config.DIMENSIONS.map((d) => Object.create(d, {
+      questions: { value: d.questions.filter((q) => inForm(q, form)), enumerable: true },
+    }));
   const all = dimensions.flatMap((d) => d.questions);
   return {
     ...config,
@@ -275,8 +278,8 @@ export function buildCompassResult(answers = {}, config, { form = 'full', rater 
     minScore: fc.MIN_SCORE,
     maxScore,
     percent: maxScore > 0 ? Math.round((total / maxScore) * 100) : 0,
-    // 此評量不做總分分級；保留 level 欄位讓共用元件不必特判
-    level: null,
+    // 此評量不做總分分級；config.PROFILE_LEVEL 是固定的中性說明，讓共用的結果元件不必特判
+    level: config.PROFILE_LEVEL ?? null,
     dimensions,
     strongest,
     weakest,

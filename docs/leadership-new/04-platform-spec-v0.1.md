@@ -270,3 +270,16 @@ FORMS = { full:{...}, short:{...} }                  // 以題目的 form 欄位
   - 計分模組用的是測試用的小型設定；實際題庫設定檔是 S14。
   - `aggregateRaters` 對上級仍會回傳彙整數字（標記 `requiresConsent`），**是否顯示必須由伺服器端依受評者同意狀態決定**（S16），不能只靠前端。
   - 後端 `validateResultShape` 未改；新結果的 `level` 為 `null`，S14 接上平台前需確認共用元件（ResultPanel 等）能處理無 `level` 的結果。
+
+## 17. S14 實作紀錄（2026-10-17）
+
+- 題目來源：`docs/leadership-new/items-candidates-v0.2.json`（專家審題未提出修改，題目內容即 v0.3）→ `scripts/build-compass-config.mjs` → `src/survey/data/assessments/compass-items.generated.js`（自動產生，勿手改）。題目改版只需改 JSON 並重跑腳本。
+- 設定檔 `leadership-compass.js`：8 構面、24 子面向、4 組張力、2 環；完整版 69 題、精簡版 32 題（預設精簡版）；頻率量表（從不～總是）。已註冊到前端 `REGISTRY` 與後端 `KNOWN_ASSESSMENTS`。
+- **後端預設停用（`enabled: false`）**：部署後一般使用者與班級建立選單都看不到，管理者在後台驗收後再啟用。首頁評測工具庫摘要以 `hidden: true` 隱藏，正式推出時移除旗標。
+- 作答頁（`SurveyApp`）：題庫若提供 `SCORING`／`selectForm`／`PAGINATE`／`SCALE_LABELS`，就改用它們；其他題庫走原本共用計分，行為不變。新增：題集版本切換（精簡／完整）、8 段分頁、頻率量表與說明、他評版顯示第三人稱題目、低可觀察題的「無法判斷」選項。`QuestionCard` 新增 `text`、`scale`、`naLabel` 屬性（皆選填）。
+- 測試：前端 412 個、後端新增 4 個全數通過；lint、build 通過。
+- **尚未做、留給 S15**：
+  - 結果頁目前借用 PROFILE_MODE 的元件，會顯示「您的風格輪廓」「主要風格／次要風格」，雷達圖軸標籤是英文 subtitle（Find、Aim…）。需要專屬的報告元件（八軸雷達圖用四字中文名稱、兩環平均、張力圖、落差圖）。
+  - 題目順序目前依設定檔順序，**尚未隨機**。原規格「張力成對題不相鄰」在每構面僅 6–8 題時，與同端題集中會互相衝突，改為「構面內依受測者固定的隨機順序」，留 S15 與報告一併處理。
+  - 後台題庫文字覆寫白名單尚未涵蓋 `textOther`（他評版題目文字）。
+  - 班級／專案層級的「版本」設定與同版本檢查（目前由作答者自選）：S16 處理。

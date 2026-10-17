@@ -16,7 +16,26 @@ const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九',
 const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmentId}_v2`;
 
 export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, assessmentId = 'ai-competency', rateeId, raterType, rateeName, onSubmitted }) {
-  const config = useMemo(() => getAssessment(assessmentId), [assessmentId]);
+  const baseConfig = useMemo(() => getAssessment(assessmentId), [assessmentId]);
+  // 有「題集版本」的題庫（例如雙環領導羅盤：精簡版／完整版）用 selectForm 取得作答視圖，
+  // 計分改走題庫自己的 SCORING；其他題庫維持原本的共用計分，行為完全不變。
+  const [form, setForm] = useState(null);
+  const activeForm = form ?? baseConfig?.DEFAULT_FORM ?? null;
+  const config = useMemo(
+    () => (baseConfig?.selectForm ? baseConfig.selectForm(activeForm) : baseConfig),
+    [baseConfig, activeForm],
+  );
+  const rater = raterType && raterType !== 'self' ? 'other' : 'self';
+  const scoring = useMemo(() => {
+    const own = baseConfig?.SCORING;
+    if (!own) return { answeredCount, isComplete, unansweredQuestionIds, buildResult };
+    return {
+      answeredCount: (a, c) => own.answeredCount(a, c, { rater }),
+      isComplete: (a, c) => own.isComplete(a, c, { rater }),
+      unansweredQuestionIds: (a, c) => own.unansweredQuestionIds(a, c, { rater }),
+      buildResult: (a, c) => own.buildResult(a, c, { rater }),
+    };
+  }, [baseConfig, rater]);
   const navigate = useNavigate();
   const confirm = useConfirm();
 
@@ -34,13 +53,13 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
   const [submitError, setSubmitError] = useState('');
   // 長問卷（如 L9D 90 題）以構面分頁，避免一次攤開太多題目造成疲勞作答；
   // 題數較少的題庫（≤40 題）維持單頁，行為與過去完全相同。
-  const paginated = !!config && config.DIMENSIONS.length > 1 && config.TOTAL_QUESTIONS > 40;
+  const paginated = !!config && config.DIMENSIONS.length > 1 && (baseConfig.PAGINATE ?? config.TOTAL_QUESTIONS > 40);
   const [pageIndex, setPageIndex] = useState(0);
 
   const questionRefs = useRef({});
   const resultRef = useRef(null);
 
-  const answered = useMemo(() => (config ? answeredCount(answers, config) : 0), [answers, config]);
+  const answered = useMemo(() => (config ? scoring.answeredCount(answers, config) : 0), [answers, config, scoring]);
 
   useEffect(() => {
     if (raterType && raterType !== 'self') return undefined; // 評測他人與課前/課後無關，維持手動
@@ -86,8 +105,8 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
 
   const handleSubmit = useCallback(async () => {
     if (!config) return;
-    if (!isComplete(answers, config)) {
-      const missing = unansweredQuestionIds(answers, config);
+    if (!scoring.isComplete(answers, config)) {
+      const missing = scoring.unansweredQuestionIds(answers, config);
       setInvalidIds(missing);
       const firstMissingId = missing[0];
       if (paginated) {
@@ -105,7 +124,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     setInvalidIds([]);
     setSubmitError('');
     setSubmitting(true);
-    const r = buildResult(answers, config);
+    const r = scoring.buildResult(answers, config);
     try {
       await api.createSubmission({ answers, result: r, assessmentId, phase, rateeId: rateeId || user.id, raterType: raterType || 'self' });
       setResult(r);
@@ -116,7 +135,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     } finally {
       setSubmitting(false);
     }
-  }, [answers, config, assessmentId, phase, rateeId, raterType, onSubmitted, user.id, paginated, pageIndex, focusQuestion]);
+  }, [answers, config, scoring, assessmentId, phase, rateeId, raterType, onSubmitted, user.id, paginated, pageIndex, focusQuestion]);
 
   const handleRetake = useCallback(async () => {
     if (!(await confirm('確定要重新作答嗎？目前畫面上的作答內容將被清空（先前已送出的紀錄不受影響）。'))) return;
@@ -191,9 +210,36 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           ，請依真實狀況勾選。
           <br />
           <span className="mt-1 inline-block font-medium text-slate-700">
-            評分標準：1 分（非常不同意）～ 5 分（非常同意）
+            {baseConfig.SCALE_LABELS
+              ? `評分標準：${baseConfig.SCALE_LABELS[0].value} 分（${baseConfig.SCALE_LABELS[0].label}）～ ${baseConfig.SCALE_LABELS.at(-1).value} 分（${baseConfig.SCALE_LABELS.at(-1).label}）`
+              : '評分標準：1 分（非常不同意）～ 5 分（非常同意）'}
           </span>
+          {baseConfig.SCALE_HINT && <span className="mt-1 block text-sm text-slate-500">{baseConfig.SCALE_HINT}</span>}
         </div>
+
+        {baseConfig.FORMS && !result && (
+          <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="題集版本">
+            <span className="text-sm font-medium text-slate-500">題集版本：</span>
+            {baseConfig.FORMS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => { setForm(f.id); setPageIndex(0); setInvalidIds([]); }}
+                aria-pressed={activeForm === f.id}
+                className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                  activeForm === f.id
+                    ? 'bg-ink-700 text-white shadow-sm'
+                    : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {f.name}
+              </button>
+            ))}
+            <span className="text-xs text-slate-400">
+              {baseConfig.FORMS.find((f) => f.id === activeForm)?.description}
+            </span>
+          </div>
+        )}
 
         {raterType && raterType !== 'self' && rateeName && (
           <div className="mt-4 rounded-xl border border-brass-200 bg-brass-50 px-4 py-3 text-sm">
@@ -290,6 +336,10 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
                     key={q.id}
                     number={DIMENSIONS.slice(0, di).reduce((s, d) => s + d.questions.length, 0) + qi + 1}
                     question={q}
+                    text={rater === 'other' ? q.textOther : undefined}
+                    scale={baseConfig.SCALE_LABELS}
+                    naLabel={rater === 'other' && q.observability === 'low' ? baseConfig.NA_LABEL : undefined}
+                    naValue={baseConfig.NA_VALUE}
                     value={answers[q.id]}
                     onChange={handleChange}
                     onAdvance={handleAdvance}

@@ -45,7 +45,7 @@ export default function LandingPage({ onEnter }) {
   // 平台級指標：刻意不放任何單一題庫的規格（構面數、題數那些），
   // 那些屬於各自的評測工具，列在下方的「評測工具庫」。
   const stats = [
-    ['評測工具 Assessments', String(ASSESSMENT_SUMMARIES.length)],
+    ['評測工具 Assessments', String(ASSESSMENT_SUMMARIES.filter((a) => !a.hidden).length)],
     ['評測角色 Rater Types', '4'],
     ['平台角色 Roles', '3'],
     ['歷程追蹤 Retakes', '不限次'],
@@ -136,7 +136,7 @@ export default function LandingPage({ onEnter }) {
             </p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
-            {ASSESSMENT_SUMMARIES.map((a) => (
+            {ASSESSMENT_SUMMARIES.filter((a) => !a.hidden).map((a) => (
               <div key={a.id} className="flex flex-col border-t border-ink-700/20 pt-6">
                 <h3 className="font-serif mb-1 text-xl font-bold text-ink-700">{a.name}</h3>
                 <p className="mb-5 text-sm leading-relaxed text-ink-100">{a.tagline}</p>
