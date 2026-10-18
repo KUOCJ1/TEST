@@ -14,7 +14,9 @@ for (const [path, title] of [['/privacy', '隱私權政策'], ['/terms', '服務
     await page.goto(path);
     await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible({ timeout: 20000 });
     // 已公開（2026-10-17）：沒有草稿標記、沒有「待填」，經營者與聯絡信箱出現在內文。
-    await expect(page.getByRole('note')).toHaveCount(0);
+    // 暫定版（尚待法務審閱）只會有一則「暫定版」說明，不是「草稿」標記。
+    await expect(page.getByRole('note')).toHaveCount(POLICY_META.provisional ? 1 : 0);
+    await expect(page.getByText('草稿，尚待確認')).toHaveCount(0);
     await expect(page.getByText(/【待填：/)).toHaveCount(0);
     await expect(page.getByText(POLICY_META.operatorName).first()).toBeVisible();
     await expect(page.getByText(POLICY_META.contactEmail).first()).toBeVisible();
@@ -67,7 +69,7 @@ test('伺服器端強制：直接打註冊 API 沒帶同意會被拒絕；帶了
   const ok = await api.post('/api/auth/register', { data: { name: '有同意', email, password: 'abcdef12', acceptPolicy: true } });
   expect(ok.status()).toBe(201);
   const body = await ok.json();
-  expect(body.user.consent.version).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  expect(body.user.consent.version).toMatch(/^\d{4}-\d{2}-\d{2}(\.\d+)?$/);
   await api.dispose();
 });
 
@@ -117,7 +119,7 @@ test('匯入（沒有同意紀錄）的既有用戶首次登入先看到同意�
   await expect(page.getByRole('heading', { name: '選擇評量' })).toBeVisible({ timeout: 20000 });
   await expect(page.getByRole('button', { name: '我同意並繼續' })).toHaveCount(0);
   const after = await (await admin.get('/api/admin/overview')).json();
-  expect(after.users.find((u) => u.email === email).consent.version).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  expect(after.users.find((u) => u.email === email).consent.version).toMatch(/^\d{4}-\d{2}-\d{2}(\.\d+)?$/);
   await admin.dispose();
   await anon.dispose();
 });

@@ -80,6 +80,12 @@ export default function LegalPage({ kind, loggedIn = false, onEnter, meta = POLI
             ，內容也還沒經過經營者確認；正式公開前請以確認後的版本為準。
           </div>
         )}
+        {!draft && meta.provisional && (
+          <div role="note" className="mb-8 rounded-md border border-brass-300 bg-brass-50 px-4 py-3 text-sm leading-relaxed text-ink-700">
+            <strong className="font-semibold">暫定版。</strong>
+            這份文件已依系統實際行為整理並生效，但尚待法務審閱，內容可能調整；有實質調整時我們會調升版本，並請你重新閱讀與同意。
+          </div>
+        )}
         <header className="mb-8 border-b border-ink-700/10 pb-6">
           <h1 className="font-serif text-3xl font-bold tracking-tight text-ink-700">{doc.title}</h1>
           <p className="mt-2 text-sm text-ink-100">

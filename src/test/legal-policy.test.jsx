@@ -56,7 +56,7 @@ describe('政策內容與實際行為一致（關鍵揭露都在）', () => {
     const terms = textOf(TERMS_SECTIONS);
     expect(terms).toContain('領導力羅盤');
     expect(terms).toContain('接班準備度評測');
-    expect(POLICY_VERSION).toBe('2026-10-18');
+    expect(POLICY_VERSION).toBe('2026-10-18.2');
   });
 
   it('隱私權政策揭露第三方（OpenRouter、第二大腦、SMTP）與傳送內容，且不送姓名與 Email', () => {
@@ -123,6 +123,17 @@ describe('LegalPage', () => {
     expect(screen.getAllByText(/範例顧問股份有限公司/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/privacy@example\.com/).length).toBeGreaterThan(0);
     expect(screen.getByText(new RegExp(`版本 ${POLICY_VERSION}`))).toBeInTheDocument();
+  });
+
+  it('暫定版（provisional）：已生效但標示尚待法務審閱；不是草稿，也不影響同意閘門', () => {
+    renderPage('privacy', { ...READY, provisional: true });
+    expect(screen.getByRole('note')).toHaveTextContent('暫定版');
+    expect(screen.queryByText('草稿，尚待確認')).not.toBeInTheDocument();
+    expect(needsConsentGate({ consent: { version: '2020' } }, { ...READY, provisional: true })).toBe(true);
+  });
+
+  it('保存期限如實揭露異地加密備份（最長 180 天）', () => {
+    expect(JSON.stringify(PRIVACY_SECTIONS)).toContain('異地加密副本最長 180 天');
   });
 
   it('每個章節都有標題與目錄連結；表格容器可用鍵盤捲動；粗體標記被轉成強調', () => {
