@@ -50,7 +50,7 @@ function readJoinCode() {
 
 const MARKETING_TITLES = {
   '/about': '平台理念', '/how-it-works': '功能總覽', '/showcase': '範例報告', '/faq': '常見問題',
-  '/privacy': '隱私權政策', '/terms': '服務條款', '/framework': '雙環領導羅盤八大構面評測', '/welcome': '首頁',
+  '/privacy': '隱私權政策', '/terms': '服務條款', '/framework': '領導力羅盤八向評測', '/welcome': '首頁',
 };
 
 function AppRoutes() {

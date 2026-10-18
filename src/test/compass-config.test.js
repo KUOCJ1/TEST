@@ -4,10 +4,10 @@ import { REGISTRY, getAssessment } from '../survey/data/assessments/index.js';
 import { selectForm } from '../survey/utils/compassScoring.js';
 
 // 設定檔完整性：題庫由 scripts/build-compass-config.mjs 產生，這裡守住規格承諾的結構。
-describe('雙環領導羅盤：題庫設定完整性', () => {
+describe('領導力羅盤：題庫設定完整性', () => {
   it('已註冊，且 ID 與名稱符合決定', () => {
     expect(getAssessment('leadership-compass')).toBe(REGISTRY['leadership-compass']);
-    expect(compass.NAME).toBe('雙環領導羅盤八大構面評測');
+    expect(compass.NAME).toBe('領導力羅盤八向評測');
   });
 
   it('8 構面、四字名稱；24 個子面向皆為四字', () => {

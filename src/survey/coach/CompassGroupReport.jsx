@@ -17,7 +17,7 @@ function Row({ label, value, color }) {
 }
 
 /**
- * 班級組織診斷（雙環領導羅盤）。為保護個人，受評者不足 5 位時會逐級隱藏細節（規格第 8 節）。
+ * 班級組織診斷（領導力羅盤）。為保護個人，受評者不足 5 位時會逐級隱藏細節（規格第 8 節）。
  */
 export default function CompassGroupReport({ group, members, submissions }) {
   const phases = useMemo(() => {

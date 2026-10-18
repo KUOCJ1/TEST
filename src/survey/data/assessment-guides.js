@@ -1,7 +1,7 @@
 // 各評測的「編輯層」說明（用途、適合誰、怎麼讀、提醒）。
 // 結構性的事實（構面與子面向名稱、題數、量表、結果等級或原型清單、是否支援 360°）由
 // marketing/GuidePage.jsx 直接從題庫設定算出來，不在這裡重寫，避免兩邊走鐘。
-// 雙環領導羅盤有更完整的專屬頁（/framework，見 compass-framework.js）。
+// 領導力羅盤有更完整的專屬頁（/framework，見 compass-framework.js）。
 // 這裡只寫「題庫設定本身已經說了的事」，不替任何框架編造方法論或理論來源。
 
 export const GUIDES = {
@@ -78,7 +78,7 @@ export const GUIDES = {
 
 export const GUIDE_PATH_PREFIX = '/guide/';
 
-/** 某個評測的說明頁路徑；雙環領導羅盤使用專屬的 /framework。 */
+/** 某個評測的說明頁路徑；領導力羅盤使用專屬的 /framework。 */
 export function guidePathFor(id, config) {
   return config?.FRAMEWORK_PATH ?? `${GUIDE_PATH_PREFIX}${id}`;
 }
@@ -92,7 +92,7 @@ export function estimateMinutes(questionCount) {
   return a === b ? `約 ${a} 分鐘` : `約 ${a}–${b} 分鐘`;
 }
 
-/** 評量卡片用的「題數與時間」：有精簡版／完整版的評量（雙環領導羅盤）兩個都列出。 */
+/** 評量卡片用的「題數與時間」：有精簡版／完整版的評量（領導力羅盤）兩個都列出。 */
 export function cardSize(config) {
   if (!config) return '';
   if (typeof config.selectForm === 'function' && config.FORMS?.length) {

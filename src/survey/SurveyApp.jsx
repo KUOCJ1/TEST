@@ -19,7 +19,7 @@ const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmen
 
 export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, assessmentId = 'ai-competency', rateeId, raterType, rateeName, onSubmitted }) {
   const baseConfig = useMemo(() => getAssessment(assessmentId), [assessmentId]);
-  // 有「題集版本」的題庫（例如雙環領導羅盤：精簡版／完整版）用 selectForm 取得作答視圖，
+  // 有「題集版本」的題庫（例如領導力羅盤：精簡版／完整版）用 selectForm 取得作答視圖，
   // 計分改走題庫自己的 SCORING；其他題庫維持原本的共用計分，行為完全不變。
   const [form, setForm] = useState(null);
   const activeForm = form ?? baseConfig?.DEFAULT_FORM ?? null;

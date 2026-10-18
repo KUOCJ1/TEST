@@ -12,7 +12,7 @@ const DEFAULT_SCALE = [
 
 /**
  * 任一評測的說明頁（/guide/:id）：結構性資訊（構面、題數、量表、結果樣貌、360°）直接從題庫設定算出，
- * 用途與讀法來自 data/assessment-guides.js。雙環領導羅盤改導到專屬的 /framework。
+ * 用途與讀法來自 data/assessment-guides.js。領導力羅盤改導到專屬的 /framework。
  */
 export default function GuidePage({ loggedIn = false, onEnter }) {
   const { assessmentId } = useParams();

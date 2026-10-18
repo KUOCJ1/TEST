@@ -20,16 +20,16 @@ const renderPanel = (result, props = {}) => render(
   <MemoryRouter><ResultPanel result={result} onRetake={() => {}} onCopy={() => {}} copied={false} {...props} /></MemoryRouter>,
 );
 
-describe('雙環領導羅盤：個人報告', () => {
+describe('領導力羅盤：個人報告', () => {
   it('用專屬報告：四字構面名稱、兩環、四組張力、人機協作剖面', () => {
     const { result } = resultFor('full', (q, i) => (i % 5) + 1);
     renderPanel(result);
-    expect(screen.getByText(/您的雙環輪廓/)).toBeInTheDocument();
+    expect(screen.getByText(/您的領導輪廓/)).toBeInTheDocument();
     expect(screen.getByText('完整版')).toBeInTheDocument();
     ['洞察情勢', '聚焦應變', '知人授權', '凝聚帶動', '敏捷學習', '穩定當責', '識才育才', '傳承留能'].forEach((n) => {
       expect(screen.getAllByText(n).length).toBeGreaterThan(0);
     });
-    expect(screen.getByText('快環與永環')).toBeInTheDocument();
+    expect(screen.getByText('應變環與養成環')).toBeInTheDocument();
     expect(screen.getByText('四組張力')).toBeInTheDocument();
     expect(screen.getByText('聚焦 ↔ 彈性')).toBeInTheDocument();
     expect(screen.getByText('授權 ↔ 掌握')).toBeInTheDocument();
@@ -91,8 +91,8 @@ describe('張力文字', () => {
   });
   it('兩環差距的說明', () => {
     expect(loopBalanceText([{ id: 'fast', average: 3.5 }, { id: 'last', average: 3.4 }])).toMatch(/相當/);
-    expect(loopBalanceText([{ id: 'fast', average: 4.2 }, { id: 'last', average: 3.0 }])).toMatch(/快環.*更常出現/);
-    expect(loopBalanceText([{ id: 'fast', average: 3.0 }, { id: 'last', average: 4.2 }])).toMatch(/永環.*更常出現/);
+    expect(loopBalanceText([{ id: 'fast', average: 4.2 }, { id: 'last', average: 3.0 }])).toMatch(/應變環.*更常出現/);
+    expect(loopBalanceText([{ id: 'fast', average: 3.0 }, { id: 'last', average: 4.2 }])).toMatch(/養成環.*更常出現/);
     expect(loopBalanceText([])).toBeNull();
   });
 });

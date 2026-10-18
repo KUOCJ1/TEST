@@ -43,7 +43,7 @@ describe('A1 評量卡片：白話一句話與時間', () => {
     render(<AssessmentCard assessment={{ id: 'unknown-x', name: 'X', description: '資料庫裡的描述' }} {...props} />);
     expect(screen.getByText('資料庫裡的描述')).toBeInTheDocument();
   });
-  it('雙環領導羅盤同時列出精簡版與完整版的題數與時間', () => {
+  it('領導力羅盤同時列出精簡版與完整版的題數與時間', () => {
     const t = cardSize(getAssessment('leadership-compass'));
     expect(t).toContain('精簡版 32 題');
     expect(t).toContain('完整版 69 題');
@@ -94,7 +94,7 @@ describe('B 說明系統', () => {
     const t = document.body.textContent;
     expect(t).toContain('結果的呈現方式');
     expect(t).toContain('只有分數型評量才有');
-    expect(t).toContain('快環、永環與張力');
+    expect(t).toContain('應變環、養成環與張力');
     expect(t).toContain('需要先加入班級');
     expect(t).toContain('我的學習');
     expect(t).toContain('先了解這份評測');

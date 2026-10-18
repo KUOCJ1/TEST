@@ -7,18 +7,18 @@ import { createDb } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
 import * as compass from '../../src/survey/data/assessments/leadership-compass.js';
 
-// 雙環領導羅盤（S14）：後端登錄、預設停用、前端計分結果能通過後端驗證。
+// 領導力羅盤（S14）：後端登錄、預設停用、前端計分結果能通過後端驗證。
 
 const JWT_SECRET = 'test-secret-please-change';
 const ID = 'leadership-compass';
 
 describe('題庫登錄', () => {
-  test('全新資料庫會種入雙環領導羅盤，且預設停用', () => {
+  test('全新資料庫會種入領導力羅盤，且預設停用', () => {
     const db = createDb(':memory:');
     const a = db.data.assessments.find((x) => x.id === ID);
     assert.ok(a);
     assert.equal(a.enabled, false);
-    assert.equal(a.name, '雙環領導羅盤八大構面評測');
+    assert.equal(a.name, '領導力羅盤八向評測');
   });
 
   test('既有 L9D 等四個題庫維持啟用，完全不受影響', () => {
@@ -94,7 +94,15 @@ describe('評量改名的資料庫遷移', () => {
     first.persist();
 
     const second = createDb(file);
-    assert.equal(second.data.assessments.find((x) => x.id === ID).name, '雙環領導羅盤八大構面評測');
+    assert.equal(second.data.assessments.find((x) => x.id === ID).name, '領導力羅盤八向評測');
+
+    // 上一版正式站使用的名稱也要能遷移
+    second.data.assessments.find((x) => x.id === ID).name = '雙環領導羅盤八大構面評測';
+    second.persist();
+    const prev = createDb(file);
+    assert.equal(prev.data.assessments.find((x) => x.id === ID).name, '領導力羅盤八向評測');
+    prev.data.assessments.find((x) => x.id === ID).name = '領導力羅盤八向評測';
+    prev.persist();
 
     // 管理者自訂的名稱不會被覆蓋
     second.data.assessments.find((x) => x.id === ID).name = '我們公司的領導力評測';

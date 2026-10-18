@@ -15,7 +15,7 @@ const others = (count) => ({ id: 'agg', raterType: 'others', aggregate: true, co
 
 beforeEach(() => { rateeSubmissions.mockReset(); setShare.mockReset(); });
 
-describe('雙環領導羅盤：受評者的 360° 畫面', () => {
+describe('領導力羅盤：受評者的 360° 畫面', () => {
   it('有他評合計（4 位）：顯示落差與人數，並稱呼為「他評合計」', async () => {
     rateeSubmissions.mockResolvedValue([self, others(4)]);
     render(<MultiRaterDashboard rateeId="u" rateeName="小明" assessmentId="leadership-compass" />);
@@ -73,7 +73,7 @@ describe('ManagerShareToggle', () => {
   });
 });
 
-describe('教練端 360° 分頁（雙環領導羅盤）', () => {
+describe('教練端 360° 分頁（領導力羅盤）', () => {
   const users = [{ id: 'u1', name: '甲', role: 'user' }];
   const sub = (raterType, i) => ({ id: `anon-${i}`, rateeId: 'u1', userId: 'anonymous', raterType, assessmentId: 'leadership-compass', anonymized: true });
   it('顯示各類回收份數與「不足」，並說明教練看不到身分；不傳 canDeanonymize', () => {

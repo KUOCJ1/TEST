@@ -1,4 +1,4 @@
-// 雙環領導羅盤的敘事解讀文字（原創）。寫作規範見 docs/leadership-new/05-narrative-style-guide.md。
+// 領導力羅盤的敘事解讀文字（原創）。寫作規範見 docs/leadership-new/05-narrative-style-guide.md。
 //
 // 結構：
 //   DIMENSION_INTRO[構面 id][high|mid|low] = 2 個以上的開場段落變體（依「總分｜構面」雜湊選一個，

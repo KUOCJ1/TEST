@@ -7,7 +7,7 @@ import CompassGapSection from './CompassGapSection.jsx';
 import { buildCompassNarrative, BAND_LABEL } from '../../utils/compassNarrative.js';
 import { badgeBg, dimTextStyle } from '../../utils/color';
 import {
-  loopBalanceText, tensionLabel, tensionText, READING_GUIDE,
+  loopBalanceText, tensionLabel, tensionText, READING_GUIDE, LOOP_EXPLAIN,
 } from '../../utils/compassText.js';
 
 const FORM_LABEL = { short: '精簡版', full: '完整版' };
@@ -102,7 +102,7 @@ const CompassResultPanel = forwardRef(function CompassResultPanel(
     >
       <div className="bg-ink-700 px-6 py-7 text-center text-paper-50">
         <p className="text-sm font-medium text-paper-50/75">
-          {assessmentName ?? '雙環領導羅盤八大構面評測'}
+          {assessmentName ?? '領導力羅盤八向評測'}
           {form && <span className="ml-2 rounded-sm bg-paper-50/20 px-2 py-0.5 text-xs">{FORM_LABEL[form] ?? form}</span>}
         </p>
         {level && (
@@ -137,7 +137,8 @@ const CompassResultPanel = forwardRef(function CompassResultPanel(
         </div>
 
         <div id="section-loops" className="mt-6 scroll-mt-14">
-          <h3 className="mb-3 text-base font-bold text-slate-700">快環與永環</h3>
+          <h3 className="mb-1 text-base font-bold text-slate-700">應變環與養成環</h3>
+          <p className="mb-3 text-sm text-slate-500">{LOOP_EXPLAIN}</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {loops.map((l) => (
               <div key={l.id} className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-100">

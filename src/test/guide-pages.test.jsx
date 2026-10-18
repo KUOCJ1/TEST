@@ -65,7 +65,7 @@ describe('GuidePage（從題庫設定算出結構資訊）', () => {
     expect(renderGuide('leadership-9d').container.textContent).toContain('支援 360° 他評');
     expect(renderGuide('archetype').container.textContent).toContain('不開放 360° 他評');
   });
-  it('雙環領導羅盤導向 /framework；不存在的評測顯示找不到', () => {
+  it('領導力羅盤導向 /framework；不存在的評測顯示找不到', () => {
     renderGuide('leadership-compass');
     expect(screen.getByText('框架頁')).toBeInTheDocument();
     renderGuide('no-such');
@@ -90,7 +90,7 @@ describe('入口連結', () => {
     const links = screen.getAllByRole('link', { name: /了解這份評測/ }).map((l) => l.getAttribute('href'));
     expect(links).toEqual(expect.arrayContaining(['/guide/ai-competency', '/guide/leadership-9d', '/guide/disc', '/guide/archetype', '/framework', '/guide/succession-intent']));
     expect(screen.getAllByText('即將推出')).toHaveLength(2);
-    expect(screen.getByText('雙環領導羅盤八大構面評測')).toBeInTheDocument();
+    expect(screen.getByText('領導力羅盤八向評測')).toBeInTheDocument();
     expect(screen.getByText('接班準備度評測')).toBeInTheDocument();
   });
   it('首頁統計的評測工具數等於摘要的數量', () => {

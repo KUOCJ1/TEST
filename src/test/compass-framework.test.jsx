@@ -45,10 +45,10 @@ describe('框架說明內容與題庫設定一致', () => {
 describe('FrameworkPage（公開）', () => {
   it('顯示名稱、兩個環、八構面（含錨點 id）、四組張力、隱私與怎麼讀', () => {
     const { container } = wrap(<FrameworkPage loggedIn={false} onEnter={() => {}} />);
-    expect(screen.getByRole('heading', { level: 1, name: '雙環領導羅盤八大構面評測' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: '領導力羅盤八向評測' })).toBeInTheDocument();
     expect(screen.getByText('人會走，能力要留下；反應要快，培育要久。')).toBeInTheDocument();
     ['find', 'aim', 'staff', 'team', 'learn', 'anchor', 'sow', 'transfer'].forEach((id) => expect(container.querySelector(`#${id}`), id).toBeTruthy());
-    ['快環', '永環'].forEach((n) => expect(screen.getAllByText(n).length).toBeGreaterThan(0));
+    ['應變環', '養成環'].forEach((n) => expect(screen.getAllByText(n).length).toBeGreaterThan(0));
     expect(screen.getByText('聚焦 ↔ 彈性')).toBeInTheDocument();
     expect(screen.getByText('機制 ↔ 個人權威')).toBeInTheDocument();
     expect(screen.getByText(/達 3 位才會單獨顯示/)).toBeInTheDocument();
@@ -95,7 +95,7 @@ describe('CompassIntro（作答前導讀）', () => {
 describe('入口連結', () => {
   it('評量卡片：羅盤有「先了解這份評測的框架」，其他評量沒有', () => {
     const props = { latestSubmission: null, groupPhase: null, submittedPhases: new Set(), onStart: () => {}, onViewAnalysis: () => {}, onGoTo360: () => {} };
-    const a = wrap(<AssessmentCard assessment={{ id: 'leadership-compass', name: '雙環領導羅盤八大構面評測', description: 'x' }} {...props} />);
+    const a = wrap(<AssessmentCard assessment={{ id: 'leadership-compass', name: '領導力羅盤八向評測', description: 'x' }} {...props} />);
     expect(screen.getByRole('link', { name: '先了解這份評測的框架' })).toHaveAttribute('href', '/framework');
     a.unmount();
     wrap(<AssessmentCard assessment={{ id: 'disc', name: 'DISC', description: 'x' }} {...props} />);

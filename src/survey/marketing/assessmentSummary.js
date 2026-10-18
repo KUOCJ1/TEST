@@ -52,12 +52,12 @@ export const ASSESSMENT_SUMMARIES = [
     // comingSoon：已完成但尚未對學員開放，首頁卡片會標示「即將推出」。管理者在後台啟用後，把這個旗標拿掉。
     id: 'leadership-compass',
     guidePath: '/framework',
-    name: '雙環領導羅盤八大構面評測',
-    tagline: '看見快環與永環的領導行為輪廓',
+    name: '領導力羅盤八向評測',
+    tagline: '看見應變環與養成環的領導行為輪廓',
     dimensions: 8,
     items: 69,
     subCompetencies: 24,
-    features: ['8 構面（快環 × 永環）', '精簡版 32 題／完整版 69 題', '支援 360° 多元評測'],
+    features: ['8 構面（應變環 × 養成環）', '精簡版 32 題／完整版 69 題', '支援 360° 多元評測'],
     comingSoon: true,
   },
   {

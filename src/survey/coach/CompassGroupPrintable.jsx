@@ -8,7 +8,7 @@ import { HBar, PageMeta, PageFooter, SectionTitle } from '../components/printabl
 const pct = (avg) => Math.round((avg / 5) * 100);
 
 /**
- * 雙環領導羅盤的班級組織診斷列印版。內容與畫面上的 CompassGroupReport 完全一致，
+ * 領導力羅盤的班級組織診斷列印版。內容與畫面上的 CompassGroupReport 完全一致，
  * 並沿用同一份匿名分級（report.tier）：人數不足時列印出來也不會多出任何細節。
  */
 export default function CompassGroupPrintable({ report, group, phaseLabel, onClose }) {
@@ -30,7 +30,7 @@ export default function CompassGroupPrintable({ report, group, phaseLabel, onClo
         </div>
       </div>
       <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif', padding: '32px 52px' }}>
-        <PageMeta name={group.name} section="組織診斷" date={date} assessmentName="雙環領導羅盤八大構面評測" />
+        <PageMeta name={group.name} section="組織診斷" date={date} assessmentName="領導力羅盤八向評測" />
         <SectionTitle sub={`${phaseLabel}，已完成自評 ${report.n} / ${report.memberCount} 人（${Math.round(report.completion * 100)}%）`}>班級組織診斷</SectionTitle>
         <p style={{ fontSize: 10, color: '#475569', lineHeight: 1.8, marginBottom: 16 }}>
           這份報告描述的是「這群人的行為模式」，不是組織文化的診斷結論，也不會顯示任何個人的分數。

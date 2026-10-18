@@ -1,9 +1,9 @@
-// 雙環領導羅盤的列印報告（教練端／個人 PDF）。通用的 PrintableReport 頁面是為「總分＋達成率＋百分位」
+// 領導力羅盤的列印報告（教練端／個人 PDF）。通用的 PrintableReport 頁面是為「總分＋達成率＋百分位」
 // 的題庫設計的，這份評量刻意不做總分與排名，所以另有專屬版面（見 ReportPages 的分派）。
 import RadarChart from '../RadarChart';
 import { formatDate } from '../../utils/format';
 import { buildCompassNarrative, BAND_LABEL } from '../../utils/compassNarrative.js';
-import { loopBalanceText, tensionLabel, tensionText, READING_GUIDE } from '../../utils/compassText.js';
+import { loopBalanceText, tensionLabel, tensionText, READING_GUIDE, LOOP_EXPLAIN } from '../../utils/compassText.js';
 import { HBar, PageMeta, PageFooter, SectionTitle } from '../printable-report/primitives.jsx';
 import { CoachFeedbackBlock } from '../printable-report/CoachPage.jsx';
 
@@ -22,7 +22,7 @@ function Cover({ result, user, submittedAt, date }) {
       <div style={{ background: '#241f18', padding: '44px 52px 38px', color: '#fff' }}>
         <div style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.12em', marginBottom: 10 }}>Confidential · 個人評測報告</div>
         <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.25 }}>
-          {assessmentName ?? '雙環領導羅盤八大構面評測'}
+          {assessmentName ?? '領導力羅盤八向評測'}
           <br />
           <span style={{ fontSize: 20, fontWeight: 600, opacity: 0.85 }}>個人報告</span>
         </div>
@@ -36,7 +36,7 @@ function Cover({ result, user, submittedAt, date }) {
           <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a' }}>{user?.name ?? '—'}</div>
         </div>
 
-        <SectionTitle sub="快環：反應要快；永環：培育要久">快環與永環</SectionTitle>
+        <SectionTitle sub={LOOP_EXPLAIN}>應變環與養成環</SectionTitle>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
           {loops.map((l) => (
             <Card key={l.id}>

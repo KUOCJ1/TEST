@@ -7,7 +7,7 @@ import { createDb } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
 import { presentRateeSubmissions, stripRaterDetails, MIN_RATERS } from '../src/lib/compassPrivacy.js';
 
-// 雙環領導羅盤 360° 評分者隱私（S16）。
+// 領導力羅盤 360° 評分者隱私（S16）。
 
 const JWT_SECRET = 'test-secret-please-change';
 const COMPASS = 'leadership-compass';
@@ -203,7 +203,7 @@ describe('其他題庫完全不受影響（L9D）', () => {
 });
 
 describe('比較基準（benchmark）只算自評', () => {
-  test('雙環領導羅盤：評分者的他評不會被當成他本人的最新成績', async () => {
+  test('領導力羅盤：評分者的他評不會被當成他本人的最新成績', async () => {
     const { agents, db } = await setup({ peers: 3 });
     // setup：1 份自評（平均 4）＋ 3 份同儕他評（平均 2、3、4）。他評提交的 userId 是評分者。
     const res = await agents.ratee.get(`/api/assessments/${COMPASS}/benchmark`);

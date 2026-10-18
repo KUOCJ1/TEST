@@ -126,7 +126,7 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
       })
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    // 嚴格隱私題庫（雙環領導羅盤）：評分者身分與個別分數不對教練與本人開放。
+    // 嚴格隱私題庫（領導力羅盤）：評分者身分與個別分數不對教練與本人開放。
     // 只有管理員能還原身分，且要填理由、留稽核紀錄。其他題庫維持下面的既有行為。
     const hasStrict = rows.some((s) => isStrictPrivacy(s.assessmentId ?? 'ai-competency'));
     const wantsIdentity = isAdmin && deanonymize && deanonymize !== '0' && deanonymize !== 'false';

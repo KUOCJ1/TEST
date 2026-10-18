@@ -9,7 +9,7 @@ import {
 
 const DIM_NAMES = { find: '洞察情勢', aim: '聚焦應變', staff: '知人授權', team: '凝聚帶動', learn: '敏捷學習', anchor: '穩定當責', sow: '識才育才', transfer: '傳承留能' };
 
-/** 「雙環領導羅盤八大構面評測」的框架說明（公開頁）：作答前、教練向客戶介紹、報告回頭查都連到這裡。 */
+/** 「領導力羅盤八向評測」的框架說明（公開頁）：作答前、教練向客戶介紹、報告回頭查都連到這裡。 */
 export default function FrameworkPage({ loggedIn = false, onEnter }) {
   // 報告裡的構面連結是 /framework#find 這種錨點；React Router 不會自動捲動，這裡處理。
   useEffect(() => {
@@ -25,11 +25,11 @@ export default function FrameworkPage({ loggedIn = false, onEnter }) {
 
       <section className="px-6 pt-20 pb-16">
         <div className="mx-auto max-w-3xl">
-          <div className="font-display mb-3 text-[15px] italic tracking-wide text-brass-500">Dual-Loop Leadership Compass</div>
-          <h1 className="font-serif text-4xl font-bold leading-[1.2] tracking-tight text-ink-700 sm:text-5xl">雙環領導羅盤八大構面評測</h1>
+          <div className="font-display mb-3 text-[15px] italic tracking-wide text-brass-500">Leadership Compass</div>
+          <h1 className="font-serif text-4xl font-bold leading-[1.2] tracking-tight text-ink-700 sm:text-5xl">領導力羅盤八向評測</h1>
           <p className="font-serif mt-6 text-2xl font-semibold leading-snug text-brass-500">{TAGLINE}</p>
           <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-ink-100">
-            這份評測把領導力放在兩個環裡看：<strong>快環</strong>是你面對眼前的事有多快；<strong>永環</strong>是你不在的時候，能力還留不留得下來。
+            這份評測把領導力放在兩個環裡看：<strong>應變環</strong>是你面對眼前的事有多快；<strong>養成環</strong>是你不在的時候，能力還留不留得下來。
             兩個環互相支撐，缺了哪一個，領導都走不遠。
           </p>
         </div>
@@ -38,7 +38,7 @@ export default function FrameworkPage({ loggedIn = false, onEnter }) {
       <section id="loops" className="border-t border-ink-700/10 px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <div className="font-display mb-3 text-[15px] italic text-brass-500">Two Loops — 兩個環</div>
-          <h2 className="font-serif mb-10 text-3xl font-bold tracking-tight text-ink-700">快環與永環</h2>
+          <h2 className="font-serif mb-10 text-3xl font-bold tracking-tight text-ink-700">應變環與養成環</h2>
           <div className="grid gap-6 sm:grid-cols-2">
             {Object.values(LOOP_INTRO).map((l) => (
               <div key={l.id} className="rounded-sm border border-ink-700/10 bg-paper-50 p-6">
@@ -68,7 +68,7 @@ export default function FrameworkPage({ loggedIn = false, onEnter }) {
               <article key={d.id} id={d.id} className="scroll-mt-24 rounded-sm border border-ink-700/10 bg-paper-50 p-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="font-serif text-xl font-bold text-ink-700">{DIM_NAMES[d.id]}<span className="font-display ml-3 text-sm italic font-normal text-brass-500">{d.en}</span></h3>
-                  <span className="text-xs font-semibold text-ink-100">{d.loop === 'fast' ? '快環' : '永環'}</span>
+                  <span className="text-xs font-semibold text-ink-100">{d.loop === 'fast' ? '應變環' : '養成環'}</span>
                 </div>
                 <p className="font-serif mt-2 text-lg font-semibold text-ink-700">{d.tagline}</p>
                 <p className="mt-2 text-sm leading-relaxed text-ink-100">{d.desc}</p>

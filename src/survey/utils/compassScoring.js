@@ -1,5 +1,5 @@
 /**
- * 雙環領導羅盤（Dual-Loop Leadership Compass）專用計分。
+ * 領導力羅盤（Leadership Compass）專用計分。
  *
  * 規格見 docs/leadership-new/04-platform-spec-v0.1.md 第 4、7 節。
  *

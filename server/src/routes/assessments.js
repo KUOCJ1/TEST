@@ -40,7 +40,7 @@ export function createAssessmentsRouter({ db, requireAuth }) {
 
     // 比較基準應該是「各學員自己的自評」。360° 題庫裡別人替受評者填的他評提交，
     // userId 是評分者，若算進來，評分者的他評分數會被當成他本人的最新成績。
-    // 這個修正目前只套用在雙環領導羅盤；其他 360° 題庫（L9D、DISC）維持原本算法，
+    // 這個修正目前只套用在領導力羅盤；其他 360° 題庫（L9D、DISC）維持原本算法，
     // 避免動到既有題庫的數字（是否一併修正由產品決定）。
     const selfOnly = isStrictPrivacy(assessmentId);
     const all = db.data.submissions.filter(

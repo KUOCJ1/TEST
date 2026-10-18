@@ -342,16 +342,16 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 ---
 
 ### 5.4.1 各評測的說明頁（`/guide/:id`）
-`marketing/GuidePage.jsx` 依題庫設定產生每份評測的說明頁（構面與子面向、題數、量表、等級或原型清單、是否支援 360°），用途與讀法來自 `data/assessment-guides.js`（編輯層，只寫題庫設定本身已經說過的事）。新增評測時一定要同時補 `GUIDES`（或像雙環領導羅盤一樣提供 `FRAMEWORK_PATH` 專屬頁），`src/test/guide-pages.test.jsx` 會檢查。`/guide/leadership-compass` 會導向 `/framework`。
+`marketing/GuidePage.jsx` 依題庫設定產生每份評測的說明頁（構面與子面向、題數、量表、等級或原型清單、是否支援 360°），用途與讀法來自 `data/assessment-guides.js`（編輯層，只寫題庫設定本身已經說過的事）。新增評測時一定要同時補 `GUIDES`（或像領導力羅盤一樣提供 `FRAMEWORK_PATH` 專屬頁），`src/test/guide-pages.test.jsx` 會檢查。`/guide/leadership-compass` 會導向 `/framework`。
 
-### 5.5 雙環領導羅盤與接班準備度評測（2026-10-18 起，預設停用）
+### 5.5 領導力羅盤與接班準備度評測（2026-10-18 起，預設停用）
 完整的設計、決策紀錄與實作紀錄在 [`docs/leadership-new/`](leadership-new/)（尤其 `04-platform-spec-v0.1.md` 第 16–22 節）。維運要知道的重點：
 - **設定檔**：`src/survey/data/assessments/leadership-compass.js`（題目由 `scripts/build-compass-config.mjs` 從 `docs/leadership-new/items-candidates-*.json` 產生到 `compass-items.generated.js`，**不要手改**）、`succession-intent.js`；敘事文字在 `compass-narrative.js`、`utils/successionText.js`。
 - **計分**不走共用的 `utils/scoring.js`，而是各自的 `utils/compassScoring.js`、`utils/successionScoring.js`（題庫以 `SCORING` 提供，`SurveyApp` 會優先使用）；結果頁用專屬元件（`REPORT: 'compass' | 'succession'`）。其他四個題庫的行為完全不變。
 - **預設停用**：後端 `KNOWN_ASSESSMENTS` 的 `enabled: false`，管理者在「評量」啟用後才會出現在班級建立選單與學員畫面；首頁摘要的 `hidden: true` 要在正式推出時一併移除。
-- **360° 隱私規則**（伺服器端強制，`server/src/lib/compassPrivacy.js`，只對雙環領導羅盤）：受評者與教練只看到彙整；同類 ≥3 位才單獨顯示、不足併入他評合計、合計 ≥3 位才顯示；上級評分須受評者同意（`PUT /api/auth/compass-manager-share`）；教練總覽與班級詳情把他評去識別化並移除分數與時間；管理員還原身分須 `deanonymize=1` 且 `reason` ≥5 字，並寫稽核紀錄 `view_rater_identity`。
+- **360° 隱私規則**（伺服器端強制，`server/src/lib/compassPrivacy.js`，只對領導力羅盤）：受評者與教練只看到彙整；同類 ≥3 位才單獨顯示、不足併入他評合計、合計 ≥3 位才顯示；上級評分須受評者同意（`PUT /api/auth/compass-manager-share`）；教練總覽與班級詳情把他評去識別化並移除分數與時間；管理員還原身分須 `deanonymize=1` 且 `reason` ≥5 字，並寫稽核紀錄 `view_rater_identity`。
 - **組織診斷**（班級分頁）的匿名分級：≥5 位完整、3–4 位只有平均、<3 位只有完成率；只用自評（他評落差的群體分布尚未提供）。
-- **已知限制**：L9D 與 DISC 的比較基準（`/assessments/:id/benchmark`）仍會把他評提交算進去，雙環領導羅盤已修正；後台題庫文字編輯尚未涵蓋羅盤的敘事文字與他評版題目文字；管理員還原身分只有 API。
+- **已知限制**：L9D 與 DISC 的比較基準（`/assessments/:id/benchmark`）仍會把他評提交算進去，領導力羅盤已修正；後台題庫文字編輯尚未涵蓋羅盤的敘事文字與他評版題目文字；管理員還原身分只有 API。
 - **隱私政策**：新增「職涯意向資料」「上級評分顯示同意」並更新可見對象；版本 `2026-10-18`。
 
 ## 6. 前端功能地圖（依角色）

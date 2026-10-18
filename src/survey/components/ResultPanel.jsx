@@ -16,7 +16,7 @@ const ResultPanel = forwardRef(function ResultPanel(
   ref,
 ) {
   const config = getAssessment(result.assessmentId);
-  // 題庫宣告專屬報告（雙環領導羅盤）時，改用專屬元件；其他題庫的畫面完全不變。
+  // 題庫宣告專屬報告（領導力羅盤）時，改用專屬元件；其他題庫的畫面完全不變。
   if (config?.REPORT === 'compass') {
     return <CompassResultPanel ref={ref} result={result} onRetake={onRetake} onCopy={onCopy} copied={copied} readOnly={readOnly} />;
   }

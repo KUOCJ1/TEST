@@ -3,16 +3,16 @@ import {
   NA_VALUE, selectForm as selectCompassForm, buildCompassResult, completeness, questionState, dimensionRating as compassRating,
 } from '../../utils/compassScoring.js';
 
-// 雙環領導羅盤（Dual-Loop Leadership Compass）。規格：docs/leadership-new/04-platform-spec-v0.1.md
+// 領導力羅盤（Leadership Compass）。規格：docs/leadership-new/04-platform-spec-v0.1.md
 // 題目由 scripts/build-compass-config.mjs 從 docs/leadership-new/items-candidates-*.json 產生，
 // 不要在這裡手寫題目。計分在 utils/compassScoring.js（純函式，不影響其他題庫）。
 export const ID = 'leadership-compass';
 export const ITEM_VERSION = 'compass-0.3';
 export const SUPPORTS_360 = true;
-export const NAME = '雙環領導羅盤八大構面評測';
-export const NAME_EN = 'Dual-Loop Leadership Compass';
-export const ABBR = 'DLLC';
-export const DESCRIPTION = '以行為頻率衡量領導力：快環（洞察、聚焦、授權、凝聚）與永環（學習、穩定、育才、傳承）共 8 構面，含人機協作與四組張力指標。預設精簡版 32 題，亦可選完整版 69 題。';
+export const NAME = '領導力羅盤八向評測';
+export const NAME_EN = 'Leadership Compass';
+export const ABBR = 'LC';
+export const DESCRIPTION = '以行為頻率衡量領導力：應變環（洞察、聚焦、授權、凝聚）與養成環（學習、穩定、育才、傳承）共 8 構面，含人機協作與四組張力指標。預設精簡版 32 題，亦可選完整版 69 題。';
 export const RATER_PROMPT = '的領導行為表現';
 
 export const SCALE_MIN = 1;
@@ -76,8 +76,8 @@ const SUB_NAMES = {
 };
 
 export const LOOPS = [
-  { id: 'fast', name: '快環', nameEn: 'FAST', dimensionIds: ['find', 'aim', 'staff', 'team'] },
-  { id: 'last', name: '永環', nameEn: 'LAST', dimensionIds: ['learn', 'anchor', 'sow', 'transfer'] },
+  { id: 'fast', name: '應變環', nameEn: 'FAST', dimensionIds: ['find', 'aim', 'staff', 'team'] },
+  { id: 'last', name: '養成環', nameEn: 'LAST', dimensionIds: ['learn', 'anchor', 'sow', 'transfer'] },
 ];
 
 export const TENSIONS = [
@@ -129,10 +129,10 @@ export function summaryText(result) {
 export const PROFILE_MODE = true;
 export const PROFILE_LEVEL = {
   id: 'compass-profile',
-  badge: '您的雙環輪廓',
+  badge: '您的領導輪廓',
   badgeEn: 'Dual-Loop Profile',
   color: '#2c5282',
-  desc: '這份報告呈現您在快環與永環八個構面的行為頻率，以及四組張力的取向。重點不是總分高低，而是哪些行為已成習慣、哪些在特定情境下會變成限制。',
+  desc: '這份報告呈現您在應變環與養成環八個構面的行為頻率，以及四組張力的取向。重點不是總分高低，而是哪些行為已成習慣、哪些在特定情境下會變成限制。',
   advice: '先看兩個環的整體平衡，再看最高與最低的構面；有他評資料時，留意自評與他評落差最大的地方，那裡通常最值得對話。',
 };
 // PROFILE_MODE 的元件會讀 LEVELS／PROFILES；提供一份單一項目的對照避免分支錯誤。

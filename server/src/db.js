@@ -73,8 +73,8 @@ export function createDb(file) {
     { id: 'leadership-9d', name: '經贏® 領導力九大構面行為評量', description: '9 大構面、90 題，含反向題', enabled: true },
     { id: 'disc', name: 'DISC 行為風格評測', description: '4 大構面、32 題，風格輪廓型評量', enabled: true },
     { id: 'archetype', name: '識己®性格原型評測', description: '4 組性格光譜、40 題，16 種原創性格原型', enabled: true },
-    // 雙環領導羅盤：預設停用，管理者在後台驗收後再啟用（enabled 只對「資料庫還沒有這筆」時作為初值）
-    { id: 'leadership-compass', name: '雙環領導羅盤八大構面評測', renamedFrom: ['雙環領導羅盤'], description: '8 構面、精簡版 32 題／完整版 69 題，含人機協作與張力指標', enabled: false },
+    // 領導力羅盤：預設停用，管理者在後台驗收後再啟用（enabled 只對「資料庫還沒有這筆」時作為初值）
+    { id: 'leadership-compass', name: '領導力羅盤八向評測', renamedFrom: ['雙環領導羅盤', '雙環領導羅盤八大構面評測'], description: '8 構面、精簡版 32 題／完整版 69 題，含人機協作與張力指標', enabled: false },
     // 接班補充問卷：預設停用；涉及職涯與去留意向，啟用前須完成隱私政策更新與重新同意（見 docs/leadership-new/06）
     { id: 'succession-intent', name: '接班準備度評測', renamedFrom: ['接班補充問卷'], description: '4 面向、20 題，整理升任企圖、準備程度、可接受條件與長期意向（自評）', enabled: false },
   ];

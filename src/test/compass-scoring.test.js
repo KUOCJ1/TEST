@@ -12,7 +12,7 @@ function q(id, subId, extra = {}) {
 const CONFIG = {
   ID: 'test-compass', NAME: '測試羅盤', ITEM_VERSION: 'test-1',
   SCALE_MIN: 1, SCALE_MAX: 5,
-  LOOPS: [{ id: 'fast', name: '快環', dimensionIds: ['d1', 'd2'] }, { id: 'last', name: '永環', dimensionIds: ['d3'] }],
+  LOOPS: [{ id: 'fast', name: '應變環', dimensionIds: ['d1', 'd2'] }, { id: 'last', name: '養成環', dimensionIds: ['d3'] }],
   TENSIONS: [{ id: 't1', dimensionId: 'd1', poleA: 'focus', poleB: 'flex', nameA: '聚焦', nameB: '彈性' }],
   DIMENSIONS: [
     {

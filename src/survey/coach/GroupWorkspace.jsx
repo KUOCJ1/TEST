@@ -30,7 +30,7 @@ const SECTIONS = [
   { id: 'overview', label: '總覽' },
   { id: 'settings', label: '成員與設定' },
 ];
-// 雙環領導羅盤的班級多一個「組織診斷」分頁（依 REPORT 旗標判斷，其他評量不受影響）。
+// 領導力羅盤的班級多一個「組織診斷」分頁（依 REPORT 旗標判斷，其他評量不受影響）。
 const DIAGNOSIS_SECTION = { id: 'diagnosis', label: '組織診斷' };
 
 // 選中班別的標題列（Sprint 11）：以前右側直接是「總覽／成員與設定」分頁，看不出現在看的是哪個班。

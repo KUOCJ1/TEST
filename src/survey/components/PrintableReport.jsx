@@ -23,7 +23,7 @@ import SuccessionReportPages from './succession/SuccessionReportPages.jsx';
 // ─── Report body (reusable — single member or part of a batch run) ──────
 export function ReportPages({ result, benchmark, user, submittedAt, comments = [] }) {
   const config = getAssessment(result.assessmentId);
-  // 雙環領導羅盤有專屬列印版面（不做總分、達成率與百分位）。
+  // 領導力羅盤有專屬列印版面（不做總分、達成率與百分位）。
   if (config?.REPORT === 'compass') {
     return <CompassReportPages result={result} user={user} submittedAt={submittedAt} comments={comments} />;
   }
