@@ -3,6 +3,7 @@ import MarketingNav from './marketing/MarketingNav';
 import MarketingFooter from './marketing/MarketingFooter';
 import CtaBanner from './marketing/CtaBanner';
 import { ASSESSMENT_SUMMARIES } from './marketing/assessmentSummary';
+import { englishNameOf } from './data/assessment-english-names';
 
 export default function LandingPage({ onEnter, loggedIn = false }) {
   const scrollToFeatures = () => {
@@ -147,6 +148,7 @@ export default function LandingPage({ onEnter, loggedIn = false }) {
                   {a.name}
                   {a.comingSoon && <span className="rounded-full bg-brass-50 px-2.5 py-0.5 text-xs font-semibold text-brass-600">即將推出</span>}
                 </h3>
+                {englishNameOf(a.id) && <p lang="en" className="mb-2 text-sm text-ink-50">{englishNameOf(a.id)}</p>}
                 <p className="mb-5 text-sm leading-relaxed text-ink-100">{a.tagline}</p>
                 <dl className="mb-5 flex gap-8">
                   <div>

@@ -27,3 +27,12 @@ describe('首頁評測工具庫摘要', () => {
     expect(claims360).toBe(!!config.SUPPORTS_360);
   });
 });
+
+import { ENGLISH_NAMES } from '../survey/data/assessment-english-names';
+describe('評測英文名稱', () => {
+  it('每個展示中的評測都有英文名稱', () => {
+    for (const a of ASSESSMENT_SUMMARIES) {
+      expect(ENGLISH_NAMES[a.id], a.id).toBeTruthy();
+    }
+  });
+});
