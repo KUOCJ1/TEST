@@ -104,13 +104,25 @@ export function presentRateeSubmissions(subs, { managerConsent = false } = {}) {
   });
 
   buckets.forEach(({ base, peer, subordinate, manager }) => {
-    const pooled = [...peer, ...subordinate];
-    if (peer.length >= MIN_RATERS) out.push(aggregateEntry(peer, 'peer', base));
-    if (subordinate.length >= MIN_RATERS) out.push(aggregateEntry(subordinate, 'subordinate', base));
+    const peerShown = peer.length >= MIN_RATERS;
+    const subShown = subordinate.length >= MIN_RATERS;
+    if (peerShown) out.push(aggregateEntry(peer, 'peer', base));
+    if (subShown) out.push(aggregateEntry(subordinate, 'subordinate', base));
     // 上級受評者同意才顯示（單獨列出，可辨識；同意與否由呼叫端傳入）。
     const shownManagers = managerConsent ? manager : [];
-    const pooledAll = [...pooled, ...shownManagers];
-    if (pooledAll.length >= MIN_RATERS) out.push(aggregateEntry(pooledAll, 'others', base));
+    const pooledAll = [
+      ...peer, ...subordinate, ...shownManagers,
+    ];
+    // 「他評合計」只在不會被相減還原時才輸出：已單獨顯示的類別從合計扣掉之後，
+    // 剩下的人數若是 1～2 位，等於把這 1～2 位的分數直接洩漏（例如同儕 3 位＋部屬 1 位，
+    // 合計減同儕就得到那位部屬的分數）。剩下 0 位（全部都已單獨顯示）或 ≥3 位才安全。
+    const separatelyShown = (peerShown ? peer.length : 0)
+      + (subShown ? subordinate.length : 0)
+      + shownManagers.length;
+    const remainder = pooledAll.length - separatelyShown;
+    if (pooledAll.length >= MIN_RATERS && (remainder === 0 || remainder >= MIN_RATERS)) {
+      out.push(aggregateEntry(pooledAll, 'others', base));
+    }
     if (managerConsent && manager.length > 0) out.push(aggregateEntry(manager, 'manager', base));
   });
   return out;

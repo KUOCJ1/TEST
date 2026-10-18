@@ -38,6 +38,19 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
     return () => clearTimeout(timerRef.current);
   }, [text, tips, submission.id]);
 
+  // 離開（切換學員、關閉抽屜）時把最後 0.5 秒內還沒寫入的輸入補存起來；已儲存成評語就不補存。
+  const latestRef = useRef({ text, tips });
+  const savedRef = useRef(false);
+  useEffect(() => { latestRef.current = { text, tips }; savedRef.current = false; }, [text, tips]);
+  useEffect(() => {
+    const id = submission.id;
+    return () => {
+      if (!savedRef.current && (latestRef.current.text || latestRef.current.tips?.some(Boolean))) {
+        writeJSON(draftKey(id), latestRef.current);
+      }
+    };
+  }, [submission.id]);
+
   const setTip = (i, v) => setTips((prev) => prev.map((t, j) => (j === i ? v : t)));
   const addTip = () => setTips((prev) => [...prev, '']);
   const removeTip = (i) => setTips((prev) => prev.filter((_, j) => j !== i));
@@ -83,6 +96,7 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
         tips: tips.filter((t) => t.trim()),
       });
       try { localStorage.removeItem(draftKey(submission.id)); } catch { /* ignore */ }
+      savedRef.current = true;
       onSaved(comment);
     } catch (e) {
       setError(e.message || '儲存失敗');

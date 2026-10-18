@@ -130,7 +130,9 @@ export default function GuidePage({ loggedIn = false, onEnter }) {
           <ul className="list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-ink-100">
             <li>你本人，以及你所屬班級的教練與平台管理員。</li>
             {config.SUPPORTS_360
-              ? <li>這份評測支援 360° 他評：他人對你的評分在你的報告中以匿名呈現；教練與管理者可辨識評分者的身分。</li>
+              ? (config.STRICT_RATER_PRIVACY
+                ? <li>這份評測支援 360° 他評，需要你或教練先邀請評分者：他人對你的評分在報告中以匿名呈現，同一類評分者滿 3 位才單獨顯示；教練看不到評分者身分與個別分數，管理者要查看必須填寫理由並留下稽核紀錄。</li>
+                : <li>這份評測支援 360° 他評：他人對你的評分在你的報告中以匿名呈現；教練與管理者可辨識評分者的身分。</li>)
               : <li>這份評測不開放 360° 他評，只有你本人作答。</li>}
           </ul>
           <p className="mt-5 text-sm text-ink-100">完整說明請見 <Link to="/privacy" className="font-semibold text-brass-500 underline">隱私權政策</Link>。</p>

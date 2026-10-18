@@ -85,7 +85,23 @@ describe('SurveyApp', () => {
   it('作答內容會持久化到 localStorage（依使用者與題庫分開）', () => {
     renderSurvey();
     fireEvent.click(document.querySelectorAll('input[name="q1"]')[3]); // 4 分
-    expect(JSON.parse(localStorage.getItem('aiassess_draft_guest_ai-competency_v2')).q1).toBe(4);
+    expect(JSON.parse(localStorage.getItem('aiassess_draft_guest_ai-competency_v3')).q1).toBe(4);
+  });
+
+  it('草稿依「評誰、以什麼身分」分開，不會把答案帶到另一位受評者', () => {
+    renderSurvey({ user: { id: 'u1', name: '小明' }, rateeId: 'r1', raterType: 'peer' });
+    fireEvent.click(document.querySelectorAll('input[name="q1"]')[3]);
+    expect(localStorage.getItem('aiassess_draft_u1_ai-competency_peer_r1_v3')).toBeTruthy();
+    expect(localStorage.getItem('aiassess_draft_u1_ai-competency_v3')).toBeNull();
+  });
+
+  it('送出成功後清掉草稿（複測不會預填上次的答案）', async () => {
+    renderSurvey({ user: { id: 'u2', name: '小華' } });
+    answerAll(4);
+    expect(localStorage.getItem('aiassess_draft_u2_ai-competency_v3')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /送出評測/ }));
+    await screen.findByText(/您的總得分/);
+    expect(localStorage.getItem('aiassess_draft_u2_ai-competency_v3')).toBeNull();
   });
 
   it('送出後會呼叫 API 建立紀錄並回呼 onSubmitted', async () => {

@@ -8,7 +8,10 @@ export function hashPassword(pw) {
 }
 
 export function verifyPassword(pw, hash) {
-  return bcrypt.compare(pw, hash);
+  // 批次匯入的帳號沒有密碼雜湊（passwordHash: null）；bcrypt.compare 對 null 會丟例外，
+  // 變成 500 並洩漏內部訊息、還能拿來探測哪些 Email 是匯入帳號。這裡統一回傳 false。
+  if (typeof hash !== 'string' || !hash) return Promise.resolve(false);
+  return bcrypt.compare(typeof pw === 'string' ? pw : '', hash);
 }
 
 export function signToken(payload, secret) {

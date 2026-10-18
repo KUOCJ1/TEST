@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAssessment } from './data/assessments/index.js';
 import { answeredCount, buildResult, isComplete, unansweredQuestionIds } from './utils/scoring';
-import { readJSON, writeJSON } from './utils/storage';
+import { readJSON, writeJSON, removeKey } from './utils/storage';
 import { resultSummaryText, copyToClipboard } from './utils/format';
 import { api } from './api/client';
 import ProgressBar from './components/ProgressBar';
@@ -15,7 +15,13 @@ import CompassIntro from './components/compass/CompassIntro.jsx';
 import { GUIDES, guidePathFor } from './data/assessment-guides.js';
 
 const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
-const draftKey = (userId, assessmentId) => `aiassess_draft_${userId}_${assessmentId}_v2`;
+// 草稿 key 要把「評誰、以什麼身分評」放進去：先評 A 再評 B、或自評之後再評別人，答案不能互相帶過去
+// （v3：舊版共用同一個 key 且送出後不清除，捨棄舊草稿）。
+const draftKey = (userId, assessmentId, rateeId, raterType) => (
+  raterType && raterType !== 'self' && rateeId
+    ? `aiassess_draft_${userId}_${assessmentId}_${raterType}_${rateeId}_v3`
+    : `aiassess_draft_${userId}_${assessmentId}_v3`
+);
 
 export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, assessmentId = 'ai-competency', rateeId, raterType, rateeName, onSubmitted }) {
   const baseConfig = useMemo(() => getAssessment(assessmentId), [assessmentId]);
@@ -41,7 +47,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
   const navigate = useNavigate();
   const confirm = useConfirm();
 
-  const storageKey = useMemo(() => draftKey(user.id, assessmentId), [user.id, assessmentId]);
+  const storageKey = useMemo(() => draftKey(user.id, assessmentId, rateeId, raterType), [user.id, assessmentId, rateeId, raterType]);
   const [answers, setAnswers] = useState(() => readJSON(storageKey, {}));
   const [phase, setPhase] = useState('pre');
   // 這個評量若屬於某個班別，班別本身已經知道現在是課前還是課後——不必再讓學員自己
@@ -129,6 +135,8 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     const r = scoring.buildResult(answers, config);
     try {
       await api.createSubmission({ answers, result: r, assessmentId, phase, rateeId: rateeId || user.id, raterType: raterType || 'self' });
+      // 送出成功後清掉草稿：否則下次（複測、課後）會預填上一次的答案，學員可能不看就送出。
+      removeKey(storageKey);
       setResult(r);
       onSubmitted?.(r);
       requestAnimationFrame(() => resultRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
@@ -137,7 +145,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     } finally {
       setSubmitting(false);
     }
-  }, [answers, config, scoring, assessmentId, phase, rateeId, raterType, onSubmitted, user.id, paginated, pageIndex, focusQuestion]);
+  }, [answers, config, scoring, assessmentId, phase, rateeId, raterType, onSubmitted, user.id, paginated, pageIndex, focusQuestion, storageKey]);
 
   const handleRetake = useCallback(async () => {
     if (!(await confirm('確定要重新作答嗎？目前畫面上的作答內容將被清空（先前已送出的紀錄不受影響）。'))) return;

@@ -73,7 +73,25 @@ describe('presentRateeSubmissions（純函式）', () => {
     const subs = [sub('peer', 1), sub('peer', 2), sub('manager', 1)];
     assert.equal(presentRateeSubmissions(subs).length, 0);
     const out = presentRateeSubmissions(subs, { managerConsent: true });
-    assert.deepEqual(out.map((o) => o.raterType).sort(), ['manager', 'others']);
+    // 同儕只有 2 位：合計扣掉已單獨顯示的上級後只剩 2 位，會被相減還原，所以不輸出合計。
+    assert.deepEqual(out.map((o) => o.raterType).sort(), ['manager']);
+    const more = presentRateeSubmissions([...subs, sub('peer', 3)], { managerConsent: true });
+    assert.deepEqual(more.map((o) => o.raterType).sort(), ['manager', 'others', 'peer']);
+  });
+  test('不能用「他評合計」減去單獨顯示的類別，還原人數不足類別的分數', () => {
+    // 同儕 3 位 + 部屬 1 位：合計 − 同儕 = 那一位部屬 → 不得輸出合計。
+    const subs = [sub('peer', 1), sub('peer', 2), sub('peer', 3), sub('subordinate', 1)];
+    const out = presentRateeSubmissions(subs);
+    assert.deepEqual(out.map((o) => o.raterType), ['peer']);
+    // 同儕 3 + 部屬 2：合計 − 同儕 = 2 位部屬的平均，同樣不得輸出。
+    const out2 = presentRateeSubmissions([...subs, sub('subordinate', 2)]);
+    assert.deepEqual(out2.map((o) => o.raterType), ['peer']);
+    // 同儕 3 + 部屬 3：兩類都單獨顯示，合計是兩者的組合，不洩漏新資訊。
+    const out3 = presentRateeSubmissions([...subs, sub('subordinate', 2), sub('subordinate', 3)]);
+    assert.deepEqual(out3.map((o) => o.raterType).sort(), ['others', 'peer', 'subordinate']);
+    // 同儕 2 + 部屬 1：都不足，合計 3 位才顯示，且沒有任何單獨顯示的類別可相減。
+    const out4 = presentRateeSubmissions([sub('peer', 1), sub('peer', 2), sub('subordinate', 1)]);
+    assert.deepEqual(out4.map((o) => o.raterType), ['others']);
   });
   test('其他題庫與自評原樣通過', () => {
     const self = { assessmentId: COMPASS, raterType: 'self', userId: 'u' };

@@ -36,6 +36,10 @@ export default function MemberDrawer({
 
   useEffect(() => {
     const handleKey = (e) => {
+      // 在輸入框裡打字（評語、搜尋）時，方向鍵是移動游標、Esc 是中止輸入法，不能拿來切換學員或關閉抽屜。
+      const t = e.target;
+      const typing = t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName));
+      if (typing) return;
       if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowRight' && selectedIndex < members.length - 1) onSelectIndex(selectedIndex + 1);
       if (e.key === 'ArrowLeft' && selectedIndex > 0) onSelectIndex(selectedIndex - 1);

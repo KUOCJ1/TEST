@@ -74,8 +74,8 @@ export default function GroupWorkspace({ users, currentUserId }) {
     setError('');
     setCommentPatch({});
     try {
-      const { group, submissions: subs, members } = await api.getGroup(id);
-      setGroupDetail({ group, submissions: subs, members: members ?? [] });
+      const { group, submissions: subs, members, invites } = await api.getGroup(id);
+      setGroupDetail({ group, submissions: subs, members: members ?? [], invites: invites ?? [] });
     } catch (e) {
       setError(e.message || '載入失敗');
     }
@@ -119,8 +119,8 @@ export default function GroupWorkspace({ users, currentUserId }) {
   const refreshSubmissions = async () => {
     if (!selectedGroupId) return;
     try {
-      const { submissions: subs, members } = await api.getGroup(selectedGroupId);
-      setGroupDetail((prev) => (prev ? { ...prev, submissions: subs, members: members ?? prev.members } : prev));
+      const { submissions: subs, members, invites } = await api.getGroup(selectedGroupId);
+      setGroupDetail((prev) => (prev ? { ...prev, submissions: subs, members: members ?? prev.members, invites: invites ?? [] } : prev));
       setCommentPatch({});
     } catch {
       // 靜默失敗即可：使用者仍看得到已儲存的名單，只是分析要等下次重新整理。
@@ -296,6 +296,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
                 key={`settings-${groupDetail.group.id}`}
                 group={groupDetail.group}
                 members={groupDetail.members}
+                invites={groupDetail.invites ?? []}
                 users={users}
                 patchedSubmissions={patchedSubmissions}
                 onGroupUpdated={handleGroupUpdated}

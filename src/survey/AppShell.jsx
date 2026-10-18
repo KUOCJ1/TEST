@@ -8,11 +8,13 @@ import { useAuth } from './auth/useAuth';
 import { ContentProvider } from './content/ContentProvider';
 import { useContent } from './content/useContent';
 import { api } from './api/client';
+import { getAssessment } from './data/assessments/index.js';
 import { computeNextStep } from './utils/nextStep';
 import AssessmentCard from './components/AssessmentCard';
 import NextStepCard from './components/NextStepCard';
 import GroupStatusBar from './components/GroupStatusBar';
 import GoalProgressChip from './components/GoalProgressChip';
+import GroupInvites from './components/GroupInvites';
 import RaterSetup from './components/RaterSetup';
 import SurveyApp from './SurveyApp';
 import UserDashboard from './dashboard/UserDashboard';
@@ -46,19 +48,31 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
   const [myGroups, setMyGroups] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [goals, setGoals] = useState([]);
+  const [groupInvites, setGroupInvites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
-    Promise.all([api.assessments(), api.mySubmissions(), api.myGroups(), api.groupMembers(), api.myGoals()])
-      .then(([aList, sList, gList, mList, goalList]) => {
+    // 必要資料（評量、作答、班級）失敗要告訴使用者並可重試，不能顯示成「沒有可用的評量」；
+    // 附加資料（目標、成員、班級邀請）失敗就當作沒有，不拖垮整頁。
+    const optional = (p, fallback) => p.catch(() => fallback);
+    Promise.all([
+      api.assessments(), api.mySubmissions(), api.myGroups(),
+      optional(api.groupMembers(), []), optional(api.myGoals(), []), optional(api.groupInvites(), []),
+    ])
+      .then(([aList, sList, gList, mList, goalList, inviteList]) => {
         setAssessments(aList);
         setMySubmissions(sList);
         setMyGroups(gList);
         setGroupMembers(mList);
         setGoals(goalList);
+        setGroupInvites(inviteList);
+        setLoadError('');
       })
+      .catch((e) => setLoadError(e?.message || '載入失敗'))
       .finally(() => setLoading(false));
-  }, [refreshKey]);
+  }, [refreshKey, reloadTick]);
 
   const latestByAssessment = mySubmissions.reduce((m, s) => {
     const id = s.assessmentId ?? 'ai-competency';
@@ -89,6 +103,18 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
 
   if (loading) return <LoadingState />;
 
+  if (loadError) {
+    return (
+      <main className="mx-auto max-w-2xl px-4 py-16 text-center">
+        <div role="alert" className="rounded-2xl bg-white px-6 py-12 shadow-lg shadow-slate-200/60">
+          <p className="text-lg font-bold text-slate-700">暫時無法載入你的評量</p>
+          <p className="mt-2 text-sm text-slate-500">{loadError}。你的作答資料沒有遺失，請檢查網路後重試。</p>
+          <button type="button" className="btn-primary mt-5" onClick={() => { setLoading(true); setReloadTick((t) => t + 1); }}>重新載入</button>
+        </div>
+      </main>
+    );
+  }
+
   const nextStep = computeNextStep({ assessments, mySubmissions, myGroups, groupMembers, goals });
   // 班級狀態條優先顯示「下一步」正在講的那個班；沒有的話（例如下一步是 360°
   // 他評或看報告）退回顯示第一個進行中的班別，讓使用者至少知道自己現在的
@@ -108,6 +134,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
       {/* 已加入班級的學員，下面的「下一步」卡片與班級狀態已經在講該做什麼，再疊一個新手引導
           只是重複（Sprint 11 走查：掃 QR 加入的新學員首頁同時出現三個橫幅）。 */}
       <OnboardingBanner role="user" show={mySubmissions.length === 0 && myGroups.length === 0} />
+      <GroupInvites invites={groupInvites} onChanged={() => { setLoading(true); setReloadTick((t) => t + 1); }} />
       <NextStepCard nextStep={nextStep} onStartSurvey={onStartSurvey} onGoTo360={onGoTo360} onViewAnalysis={onViewAnalysis} />
       {/* 班級狀態與目標摘要並排成一條資訊列（Sprint 8），不再各佔一整列。 */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row [&>*]:flex-1 [&:empty]:hidden">
@@ -201,6 +228,7 @@ function RaterSetupRoute({ onConfirm, onCancel }) {
       onCancel={onCancel}
       initialRateeId={preset?.rateeId ?? null}
       initialRaterType={preset?.raterType ?? ''}
+      strictAssessmentId={getAssessment(assessmentId)?.STRICT_RATER_PRIVACY ? assessmentId : null}
     />
   );
 }

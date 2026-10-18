@@ -8,6 +8,7 @@ import {
 import { getBuildInfo } from '../lib/buildInfo.js';
 import { deepHealthCheck } from '../lib/health.js';
 import { isMailConfigured } from '../lib/mailer.js';
+import { stripRaterDetails } from '../lib/compassPrivacy.js';
 import {
   sanitizeOverrides, sanitizeNote, getContentRecord, publishOverrides, isEmptyOverrides,
 } from '../lib/assessmentContent.js';
@@ -169,10 +170,12 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
   router.get('/overview', (_req, res) => {
     res.json({
       users: db.data.users.map(publicUser),
-      submissions: db.data.submissions.map((s) => ({
+      // 嚴格隱私題庫（領導力羅盤）的他評同樣去識別化：管理員要還原評分者身分，
+      // 只能走 /submissions/ratee/:id?deanonymize=1&reason=…（要填理由並留稽核）。
+      submissions: stripRaterDetails(db.data.submissions.map((s) => ({
         ...normalizeSubmission(s),
         answers: undefined,
-      })),
+      }))),
     });
   });
 

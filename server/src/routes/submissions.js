@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { asyncHandler, normalizeSubmission, getGroupPhase, validateResultShape, auditLog } from '../lib/helpers.js';
 import { notifyNewComment } from '../lib/notifications.js';
 import { isStrictPrivacy, presentRateeSubmissions } from '../lib/compassPrivacy.js';
+import { POLICY_VERSION, CONSENT_REQUIRED_ASSESSMENTS } from '../lib/policy.js';
+import { isActiveInvite } from '../lib/invites.js';
 
 const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
 
@@ -25,12 +27,39 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
 
     const effectivePhase = phase === 'pre' || phase === 'post' ? phase : null;
 
+    // 評量必須存在且已啟用：停用的評量（例如預設停用的領導力羅盤、接班準備度）不能直接打 API 提交。
+    const assessmentRecord = (db.data.assessments ?? []).find((a) => a.id === effectiveAssessmentId);
+    if (!assessmentRecord) return res.status(400).json({ code: 'UNKNOWN_ASSESSMENT', error: '評量不存在' });
+    if (!assessmentRecord.enabled) return res.status(403).json({ code: 'ASSESSMENT_DISABLED', error: '這份評量目前未開放' });
+    // 高敏感評量：伺服器端確認已同意現行版政策。
+    if (CONSENT_REQUIRED_ASSESSMENTS.has(effectiveAssessmentId) && req.user.consent?.version !== POLICY_VERSION) {
+      return res.status(403).json({ code: 'CONSENT_REQUIRED', error: '請先同意最新的隱私權政策' });
+    }
+
+    // 嚴格隱私題庫的他評必須持有邀請：邀請決定評分者類型與班級，每個邀請每個階段只能用一次。
+    let invite = null;
+    if (isStrictPrivacy(effectiveAssessmentId) && effectiveRaterType !== 'self') {
+      invite = (db.data.raterInvites ?? []).find((i) => isActiveInvite(i)
+        && i.raterUserId === req.user.id && i.rateeId === finalRateeId
+        && i.assessmentId === effectiveAssessmentId && i.raterType === effectiveRaterType);
+      if (!invite) {
+        return res.status(403).json({ code: 'NO_INVITE', error: '需要受評者或教練的邀請才能評這位成員' });
+      }
+      if ((invite.usedPhases ?? []).includes(effectivePhase ?? 'none')) {
+        return res.status(409).json({ code: 'ALREADY_SUBMITTED', error: '已完成作答，不可重複提交' });
+      }
+    }
+
     // 這位使用者、這個評量底下所有他所屬的班級（可能不只一個——例如重複開班、
     // 同一學員報名下一梯，教練也可能忘了把他從舊班移除）。
     const matchingGroups = (db.data.groups ?? []).filter(
       (g) => g.memberIds.includes(req.user.id) &&
-             (g.assessmentId ?? 'ai-competency') === effectiveAssessmentId,
+             (g.assessmentId ?? 'ai-competency') === effectiveAssessmentId &&
+             (!invite || (g.id === invite.groupId && g.memberIds.includes(finalRateeId))),
     );
+    if (invite && matchingGroups.length === 0) {
+      return res.status(403).json({ code: 'NO_INVITE', error: '邀請對應的班級已不存在或你們已不在同一班' });
+    }
     const hasSubmittedTo = (groupId) => db.data.submissions.some((s) => {
       const n = normalizeSubmission(s);
       return n.userId === req.user.id &&
@@ -71,6 +100,7 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
       result,
     };
     db.data.submissions.push(record);
+    if (invite) (invite.usedPhases ??= []).push(effectivePhase ?? 'none');
     db.persist();
     res.status(201).json({ submission: record });
   });

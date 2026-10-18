@@ -25,6 +25,13 @@ const db = createDb(DB_PATH);
 
 // 首次啟動建立管理員種子帳號。
 if (!db.data.users.some((u) => u.role === 'admin')) {
+  // 正式環境不允許用預設管理員密碼「建立」管理員：資料庫檔案路徑設錯或被刪掉時，會走到這裡
+  // 以空庫啟動，只印警告太容易被忽略。（已經有管理員的既有資料庫不受影響，不會因此起不來。）
+  if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_PASSWORD || ADMIN_PASSWORD === 'admin1234')) {
+    console.error('✗ 資料庫裡沒有管理員，且正式環境未設定 ADMIN_PASSWORD（不可使用預設值）。' +
+      '請確認 DB_PATH 指向正確的資料庫檔案；若是全新安裝，請在 .env 設定 ADMIN_EMAIL 與 ADMIN_PASSWORD。');
+    process.exit(1);
+  }
   db.data.users.push({
     id: randomUUID(),
     name: '系統管理員',

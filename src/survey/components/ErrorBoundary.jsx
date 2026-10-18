@@ -1,6 +1,25 @@
 import { Component } from 'react';
 import { TriangleAlert } from 'lucide-react';
 
+// 部署新版後，舊分頁或舊快取還在找已被換掉檔名的 chunk：dynamic import 會失敗，
+// 而且 React.lazy 會快取失敗的結果，按「重試」沒有用，只有重新整理才會拿到新版。
+const CHUNK_ERROR = /dynamically imported module|importing a module script failed|loading chunk|failed to fetch dynamically/i;
+const RELOAD_FLAG = 'aiassess_chunk_reload';
+
+function isChunkLoadError(error) {
+  return CHUNK_ERROR.test(String(error?.message ?? error ?? ''));
+}
+
+function reloadOnceForChunkError() {
+  try {
+    const last = Number(sessionStorage.getItem(RELOAD_FLAG) || 0);
+    if (Date.now() - last < 60000) return false; // 剛重新整理過還是失敗：不要無限重整，顯示錯誤畫面
+    sessionStorage.setItem(RELOAD_FLAG, String(Date.now()));
+  } catch { /* sessionStorage 不可用時仍嘗試一次 */ }
+  window.location.reload();
+  return true;
+}
+
 /**
  * 攔截子樹的渲染錯誤，避免單一頁面（或單筆異常資料）讓整個 App 變成白畫面。
  * React 目前只支援以 class component 實作錯誤邊界。
@@ -26,6 +45,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('[ErrorBoundary]', error, info?.componentStack);
+    if (isChunkLoadError(error)) reloadOnceForChunkError();
   }
 
   render() {

@@ -15,6 +15,9 @@
     "manual:screenshots": "playwright test -c playwright.screenshots.config.js"
   },
   "dependencies": {
+    "@fontsource/newsreader": "^5.3.0",
+    "@fontsource/noto-sans-tc": "^5.3.1",
+    "@fontsource/noto-serif-tc": "^5.3.1",
     "lucide-react": "^1.8.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.4",

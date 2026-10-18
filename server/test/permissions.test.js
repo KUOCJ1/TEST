@@ -132,7 +132,9 @@ describe('停用帳號', () => {
     const found = await coach.get('/api/coach/user-search').query({ q: '王大' });
     assert.deepEqual(found.body.users.map((u) => u.id), [ids.stu2]);
     const g = await coach.post('/api/coach/groups').send({ name: '新班', memberIds: [ids.stu, ids.stu2] });
-    assert.deepEqual(g.body.group.memberIds, [ids.stu2]);
+    // 停用者不能被邀請；其他人改成「邀請」，本人接受前不是成員。
+    assert.deepEqual(g.body.invitedIds, [ids.stu2]);
+    assert.deepEqual(g.body.group.memberIds, []);
     // 原本在班上的停用者，更新名單時不會被踢掉。
     db.data.groups.find((x) => x.id === g.body.group.id).memberIds = [ids.stu, ids.stu2];
     const upd = await coach.put(`/api/coach/groups/${g.body.group.id}`).send({ memberIds: [ids.stu, ids.stu2] });
@@ -163,9 +165,16 @@ describe('教練成員搜尋（取代全站名冊）', () => {
   });
 
   test('班級明細帶 members（只有這個班的人），非本班教練 403', async () => {
-    const { coach, coach2, ids } = await setup();
+    const { coach, coach2, stu, ids } = await setup();
     const g = await coach.post('/api/coach/groups').send({ name: '班', memberIds: [ids.stu, 'no-such-id', ids.admin] });
-    assert.deepEqual(g.body.group.memberIds, [ids.stu], '不存在的 id 與管理者被濾掉');
+    assert.deepEqual(g.body.invitedIds, [ids.stu], '不存在的 id 與管理者被濾掉');
+    assert.deepEqual(g.body.group.memberIds, [], '教練不能直接把已有帳號的人加進班級');
+    const before = await coach.get(`/api/coach/groups/${g.body.group.id}`);
+    assert.deepEqual(before.body.members, []);
+    assert.deepEqual(before.body.invites.map((i) => i.userId), [ids.stu]);
+    const mine = await stu.get('/api/groups/invites');
+    assert.equal(mine.body.invites.length, 1);
+    assert.equal((await stu.post(`/api/groups/invites/${mine.body.invites[0].id}/accept`)).status, 200);
     const detail = await coach.get(`/api/coach/groups/${g.body.group.id}`);
     assert.deepEqual(detail.body.members.map((m) => m.id), [ids.stu]);
     assert.deepEqual(Object.keys(detail.body.members[0]).sort(), ['disabled', 'email', 'id', 'name']);

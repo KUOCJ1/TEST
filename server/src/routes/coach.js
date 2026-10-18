@@ -12,6 +12,7 @@ import {
   sanitizeDimensionNotes,
 } from '../lib/helpers.js';
 import { generateJoinCode } from '../lib/joinCode.js';
+import { splitNewMembers } from '../lib/invites.js';
 import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from '../lib/mailer.js';
 
 // 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
@@ -109,12 +110,17 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
   };
 
   const isKnownAssessment = (id) => typeof id === 'string' && (db.data.assessments ?? []).some((a) => a.id === id);
+  // 建班／換評量時，評量必須已啟用（停用的評量不開放建班，避免繞過「驗收後才啟用」的流程）。
+  const isEnabledAssessment = (id) => (db.data.assessments ?? []).some((a) => a.id === id && a.enabled);
 
   router.post('/groups', (req, res) => {
     const { name, companyName, assessmentId, memberIds, focusDimensionIds, targetHeadcount, dimensionNotes } = req.body ?? {};
-    if (!name?.trim()) return res.status(400).json({ error: '請輸入班別名稱' });
+    if (typeof name !== 'string' || !name.trim() || (companyName !== undefined && typeof companyName !== 'string')) {
+      return res.status(400).json({ error: '請輸入班別名稱' });
+    }
     // 不認得的題庫 id 會讓前端整個班級畫面找不到題庫設定；沒帶時沿用預設的 ai-competency。
     if (assessmentId !== undefined && !isKnownAssessment(assessmentId)) return res.status(400).json({ error: '評量不存在' });
+    if (assessmentId !== undefined && !isEnabledAssessment(assessmentId)) return res.status(403).json({ code: 'ASSESSMENT_DISABLED', error: '這份評量目前未開放，請先請管理者啟用' });
     const group = {
       id: randomUUID(),
       name: name.trim(),
@@ -122,7 +128,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       assessmentId: typeof assessmentId === 'string' ? assessmentId : 'ai-competency',
       coachId: req.user.id,
       coachName: req.user.name,
-      memberIds: sanitizeMemberIds(memberIds),
+      memberIds: [],
       focusDimensionIds: sanitizeFocusDimensionIds(focusDimensionIds),
       targetHeadcount: sanitizeTargetHeadcount(targetHeadcount),
       dimensionNotes: sanitizeDimensionNotes(dimensionNotes),
@@ -138,8 +144,11 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     };
     if (!db.data.groups) db.data.groups = [];
     db.data.groups.push(group);
+    // 已有帳號的人：教練只能「邀請」，本人接受才加入（管理員直接生效）。
+    const split = splitNewMembers(db, group, sanitizeMemberIds(memberIds), req.user);
+    group.memberIds = split.memberIds;
     db.persist();
-    res.status(201).json({ group });
+    res.status(201).json({ group, invitedIds: split.invitedIds });
   });
 
   router.get('/groups/:id', (req, res) => {
@@ -162,7 +171,28 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       .map((id) => db.data.users.find((u) => u.id === id))
       .filter(Boolean)
       .map((u) => ({ id: u.id, name: u.name, email: u.email, disabled: Boolean(u.disabled) }));
-    res.json({ group: { ...group, phase: getGroupPhase(group) }, submissions: stripRaterDetails(memberSubs), members });
+    // 還在等對方接受的班級邀請（教練不能直接把已有帳號的人加進班級）。
+    const invites = (db.data.groupInvites ?? [])
+      .filter((i) => i.groupId === group.id && i.status === 'pending')
+      .map((i) => {
+        const u = db.data.users.find((x) => x.id === i.userId);
+        return u ? { id: i.id, userId: u.id, name: u.name, email: u.email } : null;
+      })
+      .filter(Boolean);
+    res.json({ group: { ...group, phase: getGroupPhase(group) }, submissions: stripRaterDetails(memberSubs), members, invites });
+  });
+
+  // 取消尚未被接受的班級邀請。
+  router.delete('/groups/:id/invites/:inviteId', (req, res) => {
+    const group = (db.data.groups ?? []).find((g) => g.id === req.params.id);
+    if (!group) return res.status(404).json({ error: '班別不存在' });
+    if (group.coachId !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: '無權限' });
+    const inv = (db.data.groupInvites ?? []).find((i) => i.id === req.params.inviteId && i.groupId === group.id);
+    if (inv && inv.status === 'pending') {
+      inv.status = 'cancelled';
+      db.persist();
+    }
+    res.json({ ok: true });
   });
 
   router.put('/groups/:id', (req, res) => {
@@ -173,14 +203,27 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       return res.status(403).json({ error: '無權限' });
     }
     const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes, startDate, endDate } = req.body ?? {};
+    if ((name !== undefined && typeof name !== 'string') || (companyName !== undefined && typeof companyName !== 'string')) {
+      return res.status(400).json({ error: '名稱格式不正確' });
+    }
     if (assessmentId !== undefined && !isKnownAssessment(assessmentId)) return res.status(400).json({ error: '評量不存在' });
+    if (assessmentId !== undefined && assessmentId !== groups[idx].assessmentId && !isEnabledAssessment(assessmentId)) {
+      return res.status(403).json({ code: 'ASSESSMENT_DISABLED', error: '這份評量目前未開放，請先請管理者啟用' });
+    }
+    let invitedIds = [];
+    let nextMemberIds;
+    if (memberIds !== undefined) {
+      const split = splitNewMembers(db, groups[idx], sanitizeMemberIds(memberIds, groups[idx].memberIds), req.user);
+      nextMemberIds = split.memberIds;
+      invitedIds = split.invitedIds;
+    }
     const isISODate = (v) => v === null || (typeof v === 'string' && !isNaN(Date.parse(v)));
     groups[idx] = {
       ...groups[idx],
       ...(name !== undefined && { name: name.trim() }),
       ...(companyName !== undefined && { companyName: companyName.trim() }),
       ...(assessmentId !== undefined && { assessmentId }),
-      ...(memberIds !== undefined && { memberIds: sanitizeMemberIds(memberIds, groups[idx].memberIds) }),
+      ...(nextMemberIds !== undefined && { memberIds: nextMemberIds }),
       ...(groupComment !== undefined && { groupComment: String(groupComment).slice(0, 10000) }),
       ...(groupTips !== undefined && {
         groupTips: Array.isArray(groupTips)
@@ -195,7 +238,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       updatedAt: new Date().toISOString(),
     };
     db.persist();
-    res.json({ group: { ...groups[idx], phase: getGroupPhase(groups[idx]) } });
+    res.json({ group: { ...groups[idx], phase: getGroupPhase(groups[idx]) }, invitedIds });
   });
 
   // 發布班級報告（admin 或該班 coach 皆可）。
@@ -358,7 +401,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
 
     const emailRe = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
     if (!group.pendingMembers) group.pendingMembers = [];
-    const result = { added: 0, pending: 0, invalid: [] };
+    const result = { added: 0, pending: 0, invited: 0, invalid: [] };
 
     for (const raw of entries) {
       const email = (raw.email || '').trim().toLowerCase();
@@ -367,7 +410,11 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       const existing = db.data.users.find((u) => u.email === email && u.role !== 'admin');
       if (existing?.disabled) { result.invalid.push(email); continue; }
       if (existing) {
-        if (!group.memberIds.includes(existing.id)) { group.memberIds.push(existing.id); result.added += 1; }
+        if (group.memberIds.includes(existing.id)) continue;
+        if (req.user.role === 'admin') { group.memberIds.push(existing.id); result.added += 1; continue; }
+        // 已有帳號：教練只能邀請，本人接受才加入。
+        const split = splitNewMembers(db, group, [...group.memberIds, existing.id], req.user);
+        if (split.invitedIds.length > 0) result.invited += 1;
       } else if (!group.pendingMembers.some((p) => p.email === email)) {
         group.pendingMembers.push({ name, email });
         result.pending += 1;

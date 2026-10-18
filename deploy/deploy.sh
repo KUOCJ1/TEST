@@ -12,6 +12,14 @@ SERVICE="${SERVICE:-ai-assessment-api}"
 
 cd "$APP_DIR"
 
+# 部署前先備份資料庫：新版的資料遷移是單向的，出問題時要能「程式與資料一起回滾」。
+# 備份失敗就中止部署；明確要略過（例如第一次部署、還沒有資料庫）才設 SKIP_BACKUP=1。
+DB_FILE="${DB_FILE:-/var/lib/ai-assessment/db.json.sqlite3}"
+if [ "${SKIP_BACKUP:-0}" != "1" ] && [ -f "$DB_FILE" ]; then
+  echo "==> 部署前備份資料庫"
+  sudo -E env DB_FILE="$DB_FILE" bash "$APP_DIR/deploy/backup.sh"
+fi
+
 # 版本資訊（Sprint 7）：寫進前端打包與前後端各一份 build-info.json，部署後
 # `curl /api/health` 或管理後台「系統狀態」就能確認跑的是不是這一版。
 COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"

@@ -8,6 +8,7 @@ import { RATER_LABELS } from '../constants/raterTypes';
 import { resolveActiveAssessmentId } from '../utils/multiRaterHome';
 import LoadingState from '../components/LoadingState';
 import ManagerShareToggle from '../components/compass/ManagerShareToggle.jsx';
+import RaterInvitePanel, { InvitationsToRate } from '../components/compass/RaterInvitePanel.jsx';
 
 const OTHER_RATER_TYPES = ['manager', 'peer', 'subordinate'];
 
@@ -112,7 +113,26 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
         </div>
       )}
 
+      {/* 嚴格隱私題庫（領導力羅盤）：他評須先被邀請；一邊邀請別人評我，一邊處理收到的邀請 */}
+      {getAssessment(activeId)?.STRICT_RATER_PRIVACY && (
+        <>
+          <section className="mb-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
+            <h3 className="mb-1 text-base font-bold text-slate-700">邀請別人評我</h3>
+            <p className="mb-4 text-xs text-slate-400">
+              從同班成員中挑選評分者並說明對方是你的主管、同儕或部屬。每位評分者只會收到一次邀請，你看不到對方填了什麼。
+            </p>
+            <RaterInvitePanel assessmentId={activeId} members={members} />
+          </section>
+          <section className="mb-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
+            <h3 className="mb-1 text-base font-bold text-slate-700">等你評測的人</h3>
+            <p className="mb-4 text-xs text-slate-400">別人邀請你評測他們時會出現在這裡，身分（主管／同儕／部屬）由邀請決定。</p>
+            <InvitationsToRate assessmentId={activeId} onRate={(rateeId, t, name) => onRateOthers(activeId, rateeId, t, name)} />
+          </section>
+        </>
+      )}
+
       {/* 評測他人 */}
+      {!getAssessment(activeId)?.STRICT_RATER_PRIVACY && (
       <section className="mb-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
         <h3 className="mb-1 text-base font-bold text-slate-700">評測他人</h3>
         <p className="mb-4 text-xs text-slate-400">選擇一位同班成員與您的角色關係，開始為對方評測</p>
@@ -158,6 +178,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
           </div>
         )}
       </section>
+      )}
 
       {/* 360° 多元視角分析 */}
       <section>

@@ -64,10 +64,11 @@ describe('政策內容與實際行為一致（關鍵揭露都在）', () => {
     for (const k of ['OpenRouter', '第二大腦', 'SMTP', '不送出姓名與 Email', '不含任何個人資料']) expect(t).toContain(k);
   });
 
-  it('揭露誰看得到：教練與管理者可辨識他評評分者、教練可加入已註冊用戶', () => {
+  it('揭露誰看得到：教練與管理者可辨識他評評分者；教練只能邀請已有帳號的人，本人接受才入班', () => {
     const t = textOf(PRIVACY_SECTIONS);
     expect(t).toContain('可辨識評分者的身分');
-    expect(t).toContain('把已註冊的用戶加入自己的班級');
+    expect(t).toContain('教練不能直接把已有帳號的人加進班級');
+    expect(t).toContain('邀請紀錄');
   });
 
   it('如實說明保存與刪除：沒有自助刪除／匯出、沒有自動清除期限、備份輪替', () => {

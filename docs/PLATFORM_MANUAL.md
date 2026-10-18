@@ -345,6 +345,8 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 `marketing/GuidePage.jsx` 依題庫設定產生每份評測的說明頁（構面與子面向、題數、量表、等級或原型清單、是否支援 360°），用途與讀法來自 `data/assessment-guides.js`（編輯層，只寫題庫設定本身已經說過的事）。新增評測時一定要同時補 `GUIDES`（或像領導力羅盤一樣提供 `FRAMEWORK_PATH` 專屬頁），`src/test/guide-pages.test.jsx` 會檢查。`/guide/leadership-compass` 會導向 `/framework`。
 
 ### 5.5 領導力羅盤與接班準備度評測（2026-10-18 起，預設停用）
+
+> 2026-10-18 起（全站審查第一批修補）：領導力羅盤的**他評需要邀請**——受評者本人或班級教練邀請同班成員（`POST /api/rater-invites`，`routes/invites.js`），評分者在「360° 評測 → 等你評測的人」開始評測，身分類型由邀請決定；教練對已有帳號的人**只能發班級邀請**（`/api/groups/invites`），本人接受才入班。伺服器另外驗證評量已啟用、高敏感評量已同意現行政策。
 完整的設計、決策紀錄與實作紀錄在 [`docs/leadership-new/`](leadership-new/)（尤其 `04-platform-spec-v0.1.md` 第 16–22 節）。維運要知道的重點：
 - **設定檔**：`src/survey/data/assessments/leadership-compass.js`（題目由 `scripts/build-compass-config.mjs` 從 `docs/leadership-new/items-candidates-*.json` 產生到 `compass-items.generated.js`，**不要手改**）、`succession-intent.js`；敘事文字在 `compass-narrative.js`、`utils/successionText.js`。
 - **計分**不走共用的 `utils/scoring.js`，而是各自的 `utils/compassScoring.js`、`utils/successionScoring.js`（題庫以 `SCORING` 提供，`SurveyApp` 會優先使用）；結果頁用專屬元件（`REPORT: 'compass' | 'succession'`）。其他四個題庫的行為完全不變。

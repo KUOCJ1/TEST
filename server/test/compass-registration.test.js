@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { createApp } from '../src/app.js';
 import { createDb } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
+import { POLICY_VERSION } from '../src/lib/policy.js';
 import * as compass from '../../src/survey/data/assessments/leadership-compass.js';
 
 // 領導力羅盤（S14）：後端登錄、預設停用、前端計分結果能通過後端驗證。
@@ -50,7 +51,11 @@ describe('題庫登錄', () => {
 describe('前端計分結果可通過後端驗證', () => {
   test('精簡版自評結果可以成功送出並存下版本與張力', async () => {
     const db = createDb(':memory:');
-    db.data.users.push({ id: randomUUID(), name: '學員', email: 'u@b.co', role: 'user', passwordHash: await hashPassword('abcdef12') });
+    db.data.assessments.find((x) => x.id === ID).enabled = true;
+    db.data.users.push({
+      id: randomUUID(), name: '學員', email: 'u@b.co', role: 'user', passwordHash: await hashPassword('abcdef12'),
+      consent: { version: POLICY_VERSION, acceptedAt: new Date().toISOString() },
+    });
     const app = createApp({ db, jwtSecret: JWT_SECRET });
     const agent = request.agent(app);
     await agent.post('/api/auth/login').send({ email: 'u@b.co', password: 'abcdef12' });

@@ -7,6 +7,7 @@ import { exportGroupCsv } from '../utils/csvExport';
 import InfoTip from '../components/InfoTip';
 import GroupTimelineCard from '../components/GroupTimelineCard';
 import QrCodeCard from '../components/QrCodeCard';
+import RaterInvitePanel from '../components/compass/RaterInvitePanel.jsx';
 
 function parseRoster(text) {
   return text
@@ -26,7 +27,7 @@ function parseRoster(text) {
 // 5.6）——這些欄位的輸入狀態只在這個分頁存在，切換到「總覽」分頁時本來就該
 // 歸零，獨立成元件、由父層在切換班別時 key={group.id} 掛載，行為和拆分前一致。
 export default function GroupSettingsSection({
-  group, members, users, patchedSubmissions, onGroupUpdated, refreshSubmissions, showToast,
+  group, members, invites = [], users, patchedSubmissions, onGroupUpdated, refreshSubmissions, showToast,
 }) {
   const [targetHeadcount, setTargetHeadcount] = useState(group.targetHeadcount == null ? '' : String(group.targetHeadcount));
   const [focusDims, setFocusDims] = useState(group.focusDimensionIds ?? []);
@@ -98,8 +99,11 @@ export default function GroupSettingsSection({
     try {
       const updated = await api.updateGroup(group.id, { memberIds: selectedMembers });
       onGroupUpdated(updated);
+      // 已有帳號的人不會被直接加入：教練送出的是「邀請」，對方接受後才成為成員。
+      const invitedCount = selectedMembers.filter((id) => !(updated.memberIds ?? []).includes(id)).length;
+      setSelectedMembers(updated.memberIds ?? []);
       await refreshSubmissions();
-      showToast('已儲存成員名單');
+      showToast(invitedCount > 0 ? `已儲存；已送出 ${invitedCount} 份邀請，對方接受後才會加入班級` : '已儲存成員名單');
     } catch (e) {
       setMembersError(e.message || '儲存失敗');
     } finally {
@@ -225,6 +229,22 @@ export default function GroupSettingsSection({
         </button>
       </div>
 
+      {/* 嚴格隱私題庫（領導力羅盤）：他評必須先有邀請；教練可替班上的人安排評分者。 */}
+      {getAssessment(group.assessmentId)?.STRICT_RATER_PRIVACY && (
+        <div className="panel-secondary">
+          <h3 className="mb-1 font-semibold text-slate-700">安排 360° 評分者</h3>
+          <p className="mb-3 text-xs text-slate-400">
+            受評者也可以自己邀請同班成員。這裡只列出誰被邀請，不顯示誰已完成，也看不到任何個別評分，以保護匿名。
+          </p>
+          <RaterInvitePanel
+            assessmentId={group.assessmentId}
+            groupId={group.id}
+            members={members ?? []}
+            rateeOptions={members ?? []}
+          />
+        </div>
+      )}
+
       <div className="panel-secondary">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-semibold text-slate-700">成員管理</h3>
@@ -308,6 +328,26 @@ export default function GroupSettingsSection({
           </div>
         </div>
 
+        {invites.length > 0 && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <p className="mb-1.5 flex items-center text-xs font-semibold text-blue-600">
+              等待對方接受邀請
+              <InfoTip text="已有帳號的人不能被直接加進班級，要由本人在『我的評量』接受邀請後才會成為成員。" />
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {invites.map((i) => (
+                <span key={i.id} className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+                  {i.name}
+                  <button type="button" aria-label={`取消對 ${i.name} 的邀請`} className="hover:text-red-500"
+                    onClick={async () => { await api.coachCancelGroupInvite(group.id, i.id).catch(() => {}); await refreshSubmissions(); }}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {group.pendingMembers?.length > 0 && (
           <div className="mt-3 border-t border-slate-100 pt-3">
             <p className="mb-1.5 flex items-center text-xs font-semibold text-amber-600">
@@ -353,7 +393,7 @@ export default function GroupSettingsSection({
               <p className="text-red-500">{importResult.error}</p>
             ) : (
               <p className="text-emerald-600">
-                已加入 {importResult.added} 位現有用戶、{importResult.pending} 位列入待加入
+                已加入 {importResult.added} 位、已邀請 {importResult.invited ?? 0} 位現有用戶（對方接受後才加入）、{importResult.pending} 位列入待加入
                 {importResult.invalid?.length > 0 && (
                   <span className="text-amber-600">；{importResult.invalid.length} 筆 Email 格式錯誤已略過</span>
                 )}

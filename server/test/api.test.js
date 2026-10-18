@@ -6,6 +6,12 @@ import { createApp } from '../src/app.js';
 import { createDb } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
 
+// 教練邀請已有帳號的人入班後，本人要接受邀請才會成為成員（見 lib/invites.js）。
+async function acceptAll(agent) {
+  const list = await agent.get('/api/groups/invites');
+  for (const inv of list.body.invites ?? []) await agent.post(`/api/groups/invites/${inv.id}/accept`);
+}
+
 const JWT_SECRET = 'test-secret-please-change';
 
 async function setupWithDb({ withAdmin = false, trustProxy = 0 } = {}) {
@@ -288,6 +294,7 @@ describe('作答', () => {
 
     const g1 = await coach.post('/api/coach/groups')
       .send({ name: '第一梯', assessmentId: 'ai-competency', memberIds: [sreg.body.user.id] });
+    await acceptAll(student);
     await coach.put(`/api/coach/groups/${g1.body.group.id}`).send(openWindow());
 
     // 課前：第一次送出成功。
@@ -310,6 +317,7 @@ describe('作答', () => {
     // 開第二梯，同一位學員再參加一次 → 不同 groupId，應放行，且各自歸屬正確梯次。
     const g2 = await coach.post('/api/coach/groups')
       .send({ name: '第二梯', assessmentId: 'ai-competency', memberIds: [sreg.body.user.id] });
+    await acceptAll(student);
     await coach.put(`/api/coach/groups/${g2.body.group.id}`).send(openWindow());
     const secondCohort = await student.post('/api/submissions')
       .send({ assessmentId: 'ai-competency', phase: 'pre', result: sampleResult(140) });
@@ -414,6 +422,8 @@ describe('教練 / 班別 / 名單', () => {
     }
     await coachA.agent.post('/api/coach/groups').send({ name: 'A 班', assessmentId: 'ai-competency', memberIds: [stuA.id] });
     await coachB.agent.post('/api/coach/groups').send({ name: 'B 班', assessmentId: 'ai-competency', memberIds: [stuB.id] });
+    await acceptAll(stuA.agent);
+    await acceptAll(stuB.agent);
 
     // 兩位學員各交一份作答。
     await stuA.agent.post('/api/submissions').send({ assessmentId: 'ai-competency', result: sampleResult(100) });
@@ -452,6 +462,7 @@ describe('教練 / 班別 / 名單', () => {
     // 教練只能對自己班上的學員留評語（Sprint 7 起）：先把學員收進班上。
     const g = await coach.post('/api/coach/groups').send({ name: 'A 班', assessmentId: 'ai-competency', memberIds: [ureg.body.user.id] });
     assert.equal(g.status, 201);
+    await acceptAll(u);
 
     const c = await coach.post(`/api/submissions/${sub.body.submission.id}/comment`)
       .send({ text: '表現良好', tips: ['多練習提示詞'] });
@@ -499,10 +510,15 @@ describe('教練 / 班別 / 名單', () => {
       ],
     });
     assert.equal(imp.status, 200);
-    assert.equal(imp.body.result.added, 1);
+    // 已有帳號的人：教練只能邀請，本人接受才入班。
+    assert.equal(imp.body.result.added, 0);
+    assert.equal(imp.body.result.invited, 1);
     assert.equal(imp.body.result.pending, 1);
     assert.equal(imp.body.result.invalid.length, 1);
-    assert.ok(imp.body.group.memberIds.includes(ereg.body.user.id));
+    assert.ok(!imp.body.group.memberIds.includes(ereg.body.user.id));
+    await acceptAll(existing);
+    const afterAccept = await coach.get(`/api/coach/groups/${gid}`);
+    assert.ok(afterAccept.body.group.memberIds.includes(ereg.body.user.id));
 
     // 未註冊者註冊後應自動成為成員
     const fresh = request.agent(app);
@@ -789,6 +805,7 @@ describe('360° 多元評測', () => {
 
     const g = await coach.post('/api/coach/groups').send({ name: 'G', assessmentId: 'leadership-9d' });
     await coach.post(`/api/coach/groups/${g.body.group.id}/roster`).send({ entries: [{ name: '學員', email: 'mem@b.co' }] });
+    await acceptAll(member);
 
     const peer = request.agent(app);
     await peer.post('/api/auth/register').send({ acceptPolicy: true, name: '同儕', email: 'peer@b.co', password: 'abcdef12' });
@@ -819,6 +836,8 @@ describe('360° 多元評測', () => {
     await coach.post(`/api/coach/groups/${g.body.group.id}/roster`).send({
       entries: [{ name: 'A', email: 'a@b.co' }, { name: 'B', email: 'b@b.co' }],
     });
+    await acceptAll(userA);
+    await acceptAll(userB);
 
     const res = await userA.get('/api/groups/mine/members');
     assert.equal(res.status, 200);

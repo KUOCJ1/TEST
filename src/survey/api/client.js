@@ -1,6 +1,7 @@
 import { refreshResultsInPlace } from '../data/assessments/refreshResult';
 
 const BASE = import.meta.env.VITE_API_BASE || '/api';
+export const API_BASE = BASE;
 
 async function request(path, { method = 'GET', body } = {}) {
   let res;
@@ -73,6 +74,17 @@ export const api = {
 
   setCompassManagerShare: (granted) =>
     request('/auth/compass-manager-share', { method: 'PUT', body: { granted } }).then((d) => d.user),
+
+  // 他評邀請（領導力羅盤等嚴格隱私題庫）：受評者或教練發出邀請，評分者才能評。
+  raterInvitesMine: () => request('/rater-invites/mine'),
+  groupRaterInvites: (groupId) => request(`/rater-invites/group/${groupId}`).then((d) => d.invites),
+  createRaterInvite: (payload) => request('/rater-invites', { method: 'POST', body: payload }).then((d) => d.invite),
+  deleteRaterInvite: (id) => request(`/rater-invites/${id}`, { method: 'DELETE' }),
+  // 班級邀請：教練邀請已有帳號的人入班，本人接受才加入。
+  groupInvites: () => request('/groups/invites').then((d) => d.invites),
+  acceptGroupInvite: (id) => request(`/groups/invites/${id}/accept`, { method: 'POST' }),
+  declineGroupInvite: (id) => request(`/groups/invites/${id}/decline`, { method: 'POST' }),
+  coachCancelGroupInvite: (groupId, inviteId) => request(`/coach/groups/${groupId}/invites/${inviteId}`, { method: 'DELETE' }),
 
   adminOverview: () => request('/admin/overview'),
   health: () => request('/health'),

@@ -7,6 +7,7 @@ import { createSubmissionsRouter } from './routes/submissions.js';
 import { createAdminRouter } from './routes/admin.js';
 import { createCoachRouter } from './routes/coach.js';
 import { createGroupsRouter } from './routes/groups.js';
+import { createInvitesRouter } from './routes/invites.js';
 import { createGoalsRouter } from './routes/goals.js';
 import { createChatRouter } from './routes/chat.js';
 import { createPublicRouter } from './routes/public.js';
@@ -67,6 +68,7 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   app.use('/api', createAssessmentsRouter({ db, requireAuth }));
   app.use('/api', createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, currentUser }));
   app.use('/api', createSubmissionsRouter({ db, requireAuth, requireCoach }));
+  app.use('/api', createInvitesRouter({ db, requireAuth }));
   app.use('/api', createGroupsRouter({ db, requireAuth }));
   app.use('/api', createGoalsRouter({ db, requireAuth }));
   app.use('/api', createChatRouter({ requireAuth }));
@@ -83,7 +85,10 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   app.use((err, req, res, next) => {
     console.error('[error]', err.stack ?? err.message ?? err);
     const status = err.status || err.statusCode || 500;
-    res.status(status).json({ code: err.code || 'SERVER_ERROR', error: err.message || '伺服器錯誤' });
+    // 5xx 不回傳內部訊息與錯誤碼（可能含程式細節或資料庫錯誤碼），細節只寫在上面的日誌；
+    // 4xx（例如 body 解析失敗）才把訊息回給呼叫端。
+    if (status >= 500) return res.status(status).json({ code: 'SERVER_ERROR', error: '伺服器發生錯誤，請稍後再試' });
+    res.status(status).json({ code: err.code || 'BAD_REQUEST', error: err.message || '請求有誤' });
   });
 
   return app;

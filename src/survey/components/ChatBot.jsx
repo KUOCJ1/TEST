@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { X, Send } from 'lucide-react';
 import { useAuth } from '../auth/useAuth';
+import { API_BASE } from '../api/client';
 import { readJSON, writeJSON, removeKey } from '../utils/storage';
 import AssistantMascot from './icons/AssistantMascot';
 import { useConfirm } from './useConfirm';
@@ -62,7 +63,7 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
       .map((m) => ({ role: m.role, content: m.content }));
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -77,14 +78,21 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let full = '';
+      // SSE 的行可能被切在 chunk 邊界（中文字元的 UTF-8 位元組也可能被切開）：
+      // 用 stream 模式解碼，並把最後一段不完整的行留到下一個 chunk 再處理。
+      let buffer = '';
+      let finished = false;
 
-      while (true) {
+      while (!finished) {
         const { done, value } = await reader.read();
         if (done) break;
-        for (const line of decoder.decode(value).split('\n')) {
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
           const data = line.slice(6).trim();
-          if (data === '[DONE]') break;
+          if (data === '[DONE]') { finished = true; break; }
           try {
             const delta = JSON.parse(data).choices?.[0]?.delta?.content ?? '';
             full += delta;
@@ -107,6 +115,8 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
   };
 
   const handleKeyDown = (e) => {
+    // 中文／日文輸入法選字時按 Enter 是「確認選字」，不是送出訊息。
+    if (e.nativeEvent?.isComposing || e.keyCode === 229) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       send();

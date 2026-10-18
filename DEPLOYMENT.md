@@ -5,9 +5,9 @@
 | 部分 | 內容 | 對外路徑 |
 | --- | --- | --- |
 | 前端 | Vite 打包的靜態檔（`dist/`） | `/`（由 Nginx 直接提供） |
-| 後端 | Node/Express API（常駐 systemd 服務，監聽 `127.0.0.1:3001`） | `/api`（由 Nginx 反向代理） |
+| 後端 | Node/Express API（常駐 systemd 服務，監聽 `127.0.0.1:3001`；本站 Traefik 方案為 `3101`，見附錄 A） | `/api`（由 Nginx 反向代理） |
 
-資料以 SQLite 保存（`/var/lib/ai-assessment/db.json.sqlite3`），備份只要複製這個檔即可。若是從舊版純 JSON 儲存升級上來，服務啟動時會自動偵測 `db.json` 並一次性遷移進 SQLite，原始 JSON 檔不會被刪除，可留著當作遷移前的快照。
+資料以 SQLite 保存（`/var/lib/ai-assessment/db.json.sqlite3`），備份請用 `deploy/backup.sh`（線上備份；不要直接複製檔案，見「備份與還原」）。若是從舊版純 JSON 儲存升級上來，服務啟動時會自動偵測 `db.json` 並一次性遷移進 SQLite，原始 JSON 檔不會被刪除，可留著當作遷移前的快照。
 
 > 本指南已套用你的網域。以下指令把網域設成變數，先執行一次再往下貼即可：
 > ```bash
@@ -28,11 +28,11 @@
 ## 1. 安裝相依套件
 ```bash
 # Node.js 20 LTS
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs nginx git rsync
 # HTTPS 憑證工具
 sudo apt-get install -y certbot python3-certbot-nginx
-node -v   # 應為 v20+
+node -v   # 應為 v22+（後端的 better-sqlite3 原生模組要求 Node ≥22；Node 20 會在載入時當機）
 ```
 
 ## 2. 取得程式碼
@@ -55,7 +55,7 @@ cp server/.env.example server/.env
 echo "JWT_SECRET=$(openssl rand -hex 32)"   # 複製這行結果貼到 .env
 nano server/.env
 ```
-`.env` 至少要設定：`JWT_SECRET`（剛產生的隨機字串）、`ADMIN_EMAIL`、`ADMIN_PASSWORD`（請用強密碼）、`NODE_ENV=production`。
+`.env` 至少要設定：`JWT_SECRET`（剛產生的隨機字串）、`ADMIN_EMAIL`、`ADMIN_PASSWORD`（請用強密碼）、`NODE_ENV=production`。正式環境在「資料庫裡還沒有管理員」時若沒設定 `ADMIN_PASSWORD`（或仍是預設值），服務會拒絕啟動——這同時能擋住資料庫路徑設錯、以空庫啟動的情況。
 
 **選填：寄信服務（SMTP）**——設定後才會啟用「外部依賴異常時寄告警信給 `ADMIN_EMAIL`」與教練的「寄送提醒信」；
 沒設定時這兩項自動停用，其他功能不受影響。在 `.env` 填入：
@@ -247,7 +247,9 @@ curl -s localhost:3101/api/health      # {"ok":true,"version":{"commit":"<目前
 
 **D. 出問題時**
 - 服務起不來或 502：`sudo journalctl -u ai-assessment-api -n 50`，多半是 `.env` 缺鍵或埠不符。
-- 要回到上一版：`git checkout <上一個 commit>` 後再跑 `bash deploy/deploy.sh`（資料不受影響）。
+- 要回到上一版：`git checkout <上一個 commit>` 後再跑 `bash deploy/deploy.sh`。**注意**：新版對資料庫的遷移（改名、補評量、新集合）是單向的，
+  舊程式碼不保證能讀新資料。若新版已經寫入過資料才發現要回滾，請「程式與資料一起回滾」：停服務 → 還原**部署前那份備份**
+  （`deploy.sh` 每次部署前都會自動備份，見下方「備份與還原」）→ 切回舊 commit → `SKIP_BACKUP=1 bash deploy/deploy.sh`。
 - 資料有疑慮：照下方「備份與還原」，用部署前那份備份還原。
 - 設定寄信後仍收不到：先看「管理後台 → 系統狀態」的寄信設定，再看 `journalctl` 有沒有 SMTP 錯誤；
   VPS 可能擋了對外 SMTP 埠，改用 587 或換寄信服務。
@@ -269,7 +271,27 @@ sudo crontab -e
 0 3 * * * /opt/ai-assessment/app/deploy/backup.sh >> /var/log/ai-assessment-backup.log 2>&1
 ```
 可用環境變數覆寫路徑與保留份數，例如 `KEEP=30 bash deploy/backup.sh`；細節見
-腳本內註解。
+腳本內註解。備份檔權限固定為只有擁有者可讀寫（內含學員姓名、Email、密碼雜湊、作答與職涯意向）。
+
+`deploy/deploy.sh` **每次部署前會自動備份**（失敗就中止部署）；第一次部署、還沒有資料庫時會略過，也可用 `SKIP_BACKUP=1` 明確略過。
+
+**備份的保留與目標**：每天一份（凌晨 3 點），最多可能遺失最近一天的資料；本機保留 14 份，**異地副本保留 180 天（半年）**。
+
+**異地備份（rclone＋加密）**：備份和資料庫在同一台主機，整機或磁碟損毀時會一起消失，所以要有異地副本。
+做法是 `rclone` 的 crypt 遠端——上傳前先加密，雲端服務商看不到學員資料。目的地可以選你已有的雲端空間：
+Cloudflare R2（有免費額度，本站已使用 Cloudflare）、Backblaze B2、其他 S3 相容服務，或 Google Drive 之類的雲端硬碟。
+```bash
+sudo apt install -y rclone
+sudo rclone config        # 1) 建一個儲存空間遠端（例如 r2）  2) 再建一個 crypt 遠端（例如 r2crypt）指向 r2:你的bucket/backups，並設定加密密碼
+# 把 crypt 密碼與 rclone 設定另外安全保管（沒有密碼就解不開備份）；不要放進 repo 或貼到對話中
+sudo rclone lsd r2crypt:  # 確認連得上
+# cron 改成帶上異地目的地：
+0 3 * * * OFFSITE_REMOTE=r2crypt:db-backups /opt/ai-assessment/app/deploy/backup.sh >> /var/log/ai-assessment-backup.log 2>&1
+```
+**啟用異地備份前**：隱私權政策（`src/survey/legal/policy.js` 的保存期限，目前寫「備份輪替約 14 天」）要同步改成「本機約 14 天、加密的異地副本最長 180 天」，並升 `POLICY_VERSION`（前後端一起，會觸發一次重新同意）——可以和法務審閱的修改一起做。
+
+`deploy.sh` 觸發的部署前備份只留本機即可（不用帶 `OFFSITE_REMOTE`）。每季請做一次「從異地副本還原」的演練
+（`rclone copy r2crypt:db-backups/<檔名> /tmp/restore-test/`，再用 `sqlite3` 檢查完整性）。
 
 **備份還原演練**（建議每月一次，以及重大改版前）：`deploy/restore-drill.sh` 把最新備份複製到暫存目錄，檢查完整性、
 資料筆數與正式庫的差距，**不會動到正式資料庫**，結束代碼 0＝通過、1＝失敗：

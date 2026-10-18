@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { AuthContext } from './useAuth';
+import { readJSON, writeJSON, clearPersonalLocalData } from '../utils/storage';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -35,6 +36,7 @@ export function AuthProvider({ children }) {
     try {
       await api.logout();
     } finally {
+      clearPersonalLocalData();
       setUser(null);
     }
   }, []);
@@ -59,9 +61,10 @@ export function AuthProvider({ children }) {
 
   // 套用深色模式偏好（並在未登入時沿用上次設定）。
   useEffect(() => {
-    const dark = user?.preferences?.darkMode ?? (localStorage.getItem('aiassess_dark') === '1');
+    // localStorage 在部分隱私模式／封鎖網站資料時會丟例外，這裡用安全包裝，避免整個 App 白屏。
+    const dark = user?.preferences?.darkMode ?? String(readJSON('aiassess_dark', '0')) === '1';
     document.documentElement.classList.toggle('dark', Boolean(dark));
-    if (user) localStorage.setItem('aiassess_dark', dark ? '1' : '0');
+    if (user) writeJSON('aiassess_dark', dark ? '1' : '0');
   }, [user]);
 
   const value = useMemo(

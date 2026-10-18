@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import LoadingState from './LoadingState';
+import { InvitationsToRate } from './compass/RaterInvitePanel.jsx';
 
 const RATER_TYPES = [
   { id: 'manager', label: '主管評', desc: '我是對方的直屬主管' },
@@ -8,7 +9,7 @@ const RATER_TYPES = [
   { id: 'subordinate', label: '部屬評', desc: '我是對方的下屬' },
 ];
 
-export default function RaterSetup({ onConfirm, onCancel, initialRateeId = null, initialRaterType = '' }) {
+export default function RaterSetup({ onConfirm, onCancel, initialRateeId = null, initialRaterType = '', strictAssessmentId = null }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rateeId, setRateeId] = useState(initialRateeId);
@@ -40,6 +41,24 @@ export default function RaterSetup({ onConfirm, onCancel, initialRateeId = null,
     const rateeName = members.find((m) => m.id === rateeId)?.name ?? '';
     onConfirm(rateeId, raterType, rateeName);
   };
+
+  // 嚴格隱私題庫（領導力羅盤）：只能評「邀請了我」的人，身分由邀請決定。
+  if (strictAssessmentId) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md">
+          <header className="mb-6 text-center">
+            <h1 className="text-xl font-extrabold text-slate-800">等你評測的人</h1>
+            <p className="mt-1 text-sm text-slate-500">這份評量的他評需要受評者本人或教練邀請，你的身分由邀請決定。</p>
+          </header>
+          <div className="space-y-4 rounded-3xl bg-white px-6 py-7 shadow-card ring-1 ring-slate-100">
+            <InvitationsToRate assessmentId={strictAssessmentId} onRate={onConfirm} />
+            <button type="button" onClick={onCancel} className="btn-secondary w-full">返回</button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
