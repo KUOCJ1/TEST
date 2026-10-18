@@ -161,11 +161,8 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
     const hasStrict = rows.some((s) => isStrictPrivacy(s.assessmentId ?? 'ai-competency'));
     const wantsIdentity = isAdmin && deanonymize && deanonymize !== '0' && deanonymize !== 'false';
     if (hasStrict && wantsIdentity) {
-      const reason = typeof req.query.reason === 'string' ? req.query.reason.trim() : '';
-      if (reason.length < 5) {
-        return res.status(400).json({ code: 'REASON_REQUIRED', error: '還原評分者身分前，請填寫理由（至少 5 個字）。' });
-      }
-      auditLog(req, 'view_rater_identity', { rateeId, assessmentId: assessmentId ?? null, reason });
+      // 還原要填理由，而理由不能放在網址（會進 Nginx 存取日誌）：改走 POST .../reveal。
+      return res.status(400).json({ code: 'USE_REVEAL_ENDPOINT', error: '還原評分者身分請使用管理後台的「身分還原」功能（需填寫理由）。' });
     }
     const ratee = db.data.users.find((u) => u.id === rateeId);
     const managerConsent = Boolean(ratee?.compassManagerShare?.granted);
@@ -183,6 +180,30 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
       });
 
     res.json({ submissions: subs, phase: groupPhase });
+  });
+
+  // 管理員還原嚴格隱私題庫的評分者身分：要填理由（至少 5 個字），並寫入稽核紀錄。
+  router.post('/submissions/ratee/:rateeId/reveal', requireAuth, (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ code: 'FORBIDDEN', error: '只有管理員可以還原評分者身分' });
+    const { rateeId } = req.params;
+    const { assessmentId } = req.body ?? {};
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+    if (typeof assessmentId !== 'string' || !isStrictPrivacy(assessmentId)) {
+      return res.status(400).json({ code: 'NOT_STRICT', error: '這份評量不需要還原身分' });
+    }
+    if (reason.length < 5) {
+      return res.status(400).json({ code: 'REASON_REQUIRED', error: '還原評分者身分前，請填寫理由（至少 5 個字）。' });
+    }
+    const ratee = db.data.users.find((u) => u.id === rateeId);
+    if (!ratee) return res.status(404).json({ error: '找不到受評者' });
+    const rows = db.data.submissions
+      .filter((s) => (s.rateeId ?? s.userId) === rateeId && (s.assessmentId ?? 'ai-competency') === assessmentId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map((s) => ({ ...normalizeSubmission(s), answers: undefined }));
+    auditLog(req, 'view_rater_identity', {
+      rateeId, rateeName: ratee.name, assessmentId, reason: reason.slice(0, 500), count: rows.filter((r) => r.raterType !== 'self').length,
+    });
+    res.json({ submissions: rows, ratee: { id: ratee.id, name: ratee.name } });
   });
 
   // ── 評語（每位教練對每份作答只留一則，POST = upsert）────────
@@ -217,6 +238,7 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
     if (existingIdx >= 0) submission.comments[existingIdx] = comment;
     else submission.comments.push(comment);
     db.persist();
+    auditLog(req, existingIdx >= 0 ? 'update_comment' : 'create_comment', { submissionId: submission.id, rateeId });
     res.json({ comment });
     // 通知學員（Sprint 7 驗收條件 7.6）：不等寄信完成才回應，教練存評語不必等 SMTP；
     // 寄信失敗只記 log，評語本身已經存好了。
@@ -235,6 +257,7 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
     }
     comments.splice(idx, 1);
     db.persist();
+    auditLog(req, 'delete_comment', { submissionId: submission.id });
     res.json({ ok: true });
   });
 

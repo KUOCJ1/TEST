@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 
-const COLLECTIONS = ['users', 'submissions', 'assessments', 'groups', 'goals', 'readingList', 'learningResourceClicks', 'systemStatus', 'assessmentContent', 'raterInvites', 'groupInvites'];
+const COLLECTIONS = ['users', 'submissions', 'assessments', 'groups', 'goals', 'readingList', 'learningResourceClicks', 'systemStatus', 'assessmentContent', 'raterInvites', 'groupInvites', 'auditLog'];
 
 // 舊版 JSON 檔案型儲存遷移到 SQLite：把 DB_PATH 指向的舊檔（原本存純 JSON）解析後
 // 灌進新的 `${file}.sqlite3` 檔案。遷移過程完全不動、不刪原檔——新資料寫進另一個
@@ -16,9 +16,11 @@ function migrateLegacyJsonIfPresent(legacyFile, sqliteFile) {
       data[key] = Array.isArray(parsed[key]) ? parsed[key] : [];
     }
     return data;
-  } catch {
-    // 舊檔毀損或不是合法 JSON：視為沒有舊資料可遷移，走全新安裝流程。
-    return null;
+  } catch (e) {
+    // 舊檔存在但毀損或不是合法 JSON：不能當作「全新安裝」默默開一個空資料庫（管理員會被重新種入、
+    // 舊資料看起來像不見了）。明確報錯並拒絕啟動，讓維運者先處理檔案。
+    throw new Error(`舊版資料檔 ${legacyFile} 無法解析（${e.message}）。請確認或修復該檔案後再啟動；` +
+      '若確定要全新安裝，請先把它移走或改名。');
   }
 }
 
@@ -51,7 +53,7 @@ export function createDb(file) {
     )
   `);
 
-  const data = { users: [], submissions: [], assessments: [], groups: [], goals: [], readingList: [], learningResourceClicks: [], systemStatus: [], raterInvites: [], groupInvites: [] };
+  const data = { users: [], submissions: [], assessments: [], groups: [], goals: [], readingList: [], learningResourceClicks: [], systemStatus: [], raterInvites: [], groupInvites: [], auditLog: [] };
   let freshlySeeded = false;
 
   if (legacyData) {

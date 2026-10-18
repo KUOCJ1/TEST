@@ -7,6 +7,8 @@ import QuickAnalysisTab from '../analysis/QuickAnalysisTab';
 import LoadingState from '../components/LoadingState';
 import SystemStatusTab from './SystemStatusTab';
 import ContentEditorTab from './ContentEditorTab';
+import AuditLogTab from './AuditLogTab';
+import RaterRevealTab from './RaterRevealTab';
 import { FRONTEND_BUILD, isVersionMismatch } from '../utils/buildInfo';
 
 // 內含 xlsx（體積較大），只有點開「批次上傳」分頁才需要，獨立拆成自己的 chunk。
@@ -21,6 +23,8 @@ const TABS = [
   { id: 'groups', label: '班別與發佈', hint: '管理所有班別的負責教練、施測期間，並發佈成果。（評量要不要對學員開放，在頁面最上方的「題庫啟用狀態」。）' },
   { id: 'content', label: '題庫內容', hint: '修改題目、構面與評語的文字（草稿、預覽、發佈、還原）；不影響計分。' },
   { id: 'import', label: '批次上傳', hint: '用 CSV 匯入既有的作答與 360° 評分資料。' },
+  { id: 'reveal', label: '身分還原', hint: '嚴格隱私評量（領導力羅盤）的評分者身分，只有管理員能查，必須填理由並留下稽核紀錄。' },
+  { id: 'audit', label: '稽核紀錄', hint: '敏感操作的永久紀錄：還原評分者身分、刪班、調整成員、評語等（只讀）。' },
   { id: 'system', label: '系統狀態', hint: '版本、外部服務連線、寄信設定與伺服器看到的 IP。' },
 ];
 
@@ -174,6 +178,8 @@ export default function AdminDashboard() {
         <GroupsTab groups={adminGroups} users={users} onGroupUpdated={handleGroupUpdated} />
       )}
       {tab === 'content' && <ContentEditorTab />}
+      {tab === 'reveal' && <RaterRevealTab users={users} />}
+      {tab === 'audit' && <AuditLogTab />}
       {tab === 'system' && <SystemStatusTab />}
       {tab === 'import' && (
         <Suspense fallback={<LoadingState />}>

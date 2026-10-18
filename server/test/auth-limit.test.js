@@ -5,7 +5,9 @@ import { createApp } from '../src/app.js';
 import { createDb } from '../src/db.js';
 
 // AUTH_RATE_LIMIT 只給 E2E 用（見 routes/auth.js）；沒設定時維持正式額度 10 次。
-const attempt = (app) => request(app).post('/api/auth/login').send({ email: 'x@b.co', password: 'wrongpass' });
+// 每次換一個 Email：同一個 Email 連錯 5 次會先觸發「帳號鎖定」（見 login-guard.test.js），這裡要測的是每個 IP 的額度。
+let n = 0;
+const attempt = (app) => request(app).post('/api/auth/login').send({ email: `x${n += 1}@b.co`, password: 'wrongpass' });
 
 test('沒設定 AUTH_RATE_LIMIT 時第 11 次被擋', async () => {
   delete process.env.AUTH_RATE_LIMIT;

@@ -131,6 +131,7 @@ vi.mock('../survey/api/client', () => {
 beforeAll(async () => {
   await import('../survey/AppShell');
   await import('../survey/admin/AdminDashboard');
+  await import('../survey/coach/CoachDashboard');
 }, 60000);
 
 beforeEach(() => {

@@ -89,6 +89,12 @@ export const api = {
   adminOverview: () => request('/admin/overview'),
   health: () => request('/health'),
   adminSystemStatus: () => request('/admin/system-status'),
+  // 稽核紀錄（只讀）與管理員還原嚴格隱私題庫的評分者身分（要填理由，會寫入稽核紀錄）。
+  adminAuditLog: ({ action = '', before = '', limit = 50 } = {}) => {
+    const qs = new URLSearchParams({ limit: String(limit), ...(action && { action }), ...(before && { before }) });
+    return request(`/admin/audit-log?${qs}`);
+  },
+  revealRaters: (rateeId, payload) => request(`/submissions/ratee/${rateeId}/reveal`, { method: 'POST', body: payload }),
   adminAssessmentContent: (id) => request(`/admin/assessment-content/${id}`).then((d) => d.content),
   adminSaveContentDraft: (id, overrides) =>
     request(`/admin/assessment-content/${id}/draft`, { method: 'PUT', body: { overrides } }).then((d) => d.content),

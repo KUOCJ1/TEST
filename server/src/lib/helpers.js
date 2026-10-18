@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 // Wraps an async route handler so any thrown error propagates to Express
 // error-handling middleware rather than causing an unhandled rejection.
@@ -34,7 +34,13 @@ export function validateResultShape(result) {
     if (typeof d.score !== 'number' || !Number.isFinite(d.score)) return `構面 ${d.id} 缺少分數`;
     if (typeof d.max !== 'number' || !Number.isFinite(d.max)) return `構面 ${d.id} 缺少滿分`;
     if (!d.rating || typeof d.rating.label !== 'string') return `構面 ${d.id} 缺少等級資訊`;
+    // 分數由前端計算後送來，伺服器沒有計分程式碼可以重算，至少檢查範圍：不能是負的、不能超過該構面的滿分。
+    if (d.max <= 0 || d.score < 0 || d.score > d.max + 1e-9) return `構面 ${d.id} 的分數超出範圍`;
+    if (d.percent !== undefined && (typeof d.percent !== 'number' || d.percent < 0 || d.percent > 100)) return `構面 ${d.id} 的百分比超出範圍`;
+    if (d.average !== undefined && (typeof d.average !== 'number' || !Number.isFinite(d.average) || d.average < 0 || d.average > 100)) return `構面 ${d.id} 的平均超出範圍`;
   }
+  if (result.dimensions.length > 50) return '構面數量不合理';
+  if (result.total < 0 || result.total > 1e6) return '總分超出範圍';
   return null;
 }
 
@@ -54,14 +60,26 @@ export function revokeUserTokens(user) {
   user.tokenVersion = (user.tokenVersion ?? 0) + 1;
 }
 
+/**
+ * 稽核紀錄：同時寫日誌（即時查看）與資料庫的 auditLog 集合（長期保存、只增不改，
+ * 供管理後台「稽核紀錄」查詢）。日誌會輪替，政策承諾的稽核證據不能只放在日誌裡。
+ * 資料庫由 app.js 的中介層掛在 req.auditDb；沒有的場合（單元測試直接呼叫）只寫日誌。
+ */
 export function auditLog(req, action, extra = {}) {
-  console.log(JSON.stringify({
+  const entry = {
+    id: randomUUID(),
     ts: new Date().toISOString(),
     actor: req.user?.id,
     actorEmail: req.user?.email,
     action,
     ...extra,
-  }));
+  };
+  console.log(JSON.stringify(entry));
+  const db = req.auditDb;
+  if (db) {
+    (db.data.auditLog ??= []).push(entry);
+    db.persist();
+  }
 }
 
 // ── 班別「評量設定」欄位清洗 ───────────────────────────────

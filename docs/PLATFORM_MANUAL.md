@@ -346,6 +346,8 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 
 ### 5.5 領導力羅盤與接班準備度評測（2026-10-18 起，預設停用）
 
+> 2026-10-18 起（第二批修補）：敏感操作寫入資料庫的 `auditLog` 集合（只增不改），管理後台「稽核紀錄」可查；「身分還原」分頁走 `POST /api/submissions/ratee/:id/reveal`（必填理由、寫稽核）。登入有每帳號鎖定（5 次／15 分鐘）與失敗 IP 額度，AI 小幫手有每人每日額度（`CHAT_DAILY_LIMIT`）。
+
 > 2026-10-18 起（全站審查第一批修補）：領導力羅盤的**他評需要邀請**——受評者本人或班級教練邀請同班成員（`POST /api/rater-invites`，`routes/invites.js`），評分者在「360° 評測 → 等你評測的人」開始評測，身分類型由邀請決定；教練對已有帳號的人**只能發班級邀請**（`/api/groups/invites`），本人接受才入班。伺服器另外驗證評量已啟用、高敏感評量已同意現行政策。
 完整的設計、決策紀錄與實作紀錄在 [`docs/leadership-new/`](leadership-new/)（尤其 `04-platform-spec-v0.1.md` 第 16–22 節）。維運要知道的重點：
 - **設定檔**：`src/survey/data/assessments/leadership-compass.js`（題目由 `scripts/build-compass-config.mjs` 從 `docs/leadership-new/items-candidates-*.json` 產生到 `compass-items.generated.js`，**不要手改**）、`succession-intent.js`；敘事文字在 `compass-narrative.js`、`utils/successionText.js`。

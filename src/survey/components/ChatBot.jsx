@@ -58,9 +58,14 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
     setStreaming(true);
     setStreamingText('');
 
+    // 伺服器限制每次最多 30 則、總長 20000 字：只送最近的對話，從最舊的開始捨棄。
     const apiMessages = newMessages
       .filter((m) => !m._local)
-      .map((m) => ({ role: m.role, content: m.content }));
+      .map((m) => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
+    let total = apiMessages.reduce((n, m) => n + m.content.length, 0);
+    while (apiMessages.length > 1 && (apiMessages.length > 20 || total > 18000)) {
+      total -= apiMessages.shift().content.length;
+    }
 
     try {
       const res = await fetch(`${API_BASE}/chat`, {

@@ -64,6 +64,9 @@ export default defineConfig({
     // 整合測試會走到 lazy() 載入的頁面（管理後台等），冷啟動或整套一起跑時編譯 chunk 很慢；
     // 預設 5 秒的單一測試上限會跟 findBy 的等待時間撞在一起而隨機失敗（Sprint 7、8、9、10 都遇過）。
     testTimeout: 20000,
+    // CI 上整套並行時偶爾有整合測試因為 lazy 頁面編譯太慢而逾時（本機單獨跑都過）。只在 CI 重試一次，
+    // 本機不重試，才看得到真正不穩定的測試；根因（編譯時間）見 app-flow.test.jsx 的預先載入。
+    retry: process.env.CI ? 1 : 0,
     // 後端有自己的測試（node --test），不納入 Vitest；e2e/ 是 Playwright 測試
     // （@playwright/test 的 test()/expect() 跟 vitest 的不是同一套，混進來會
     // 直接執行失敗），也不納入（scripts/ 裡的手冊截圖腳本同理）。

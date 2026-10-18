@@ -182,31 +182,50 @@ describe('管理員還原身分', () => {
     assert.ok(res.body.submissions.filter((s) => s.raterType !== 'self').every((s) => s.aggregate));
   });
 
-  test('要求還原但沒填理由 → 400，且不洩漏', async () => {
+  test('用網址參數要求還原（理由會進存取日誌）一律拒絕，導向專用功能', async () => {
     const { agents, ratee } = await setup({ peers: 3 });
-    const res = await agents.admin.get(`/api/submissions/ratee/${ratee.id}?assessmentId=${COMPASS}&deanonymize=1`);
+    const res = await agents.admin.get(`/api/submissions/ratee/${ratee.id}?assessmentId=${COMPASS}&deanonymize=1&reason=x`);
     assert.equal(res.status, 400);
-    assert.equal(res.body.code, 'REASON_REQUIRED');
+    assert.equal(res.body.code, 'USE_REVEAL_ENDPOINT');
     assert.ok(noIdentity(res.body));
   });
 
-  test('填理由後可還原，並寫入稽核紀錄', async () => {
+  test('還原沒填理由 → 400，且不洩漏；非管理員 403', async () => {
     const { agents, ratee } = await setup({ peers: 3 });
+    const url = `/api/submissions/ratee/${ratee.id}/reveal`;
+    const res = await agents.admin.post(url).send({ assessmentId: COMPASS, reason: '短' });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, 'REASON_REQUIRED');
+    assert.ok(noIdentity(res.body));
+    for (const who of ['coach', 'ratee', 'otherCoach']) {
+      assert.equal((await agents[who].post(url).send({ assessmentId: COMPASS, reason: '客訴調查需要確認評分者' })).status, 403, who);
+    }
+  });
+
+  test('填理由後可還原；稽核紀錄寫入資料庫（不只是日誌），且管理後台查得到', async () => {
+    const { agents, ratee, db } = await setup({ peers: 3 });
     const lines = [];
     const orig = console.log;
     console.log = (l) => { lines.push(l); };
     let res;
     try {
-      res = await agents.admin.get(`/api/submissions/ratee/${ratee.id}?assessmentId=${COMPASS}&deanonymize=1&reason=${encodeURIComponent('客訴調查需要確認評分者')}`);
+      res = await agents.admin.post(`/api/submissions/ratee/${ratee.id}/reveal`).send({ assessmentId: COMPASS, reason: '客訴調查需要確認評分者' });
     } finally { console.log = orig; }
     assert.equal(res.status, 200);
     const peers = res.body.submissions.filter((s) => s.raterType === 'peer');
     assert.equal(peers.length, 3);
     assert.ok(peers.every((s) => /^peer\d$/.test(s.userName)));
-    const audit = lines.map((l) => { try { return JSON.parse(l); } catch { return null; } }).find((a) => a?.action === 'view_rater_identity');
-    assert.ok(audit);
-    assert.equal(audit.rateeId, ratee.id);
-    assert.equal(audit.reason, '客訴調查需要確認評分者');
+    const logged = lines.map((l) => { try { return JSON.parse(l); } catch { return null; } }).find((a) => a?.action === 'view_rater_identity');
+    assert.ok(logged);
+    const stored = db.data.auditLog.find((a) => a.action === 'view_rater_identity');
+    assert.equal(stored.rateeId, ratee.id);
+    assert.equal(stored.reason, '客訴調查需要確認評分者');
+    assert.equal(stored.actorEmail, 'admin@b.co');
+    const list = await agents.admin.get('/api/admin/audit-log?action=view_rater_identity');
+    assert.equal(list.status, 200);
+    assert.equal(list.body.entries.length, 1);
+    assert.deepEqual(list.body.actions, ['view_rater_identity']);
+    assert.equal((await agents.coach.get('/api/admin/audit-log')).status, 403);
   });
 });
 

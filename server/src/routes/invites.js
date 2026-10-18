@@ -148,6 +148,7 @@ export function createInvitesRouter({ db, requireAuth }) {
     inv.status = 'accepted';
     inv.respondedAt = group.updatedAt;
     db.persist();
+    auditLog(req, 'accept_group_invite', { groupId: group.id, groupName: group.name });
     res.json({ joinedGroup: { id: group.id, name: group.name, companyName: group.companyName || '', assessmentId: group.assessmentId } });
   });
 

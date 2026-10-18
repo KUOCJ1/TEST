@@ -245,6 +245,18 @@ curl -s localhost:3101/api/health      # {"ok":true,"version":{"commit":"<目前
 - [ ] 驗收完成後才對真實班級啟用；啟用前不要讓真實學員看到這兩個評量。
 - [ ] 還原評分者身分只有管理員可用，且必須填理由並留下稽核紀錄（`view_rater_identity`，見 `journalctl`）；目前只有 API，沒有介面。
 
+**C3. 全站審查第二批（Nginx 設定要手動更新）**
+- [ ] `deploy.sh` **不會**更新 Nginx 設定。這批新增了安全標頭、`index.html`／`sw.js` 不快取與 gzip 設定，要手動套用：
+  ```bash
+  sudo cp /opt/ai-assessment/app/deploy/nginx/ai-assessment-behind-traefik.conf /etc/nginx/sites-available/ai-assessment.conf
+  sudo nginx -t && sudo systemctl reload nginx
+  ```
+  （若你當初改過這份檔，請先比對差異再覆蓋。）驗證：`curl -sI https://assess.rong-rise.com/ | grep -i -E "x-frame|nosniff|content-security|cache-control"`。
+- [ ] CSP 目前是 **Report-Only**（只在瀏覽器主控台回報、不會擋）。上線後把作答、報告列印、QR Code、AI 小幫手、管理後台都走一遍，確認主控台沒有 `Content-Security-Policy-Report-Only` 的違規訊息，再把 nginx 設定裡的 `Content-Security-Policy-Report-Only` 改成 `Content-Security-Policy`。
+- [ ] Traefik 若已經加了 HSTS，可以移除 nginx 裡那一行，避免重複。
+- [ ] 管理後台新增「身分還原」與「稽核紀錄」兩個分頁：用管理員帳號各開一次確認可用（稽核紀錄應該看得到你剛才的操作）。
+- [ ] 想調整 AI 小幫手每日次數，在 `server/.env` 加 `CHAT_DAILY_LIMIT=數字`（預設 100）。
+
 **D. 出問題時**
 - 服務起不來或 502：`sudo journalctl -u ai-assessment-api -n 50`，多半是 `.env` 缺鍵或埠不符。
 - 要回到上一版：`git checkout <上一個 commit>` 後再跑 `bash deploy/deploy.sh`。**注意**：新版對資料庫的遷移（改名、補評量、新集合）是單向的，

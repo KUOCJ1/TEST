@@ -148,6 +148,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     const split = splitNewMembers(db, group, sanitizeMemberIds(memberIds), req.user);
     group.memberIds = split.memberIds;
     db.persist();
+    auditLog(req, 'create_group', { groupId: group.id, groupName: group.name, assessmentId: group.assessmentId, invited: split.invitedIds.length });
     res.status(201).json({ group, invitedIds: split.invitedIds });
   });
 
@@ -213,9 +214,15 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     let invitedIds = [];
     let nextMemberIds;
     if (memberIds !== undefined) {
+      const before = groups[idx].memberIds ?? [];
       const split = splitNewMembers(db, groups[idx], sanitizeMemberIds(memberIds, groups[idx].memberIds), req.user);
       nextMemberIds = split.memberIds;
       invitedIds = split.invitedIds;
+      const added = nextMemberIds.filter((id) => !before.includes(id));
+      const removed = before.filter((id) => !nextMemberIds.includes(id));
+      if (added.length || removed.length || invitedIds.length) {
+        auditLog(req, 'change_group_members', { groupId: groups[idx].id, groupName: groups[idx].name, added, removed, invited: invitedIds });
+      }
     }
     const isISODate = (v) => v === null || (typeof v === 'string' && !isNaN(Date.parse(v)));
     groups[idx] = {
@@ -422,6 +429,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     }
     group.updatedAt = new Date().toISOString();
     db.persist();
+    auditLog(req, 'import_roster', { groupId: group.id, groupName: group.name, added: result.added, invited: result.invited, pending: result.pending });
     res.json({ group, result });
   });
 
@@ -432,8 +440,10 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: '無權限' });
     }
+    const removedGroup = groups[idx];
     groups.splice(idx, 1);
     db.persist();
+    auditLog(req, 'delete_group', { groupId: removedGroup.id, groupName: removedGroup.name, members: (removedGroup.memberIds ?? []).length });
     res.json({ ok: true });
   });
 

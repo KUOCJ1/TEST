@@ -11,6 +11,7 @@ import {
 import { asyncHandler, auditLog, hashToken, revokeUserTokens } from '../lib/helpers.js';
 import { POLICY_VERSION } from '../lib/policy.js';
 import { findGroupByJoinCode, joinGroupByCode } from '../lib/joinCode.js';
+import { createLoginGuard } from '../lib/loginGuard.js';
 
 // register/login 回傳的「剛加入的班級」只給前端導頁需要的最小資訊，不含成員、
 // 成績或其他班級設定——這支 API 在使用者剛登入的當下就會被讀到。
@@ -72,6 +73,35 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     message: { error: '請求過於頻繁，請稍後再試' },
   });
 
+  // 猜密碼的防線有三層，彼此獨立：
+  //  1) authLimiter（上面）：每個 IP 的請求量；帶有效報到代碼時為了整班同時掃碼而放寬——這個放寬
+  //     只能在 IP 這一層，不能讓它變成猜密碼的額度。
+  //  2) failedLoginLimiter：每個 IP「失敗」的登入次數（成功的不算），不受報到代碼放寬影響。
+  //  3) loginGuard：每個帳號連續失敗 5 次就鎖定 15 分鐘（記憶體內，見 lib/loginGuard.js）。
+  // E2E 為了所有測試共用同一個帳號與 IP，會透過 AUTH_RATE_LIMIT 放寬（正式環境不要設）。
+  const e2e = Boolean(process.env.AUTH_RATE_LIMIT);
+  const failedLoginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: e2e ? 10000 : 30,
+    skipSuccessfulRequests: true,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { code: 'RATE_LIMIT', error: '登入失敗次數過多，請稍後再試' },
+  });
+  const loginGuard = createLoginGuard({ maxFailures: e2e ? 10000 : 5 });
+  const sensitiveLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: e2e ? 10000 : 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { code: 'RATE_LIMIT', error: '請求過於頻繁，請稍後再試' },
+  });
+  const lockedResponse = (res, ms) => res.status(429).json({
+    code: 'ACCOUNT_LOCKED',
+    error: `嘗試次數過多，暫時無法登入。請 ${Math.ceil(ms / 60000)} 分鐘後再試，或請管理員協助重設密碼。`,
+    retryAfterSeconds: Math.ceil(ms / 1000),
+  });
+
   // Hash password BEFORE checking for duplicate email so the synchronous
   // check+push+persist block has no await (atomic under Node.js single thread).
   router.post('/auth/register', authLimiter, asyncHandler(async (req, res) => {
@@ -108,12 +138,17 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     res.status(201).json({ user: publicUser(user), joinedGroup: joinedGroupInfo(joinedGroup) });
   }));
 
-  router.post('/auth/login', authLimiter, asyncHandler(async (req, res) => {
+  router.post('/auth/login', authLimiter, failedLoginLimiter, asyncHandler(async (req, res) => {
     const { email, password, joinCode } = req.body || {};
-    const user = db.data.users.find((u) => u.email === (email || '').trim().toLowerCase());
+    const normEmail = String(email || '').trim().toLowerCase();
+    const lockedMs = loginGuard.lockedFor(normEmail);
+    if (lockedMs > 0) return lockedResponse(res, lockedMs);
+    const user = db.data.users.find((u) => u.email === normEmail);
     if (!user || !(await verifyPassword(password || '', user.passwordHash))) {
+      loginGuard.fail(normEmail);
       return res.status(401).json({ code: 'INVALID_CREDENTIALS', error: 'Email 或密碼錯誤' });
     }
+    loginGuard.success(normEmail);
     // 密碼對才告知「已停用」，避免被拿來探測哪些 Email 有註冊。
     if (user.disabled) {
       return res.status(403).json({ code: 'ACCOUNT_DISABLED', error: '此帳號已停用，請聯絡管理員' });
@@ -178,14 +213,20 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     res.json({ user: publicUser(req.user) });
   });
 
-  router.post('/auth/password', requireAuth, asyncHandler(async (req, res) => {
+  router.post('/auth/password', requireAuth, sensitiveLimiter, asyncHandler(async (req, res) => {
     const { currentPassword, newPassword } = req.body ?? {};
     if ((newPassword || '').length < MIN_PASSWORD_LENGTH) {
       return res.status(400).json({ error: `新密碼至少需 ${MIN_PASSWORD_LENGTH} 碼` });
     }
+    // 改密碼要輸入目前密碼：被偷走的 session 不能拿這個端點無限次猜，同樣套用帳號鎖定。
+    const guardKey = `pw:${req.user.id}`;
+    const lockedMs = loginGuard.lockedFor(guardKey);
+    if (lockedMs > 0) return lockedResponse(res, lockedMs);
     if (!(await verifyPassword(currentPassword || '', req.user.passwordHash))) {
+      loginGuard.fail(guardKey);
       return res.status(401).json({ error: '目前密碼不正確' });
     }
+    loginGuard.success(guardKey);
     req.user.passwordHash = await hashPassword(newPassword);
     // 撤銷這個帳號目前所有已簽發的登入 token（例如外流的舊 cookie），
     // 再馬上為「這次請求本身」重發一份新 cookie，使用者不會被自己的操作登出。
@@ -195,7 +236,7 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     res.json({ ok: true });
   }));
 
-  router.post('/auth/reset-password', asyncHandler(async (req, res) => {
+  router.post('/auth/reset-password', sensitiveLimiter, asyncHandler(async (req, res) => {
     const { token, newPassword } = req.body ?? {};
     if (!token || (newPassword || '').length < MIN_PASSWORD_LENGTH) {
       return res.status(400).json({ code: 'VALIDATION_ERROR', error: `重設連結或新密碼不正確（密碼至少 ${MIN_PASSWORD_LENGTH} 碼）` });

@@ -42,8 +42,15 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   // 設太低則限流仍然全站共用，兩者都不能單憑猜測層數就上線。
   app.set('trust proxy', trustProxy);
 
+  app.disable('x-powered-by');
+  // API 回應都跟身分有關：不讓瀏覽器或中間的代理快取。其餘安全標頭（CSP、nosniff…）由 Nginx 統一加，
+  // 見 deploy/nginx/*.conf——這裡不重複加，免得同一個標頭出現兩次。
+  app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
+
   app.use(express.json({ limit: '512kb' }));
   app.use(cookieParser());
+  // 稽核紀錄要寫進資料庫（見 lib/helpers.js 的 auditLog）：讓各路由只拿 req 就能寫，不必每個都傳 db。
+  app.use((req, _res, next) => { req.auditDb = db; next(); });
 
   const { requireAuth, requireAdmin, requireCoach, setAuthCookie, COOKIE_NAME, currentUser } =
     createAuthContext({ db, jwtSecret, secureCookies });
@@ -53,11 +60,19 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   // 不打外部網路的健康檢查，避免監控頻率太高時反而一直打外部 API。
   // version：deploy.sh 寫入的 commit／建置時間（本機開發為 null），部署後用來確認
   // 正式站跑的就是剛推上去的那一版。commit SHA 本身不含敏感資訊，公開無妨。
+  let deepCache = null;
+  const DEEP_HEALTH_TTL_MS = 30 * 1000;
   app.get('/api/health', (req, res, next) => {
     const version = getBuildInfo();
     if (req.query.deep !== '1') return res.json({ ok: true, version });
+    // 這個端點免登入，每次都會對外發請求：短暫快取結果，避免被拿來放大流量或打爆外部服務。
+    // 外部監控本來就是每幾分鐘輪詢一次，30 秒的快取不影響偵測。
+    if (deepCache && Date.now() - deepCache.at < DEEP_HEALTH_TTL_MS) return res.json({ ok: true, version, deps: deepCache.deps });
     deepHealthCheck()
-      .then((deps) => res.json({ ok: true, version, deps }))
+      .then((deps) => {
+        deepCache = { at: Date.now(), deps };
+        res.json({ ok: true, version, deps });
+      })
       .catch(next);
   });
 

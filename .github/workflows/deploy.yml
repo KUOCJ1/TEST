@@ -5,13 +5,21 @@ on:
     branches:
       - claude/travel-planning-app-Z4Nx6
       - claude/ai-assessment-survey-4vhjun
+  # PR 也跑完整檢查（但不部署預覽站，見下面 deploy job 的條件）。
+  pull_request:
   workflow_dispatch:
 
+# 預設最小權限；只有真正要發佈 gh-pages 的 deploy job 才給 contents: write。
+permissions:
+  contents: read
+
 jobs:
-  deploy:
+  verify:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    # 同一個分支／PR 有新的推送就取消舊的檢查，省時間也避免舊結果干擾。
+    concurrency:
+      group: verify-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
@@ -21,6 +29,11 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # 正式環境相依（前端打包進去的、後端執行的）不能有 high 以上的已知漏洞。
+      # 開發／建置工具（vite、vitest…）的漏洞不在這裡擋，見 docs/SITE_REVIEW_2026-10.md 第 5 節。
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint
         run: npm run lint
@@ -32,13 +45,16 @@ jobs:
         working-directory: server
         run: npm ci
 
+      - name: Audit server production dependencies
+        working-directory: server
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Server test
         working-directory: server
         run: npm test
 
       # E2E 黃金路徑（Sprint 7 驗收條件 7.4）：playwright.config.js 會自己起後端
-      # （記憶體 DB）與前端 dev server。放在 Build／Deploy 之前，任何一條失敗就
-      # 不會部署預覽站。
+      # （記憶體 DB）與前端 dev server。放在部署之前，任何一條失敗就不會部署預覽站。
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
@@ -52,6 +68,31 @@ jobs:
           name: playwright-results
           path: test-results/
           retention-days: 7
+
+      # 只確認建得起來（正式站在 VPS 上自己建置）。
+      - name: Build
+        run: npm run build
+
+  deploy:
+    needs: verify
+    # PR 不部署預覽站。
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # 發佈不要被新的推送中途取消（會留下半套檔案）：排隊等前一個發佈完。
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
 
       - name: Build
         run: npm run build

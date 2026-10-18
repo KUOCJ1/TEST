@@ -179,6 +179,19 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
     });
   });
 
+  // 稽核紀錄（只讀、只增不改）：新的在前。可用 ?action=、?limit=（最多 200）、?before=（上一頁最後一筆的 ts）。
+  router.get('/audit-log', (req, res) => {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+    const action = typeof req.query.action === 'string' ? req.query.action : '';
+    const before = typeof req.query.before === 'string' ? req.query.before : '';
+    const all = (db.data.auditLog ?? [])
+      .filter((e) => (!action || e.action === action) && (!before || e.ts < before))
+      .sort((a, b) => (a.ts < b.ts ? 1 : -1));
+    const entries = all.slice(0, limit);
+    const actions = [...new Set((db.data.auditLog ?? []).map((e) => e.action))].sort();
+    res.json({ entries, hasMore: all.length > limit, actions });
+  });
+
   // ── 角色管理與帳號停用（Sprint 11）──────────────────────────
   // 守門規則都在伺服器端（前端只是把按鈕藏起來，擋不住直接打 API）：
   // 不能改自己的角色或停用自己；不能把最後一位「有效」管理員降級或停用——否則沒有人
