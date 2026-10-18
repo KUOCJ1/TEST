@@ -1,0 +1,1 @@
+var e={"ai-competency":`AI Competency Readiness Assessment`,"leadership-9d":`Leadership 9-Dimension Behavioral Assessment (L9D)`,disc:`DISC Behavioral Style Assessment`,archetype:`Personality Archetype Assessment`,"leadership-compass":`Leadership Compass Assessment`,"succession-intent":`Succession Readiness Assessment`},t=t=>e[t]??null;export{t};
