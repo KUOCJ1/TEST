@@ -80,10 +80,11 @@ test('教練只能搜尋才找得到人：1 個字不搜尋、不會列出全站
 
   const target = `搜尋對象${suffix}`;
   const bystander = `路人${suffix}`;
+  let targetApi;
   for (const [n, e] of [[target, `target-${suffix}@example.com`], [bystander, `bystander-${suffix}@example.com`]]) {
     const s = await pwRequest.newContext({ baseURL: API });
     await ok(await s.post('/api/auth/register', { data: { acceptPolicy: true, name: n, email: e, password: PW } }), n);
-    await s.dispose();
+    if (n === target) targetApi = s; else await s.dispose();
   }
 
   const ctx = await browser.newContext({ storageState: await coach.storageState() });
@@ -110,7 +111,15 @@ test('教練只能搜尋才找得到人：1 個字不搜尋、不會列出全站
   await page.getByRole('button', { name: '儲存成員名單' }).click();
   await expect(page.getByRole('button', { name: '儲存成員名單' })).toBeDisabled({ timeout: 10000 });
 
-  // 重新整理後成員仍在。
+  // 教練不能直接把已有帳號的人加進班級：這時只是「邀請」，對方接受前不是成員。
+  await expect(page.getByText('等待對方接受邀請')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText('目前成員（0）')).toBeVisible();
+  const invites = await (await targetApi.get('/api/groups/invites')).json();
+  expect(invites.invites).toHaveLength(1);
+  await ok(await targetApi.post(`/api/groups/invites/${invites.invites[0].id}/accept`), 'accept');
+  await targetApi.dispose();
+
+  // 對方接受、重新整理後成員在班上。
   await page.reload();
   await page.getByRole('button', { name: '成員與設定' }).click();
   await expect(page.getByText('目前成員（1）')).toBeVisible({ timeout: 15000 });
