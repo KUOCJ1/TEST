@@ -111,7 +111,8 @@ if command -v crontab >/dev/null 2>&1; then
 else
   warn "沒有 crontab 指令，略過備份排程檢查"
 fi
-LATEST="$($SUDO find "$BACKUP_DIR" -maxdepth 1 -name 'db-*.sqlite3' -mmin -1560 2>/dev/null | head -n 1)"
+# 檔名帶時間戳，字典序最大的就是最新的（find 的輸出順序不保證）。
+LATEST="$($SUDO find "$BACKUP_DIR" -maxdepth 1 -name 'db-*.sqlite3' -mmin -1560 2>/dev/null | sort | tail -n 1)"
 if [ -n "$LATEST" ]; then pass "26 小時內有備份：$(basename "$LATEST")"
 else warn "$BACKUP_DIR 沒有 26 小時內的備份"; fi
 

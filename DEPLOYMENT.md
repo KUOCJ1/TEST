@@ -248,10 +248,15 @@ curl -s localhost:3101/api/health      # {"ok":true,"version":{"commit":"<目前
 **C3. 全站審查第二批（Nginx 設定要手動更新）**
 - [ ] `deploy.sh` **不會**更新 Nginx 設定。這批新增了安全標頭、`index.html`／`sw.js` 不快取與 gzip 設定，要手動套用：
   ```bash
-  sudo cp /opt/ai-assessment/app/deploy/nginx/ai-assessment-behind-traefik.conf /etc/nginx/sites-available/ai-assessment.conf
+  cd /opt/ai-assessment/app && git pull origin claude/ai-assessment-survey-4vhjun
+  sudo cp /etc/nginx/sites-enabled/ai-assessment.conf /root/ai-assessment.conf.live-backup   # 備份要放在 sites-enabled 之外（那個資料夾的檔案全都會被載入）
+  sudo cp deploy/nginx/ai-assessment-behind-traefik.conf /etc/nginx/sites-available/ai-assessment.conf
+  sudo ln -sf ../sites-available/ai-assessment.conf /etc/nginx/sites-enabled/ai-assessment.conf   # 確保 sites-enabled 是指向 sites-available 的連結
   sudo nginx -t && sudo systemctl reload nginx
   ```
-  （若你當初改過這份檔，請先比對差異再覆蓋。）驗證：`curl -sI https://assess.rong-rise.com/ | grep -i -E "x-frame|nosniff|content-security|cache-control"`。
+  ⚠️ **曾經踩到的坑**：`sites-enabled/ai-assessment.conf` 在本站是一份「獨立的檔案」而不是連結，只改 `sites-available` 不會生效。
+  用 `ls -l /etc/nginx/sites-enabled/` 確認它是 `->` 指向 `../sites-available/...`；
+  用 `sudo nginx -T | grep -n "configuration file"` 看 Nginx 實際載入了哪些檔案。驗證：`curl -sI https://assess.rong-rise.com/ | grep -i -E "x-frame|nosniff|content-security|cache-control"`。
 - [ ] CSP 目前是 **Report-Only**（只在瀏覽器主控台回報、不會擋）。上線後把作答、報告列印、QR Code、AI 小幫手、管理後台都走一遍，確認主控台沒有 `Content-Security-Policy-Report-Only` 的違規訊息，再把 nginx 設定裡的 `Content-Security-Policy-Report-Only` 改成 `Content-Security-Policy`。
 - [ ] Traefik 若已經加了 HSTS，可以移除 nginx 裡那一行，避免重複。
 - [ ] 管理後台新增「身分還原」與「稽核紀錄」兩個分頁：用管理員帳號各開一次確認可用（稽核紀錄應該看得到你剛才的操作）。
