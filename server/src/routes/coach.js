@@ -13,13 +13,18 @@ import {
 } from '../lib/helpers.js';
 import { generateJoinCode } from '../lib/joinCode.js';
 import { splitNewMembers } from '../lib/invites.js';
+import {
+  newMemberInvite, inviteForCoach, inviteState, inviteExpiry, generateInviteCode, inviteLink,
+} from '../lib/memberInvites.js';
+import { buildInviteMail } from '../lib/inviteMail.js';
 import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from '../lib/mailer.js';
 
 // 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
 export const REMINDER_COOLDOWN_MS = 60 * 60 * 1000;
 
-function buildReminderMail({ group, name, phaseLabel }) {
-  const link = group.joinCode ? `${appBaseUrl()}/?join=${group.joinCode}` : `${appBaseUrl()}/`;
+function buildReminderMail({ group, name, phaseLabel, link: personalLink }) {
+  // 還沒加入的人（邀請制）附他自己的邀請連結；已加入的人用班級報到連結。
+  const link = personalLink ?? (group.joinCode ? `${appBaseUrl()}/?join=${group.joinCode}` : `${appBaseUrl()}/`);
   const deadline = group.endDate ? `請於 ${formatTaipeiDate(group.endDate)} 前完成` : '請盡快完成';
   const org = group.companyName ? `（${group.companyName}）` : '';
   return {
@@ -113,6 +118,20 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
   // 建班／換評量時，評量必須已啟用（停用的評量不開放建班，避免繞過「驗收後才啟用」的流程）。
   const isEnabledAssessment = (id) => (db.data.assessments ?? []).some((a) => a.id === id && a.enabled);
 
+  // 邀請制入班（Sprint 19）：這個班的邀請（不含已撤銷），含連結，給教練／管理員的畫面使用。
+  const listMemberInvites = (groupId) => (db.data.memberInvites ?? [])
+    .filter((i) => i.groupId === groupId && i.status !== 'revoked')
+    .map((i) => inviteForCoach(i, appBaseUrl()))
+    .sort((a, b) => a.email.localeCompare(b.email));
+
+  // 取得有權管理的班級與其中一筆邀請（找不到／無權限時直接回應並回傳 null）。
+  function manageInvite(req, res) {
+    const group = (db.data.groups ?? []).find((g) => g.id === req.params.id);
+    if (!group) { res.status(404).json({ error: '班別不存在' }); return null; }
+    if (group.coachId !== req.user.id && req.user.role !== 'admin') { res.status(403).json({ error: '無權限' }); return null; }
+    return group;
+  }
+
   router.post('/groups', (req, res) => {
     const { name, companyName, assessmentId, memberIds, focusDimensionIds, targetHeadcount, dimensionNotes } = req.body ?? {};
     if (typeof name !== 'string' || !name.trim() || (companyName !== undefined && typeof companyName !== 'string')) {
@@ -180,7 +199,14 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
         return u ? { id: i.id, userId: u.id, name: u.name, email: u.email } : null;
       })
       .filter(Boolean);
-    res.json({ group: { ...group, phase: getGroupPhase(group) }, submissions: stripRaterDetails(memberSubs), members, invites });
+    res.json({
+      group: { ...group, phase: getGroupPhase(group) },
+      submissions: stripRaterDetails(memberSubs),
+      members,
+      invites,
+      memberInvites: listMemberInvites(group.id),
+      mailConfigured: isMailConfigured(),
+    });
   });
 
   // 取消尚未被接受的班級邀請。
@@ -358,12 +384,15 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       .filter((u) => u && !u.disabled);
 
     const notStartedPre = members.filter((m) => !preDone.has(m.id));
-    const pending = group.pendingMembers ?? [];
+    // 邀請制：還沒加入的人（邀請仍有效）也要催，信裡附他專屬的邀請連結。
+    const pending = (db.data.memberInvites ?? [])
+      .filter((i) => i.groupId === group.id && inviteState(i) === 'invited')
+      .map((i) => ({ name: i.name, email: i.email, link: inviteLink(i.code, appBaseUrl()) }));
     let phase;
     let recipients;
     if (notStartedPre.length > 0 || pending.length > 0) {
       phase = 'pre';
-      recipients = [...notStartedPre, ...pending].map((m) => ({ name: m.name, email: m.email }));
+      recipients = [...notStartedPre.map((m) => ({ name: m.name, email: m.email })), ...pending];
     } else {
       phase = 'post';
       recipients = members
@@ -380,7 +409,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     let sent = 0;
     // 一人一封（個人化稱呼，也不會把全班信箱互相曝光在收件人欄位）。
     for (const r of recipients) {
-      const result = await sendMail({ to: r.email, ...buildReminderMail({ group, name: r.name, phaseLabel }) });
+      const result = await sendMail({ to: r.email, ...buildReminderMail({ group, name: r.name, phaseLabel, link: r.link }) });
       if (result.ok) sent += 1;
       else failed.push(r.email);
     }
@@ -407,8 +436,10 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     if (!Array.isArray(entries)) return res.status(400).json({ error: '名單格式不正確' });
 
     const emailRe = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-    if (!group.pendingMembers) group.pendingMembers = [];
-    const result = { added: 0, pending: 0, invited: 0, invalid: [] };
+    const invitesData = (db.data.memberInvites ??= []);
+    // added＝直接加入（管理員）；invited＝已有帳號、發了班級邀請等本人接受；
+    // pending＝新建了邀請連結給尚未註冊的人；existing＝已經有有效邀請（沿用，不重複建立）。
+    const result = { added: 0, pending: 0, invited: 0, existing: 0, invalid: [] };
 
     for (const raw of entries) {
       const email = (raw.email || '').trim().toLowerCase();
@@ -422,16 +453,78 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
         // 已有帳號：教練只能邀請，本人接受才加入。
         const split = splitNewMembers(db, group, [...group.memberIds, existing.id], req.user);
         if (split.invitedIds.length > 0) result.invited += 1;
-      } else if (!group.pendingMembers.some((p) => p.email === email)) {
-        group.pendingMembers.push({ name, email });
-        result.pending += 1;
+      } else {
+        // 尚未註冊：建立專屬邀請（Sprint 19）。同班同 Email 已有「未過期、未使用」的邀請就沿用。
+        const alive = invitesData.find((i) => i.groupId === group.id && i.email === email && inviteState(i) === 'invited');
+        if (alive) {
+          if (name && !alive.name) alive.name = name.slice(0, 100);
+          result.existing += 1;
+        } else {
+          invitesData.push(newMemberInvite(db.data, { groupId: group.id, email, name, createdBy: req.user.id }));
+          result.pending += 1;
+        }
       }
     }
     group.updatedAt = new Date().toISOString();
     db.persist();
-    auditLog(req, 'import_roster', { groupId: group.id, groupName: group.name, added: result.added, invited: result.invited, pending: result.pending });
-    res.json({ group, result });
+    auditLog(req, 'import_roster', { groupId: group.id, groupName: group.name, added: result.added, invited: result.invited, pending: result.pending, existing: result.existing });
+    res.json({ group, result, memberInvites: listMemberInvites(group.id) });
   });
+
+  // ── 學員邀請管理（Sprint 19）─────────────────────────────────
+  // 重新產生：換一組新碼並把期限重設為 14 天（舊連結立即失效）。已加入的不能重新產生。
+  router.post('/groups/:id/member-invites/:inviteId/regenerate', (req, res) => {
+    const group = manageInvite(req, res);
+    if (!group) return;
+    const inv = (db.data.memberInvites ?? []).find((i) => i.id === req.params.inviteId && i.groupId === group.id);
+    if (!inv || inv.status === 'revoked') return res.status(404).json({ error: '邀請不存在' });
+    if (inv.status === 'joined') return res.status(409).json({ code: 'ALREADY_JOINED', error: '這位學員已經加入了，不需要重新邀請。' });
+    inv.code = generateInviteCode(db.data);
+    inv.expiresAt = inviteExpiry();
+    db.persist();
+    auditLog(req, 'regenerate_member_invite', { groupId: group.id, inviteId: inv.id });
+    res.json({ memberInvite: inviteForCoach(inv, appBaseUrl()) });
+  });
+
+  // 撤銷：連結立即失效，名單不再顯示（資料保留供稽核）。已加入者撤銷不會把人移出班級。
+  router.delete('/groups/:id/member-invites/:inviteId', (req, res) => {
+    const group = manageInvite(req, res);
+    if (!group) return;
+    const inv = (db.data.memberInvites ?? []).find((i) => i.id === req.params.inviteId && i.groupId === group.id);
+    if (inv && inv.status === 'invited') {
+      inv.status = 'revoked';
+      inv.revokedAt = new Date().toISOString();
+      db.persist();
+      auditLog(req, 'revoke_member_invite', { groupId: group.id, inviteId: inv.id });
+    }
+    res.json({ ok: true });
+  });
+
+  // 寄送邀請信（沒給 inviteIds 就寄這個班所有「有效、尚未加入」的邀請）。SMTP 沒設定時回 503，
+  // 前端據此停用按鈕；其餘邀請功能（複製連結、匯出）完全不受影響。
+  router.post('/groups/:id/member-invites/send', asyncHandler(async (req, res) => {
+    const group = manageInvite(req, res);
+    if (!group) return;
+    if (!isMailConfigured()) {
+      return res.status(503).json({ code: 'CONFIG_ERROR', error: '尚未設定寄信服務（SMTP），請先用「複製連結」或「匯出連結清單」自行寄出。' });
+    }
+    const ids = Array.isArray(req.body?.inviteIds) ? new Set(req.body.inviteIds) : null;
+    const targets = (db.data.memberInvites ?? []).filter((i) => i.groupId === group.id
+      && inviteState(i) === 'invited' && (!ids || ids.has(i.id)));
+    let sent = 0;
+    const failed = [];
+    for (const inv of targets) {
+      const result = await sendMail({ to: inv.email, ...buildInviteMail({ group, invite: inv }) });
+      if (result.ok) {
+        sent += 1;
+        inv.lastSentAt = new Date().toISOString();
+        inv.sendCount = (inv.sendCount ?? 0) + 1;
+      } else failed.push(inv.email);
+    }
+    if (sent > 0) db.persist();
+    auditLog(req, 'send_member_invites', { groupId: group.id, sent, failed: failed.length });
+    res.json({ sent, failed, memberInvites: listMemberInvites(group.id) });
+  }));
 
   router.delete('/groups/:id', (req, res) => {
     const groups = db.data.groups ?? [];
@@ -442,6 +535,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     }
     const removedGroup = groups[idx];
     groups.splice(idx, 1);
+    db.data.memberInvites = (db.data.memberInvites ?? []).filter((i) => i.groupId !== removedGroup.id);
     db.persist();
     auditLog(req, 'delete_group', { groupId: removedGroup.id, groupName: removedGroup.name, members: (removedGroup.memberIds ?? []).length });
     res.json({ ok: true });

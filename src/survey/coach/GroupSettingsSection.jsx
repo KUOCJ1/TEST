@@ -8,6 +8,7 @@ import InfoTip from '../components/InfoTip';
 import GroupTimelineCard from '../components/GroupTimelineCard';
 import QrCodeCard from '../components/QrCodeCard';
 import RaterInvitePanel from '../components/compass/RaterInvitePanel.jsx';
+import MemberInvitesPanel from './MemberInvitesPanel';
 
 function parseRoster(text) {
   return text
@@ -27,7 +28,7 @@ function parseRoster(text) {
 // 5.6）——這些欄位的輸入狀態只在這個分頁存在，切換到「總覽」分頁時本來就該
 // 歸零，獨立成元件、由父層在切換班別時 key={group.id} 掛載，行為和拆分前一致。
 export default function GroupSettingsSection({
-  group, members, invites = [], users, patchedSubmissions, onGroupUpdated, refreshSubmissions, showToast,
+  group, members, invites = [], memberInvites = [], mailConfigured = false, users, patchedSubmissions, onGroupUpdated, refreshSubmissions, showToast,
 }) {
   const [targetHeadcount, setTargetHeadcount] = useState(group.targetHeadcount == null ? '' : String(group.targetHeadcount));
   const [focusDims, setFocusDims] = useState(group.focusDimensionIds ?? []);
@@ -348,21 +349,13 @@ export default function GroupSettingsSection({
           </div>
         )}
 
-        {group.pendingMembers?.length > 0 && (
-          <div className="mt-3 border-t border-slate-100 pt-3">
-            <p className="mb-1.5 flex items-center text-xs font-semibold text-amber-600">
-              待加入（尚未註冊）
-              <InfoTip text="Email 已登錄於班別，但該用戶尚未完成帳號註冊。待其註冊後自動加入本班，無需手動操作。" />
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {group.pendingMembers.map((p) => (
-                <span key={p.email} className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
-                  {p.name ? `${p.name} ` : ''}{p.email}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        <MemberInvitesPanel
+          group={group}
+          invites={memberInvites}
+          mailConfigured={mailConfigured}
+          onChanged={refreshSubmissions}
+          showToast={showToast}
+        />
 
         <button type="button" onClick={handleSaveMembers} disabled={savingMembers || !membersDirty}
           className="btn-primary btn-sm mt-3">
@@ -372,7 +365,7 @@ export default function GroupSettingsSection({
 
       <div className="panel-secondary">
         <h3 className="mb-1 font-semibold text-slate-700">批量匯入名單</h3>
-        <p className="mb-2 text-xs text-slate-400">每行一筆，格式：<code className="rounded bg-slate-100 px-1">姓名,Email</code> 或僅 Email。</p>
+        <p className="mb-2 text-xs text-slate-400">每行一筆，格式：<code className="rounded bg-slate-100 px-1">姓名,Email</code> 或僅 Email。尚未註冊的學員會各得到一組專屬邀請連結（顯示在上方「成員管理 → 學員邀請」），已有帳號的人會收到班級邀請。</p>
         <textarea value={rosterText} onChange={(e) => setRosterText(e.target.value)} rows={4}
           placeholder={'王小明,ming@company.com\n李小華,hua@company.com'}
           className="input"
@@ -380,7 +373,7 @@ export default function GroupSettingsSection({
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <button type="button" onClick={handleImportRoster} disabled={importing}
             className="btn-primary btn-sm">
-            {importing ? '匯入中…' : '匯入名單'}
+            {importing ? '匯入中…' : '匯入名單並建立邀請'}
           </button>
           <label className="btn-secondary btn-sm cursor-pointer">
             上傳 CSV 檔
@@ -393,7 +386,7 @@ export default function GroupSettingsSection({
               <p className="text-red-500">{importResult.error}</p>
             ) : (
               <p className="text-emerald-600">
-                已加入 {importResult.added} 位、已邀請 {importResult.invited ?? 0} 位現有用戶（對方接受後才加入）、{importResult.pending} 位列入待加入
+                已為 {importResult.pending} 位新學員建立邀請連結（見上方「學員邀請」）；已有帳號的 {importResult.invited ?? 0} 位已發出班級邀請（對方接受後才加入）、{importResult.added} 位已直接加入{importResult.existing > 0 ? `；${importResult.existing} 位原本就有有效邀請，沿用` : ''}
                 {importResult.invalid?.length > 0 && (
                   <span className="text-amber-600">；{importResult.invalid.length} 筆 Email 格式錯誤已略過</span>
                 )}

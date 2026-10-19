@@ -74,8 +74,8 @@ export default function GroupWorkspace({ users, currentUserId }) {
     setError('');
     setCommentPatch({});
     try {
-      const { group, submissions: subs, members, invites } = await api.getGroup(id);
-      setGroupDetail({ group, submissions: subs, members: members ?? [], invites: invites ?? [] });
+      const { group, submissions: subs, members, invites, memberInvites, mailConfigured } = await api.getGroup(id);
+      setGroupDetail({ group, submissions: subs, members: members ?? [], invites: invites ?? [], memberInvites: memberInvites ?? [], mailConfigured: Boolean(mailConfigured) });
     } catch (e) {
       setError(e.message || '載入失敗');
     }
@@ -119,8 +119,8 @@ export default function GroupWorkspace({ users, currentUserId }) {
   const refreshSubmissions = async () => {
     if (!selectedGroupId) return;
     try {
-      const { submissions: subs, members, invites } = await api.getGroup(selectedGroupId);
-      setGroupDetail((prev) => (prev ? { ...prev, submissions: subs, members: members ?? prev.members, invites: invites ?? [] } : prev));
+      const { submissions: subs, members, invites, memberInvites, mailConfigured } = await api.getGroup(selectedGroupId);
+      setGroupDetail((prev) => (prev ? { ...prev, submissions: subs, members: members ?? prev.members, invites: invites ?? [], memberInvites: memberInvites ?? [], mailConfigured: Boolean(mailConfigured) } : prev));
       setCommentPatch({});
     } catch {
       // 靜默失敗即可：使用者仍看得到已儲存的名單，只是分析要等下次重新整理。
@@ -279,6 +279,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
                 showToast={showToast}
                 confirm={confirm}
                 onOpenMember={setDrawerIndex}
+                pendingInviteCount={(groupDetail.memberInvites ?? []).filter((i) => i.state === 'invited').length}
               />
             )}
 
@@ -297,6 +298,8 @@ export default function GroupWorkspace({ users, currentUserId }) {
                 group={groupDetail.group}
                 members={groupDetail.members}
                 invites={groupDetail.invites ?? []}
+                memberInvites={groupDetail.memberInvites ?? []}
+                mailConfigured={groupDetail.mailConfigured ?? false}
                 users={users}
                 patchedSubmissions={patchedSubmissions}
                 onGroupUpdated={handleGroupUpdated}

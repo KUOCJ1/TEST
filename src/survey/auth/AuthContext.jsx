@@ -27,9 +27,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (payload) => {
-    const { user: u, joinedGroup } = await api.login(payload);
+    const { user: u, joinedGroup, inviteError } = await api.login(payload);
     setUser(u);
-    return { user: u, joinedGroup: joinedGroup ?? null };
+    // inviteError：帶邀請碼登入時邀請有問題（過期、Email 不符…）。登入本身成功，原因交給呼叫端顯示。
+    return { user: u, joinedGroup: joinedGroup ?? null, inviteError: inviteError ?? null };
   }, []);
 
   const logout = useCallback(async () => {

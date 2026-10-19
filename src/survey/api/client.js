@@ -124,6 +124,14 @@ export const api = {
   deleteGroup: (id) => request(`/coach/groups/${id}`, { method: 'DELETE' }),
   importRoster: (id, entries) =>
     request(`/coach/groups/${id}/roster`, { method: 'POST', body: { entries } }),
+  // 邀請制入班（Sprint 19）：每位學員一組專屬邀請連結，狀態與寄送紀錄見 docs/onboarding-invitations-spec.md。
+  regenerateMemberInvite: (groupId, inviteId) =>
+    request(`/coach/groups/${groupId}/member-invites/${inviteId}/regenerate`, { method: 'POST' }).then((d) => d.memberInvite),
+  revokeMemberInvite: (groupId, inviteId) =>
+    request(`/coach/groups/${groupId}/member-invites/${inviteId}`, { method: 'DELETE' }),
+  // 沒給 inviteIds 就寄這個班所有有效、尚未加入的邀請。SMTP 沒設定時後端回 503（code: CONFIG_ERROR）。
+  sendMemberInvites: (groupId, inviteIds) =>
+    request(`/coach/groups/${groupId}/member-invites/send`, { method: 'POST', body: inviteIds ? { inviteIds } : {} }),
   publishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'POST' }).then((d) => d.group),
   unpublishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'DELETE' }).then((d) => d.group),
   // 回傳 { phase, sent, failed:[email], group }；群組帶新的 lastReminderSentAt（冷卻用）。
@@ -146,6 +154,10 @@ export const api = {
   updateGoal: (id, body) => request(`/goals/${id}`, { method: 'PATCH', body }).then((d) => d.goal),
   deleteGoal: (id) => request(`/goals/${id}`, { method: 'DELETE' }),
   // 完全公開、免登入：QR 報到連結在使用者登入前就要能顯示班級資訊。
+  // 邀請連結落地頁：註冊前先查「誰邀請你加入哪個班」與被邀請的 Email（有邀請碼才查得到）。
+  publicInviteInfo: (code) => request(`/public/invite/${encodeURIComponent(code)}`),
+  // 已登入、還沒入班的人輸入邀請碼；Email 必須和邀請上的相同。
+  redeemInvite: (code) => request('/invites/redeem', { method: 'POST', body: { code } }).then((d) => d.joinedGroup),
   publicJoinInfo: (code) => request(`/public/join/${encodeURIComponent(code)}`),
 
   // 我的學習清單（僅本人可讀寫，見 server/src/routes/readingList.js）

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './survey/auth/AuthContext';
 import { useAuth } from './survey/auth/useAuth';
@@ -7,6 +7,7 @@ import LoginPage from './survey/auth/LoginPage';
 import ResetPasswordPage from './survey/auth/ResetPasswordPage';
 import LandingPage from './survey/LandingPage';
 import { ToastProvider } from './survey/components/Toast';
+import { useToast } from './survey/components/useToast';
 import { ConfirmProvider } from './survey/components/ConfirmDialog';
 import LoadingState from './survey/components/LoadingState';
 import ConsentGate from './survey/legal/ConsentGate';
@@ -48,6 +49,12 @@ function readJoinCode() {
   return params.get('join');
 }
 
+// 邀請連結（Sprint 19）：?invite=邀請碼。每位學員一組專屬連結，綁定 Email、14 天有效、只能用一次。
+function readInviteCode() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('invite');
+}
+
 const MARKETING_TITLES = {
   '/about': '平台理念', '/how-it-works': '功能總覽', '/showcase': '範例報告', '/faq': '常見問題',
   '/privacy': '隱私權政策', '/terms': '服務條款', '/framework': '領導力羅盤八向評測', '/welcome': '首頁',
@@ -64,6 +71,15 @@ function AppRoutes() {
   const [joinInfo, setJoinInfo] = useState(null);
   const [joinResolved, setJoinResolved] = useState(false);
   const joining = Boolean(user && joinCode && !joinResolved);
+
+  // 邀請連結：未登入時先查「誰邀請你加入哪個班」（null＝讀取中；{ error, code }＝失效；否則為邀請資訊）。
+  const [inviteCode] = useState(readInviteCode);
+  const [inviteInfo, setInviteInfo] = useState(null);
+  const [inviteResult, setInviteResult] = useState(null); // LoginPage 用邀請碼註冊／登入後回報
+  const [inviteResolved, setInviteResolved] = useState(false);
+  const openedLoggedIn = useRef(null);
+  const showToast = useToast();
+  const inviting = Boolean(user && inviteCode && !inviteResolved);
 
   const clearReset = () => {
     setResetToken(null);
@@ -107,6 +123,48 @@ function AppRoutes() {
     };
   }, [user, joinCode]);
 
+  // 邀請連結的處理（Sprint 19）：
+  //  - 開連結時「已經登入」：直接用邀請碼兌換（Email 要和邀請相符，不符會說明原因）。
+  //  - 開連結時未登入：LoginPage 用邀請碼註冊／登入，結果由 handleInviteResult 帶回來，這裡負責導頁。
+  //  - 邀請已失效（LoginPage 沒有帶碼）：登入後沒有東西要處理，直接放行。
+  useEffect(() => {
+    if (ready && openedLoggedIn.current === null) openedLoggedIn.current = Boolean(user);
+  }, [ready, user]);
+
+  useEffect(() => {
+    if (user || !inviteCode) return undefined;
+    let active = true;
+    api
+      .publicInviteInfo(inviteCode)
+      .then((info) => active && setInviteInfo(info))
+      .catch((e) => active && setInviteInfo({ error: e.message || '邀請無法使用', code: e.code }));
+    return () => { active = false; };
+  }, [user, inviteCode]);
+
+  useEffect(() => {
+    if (!user || !inviteCode || inviteResolved) return undefined;
+    let active = true;
+    const done = () => {
+      if (!active) return;
+      window.history.replaceState({}, '', window.location.pathname);
+      setInviteResolved(true);
+    };
+    const go = (joinedGroup) => navigate(`/survey/${joinedGroup.assessmentId}`, { replace: true });
+    if (openedLoggedIn.current === true) {
+      api.redeemInvite(inviteCode)
+        .then((g) => { if (active) go(g); })
+        .catch((e) => showToast(e.message || '加入班級失敗', 'error'))
+        .finally(done);
+    } else if (inviteResult) {
+      if (inviteResult.joinedGroup) go(inviteResult.joinedGroup);
+      else if (inviteResult.inviteError) showToast(inviteResult.inviteError.error, 'error');
+      done();
+    } else if (inviteInfo?.error) {
+      done();
+    }
+    return () => { active = false; };
+  }, [user, inviteCode, inviteResolved, inviteResult, inviteInfo, navigate, showToast]);
+
   // 分頁標題（Sprint 8 驗收條件 8.8）：只管行銷頁與未登入畫面；登入後由 AppShell
   // 依功能頁設定——effect 是子元件先跑，這裡若也寫就會把 AppShell 的蓋掉。
   const isMarketing = isMarketingPath(location.pathname);
@@ -148,7 +206,7 @@ function AppRoutes() {
     return <ResetPasswordPage token={resetToken} onDone={clearReset} />;
   }
 
-  if (!ready || joining) {
+  if (!ready || joining || inviting) {
     return <LoadingState fullScreen />;
   }
   // 還沒同意目前版本政策的既有用戶：先看到同意畫面（政策還是草稿時不擋，見 legal/policy.js）。
@@ -160,12 +218,15 @@ function AppRoutes() {
       </Suspense>
     );
   }
-  if (view === 'auth' || joinCode) {
+  if (view === 'auth' || joinCode || inviteCode) {
     return (
       <LoginPage
-        onBack={joinCode ? undefined : () => setView('landing')}
+        onBack={joinCode || inviteCode ? undefined : () => setView('landing')}
         joinCode={joinCode}
         joinInfo={joinInfo}
+        inviteCode={inviteCode}
+        inviteInfo={inviteInfo}
+        onInviteResult={setInviteResult}
       />
     );
   }

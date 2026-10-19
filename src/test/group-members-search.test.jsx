@@ -72,7 +72,7 @@ describe('成員管理：目前成員＋搜尋加入', () => {
     renderSection();
     await type('查無此人');
     expect(await screen.findByText(/找不到符合的已註冊用戶/)).toBeInTheDocument();
-    expect(screen.getByText(/批量匯入名單/, { selector: 'p' })).toBeInTheDocument();
+    expect(screen.getByText(/找不到符合的已註冊用戶.*批量匯入名單/)).toBeInTheDocument();
   });
 
   it('搜尋失敗顯示錯誤', async () => {

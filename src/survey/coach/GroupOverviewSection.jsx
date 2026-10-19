@@ -15,7 +15,7 @@ import { badgeBg } from '../utils/color';
 // 沿用本檔案原本 GroupTimelineCard／QrCodeCard 已經在用的作法。
 export default function GroupOverviewSection({
   group, members, groupStats, memberRows, strongestWeakest, commentedCount,
-  submissions, onGroupUpdated, showToast, confirm, onOpenMember,
+  submissions, onGroupUpdated, showToast, confirm, onOpenMember, pendingInviteCount = 0,
 }) {
   const [groupComment, setGroupComment] = useState(group.groupComment ?? '');
   const [groupTips, setGroupTips] = useState(group.groupTips?.length ? group.groupTips : ['']);
@@ -48,6 +48,7 @@ export default function GroupOverviewSection({
         onGroupUpdated={onGroupUpdated}
         showToast={showToast}
         confirm={confirm}
+        pendingInviteCount={pendingInviteCount}
       />
 
       {groupStats && groupStats.respondents === 0 ? (

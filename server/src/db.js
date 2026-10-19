@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
+import { migratePendingMembers } from './lib/memberInvites.js';
 
-const COLLECTIONS = ['users', 'submissions', 'assessments', 'groups', 'goals', 'readingList', 'learningResourceClicks', 'systemStatus', 'assessmentContent', 'raterInvites', 'groupInvites', 'auditLog'];
+const COLLECTIONS = ['users', 'submissions', 'assessments', 'groups', 'goals', 'readingList', 'learningResourceClicks', 'systemStatus', 'assessmentContent', 'raterInvites', 'groupInvites', 'auditLog', 'memberInvites'];
 
 // 舊版 JSON 檔案型儲存遷移到 SQLite：把 DB_PATH 指向的舊檔（原本存純 JSON）解析後
 // 灌進新的 `${file}.sqlite3` 檔案。遷移過程完全不動、不刪原檔——新資料寫進另一個
@@ -53,7 +54,7 @@ export function createDb(file) {
     )
   `);
 
-  const data = { users: [], submissions: [], assessments: [], groups: [], goals: [], readingList: [], learningResourceClicks: [], systemStatus: [], raterInvites: [], groupInvites: [], auditLog: [] };
+  const data = { users: [], submissions: [], assessments: [], groups: [], goals: [], readingList: [], learningResourceClicks: [], systemStatus: [], raterInvites: [], groupInvites: [], auditLog: [], memberInvites: [] };
   let freshlySeeded = false;
 
   if (legacyData) {
@@ -65,6 +66,9 @@ export function createDb(file) {
       data[key] = selectByCollection.all(key).map((row) => JSON.parse(row.json));
     }
   }
+
+  // Sprint 19：舊的「待加入名單」改成邀請制（見 docs/onboarding-invitations-spec.md）。
+  if (migratePendingMembers(data) > 0) freshlySeeded = true;
 
   // 已知題庫 metadata：新增題庫時在這裡補一筆即可，不需要另外寫遷移腳本——
   // 全新安裝直接用這份清單當種子；既有資料庫（如正式站）assessments 已非空，

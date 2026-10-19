@@ -346,6 +346,8 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 
 ### 5.5 領導力羅盤與接班準備度評測（2026-10-18 起，預設停用）
 
+> 2026-10-19（Sprint 19）：新學員改以**邀請連結**入班——後台匯入 Email 後產生專屬連結與邀請碼（14 天、單次、綁定 Email），教練可複製／匯出／重新產生／撤銷／寄信；沒有邀請碼自行註冊不會自動入班。詳見 `docs/onboarding-invitations-spec.md`。
+
 > 2026-10-18 起（第二批修補）：敏感操作寫入資料庫的 `auditLog` 集合（只增不改），管理後台「稽核紀錄」可查；「身分還原」分頁走 `POST /api/submissions/ratee/:id/reveal`（必填理由、寫稽核）。登入有每帳號鎖定（5 次／15 分鐘）與失敗 IP 額度，AI 小幫手有每人每日額度（`CHAT_DAILY_LIMIT`）。
 
 > 2026-10-18 起（全站審查第一批修補）：領導力羅盤的**他評需要邀請**——受評者本人或班級教練邀請同班成員（`POST /api/rater-invites`，`routes/invites.js`），評分者在「360° 評測 → 等你評測的人」開始評測，身分類型由邀請決定；教練對已有帳號的人**只能發班級邀請**（`/api/groups/invites`），本人接受才入班。伺服器另外驗證評量已啟用、高敏感評量已同意現行政策。

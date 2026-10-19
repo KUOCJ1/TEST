@@ -1,10 +1,12 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { getGroupPhase, auditLog } from '../lib/helpers.js';
 import { isStrictPrivacy } from '../lib/compassPrivacy.js';
 import {
   RATER_INVITE_TYPES, MAX_INVITES_PER_RATEE, isActiveInvite, findSharedGroup, newRaterInvite,
 } from '../lib/invites.js';
 import { POLICY_VERSION } from '../lib/policy.js';
+import { findInviteByCode, checkInviteUsable, claimInvite, maskEmail } from '../lib/memberInvites.js';
 
 /**
  * 他評邀請與班級邀請（見 lib/invites.js 的說明）。
@@ -104,6 +106,36 @@ export function createInvitesRouter({ db, requireAuth }) {
       auditLog(req, 'revoke_rater_invite', { inviteId: invite.id, rateeId: invite.rateeId, groupId: invite.groupId });
     }
     res.json({ ok: true });
+  });
+
+  // ── 邀請碼兌換（邀請制入班，Sprint 19）────────────────────────
+  // 已登入、但還沒入班的人輸入教練給的邀請碼。邀請上的 Email 必須就是這個帳號的 Email：
+  // 邀請是寄給某個信箱的，不能讓拿到別人邀請碼的人把自己編進班級。
+  const redeemLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: process.env.AUTH_RATE_LIMIT ? 10000 : 20,
+    skipSuccessfulRequests: true,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { code: 'RATE_LIMIT', error: '嘗試次數過多，請稍後再試' },
+  });
+  router.post('/invites/redeem', requireAuth, redeemLimiter, (req, res) => {
+    const invite = findInviteByCode(db, req.body?.code);
+    const usable = checkInviteUsable(db, invite);
+    if (!usable.ok) return res.status(usable.status).json({ code: usable.code, error: usable.error });
+    if (invite.email !== req.user.email) {
+      return res.status(403).json({
+        code: 'INVITE_EMAIL_MISMATCH',
+        error: `這個邀請是寄給另一個 Email（${maskEmail(invite.email)}），和你目前登入的帳號不同。請改用那個帳號登入，或向教練確認。`,
+      });
+    }
+    if (isStrictPrivacy(usable.group.assessmentId) && req.user.consent?.version !== POLICY_VERSION) {
+      return res.status(403).json({ code: 'CONSENT_REQUIRED', error: '請先同意最新的隱私權政策' });
+    }
+    claimInvite(db, invite, req.user, usable.group);
+    auditLog(req, 'redeem_member_invite', { groupId: usable.group.id, groupName: usable.group.name });
+    const g = usable.group;
+    res.json({ joinedGroup: { id: g.id, name: g.name, companyName: g.companyName || '', assessmentId: g.assessmentId } });
   });
 
   // ── 班級邀請（教練邀請已有帳號的人加入班級，本人接受才生效）────────────

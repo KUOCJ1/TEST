@@ -491,7 +491,7 @@ describe('教練 / 班別 / 名單', () => {
     assert.equal((await admin.post(`/api/submissions/${id}/comment`).send({ text: '管理者評語' })).status, 200);
   });
 
-  test('批量名單：現有用戶入班、未註冊者待加入並於註冊後自動入班', async () => {
+  test('批量名單：現有用戶發班級邀請、未註冊者建立邀請連結；沒有邀請碼自行註冊不會自動入班', async () => {
     const app = await setup({ withAdmin: true });
     const { coach } = await makeCoach(app);
     await coach.post('/api/auth/login').send({ email: 'coach@b.co', password: 'abcdef12' });
@@ -520,12 +520,16 @@ describe('教練 / 班別 / 名單', () => {
     const afterAccept = await coach.get(`/api/coach/groups/${gid}`);
     assert.ok(afterAccept.body.group.memberIds.includes(ereg.body.user.id));
 
-    // 未註冊者註冊後應自動成為成員
+    // 未註冊者：建立專屬邀請（連結＋邀請碼），不再是「待加入名單」。
+    assert.equal(imp.body.memberInvites.length, 1);
+    assert.equal(imp.body.memberInvites[0].email, 'new@b.co');
+    assert.equal(imp.body.memberInvites[0].state, 'invited');
+
+    // 只用 Email 自行註冊（沒有邀請碼）不會被自動編進班級——沒驗證信箱，不能讓人搶先認領。
     const fresh = request.agent(app);
-    const freg = await fresh.post('/api/auth/register').send({ acceptPolicy: true, name: '未註冊', email: 'new@b.co', password: 'abcdef12' });
+    await fresh.post('/api/auth/register').send({ acceptPolicy: true, name: '未註冊', email: 'new@b.co', password: 'abcdef12' });
     const myGroups = await fresh.get('/api/groups/mine');
-    assert.equal(myGroups.body.groups.length, 1);
-    assert.ok(myGroups.body.groups[0].memberIds.includes(freg.body.user.id));
+    assert.equal(myGroups.body.groups.length, 0);
   });
 
   test('班別評量設定：重點構面、目標人數、逐構面備註（建立 + 更新 + 清洗）', async () => {

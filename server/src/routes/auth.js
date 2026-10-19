@@ -12,28 +12,13 @@ import { asyncHandler, auditLog, hashToken, revokeUserTokens } from '../lib/help
 import { POLICY_VERSION } from '../lib/policy.js';
 import { findGroupByJoinCode, joinGroupByCode } from '../lib/joinCode.js';
 import { createLoginGuard } from '../lib/loginGuard.js';
+import { findInviteByCode, checkInviteUsable, claimInvite, normalizeEmail, maskEmail } from '../lib/memberInvites.js';
 
 // register/login 回傳的「剛加入的班級」只給前端導頁需要的最小資訊，不含成員、
 // 成績或其他班級設定——這支 API 在使用者剛登入的當下就會被讀到。
 function joinedGroupInfo(group) {
   if (!group) return null;
   return { id: group.id, name: group.name, companyName: group.companyName || '', assessmentId: group.assessmentId };
-}
-
-// 將使用者 email 比對各班別的待加入名單；命中則自動轉為正式成員。
-function claimPendingGroups(db, user) {
-  let changed = false;
-  for (const g of db.data.groups ?? []) {
-    const pending = g.pendingMembers ?? [];
-    const idx = pending.findIndex((p) => p.email === user.email);
-    if (idx >= 0) {
-      if (!g.memberIds.includes(user.id)) g.memberIds.push(user.id);
-      pending.splice(idx, 1);
-      g.pendingMembers = pending;
-      changed = true;
-    }
-  }
-  if (changed) db.persist();
 }
 
 /** @param {{db, requireAuth, setAuthCookie, COOKIE_NAME}} deps */
@@ -105,7 +90,18 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
   // Hash password BEFORE checking for duplicate email so the synchronous
   // check+push+persist block has no await (atomic under Node.js single thread).
   router.post('/auth/register', authLimiter, asyncHandler(async (req, res) => {
-    const { name, email, password, joinCode, acceptPolicy } = req.body || {};
+    const { name, email: bodyEmail, password, joinCode, acceptPolicy, inviteCode } = req.body || {};
+    // 邀請碼註冊：Email 一律以邀請上的為準（前端會鎖定，這裡是伺服器強制，不信任請求內容），
+    // 持有碼才能用這個 Email 註冊——這就是信箱驗證。邀請無效就整個擋下，免得人用錯 Email 註冊了還以為進班了。
+    let invite = null;
+    let inviteGroup = null;
+    if (inviteCode) {
+      invite = findInviteByCode(db, inviteCode);
+      const usable = checkInviteUsable(db, invite);
+      if (!usable.ok) return res.status(usable.status).json({ code: usable.code, error: usable.error });
+      inviteGroup = usable.group;
+    }
+    const email = invite ? invite.email : bodyEmail;
     try {
       validateRegistration({ name, email, password });
     } catch (e) {
@@ -115,10 +111,13 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     if (acceptPolicy !== true) {
       return res.status(400).json({ code: 'CONSENT_REQUIRED', error: '請先閱讀並同意隱私權政策與服務條款' });
     }
-    const normEmail = email.trim().toLowerCase();
+    const normEmail = normalizeEmail(email);
     const passwordHash = await hashPassword(password);
     if (db.data.users.some((u) => u.email === normEmail)) {
-      return res.status(409).json({ code: 'EMAIL_TAKEN', error: '此 Email 已被註冊' });
+      return res.status(409).json({
+        code: 'EMAIL_TAKEN',
+        error: invite ? '這個 Email 已經有帳號了，請改用「登入」，登入後會自動加入班級。' : '此 Email 已被註冊',
+      });
     }
     const user = {
       id: randomUUID(),
@@ -131,15 +130,17 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     };
     db.data.users.push(user);
     db.persist();
-    claimPendingGroups(db, user);
-    // QR 報到：帶著有效代碼註冊時，直接加入該班級，前端才能立刻導去對應的評量。
-    const joinedGroup = joinCode ? joinGroupByCode(db, user, joinCode) : null;
+    // 邀請碼優先（記錄邀請已使用）；其次是 QR 報到代碼。兩者都沒有就不會自動編進任何班級——
+    // 不再依 Email 比對「待加入名單」自動入班（沒驗證信箱，會被搶先註冊）。
+    let joinedGroup = null;
+    if (invite) joinedGroup = claimInvite(db, invite, user, inviteGroup);
+    else if (joinCode) joinedGroup = joinGroupByCode(db, user, joinCode);
     setAuthCookie(res, user);
     res.status(201).json({ user: publicUser(user), joinedGroup: joinedGroupInfo(joinedGroup) });
   }));
 
   router.post('/auth/login', authLimiter, failedLoginLimiter, asyncHandler(async (req, res) => {
-    const { email, password, joinCode } = req.body || {};
+    const { email, password, joinCode, inviteCode } = req.body || {};
     const normEmail = String(email || '').trim().toLowerCase();
     const lockedMs = loginGuard.lockedFor(normEmail);
     if (lockedMs > 0) return lockedResponse(res, lockedMs);
@@ -153,11 +154,21 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     if (user.disabled) {
       return res.status(403).json({ code: 'ACCOUNT_DISABLED', error: '此帳號已停用，請聯絡管理員' });
     }
-    claimPendingGroups(db, user);
     // 既有學員重新掃碼加入新的一梯（例如回鍋上下一期課程）同樣適用。
-    const joinedGroup = joinCode ? joinGroupByCode(db, user, joinCode) : null;
+    let joinedGroup = joinCode ? joinGroupByCode(db, user, joinCode) : null;
+    // 帶邀請碼登入：邀請的 Email 必須就是這個帳號的 Email 才會入班。登入本身已經成功，
+    // 邀請有問題時不讓整個登入失敗，而是把原因放在 inviteError 讓前端顯示。
+    let inviteError = null;
+    if (inviteCode) {
+      const invite = findInviteByCode(db, inviteCode);
+      const usable = checkInviteUsable(db, invite);
+      if (!usable.ok) inviteError = { code: usable.code, error: usable.error };
+      else if (invite.email !== user.email) {
+        inviteError = { code: 'INVITE_EMAIL_MISMATCH', error: `這個邀請是寄給另一個 Email（${maskEmail(invite.email)}）。請用那個 Email 登入，或向教練確認。` };
+      } else joinedGroup = claimInvite(db, invite, user, usable.group);
+    }
     setAuthCookie(res, user);
-    res.json({ user: publicUser(user), joinedGroup: joinedGroupInfo(joinedGroup) });
+    res.json({ user: publicUser(user), joinedGroup: joinedGroupInfo(joinedGroup), ...(inviteError && { inviteError }) });
   }));
 
   router.post('/auth/logout', (_req, res) => {

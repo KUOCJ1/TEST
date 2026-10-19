@@ -38,9 +38,9 @@ function submission(userId, groupId, phase) {
 }
 
 /**
- * 一個進行中的班：三位成員（done 已做課前、todo1/todo2 還沒做）＋一位待加入。
+ * 一個進行中的班：三位成員（done 已做課前、todo1/todo2 還沒做）＋可選的受邀者。
  */
-async function setupClass({ startDate = new Date(Date.now() - 86400000).toISOString(), pendingMembers = [] } = {}) {
+async function setupClass({ startDate = new Date(Date.now() - 86400000).toISOString(), invitees = [] } = {}) {
   const db = createDb(':memory:');
   const coach = { ...user('王教練', 'coach@b.co', 'coach'), passwordHash: await hashPassword('abcdef12') };
   const other = { ...user('李教練', 'other@b.co', 'coach'), passwordHash: await hashPassword('abcdef12') };
@@ -51,9 +51,14 @@ async function setupClass({ startDate = new Date(Date.now() - 86400000).toISOStr
   const group = {
     id: randomUUID(), name: 'AI 實戰班', companyName: '榕耀', assessmentId: 'ai-competency',
     coachId: coach.id, coachName: coach.name, memberIds: [done.id, todo1.id, todo2.id],
-    pendingMembers, startDate, endDate: null, publishedAt: null, joinCode: 'ABC123',
+    pendingMembers: [], startDate, endDate: null, publishedAt: null, joinCode: 'ABC123',
   };
   db.data.groups.push(group);
+  // 還沒註冊的受邀者（邀請制，Sprint 19）：各有專屬邀請碼。
+  invitees.forEach((p, i) => db.data.memberInvites.push({
+    id: randomUUID(), groupId: group.id, email: p.email, name: p.name, code: `INVITECODE${i}`, status: 'invited',
+    expiresAt: new Date(Date.now() + 864e5).toISOString(), createdBy: coach.id, createdAt: new Date().toISOString(), sendCount: 0,
+  }));
   db.data.submissions.push(submission(done.id, group.id, 'pre'));
 
   const app = createApp({ db, jwtSecret: JWT_SECRET });
@@ -79,8 +84,8 @@ function mockSmtp(t, { failFor = [] } = {}) {
 }
 
 describe('POST /api/coach/groups/:id/remind', () => {
-  test('只寄給課前還沒完成的成員（含待加入名單），一人一封、內容個人化並附報到連結', async (t) => {
-    const { group, coachAgent } = await setupClass({ pendingMembers: [{ name: '新同學', email: 'new@b.co' }] });
+  test('只寄給課前還沒完成的成員（含尚未加入的受邀者），一人一封、內容個人化；受邀者附專屬邀請連結', async (t) => {
+    const { group, coachAgent } = await setupClass({ invitees: [{ name: '新同學', email: 'new@b.co' }] });
     const sent = mockSmtp(t);
 
     const res = await coachAgent.post(`/api/coach/groups/${group.id}/remind`);
@@ -96,6 +101,10 @@ describe('POST /api/coach/groups/:id/remind', () => {
     assert.match(ming.text, /小明 您好/);
     assert.match(ming.text, /https:\/\/assess\.test\/\?join=ABC123/);
     assert.match(ming.text, /王教練/);
+    // 還沒加入的人收到的是他自己的邀請連結（不是班級報到連結）。
+    const invitee = sent.find((m) => m.to === 'new@b.co');
+    assert.match(invitee.text, /https:\/\/assess\.test\/\?invite=INVITECODE0/);
+    assert.doesNotMatch(invitee.text, /\?join=/);
   });
 
   test('全員課前都完成後改催課後，只寄給課前已完成、課後還沒做的人', async (t) => {

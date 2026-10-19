@@ -96,7 +96,7 @@ function buildJoinUrl(joinCode) {
  *
  * 有傳 onGroupUpdated（＋showToast、confirm）時才顯示「寄送提醒信」按鈕。
  */
-export default function ProgressPanel({ group, members, submissions, onGroupUpdated, showToast, confirm }) {
+export default function ProgressPanel({ group, members, submissions, onGroupUpdated, showToast, confirm, pendingInviteCount = 0 }) {
   const [copied, setCopied] = useState(false);
 
   const selfSubs = submissions.filter((s) => (s.raterType ?? 'self') === 'self');
@@ -134,10 +134,9 @@ export default function ProgressPanel({ group, members, submissions, onGroupUpda
   };
 
   // 寄信對象的判定跟後端 POST /coach/groups/:id/remind 一致：還有人沒做課前
-  // （含尚未註冊的待加入名單）就只催課前，全員課前完成後才催課後。
-  const pendingInvites = group.pendingMembers ?? [];
-  const remindPre = notStartedPre.length > 0 || pendingInvites.length > 0;
-  const remindCount = remindPre ? notStartedPre.length + pendingInvites.length : pendingPost.length;
+  // （含尚未加入、邀請仍有效的受邀者）就只催課前，全員課前完成後才催課後。
+  const remindPre = notStartedPre.length > 0 || pendingInviteCount > 0;
+  const remindCount = remindPre ? notStartedPre.length + pendingInviteCount : pendingPost.length;
 
   // 課前還有人沒交的階段，先不列「課後未完成」——課後還沒開始，那份名單只是干擾，
   // 也容易讓人以為已經可以催課後。課前全交了、或已經有人交課後，才顯示。

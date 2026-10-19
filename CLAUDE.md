@@ -100,6 +100,12 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - `POLICY_VERSION` 前後端各一份（`server/src/lib/policy.js`、`src/survey/legal/policy.js`）必須一致，有測試檢查。
 - 政策文字要對照程式行為：改了資料處理方式（第三方、蒐集欄位、保存）就要回來改文字。
 
+## 邀請制入班（Sprint 19）
+
+- 後台匯入 Email → 每位未註冊者一筆 `memberInvites`（`server/src/lib/memberInvites.js`；10 碼碼、14 天、單次、綁定 Email）。連結 `?invite=碼`；註冊／登入帶 `inviteCode`，或登入後 `POST /api/invites/redeem`。規格：`docs/onboarding-invitations-spec.md`。
+- **不再依 Email 自動入班**（沒驗證信箱會被搶先註冊）；舊 `pendingMembers` 在啟動時轉成邀請。公開註冊與 QR 報到保留。
+- 教練端 `coach/MemberInvitesPanel.jsx`；寄信走 `lib/inviteMail.js`＋`sendMail`（SMTP 未設定回 503，前端停用按鈕）。
+
 ## 班級管理與 QR Code 報到
 
 - 每筆作答提交都會寫入 `groupId`，精準對應提交當下所屬的班級（同一梯次）。班級報告

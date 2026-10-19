@@ -114,8 +114,8 @@ describe('ProgressPanel：寄送提醒信（Sprint 6 驗收條件 6.5）', () =>
     expect(props.onGroupUpdated).toHaveBeenCalledWith(expect.objectContaining({ lastReminderSentAt: expect.any(String) }));
   });
 
-  it('待加入（尚未註冊）的名單也算進課前提醒人數', async () => {
-    const props = renderWithReminder({ ...openGroup, pendingMembers: [{ email: 'new@x.com' }] }, [sub('u1', 'pre')]);
+  it('尚未加入、邀請仍有效的受邀者也算進課前提醒人數', async () => {
+    const props = renderWithReminder(openGroup, [sub('u1', 'pre')], { pendingInviteCount: 1 });
     props.confirm.mockResolvedValue(false);
     fireEvent.click(screen.getByRole('button', { name: /寄送提醒信/ }));
     await vi.waitFor(() => expect(props.confirm).toHaveBeenCalled());

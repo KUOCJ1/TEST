@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from './useAuth';
 import JoinClassBanner from '../components/JoinClassBanner';
+import InviteBanner from '../components/InviteBanner';
+import { extractInviteCode } from '../utils/inviteCode';
+import { formatDate } from '../utils/format';
 
 function readUrlParams() {
   const p = new URLSearchParams(window.location.search);
@@ -11,11 +14,20 @@ function readUrlParams() {
   };
 }
 
-export default function LoginPage({ onBack, joinCode, joinInfo }) {
+export default function LoginPage({ onBack, joinCode, joinInfo, inviteCode, inviteInfo, onInviteResult }) {
   const { login, register } = useAuth();
   const [{ fromAI, name: prefillName, email: prefillEmail }] = useState(readUrlParams);
-  const [mode, setMode] = useState(fromAI || joinCode ? 'register' : 'login');
-  const [form, setForm] = useState({ name: prefillName, email: prefillEmail, password: '' });
+  // 邀請連結（Sprint 19）：邀請有效時 Email 與姓名由邀請帶入（Email 鎖定，伺服器也會強制）；
+  // 邀請失效時照一般登入／註冊處理，只多一則說明。inviteInfo 為 null 表示還在查詢。
+  const inviteOk = Boolean(inviteCode && inviteInfo && !inviteInfo.error);
+  const lockedEmail = inviteOk ? inviteInfo.email : null;
+  const [modeOverride, setModeOverride] = useState(null);
+  const defaultMode = inviteOk ? (inviteInfo.accountExists ? 'login' : 'register') : (fromAI || joinCode ? 'register' : 'login');
+  const mode = modeOverride ?? defaultMode;
+  const setMode = setModeOverride;
+  const [form, setForm] = useState({ name: prefillName || undefined, email: prefillEmail, password: '' });
+  const nameValue = form.name ?? (inviteOk ? inviteInfo.name : '') ?? '';
+  const emailValue = lockedEmail ?? form.email;
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -36,8 +48,12 @@ export default function LoginPage({ onBack, joinCode, joinInfo }) {
     }
     setBusy(true);
     try {
-      if (mode === 'register') await register({ ...form, acceptPolicy: true, ...(joinCode ? { joinCode } : {}) });
-      else await login(joinCode ? { email: form.email, password: form.password, joinCode } : { email: form.email, password: form.password });
+      const base = { name: nameValue, email: emailValue, password: form.password };
+      let result;
+      if (mode === 'register') result = await register({ ...base, acceptPolicy: true, ...(joinCode ? { joinCode } : {}), ...(inviteOk ? { inviteCode } : {}) });
+      else result = await login({ email: base.email, password: base.password, ...(joinCode ? { joinCode } : {}), ...(inviteOk ? { inviteCode } : {}) });
+      // 把邀請的結果交給 App 導頁（或顯示邀請有問題的原因）；登入／註冊成功後這個畫面會被換掉。
+      if (inviteOk) onInviteResult?.({ joinedGroup: result?.joinedGroup ?? null, inviteError: result?.inviteError ?? null });
     } catch (err) {
       setError(err.message || '發生錯誤，請稍後再試');
     } finally {
@@ -68,7 +84,9 @@ export default function LoginPage({ onBack, joinCode, joinInfo }) {
           <p className="mt-2 text-sm text-ink-100">登入後即可作答並查看您的專屬能力分析</p>
         </header>
 
-        {joinCode ? (
+        {inviteCode ? (
+          <InviteBanner info={inviteInfo} />
+        ) : joinCode ? (
           <JoinClassBanner info={joinInfo} />
         ) : (
           fromAI && (
@@ -107,7 +125,7 @@ export default function LoginPage({ onBack, joinCode, joinInfo }) {
               <Field label="姓名">
                 <input
                   type="text"
-                  value={form.name}
+                  value={nameValue}
                   onChange={update('name')}
                   autoComplete="name"
                   className="input"
@@ -118,12 +136,15 @@ export default function LoginPage({ onBack, joinCode, joinInfo }) {
             <Field label="Email">
               <input
                 type="email"
-                value={form.email}
+                value={emailValue}
                 onChange={update('email')}
                 autoComplete="email"
-                className="input"
+                readOnly={Boolean(lockedEmail)}
+                aria-readonly={Boolean(lockedEmail) || undefined}
+                className={`input ${lockedEmail ? 'cursor-not-allowed bg-paper-200 text-ink-100' : ''}`}
                 placeholder="you@example.com"
               />
+              {lockedEmail && <span className="mt-1 block text-xs text-slate-400">這是教練邀請你的 Email，無法修改。</span>}
             </Field>
             <Field label="密碼" hint={mode === 'register' ? '至少 8 碼' : undefined}>
               <input
@@ -160,18 +181,48 @@ export default function LoginPage({ onBack, joinCode, joinInfo }) {
             )}
 
             <button type="submit" disabled={busy} className="btn-primary w-full py-3 text-base">
-              {busy ? '處理中…' : mode === 'register' ? '建立帳號並開始' : '登入帳號'}
+              {busy ? '處理中…' : mode === 'register' ? (inviteOk ? '完成註冊並加入班級' : '建立帳號並開始') : (inviteOk ? '登入並加入班級' : '登入帳號')}
             </button>
           </form>
 
           <p className="mt-5 rounded-sm bg-paper-200 px-3 py-2.5 text-center text-xs leading-relaxed text-ink-100">
-            第一次使用請先「註冊」建立帳號。
+            {inviteOk
+              ? (inviteInfo.accountExists
+                ? '這個 Email 已經有帳號，請登入，登入後會自動加入班級。'
+                : `邀請有效至 ${formatDate(inviteInfo.expiresAt)}。設定密碼並同意條款後，會自動加入班級。`)
+              : '第一次使用請先「註冊」建立帳號。'}
             <br />
             忘記密碼？請聯絡您的教練或管理員協助重設。
           </p>
+          {!inviteCode && <InviteCodeEntry />}
         </div>
       </div>
     </main>
+  );
+}
+
+/** 沒有邀請連結、只拿到邀請碼的人：輸入後帶著碼重新載入頁面（走和點連結一樣的流程）。 */
+function InviteCodeEntry() {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState('');
+  const go = (e) => {
+    e.preventDefault();
+    const code = extractInviteCode(value);
+    if (code) window.location.assign(`${import.meta.env.BASE_URL}?invite=${encodeURIComponent(code)}`);
+  };
+  if (!open) {
+    return (
+      <p className="mt-3 text-center text-xs">
+        <button type="button" onClick={() => setOpen(true)} className="font-semibold text-ink-700 underline underline-offset-2">有教練給的邀請碼？</button>
+      </p>
+    );
+  }
+  return (
+    <form onSubmit={go} className="mt-3 flex gap-2">
+      <label className="sr-only" htmlFor="login-invite-code">邀請碼</label>
+      <input id="login-invite-code" value={value} onChange={(e) => setValue(e.target.value)} autoComplete="off" className="input min-w-0 flex-1" placeholder="輸入邀請碼" />
+      <button type="submit" className="btn-primary btn-sm">前往</button>
+    </form>
   );
 }
 
