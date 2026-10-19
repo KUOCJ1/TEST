@@ -18,7 +18,7 @@ export const POLICY_META = {
   status: 'published',
   operatorName: '榕耀人才永續顧問有限公司', // 經營者名稱（公司或單位全名）
   contactEmail: 'kuocj1@gmail.com', // 個資相關問題與權利行使的聯絡信箱
-  effectiveDate: '2026-10-18', // 實際部署日若不同，請改成部署當天
+  effectiveDate: '2026-10-19', // 實際部署日若不同，請改成部署當天
   // 暫定版：內容已依程式實際行為整理並公開，但尚待法務審閱；頁面會標示「暫定版」。
   // 法務審閱完成後把這個旗標拿掉（有實質修改時一併升 POLICY_VERSION）。
   provisional: true,
