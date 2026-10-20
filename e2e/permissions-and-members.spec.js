@@ -123,7 +123,7 @@ test('教練只能搜尋才找得到人：1 個字不搜尋、不會列出全站
   await page.reload();
   await page.getByRole('button', { name: '成員與設定' }).click();
   await expect(page.getByText('目前成員（1）')).toBeVisible({ timeout: 15000 });
-  await expect(page.getByText(target)).toBeVisible();
+  await expect(page.getByText(target).first()).toBeVisible();
   await ctx.close();
   await admin.dispose();
   await coach.dispose();

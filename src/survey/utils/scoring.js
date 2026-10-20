@@ -158,5 +158,6 @@ export function buildResult(answers = {}, config) {
     complete: isComplete(answers, config),
     assessmentId: config.ID,
     assessmentName: config.NAME,
+    ...(config.ITEM_VERSION ? { itemVersion: config.ITEM_VERSION } : {}),
   };
 }

@@ -48,10 +48,10 @@ function answerAll(value) {
 }
 
 describe('SurveyApp', () => {
-  it('渲染標題與全部 37 題', () => {
+  it('渲染標題與全部 48 題', () => {
     renderSurvey();
     expect(screen.getByText('AI 全方位職能實戰課前評測')).toBeInTheDocument();
-    expect(document.querySelectorAll('input[type="radio"]')).toHaveLength(37 * 5);
+    expect(document.querySelectorAll('input[type="radio"]')).toHaveLength(48 * 5);
   });
 
   it('未答完即送出會顯示提示且不出現結果', () => {
@@ -69,17 +69,17 @@ describe('SurveyApp', () => {
 
     const heading = await screen.findByText(/您的總得分/);
     const result = heading.closest('section');
-    // 全部原始分數填 5：31 正向題 ×5 + 6 反向題 ×1 = 161。
-    expect(within(result).getByText('161')).toBeInTheDocument();
+    // 全部原始分數填 5：42 正向題 ×5 + 6 反向題 ×1 = 216。
+    expect(within(result).getByText('216')).toBeInTheDocument();
     expect(within(result).getByText(/AI 領航核心領袖/)).toBeInTheDocument();
     expect(within(result).getByLabelText('6 大構面能力雷達圖，各構面數值詳見下方表格')).toBeInTheDocument();
   });
 
   it('進度條隨作答更新', () => {
     renderSurvey();
-    expect(screen.getByText(/0 \/ 37 題/)).toBeInTheDocument();
+    expect(screen.getByText(/0 \/ 48 題/)).toBeInTheDocument();
     fireEvent.click(document.querySelectorAll('input[name="q1"]')[2]);
-    expect(screen.getByText(/1 \/ 37 題/)).toBeInTheDocument();
+    expect(screen.getByText(/1 \/ 48 題/)).toBeInTheDocument();
   });
 
   it('作答內容會持久化到 localStorage（依使用者與題庫分開）', () => {
@@ -113,10 +113,10 @@ describe('SurveyApp', () => {
     await screen.findByText(/您的總得分/);
     expect(createSubmission).toHaveBeenCalledTimes(1);
     const payload = createSubmission.mock.calls[0][0];
-    // 全部原始分數填 4：31 正向題 ×4 + 6 反向題 ×2 = 136。
-    expect(payload.result.total).toBe(136);
+    // 全部原始分數填 4：42 正向題 ×4 + 6 反向題 ×2 = 180。
+    expect(payload.result.total).toBe(180);
     expect(payload.phase).toBe('pre');
-    expect(onSubmitted).toHaveBeenCalledWith(expect.objectContaining({ total: 136 }));
+    expect(onSubmitted).toHaveBeenCalledWith(expect.objectContaining({ total: 180 }));
   });
 
   it('低分情境落到 AI 新手村', async () => {
@@ -124,8 +124,8 @@ describe('SurveyApp', () => {
     answerAll(1);
     fireEvent.click(screen.getByRole('button', { name: /送出評測/ }));
     const result = (await screen.findByText(/您的總得分/)).closest('section');
-    // 全部原始分數填 1：31 正向題 ×1 + 6 反向題 ×5 = 61。
-    expect(within(result).getByText('61')).toBeInTheDocument();
+    // 全部原始分數填 1：42 正向題 ×1 + 6 反向題 ×5 = 72。
+    expect(within(result).getByText('72')).toBeInTheDocument();
     expect(within(result).getByText(/AI 新手村/)).toBeInTheDocument();
   });
 

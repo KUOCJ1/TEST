@@ -60,12 +60,12 @@ vi.mock('../survey/api/client', () => {
       async trackArticleClick() {},
       async assessments() {
         return [
-          { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、37 題李克特量表（含反向題）', enabled: true },
+          { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、48 題李克特量表（含反向題）', enabled: true },
         ];
       },
       async adminAssessments() {
         return [
-          { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、37 題李克特量表（含反向題）', enabled: true },
+          { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、48 題李克特量表（含反向題）', enabled: true },
         ];
       },
       async createSubmission({ result, assessmentId }) {
@@ -280,8 +280,8 @@ describe('App 流程', () => {
 
     // 送出後應該「就地」看到結果，不會被直接導頁到別的畫面。
     const inlineRegion = (await screen.findByText(/您的總得分/)).closest('section');
-    // 每題選最後一個選項（5 分）：31 正向題 ×5 + 6 反向題 ×1 = 161。
-    expect(within(inlineRegion).getByText('161')).toBeInTheDocument();
+    // 每題選最後一個選項（5 分）：42 正向題 ×5 + 6 反向題 ×1 = 216。
+    expect(within(inlineRegion).getByText('216')).toBeInTheDocument();
     expect(within(inlineRegion).getByLabelText('6 大構面能力雷達圖，各構面數值詳見下方表格')).toBeInTheDocument();
 
     // 使用者按下「查看完整分析」才離開作答頁，前往我的分析。
@@ -289,7 +289,7 @@ describe('App 流程', () => {
 
     expect(await screen.findByText('我的能力分析')).toBeInTheDocument();
     const region = (await screen.findByText(/您的總得分/)).closest('section');
-    expect(within(region).getByText('161')).toBeInTheDocument();
+    expect(within(region).getByText('216')).toBeInTheDocument();
     expect(within(region).getByLabelText('6 大構面能力雷達圖，各構面數值詳見下方表格')).toBeInTheDocument();
   });
 });

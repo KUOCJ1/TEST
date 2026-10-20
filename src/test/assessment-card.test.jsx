@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import AssessmentCard from '../survey/components/AssessmentCard';
 
-const assessment = { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、37 題' };
+const assessment = { id: 'ai-competency', name: 'AI 全方位職能實戰課前評測', description: '6 大構面、48 題' };
 
 const noop = { onStart: vi.fn(), onViewAnalysis: vi.fn(), onGoTo360: vi.fn() };
 

@@ -2,7 +2,7 @@ import { test, expect, request as pwRequest } from '@playwright/test';
 import * as compass from '../src/survey/data/assessments/leadership-compass.js';
 
 // 領導力羅盤 360° 的完整流程（端對端）：邀請 → 評分 → 人數門檻 → 彙整顯示 → 管理員還原與稽核。
-// 作答用 API 直接送（37 題的填答畫面已由 learner-golden-path 覆蓋），畫面只驗證與隱私相關的部分。
+// 作答用 API 直接送（48 題的填答畫面已由 learner-golden-path 覆蓋），畫面只驗證與隱私相關的部分。
 
 const API = 'http://localhost:3001';
 const PW = 'abcdef12';

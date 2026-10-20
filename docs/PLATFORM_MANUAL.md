@@ -325,7 +325,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 
 | 題庫 ID | 名稱 | 模型 | 構面 | 題數 | 360° | 特色 |
 |---|---|---|---|---|---|---|
-| `ai-competency` | AI 全方位職能實戰課前評測 | LEVELS | 6 大構面 | 37 題（含反向題） | 否 | 課前評測，測 AI 工具使用職能 |
+| `ai-competency` | AI 全方位職能實戰課前評測 | LEVELS | 6 大構面 | 48 題（含反向題） | 否 | 課前評測，測 AI 工具使用職能 |
 | `leadership-9d` | 經贏® 領導力九大構面行為評量（L9D） | LEVELS | 9 大構面 / 20 子能力 | 90 題（含反向題） | 是 | 行為錨定量表（BARS），三圈層分組，完整敘事報告；規格詳見 `docs/leadership-9d-spec.md` |
 | `disc` | DISC 行為風格評測 | **PROFILE_MODE** | 4 大構面（互相獨立） | 32 題（含反向題） | 是 | 風格輪廓，6 種主流組合 + default，中性用語（無優劣） |
 | `archetype` | 識己®性格原型評測 | **PROFILE_MODE** | 4 組性格光譜（二元對立） | 40 題（含反向題） | **否**（見下） | 16 種原創原型，自陳偏好量表 |

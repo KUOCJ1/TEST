@@ -5,7 +5,7 @@
  * 每個訪客的第一屏，不值得為了幾個數字把它拉進關鍵路徑。
  *
  * 但手抄數字會跟真實設定走鐘——首頁原本就寫死了 L9D 的「9 構面 / 20 子能力 /
- * 90 題」，導致 AI 職能評測（6 構面 / 37 題）的訪客看到的是錯的。因此
+ * 90 題」，導致 AI 職能評測（6 構面 / 48 題）的訪客看到的是錯的。因此
  * src/test/assessment-summary.test.js 會逐項比對這裡的數字與 getAssessment()
  * 的實際設定，對不上就讓測試失敗，不會再默默錯掉。
  *
@@ -17,9 +17,9 @@ export const ASSESSMENT_SUMMARIES = [
     name: 'AI 全方位職能實戰評測',
     tagline: '盤點個人 AI 應用能力的實戰水準',
     dimensions: 6,
-    items: 37,
+    items: 48,
     subCompetencies: 0,
-    features: ['6 大構面', '37 題李克特量表', '含反向計分題'],
+    features: ['6 大構面', '48 題李克特量表', '含反向計分題'],
   },
   {
     id: 'leadership-9d',

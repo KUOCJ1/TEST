@@ -52,13 +52,13 @@ describe('latestPerUser', () => {
     const subs = [sub('u1', 1, 1), sub('u1', 5, 2), sub('u2', 3, 3)];
     const latest = latestPerUser(subs);
     expect(latest).toHaveLength(2);
-    expect(latest.find((s) => s.userId === 'u1').result.total).toBe(161);
+    expect(latest.find((s) => s.userId === 'u1').result.total).toBe(216);
   });
 
   it('時間相同時以較後寫入者為準', () => {
     const a = sub('u1', 1, 1);
     const b = { ...sub('u1', 5, 2), createdAt: a.createdAt };
-    expect(latestPerUser([a, b])[0].result.total).toBe(161);
+    expect(latestPerUser([a, b])[0].result.total).toBe(216);
   });
 });
 
@@ -76,8 +76,8 @@ describe('aggregateStats', () => {
 
     expect(s.respondents).toBe(2);
     expect(s.totalSubmissions).toBe(3);
-    // 平均總分 =（161 + 111）/ 2 = 136
-    expect(s.avgTotal).toBe(136);
+    // 平均總分 =（216 + 144）/ 2 = 180
+    expect(s.avgTotal).toBe(180);
     expect(s.dimensionAverages).toHaveLength(6);
 
     const dist = Object.fromEntries(s.levelDistribution.map((d) => [d.id, d.count]));
@@ -152,7 +152,7 @@ describe('computeGroupGain', () => {
       selfSub('u1', 'post', resultFor(5), 3),
     ];
     const gain = computeGroupGain(subs, config);
-    // 課前應採較新一筆（3 分，非最舊 1 分）：total 3 分 * 37 題左右換算後仍可用增益方向驗證。
+    // 課前應採較新一筆（3 分，非最舊 1 分）：total 3 分 * 48 題左右換算後仍可用增益方向驗證。
     expect(gain.avgTotalDelta).toBeGreaterThan(0);
   });
 

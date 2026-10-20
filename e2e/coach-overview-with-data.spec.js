@@ -8,7 +8,7 @@ import { getAssessment } from '../src/survey/data/assessments/index.js';
 //
 // 為什麼需要這一條：Sprint 5 拆分班級工作台時漏搬了「作答進度」面板，前三條
 // 黃金路徑沒有任何一條走到有資料的班級總覽，所以沒抓到。資料用 API 直接種
-// （比從 UI 作答 37 題快、也更穩），畫面驗證才用真的瀏覽器。
+// （比從 UI 作答 48 題快、也更穩），畫面驗證才用真的瀏覽器。
 
 const API = 'http://localhost:3001';
 const ai = getAssessment('ai-competency');
