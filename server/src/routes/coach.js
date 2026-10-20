@@ -141,6 +141,21 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     return group;
   }
 
+  const sanitizeMaxMembers = (v) => {
+    const n = Number(v);
+    return Number.isInteger(n) && n >= 1 && n <= 100000 ? n : null;
+  };
+  // 網域：小寫、去掉開頭的 @、只留合法網域格式、去重、最多 10 個。
+  const sanitizeEmailDomains = (v) => {
+    const list = Array.isArray(v) ? v : String(v ?? '').split(/[\s,;、，]+/);
+    const out = [];
+    for (const raw of list) {
+      const d = String(raw ?? '').trim().toLowerCase().replace(/^@+/, '');
+      if (/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(d) && !out.includes(d)) out.push(d);
+    }
+    return out.slice(0, 10);
+  };
+
   router.post('/groups', (req, res) => {
     const { name, companyName, assessmentId, memberIds, focusDimensionIds, targetHeadcount, dimensionNotes, exclusive } = req.body ?? {};
     if (typeof name !== 'string' || !name.trim() || (companyName !== undefined && typeof companyName !== 'string')) {
@@ -190,8 +205,11 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     // 新資料在送出時就已寫死 groupId，精準對應「這一梯」；舊資料（groupId 為 null）
     // 沒有這個歸屬，退回原本「用當下成員名單反查」的方式相容，確保既有正式站資料
     // 不會從報告中消失。兩者擇一，不會重複計入。
+    const excluded = new Set(group.excludedUserIds ?? []);
     const memberSubs = db.data.submissions
       .map(normalizeSubmission)
+      // 被排除（不列入統計）的人：他的作答與別人對他的評分都不進班級報告、統計與匯出。
+      .filter((n) => !excluded.has(n.userId) && !excluded.has(n.rateeId))
       .filter((n) => (n.groupId
         ? n.groupId === group.id
         : group.memberIds.includes(n.userId) && n.assessmentId === group.assessmentId))
@@ -200,7 +218,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     const members = (group.memberIds ?? [])
       .map((id) => db.data.users.find((u) => u.id === id))
       .filter(Boolean)
-      .map((u) => ({ id: u.id, name: u.name, email: u.email, disabled: Boolean(u.disabled) }));
+      .map((u) => ({ id: u.id, name: u.name, email: u.email, disabled: Boolean(u.disabled), excluded: excluded.has(u.id) }));
     // 還在等對方接受的班級邀請（教練不能直接把已有帳號的人加進班級）。
     const invites = (db.data.groupInvites ?? [])
       .filter((i) => i.groupId === group.id && i.status === 'pending')
@@ -225,6 +243,29 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     });
   });
 
+  // 排除／恢復「不列入統計」：資料不刪除，只是不進這個班的報告、統計與匯出，也不再被催交。
+  // 用在掃碼報到「先收後審」時，名單外或誤填的人。排除記錄在班級上，即使之後把人移出班級也仍然有效。
+  router.put('/groups/:id/exclusions', (req, res) => {
+    const group = (db.data.groups ?? []).find((g) => g.id === req.params.id);
+    if (!group) return res.status(404).json({ error: '班別不存在' });
+    if (group.coachId !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: '無權限' });
+    const { userId, excluded } = req.body ?? {};
+    if (typeof userId !== 'string' || typeof excluded !== 'boolean') {
+      return res.status(400).json({ code: 'INVALID_EXCLUSION', error: '請指定成員與是否排除' });
+    }
+    const user = db.data.users.find((u) => u.id === userId);
+    const isMember = (group.memberIds ?? []).includes(userId);
+    const hasData = db.data.submissions.some((s) => s.groupId === group.id && s.userId === userId);
+    if (!user || (!isMember && !hasData)) return res.status(404).json({ error: '這個人不在這個班級裡' });
+    const set = new Set(group.excludedUserIds ?? []);
+    if (excluded) set.add(userId); else set.delete(userId);
+    group.excludedUserIds = [...set];
+    group.updatedAt = new Date().toISOString();
+    db.persist();
+    auditLog(req, excluded ? 'exclude_member' : 'restore_member', { groupId: group.id, groupName: group.name, userId, email: user.email });
+    res.json({ group: { ...group, phase: getGroupPhase(group) } });
+  });
+
   // 取消尚未被接受的班級邀請。
   router.delete('/groups/:id/invites/:inviteId', (req, res) => {
     const group = (db.data.groups ?? []).find((g) => g.id === req.params.id);
@@ -245,7 +286,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: '無權限' });
     }
-    const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes, startDate, endDate, exclusive, inviteSubject, inviteBody } = req.body ?? {};
+    const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes, startDate, endDate, exclusive, inviteSubject, inviteBody, maxMembers, joinEmailDomains } = req.body ?? {};
     if ((name !== undefined && typeof name !== 'string') || (companyName !== undefined && typeof companyName !== 'string')) {
       return res.status(400).json({ error: '名稱格式不正確' });
     }
@@ -274,6 +315,9 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       ...(assessmentId !== undefined && { assessmentId }),
       ...(exclusive !== undefined && { exclusive: exclusive === true }),
       // 邀請信的自訂主旨與內文（見 lib/inviteMail.js）：空字串＝改回預設的信。
+      // 報到限制（掃碼報到的保護，見 lib/joinCode.js）：人數上限（null＝不限）與限定 Email 網域（空陣列＝不限）。
+      ...(maxMembers !== undefined && { maxMembers: sanitizeMaxMembers(maxMembers) }),
+      ...(joinEmailDomains !== undefined && { joinEmailDomains: sanitizeEmailDomains(joinEmailDomains) }),
       ...(inviteSubject !== undefined && { inviteSubject: typeof inviteSubject === 'string' ? inviteSubject.trim().slice(0, MAX_INVITE_SUBJECT) : '' }),
       ...(inviteBody !== undefined && { inviteBody: typeof inviteBody === 'string' ? inviteBody.trim().slice(0, MAX_INVITE_BODY) : '' }),
       ...(nextMemberIds !== undefined && { memberIds: nextMemberIds }),
@@ -401,7 +445,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     const postDone = new Set(selfSubs.filter((n) => n.phase === 'post').map((n) => n.userId));
     const members = (group.memberIds ?? [])
       .map((id) => db.data.users.find((u) => u.id === id))
-      .filter((u) => u && !u.disabled);
+      .filter((u) => u && !u.disabled && !(group.excludedUserIds ?? []).includes(u.id));
 
     const notStartedPre = members.filter((m) => !preDone.has(m.id));
     // 邀請制：還沒加入的人（邀請仍有效）也要催，信裡附他專屬的邀請連結。

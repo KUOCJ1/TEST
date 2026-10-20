@@ -10,7 +10,7 @@ import {
 } from '../auth.js';
 import { asyncHandler, auditLog, hashToken, revokeUserTokens } from '../lib/helpers.js';
 import { POLICY_VERSION } from '../lib/policy.js';
-import { findGroupByJoinCode, joinGroupByCode } from '../lib/joinCode.js';
+import { findGroupByJoinCode, joinGroupByCode, joinRestriction } from '../lib/joinCode.js';
 import { createLoginGuard } from '../lib/loginGuard.js';
 import { findInviteByCode, checkInviteUsable, claimInvite, normalizeEmail, maskEmail } from '../lib/memberInvites.js';
 
@@ -112,6 +112,12 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
       return res.status(400).json({ code: 'CONSENT_REQUIRED', error: '請先閱讀並同意隱私權政策與服務條款' });
     }
     const normEmail = normalizeEmail(email);
+    // 掃碼報到的班級有限制（限定 Email 網域、人數上限）時，在建立帳號之前就擋下並說明原因。
+    if (joinCode && !invite) {
+      const target = findGroupByJoinCode(db, joinCode);
+      const blocked = target ? joinRestriction(target, { email: normEmail }) : null;
+      if (blocked) return res.status(blocked.status).json({ code: blocked.code, error: blocked.error });
+    }
     const passwordHash = await hashPassword(password);
     if (db.data.users.some((u) => u.email === normEmail)) {
       return res.status(409).json({
@@ -155,7 +161,13 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
       return res.status(403).json({ code: 'ACCOUNT_DISABLED', error: '此帳號已停用，請聯絡管理員' });
     }
     // 既有學員重新掃碼加入新的一梯（例如回鍋上下一期課程）同樣適用。
-    let joinedGroup = joinCode ? joinGroupByCode(db, user, joinCode) : null;
+    let joinedGroup = null;
+    let joinError = null;
+    if (joinCode) {
+      const target = findGroupByJoinCode(db, joinCode);
+      joinError = target ? joinRestriction(target, { email: user.email, userId: user.id }) : null;
+      if (!joinError) joinedGroup = joinGroupByCode(db, user, joinCode);
+    }
     // 帶邀請碼登入：邀請的 Email 必須就是這個帳號的 Email 才會入班。登入本身已經成功，
     // 邀請有問題時不讓整個登入失敗，而是把原因放在 inviteError 讓前端顯示。
     let inviteError = null;
@@ -168,7 +180,12 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
       } else joinedGroup = claimInvite(db, invite, user, usable.group);
     }
     setAuthCookie(res, user);
-    res.json({ user: publicUser(user), joinedGroup: joinedGroupInfo(joinedGroup), ...(inviteError && { inviteError }) });
+    res.json({
+      user: publicUser(user),
+      joinedGroup: joinedGroupInfo(joinedGroup),
+      ...(inviteError && { inviteError }),
+      ...(joinError && { joinError: { code: joinError.code, error: joinError.error } }),
+    });
   }));
 
   router.post('/auth/logout', (_req, res) => {

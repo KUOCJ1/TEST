@@ -9,18 +9,51 @@ import GroupTimelineCard from '../components/GroupTimelineCard';
 import QrCodeCard from '../components/QrCodeCard';
 import RaterInvitePanel from '../components/compass/RaterInvitePanel.jsx';
 import MemberInvitesPanel from './MemberInvitesPanel';
+import MemberScreeningPanel from './MemberScreeningPanel';
+import { parseRoster } from '../utils/roster';
 
-function parseRoster(text) {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const parts = line.split(/[,\t]/).map((p) => p.trim());
-      if (parts.length >= 2) return { name: parts[0], email: parts[1] };
-      return { name: '', email: parts[0] };
-    })
-    .filter((e) => e.email);
+/**
+ * 掃碼報到的保護（客戶專案）：人數上限與限定 Email 網域。額滿或網域不符的人，註冊時就會被擋下並說明原因，
+ * 不會建立帳號、也不會進班。邀請連結不受影響（它本來就綁定名單上的 Email）。
+ */
+function JoinSafeguards({ group, onGroupUpdated, showToast }) {
+  const [max, setMax] = useState(group.maxMembers ? String(group.maxMembers) : '');
+  const [domains, setDomains] = useState((group.joinEmailDomains ?? []).join(', '));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const save = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await api.updateGroup(group.id, { maxMembers: max.trim() === '' ? null : Number(max), joinEmailDomains: domains });
+      onGroupUpdated(updated);
+      setMax(updated.maxMembers ? String(updated.maxMembers) : '');
+      setDomains((updated.joinEmailDomains ?? []).join(', '));
+      showToast?.('已儲存報到限制');
+    } catch (e) {
+      setError(e.message || '儲存失敗');
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <div className="panel-secondary" aria-label="報到限制">
+      <h3 className="mb-1 font-semibold text-slate-700">報到限制（掃碼報到用）</h3>
+      <p className="mb-3 text-xs text-slate-400">客戶專案建議設定：只讓公司信箱的人掃碼加入，並在人數收齊後自動擋下多出來的人。留空＝不限制。</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-sm">
+          <span className="mb-1 block font-semibold text-slate-700">限定 Email 網域</span>
+          <input value={domains} onChange={(e) => setDomains(e.target.value)} className="input" placeholder="例如 weineng.com.tw（多個用逗號分隔）" />
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1 block font-semibold text-slate-700">人數上限</span>
+          <input type="number" min="1" value={max} onChange={(e) => setMax(e.target.value)} className="input" placeholder="例如 30" />
+        </label>
+      </div>
+      {error && <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>}
+      <button type="button" onClick={save} disabled={saving} className="btn-primary btn-sm mt-3">{saving ? '儲存中…' : '儲存報到限制'}</button>
+    </div>
+  );
 }
 
 // 「成員與設定」分頁內容：報到 QR、開課時間軸、評量設定（目標人數／重點構面）、
@@ -150,6 +183,8 @@ export default function GroupSettingsSection({
       <GroupTimelineCard group={group} onUpdated={onGroupUpdated} />
 
       <QrCodeCard group={group} onUpdated={onGroupUpdated} />
+
+      <JoinSafeguards group={group} onGroupUpdated={onGroupUpdated} showToast={showToast} />
 
       <div className="rounded-xl border border-brass-200 bg-brass-50/50 p-4">
         <h3 className="mb-3 flex items-center gap-1.5 font-semibold text-brass-600">
@@ -384,6 +419,14 @@ export default function GroupSettingsSection({
           {savingMembers ? '儲存中…' : '儲存成員名單'}
         </button>
       </div>
+
+      <MemberScreeningPanel
+        group={group}
+        members={members ?? []}
+        onGroupUpdated={onGroupUpdated}
+        onChanged={refreshSubmissions}
+        showToast={showToast}
+      />
 
       <div className="panel-secondary">
         <h3 className="mb-1 font-semibold text-slate-700">批量匯入名單</h3>

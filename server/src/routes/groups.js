@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getGroupPhase } from '../lib/helpers.js';
-import { joinGroupByCode } from '../lib/joinCode.js';
+import { joinGroupByCode, findGroupByJoinCode, joinRestriction } from '../lib/joinCode.js';
 
 // ── 用戶：查看自己所在的班別 ──────────────────────────────
 /** @param {{db, requireAuth}} deps */
@@ -12,6 +12,9 @@ export function createGroupsRouter({ db, requireAuth }) {
   // 已經有 session 的情況。
   router.post('/groups/join', requireAuth, (req, res) => {
     const { joinCode } = req.body ?? {};
+    const target = findGroupByJoinCode(db, joinCode);
+    const blocked = target ? joinRestriction(target, { email: req.user.email, userId: req.user.id }) : null;
+    if (blocked) return res.status(blocked.status).json({ code: blocked.code, error: blocked.error });
     const group = joinGroupByCode(db, req.user, joinCode);
     if (!group) return res.status(404).json({ code: 'INVALID_CODE', error: '報到連結無效或已失效，請向講師確認' });
     res.json({

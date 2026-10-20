@@ -177,7 +177,7 @@ describe('教練成員搜尋（取代全站名冊）', () => {
     assert.equal((await stu.post(`/api/groups/invites/${mine.body.invites[0].id}/accept`)).status, 200);
     const detail = await coach.get(`/api/coach/groups/${g.body.group.id}`);
     assert.deepEqual(detail.body.members.map((m) => m.id), [ids.stu]);
-    assert.deepEqual(Object.keys(detail.body.members[0]).sort(), ['disabled', 'email', 'id', 'name']);
+    assert.deepEqual(Object.keys(detail.body.members[0]).sort(), ['disabled', 'email', 'excluded', 'id', 'name']);
     assert.equal((await coach2.get(`/api/coach/groups/${g.body.group.id}`)).status, 403);
   });
 });

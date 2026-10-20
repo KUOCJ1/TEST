@@ -103,12 +103,15 @@ function AppRoutes() {
         if (!active) return;
         navigate(`/survey/${joinedGroup.assessmentId}`, { replace: true });
       })
-      .catch(() => { /* 代碼無效或已撤銷：忽略，使用者仍可正常使用系統 */ })
+      .catch((e) => {
+        // 代碼無效或已撤銷：忽略，使用者仍可正常使用系統；但「限定網域／名額已滿」要告訴使用者原因。
+        if (e?.code === 'JOIN_EMAIL_NOT_ALLOWED' || e?.code === 'CLASS_FULL') showToast(e.message, 'error');
+      })
       .finally(() => { if (active) setJoinResolved(true); });
     return () => {
       active = false;
     };
-  }, [user, joinCode, navigate]);
+  }, [user, joinCode, navigate, showToast]);
 
   // 未登入時先查一次班級資訊，用於 LoginPage 上方的橫幅。
   useEffect(() => {

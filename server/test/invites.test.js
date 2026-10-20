@@ -272,3 +272,86 @@ describe('專屬班級（客戶專案）：成員只看得到本班的評量', (
     assert.ok((await names(agents.ratee)).includes('disc'));
   });
 });
+
+describe('掃碼報到的保護：限定 Email 網域、人數上限、排除不列入統計', () => {
+  const reg = (app, body) => request(app).post('/api/auth/register').send({ acceptPolicy: true, password: 'abcdef12', ...body });
+
+  test('限定網域：網域不符在註冊時就被擋（不建立帳號）；符合的才進班；公開頁面先說明', async () => {
+    const { agents, app, db, group } = await setup();
+    // 注意：PUT 會用新物件取代陣列裡的班級，所以報到代碼要在第一次 PUT 之前設定。
+    group.joinCode = 'QRCODE12';
+    const put = await agents.coach.put(`/api/coach/groups/${group.id}`).send({ joinEmailDomains: '@Weineng.com.tw, bad domain, weineng.com.tw' });
+    assert.deepEqual(put.body.group.joinEmailDomains, ['weineng.com.tw']);
+    const info = await request(app).get('/api/public/join/QRCODE12');
+    assert.deepEqual(info.body.emailDomains, ['weineng.com.tw']);
+    const bad = await reg(app, { name: '外人', email: 'x@gmail.com', joinCode: 'QRCODE12' });
+    assert.equal(bad.status, 403);
+    assert.equal(bad.body.code, 'JOIN_EMAIL_NOT_ALLOWED');
+    assert.match(bad.body.error, /@weineng\.com\.tw/);
+    assert.equal(db.data.users.some((u) => u.email === 'x@gmail.com'), false, '沒有建立帳號');
+    const good = await reg(app, { name: '員工', email: 'a@weineng.com.tw', joinCode: 'QRCODE12' });
+    assert.equal(good.status, 201);
+    assert.ok(good.body.joinedGroup);
+  });
+
+  test('人數上限：額滿後新的人不能報到，已在班上的不受影響；登入與已登入報到也一樣', async (t) => {
+    // setup 本身已經登入 7 個帳號，加上這個測試的請求會超過每 IP 每 5 分鐘 10 次的登入／註冊額度。
+    process.env.AUTH_RATE_LIMIT = '1000';
+    t.after(() => { delete process.env.AUTH_RATE_LIMIT; });
+    const { agents, app, db, group, users } = await setup();
+    group.joinCode = 'QRCODE12';
+    group.memberIds = [];
+    await agents.coach.put(`/api/coach/groups/${group.id}`).send({ maxMembers: 1 });
+    assert.equal((await reg(app, { name: '甲', email: 'a@b.co', joinCode: 'QRCODE12' })).status, 201);
+    const full = await reg(app, { name: '乙', email: 'b2@b.co', joinCode: 'QRCODE12' });
+    assert.equal(full.status, 409);
+    assert.equal(full.body.code, 'CLASS_FULL');
+    assert.equal((await request(app).get('/api/public/join/QRCODE12')).body.full, true);
+    // 已登入的另一個人掃碼：被擋；原本的成員再掃不受影響。
+    const other = request.agent(app);
+    await other.post('/api/auth/login').send({ email: users.coach.email, password: 'abcdef12' });
+    assert.equal((await other.post('/api/groups/join').send({ joinCode: 'QRCODE12' })).body.code, 'CLASS_FULL');
+    const member = request.agent(app);
+    await member.post('/api/auth/login').send({ email: 'a@b.co', password: 'abcdef12' });
+    assert.equal((await member.post('/api/groups/join').send({ joinCode: 'QRCODE12' })).status, 200);
+    // 已有帳號的人用登入帶碼：登入成功但不入班，並回報原因。
+    db.data.users.push({ id: randomUUID(), name: '丙', email: 'c3@b.co', role: 'user', passwordHash: await hashPassword('abcdef12') });
+    const login = await request(app).post('/api/auth/login').send({ email: 'c3@b.co', password: 'abcdef12', joinCode: 'QRCODE12' });
+    assert.equal(login.status, 200);
+    assert.equal(login.body.joinedGroup, null);
+    assert.equal(login.body.joinError.code, 'CLASS_FULL');
+    assert.equal((await agents.coach.put(`/api/coach/groups/${group.id}`).send({ maxMembers: 0 })).body.group.maxMembers, null, '無效值＝不限');
+  });
+
+  test('排除不列入統計：作答從班級報告消失、成員標記、不再被催交；恢復後回來；移出班級後仍然有效', async (t) => {
+    t.mock.method(console, 'log', () => {});
+    const { agents, db, group, users } = await setup();
+    const a = users.ratee; const b = users.b;
+    const sub = (u) => ({ id: randomUUID(), userId: u.id, userName: u.name, rateeId: u.id, raterType: 'self', assessmentId: ID, groupId: group.id, phase: 'pre', createdAt: new Date().toISOString(), result: compassPayload('self').result });
+    db.data.submissions.push(sub(a), sub(b));
+    const count = async () => (await agents.coach.get(`/api/coach/groups/${group.id}`)).body.submissions.length;
+    assert.equal(await count(), 2);
+    const ex = await agents.coach.put(`/api/coach/groups/${group.id}/exclusions`).send({ userId: b.id, excluded: true });
+    assert.deepEqual(ex.body.group.excludedUserIds, [b.id]);
+    assert.equal(await count(), 1);
+    const d = await agents.coach.get(`/api/coach/groups/${group.id}`);
+    assert.equal(d.body.members.find((m) => m.id === b.id).excluded, true);
+    assert.equal(d.body.members.find((m) => m.id === a.id).excluded, false);
+    // 移出班級後排除仍然有效（作答仍歸在這個班，但不列入統計）。
+    await agents.admin.put(`/api/coach/groups/${group.id}`).send({ memberIds: group.memberIds.filter((id) => id !== b.id) });
+    assert.equal(await count(), 1);
+    await agents.coach.put(`/api/coach/groups/${group.id}/exclusions`).send({ userId: b.id, excluded: false });
+    assert.equal(await count(), 2);
+    assert.ok(db.data.auditLog.some((e) => e.action === 'exclude_member'));
+    assert.ok(db.data.auditLog.some((e) => e.action === 'restore_member'));
+  });
+
+  test('排除：型別錯誤 400、不認識的人 404、別班教練 403', async (t) => {
+    t.mock.method(console, 'log', () => {});
+    const { agents, group, users } = await setup();
+    const url = `/api/coach/groups/${group.id}/exclusions`;
+    assert.equal((await agents.coach.put(url).send({ userId: users.b.id, excluded: 'yes' })).status, 400);
+    assert.equal((await agents.coach.put(url).send({ userId: users.outsider.id, excluded: true })).status, 404);
+    assert.equal((await agents.coach2.put(url).send({ userId: users.b.id, excluded: true })).status, 403);
+  });
+});

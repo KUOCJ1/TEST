@@ -33,6 +33,30 @@ export function findGroupByJoinCode(db, raw) {
 }
 
 /**
+ * 報到限制（客戶專案的保護）：班級可以設定「限定 Email 網域」與「人數上限」。
+ * 已經是成員的人不受影響；沒有限制時一律放行。回傳 null＝可以加入，否則是 { status, code, error }。
+ * 只管「掃碼／報到代碼」這條路：邀請連結本來就綁定名單上的 Email，不經過這裡。
+ */
+export function joinRestriction(group, { email, userId } = {}) {
+  if (userId && (group.memberIds ?? []).includes(userId)) return null;
+  const domains = group.joinEmailDomains ?? [];
+  if (domains.length > 0) {
+    const domain = String(email ?? '').split('@')[1]?.trim().toLowerCase() ?? '';
+    if (!domains.includes(domain)) {
+      return {
+        status: 403,
+        code: 'JOIN_EMAIL_NOT_ALLOWED',
+        error: `這個班級限定使用 ${domains.map((d) => `@${d}`).join('、')} 的 Email 報到。請改用公司信箱，或向承辦／講師確認。`,
+      };
+    }
+  }
+  if (group.maxMembers && (group.memberIds ?? []).length >= group.maxMembers) {
+    return { status: 409, code: 'CLASS_FULL', error: '這個班級的名額已滿，請向承辦或講師確認。' };
+  }
+  return null;
+}
+
+/**
  * 用代碼把使用者加入班級（冪等——已經是成員就不重複加入）。
  * 代碼無效時回傳 null；成功（含「本來就已經是成員」）回傳該班別物件，
  * 供呼叫端知道要把使用者導去哪個評量。
@@ -40,6 +64,8 @@ export function findGroupByJoinCode(db, raw) {
 export function joinGroupByCode(db, user, raw) {
   const group = findGroupByJoinCode(db, raw);
   if (!group) return null;
+  // 呼叫端應該先用 joinRestriction 擋下並回報原因；這裡是最後一道防線，不符合就不加入。
+  if (joinRestriction(group, { email: user.email, userId: user.id })) return null;
   if (!group.memberIds.includes(user.id)) {
     group.memberIds.push(user.id);
     group.updatedAt = new Date().toISOString();

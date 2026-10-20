@@ -27,6 +27,18 @@ export default function JoinClassBanner({ info }) {
         {info.companyName ? `．${info.companyName}` : ''}
         <br />
         完成登入／註冊後將自動加入，並開始「{info.assessmentName}」評測。
+        {info.emailDomains?.length > 0 && (
+          <>
+            <br />
+            <strong>請使用 {info.emailDomains.map((d) => `@${d}`).join('、')} 的 Email 註冊。</strong>
+          </>
+        )}
+        {info.full && (
+          <>
+            <br />
+            <strong>這個班級的名額已滿，請向承辦或講師確認。</strong>
+          </>
+        )}
       </div>
     </div>
   );

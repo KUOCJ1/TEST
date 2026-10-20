@@ -35,6 +35,9 @@ export function createPublicRouter({ db }) {
       assessmentId: group.assessmentId,
       assessmentName: assessment?.name ?? group.assessmentId,
       phase: getGroupPhase(group),
+      // 報到限制：讓註冊頁事先說明「要用哪種 Email」與「名額是否已滿」，不必等註冊失敗才知道。
+      emailDomains: group.joinEmailDomains ?? [],
+      full: Boolean(group.maxMembers && (group.memberIds ?? []).length >= group.maxMembers),
     });
   });
 

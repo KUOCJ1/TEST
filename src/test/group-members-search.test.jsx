@@ -8,7 +8,7 @@ import { ToastProvider } from '../survey/components/Toast';
 
 const { coachUserSearch, updateGroup } = vi.hoisted(() => ({ coachUserSearch: vi.fn(), updateGroup: vi.fn() }));
 vi.mock('../survey/api/client', () => ({
-  api: { coachUserSearch, updateGroup, importRoster: vi.fn(), updateGroupDates: vi.fn(), publishGroup: vi.fn(), unpublishGroup: vi.fn() },
+  api: { coachUserSearch, updateGroup, setGroupExclusion: vi.fn(), importRoster: vi.fn(), updateGroupDates: vi.fn(), publishGroup: vi.fn(), unpublishGroup: vi.fn() },
 }));
 
 const members = [
@@ -38,8 +38,8 @@ describe('成員管理：目前成員＋搜尋加入', () => {
     renderSection();
     const list = screen.getByText('目前成員（2）').parentElement.querySelector('ul');
     expect(within(list).getAllByRole('listitem')).toHaveLength(2);
-    expect(screen.getByText('林小美')).toBeInTheDocument();
-    expect(screen.getByText('已停用')).toBeInTheDocument();
+    expect(within(list).getByText('林小美')).toBeInTheDocument();
+    expect(within(list).getByText('已停用')).toBeInTheDocument();
     expect(screen.getByText(/不會列出全部用戶/)).toBeInTheDocument();
     expect(coachUserSearch).not.toHaveBeenCalled();
   });

@@ -132,6 +132,9 @@ export const api = {
   // 沒給 inviteIds 就寄這個班所有有效、尚未加入的邀請。SMTP 沒設定時後端回 503（code: CONFIG_ERROR）。
   sendMemberInvites: (groupId, inviteIds) =>
     request(`/coach/groups/${groupId}/member-invites/send`, { method: 'POST', body: inviteIds ? { inviteIds } : {} }),
+  // 排除／恢復「不列入統計」（掃碼報到先收後審用）：資料不刪除，只是不進班級報告、統計與匯出。
+  setGroupExclusion: (id, userId, excluded) =>
+    request(`/coach/groups/${id}/exclusions`, { method: 'PUT', body: { userId, excluded } }).then((d) => d.group),
   publishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'POST' }).then((d) => d.group),
   unpublishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'DELETE' }).then((d) => d.group),
   // 回傳 { phase, sent, failed:[email], group }；群組帶新的 lastReminderSentAt（冷卻用）。

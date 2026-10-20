@@ -269,7 +269,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
               <GroupOverviewSection
                 key={`overview-${groupDetail.group.id}`}
                 group={groupDetail.group}
-                members={groupDetail.members}
+                members={groupDetail.members.filter((m) => !m.excluded)}
                 groupStats={groupStats}
                 memberRows={memberRows}
                 strongestWeakest={strongestWeakest}
