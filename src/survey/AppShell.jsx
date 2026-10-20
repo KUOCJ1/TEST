@@ -253,6 +253,14 @@ function AppShellInner() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
   const [chatContext, setChatContext] = useState(null);
+  // 專屬班級（客戶專案）的學員只該看到本班的評量：導覽也一併簡化，沒有任何可做 360° 的評量時
+  // 不顯示「360° 評測」分頁。取不到班級資料時維持完整導覽（附加資訊，失敗不影響使用）。
+  const [navGroups, setNavGroups] = useState([]);
+  useEffect(() => {
+    let active = true;
+    Promise.resolve(api.myGroups?.()).then((g) => active && setNavGroups(Array.isArray(g) ? g : [])).catch(() => {});
+    return () => { active = false; };
+  }, []);
   // 在哪個作答頁送出過（Sprint 8 驗收條件 8.6）：作答中隱藏 AI 小幫手浮動按鈕（它會
   // 蓋住選項，也打斷專注），送出、結果就地顯示後才讓它出現。記路徑而不是布林值，
   // 換到別的作答頁自然就回到「作答中」狀態，不必另外重設。
@@ -263,10 +271,13 @@ function AppShellInner() {
   const handleResultLoad = useCallback((result) => setChatContext({ result }), []);
 
   // shortLabel 供手機底部導覽使用（寬度有限，取最短可辨識的字樣）。
+  const exclusiveGroups = navGroups.filter((g) => g.exclusive);
+  const hide360 = !isCoach && exclusiveGroups.length > 0
+    && !exclusiveGroups.some((g) => getAssessment(g.assessmentId)?.SUPPORTS_360);
   const tabs = [
     { id: 'home', label: '我的評量', shortLabel: '評量', path: '/home', Icon: ClipboardList, hint: '選擇評量並作答' },
     { id: 'analysis', label: '我的分析', shortLabel: '分析', path: '/analysis', Icon: ChartColumn, hint: '查看結果與歷次趨勢' },
-    { id: '360', label: '360° 評測', shortLabel: '360°', path: '/360', Icon: UsersRound, hint: '請同班的人評分，並看自評與他評的落差' },
+    ...(hide360 ? [] : [{ id: '360', label: '360° 評測', shortLabel: '360°', path: '/360', Icon: UsersRound, hint: '請同班的人評分，並看自評與他評的落差' }]),
     { id: 'learning', label: '我的學習', shortLabel: '學習', path: '/learning', Icon: BookOpen, hint: '延伸閱讀、發展目標與學習清單' },
     ...(isCoach && !isAdmin ? [{ id: 'coach', label: '教練後台', shortLabel: '教練', path: '/coach', Icon: GraduationCap }] : []),
     ...(isAdmin ? [

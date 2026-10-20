@@ -133,7 +133,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
   }
 
   router.post('/groups', (req, res) => {
-    const { name, companyName, assessmentId, memberIds, focusDimensionIds, targetHeadcount, dimensionNotes } = req.body ?? {};
+    const { name, companyName, assessmentId, memberIds, focusDimensionIds, targetHeadcount, dimensionNotes, exclusive } = req.body ?? {};
     if (typeof name !== 'string' || !name.trim() || (companyName !== undefined && typeof companyName !== 'string')) {
       return res.status(400).json({ error: '請輸入班別名稱' });
     }
@@ -148,6 +148,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       coachId: req.user.id,
       coachName: req.user.name,
       memberIds: [],
+      exclusive: exclusive === true,
       focusDimensionIds: sanitizeFocusDimensionIds(focusDimensionIds),
       targetHeadcount: sanitizeTargetHeadcount(targetHeadcount),
       dimensionNotes: sanitizeDimensionNotes(dimensionNotes),
@@ -229,7 +230,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: '無權限' });
     }
-    const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes, startDate, endDate } = req.body ?? {};
+    const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes, startDate, endDate, exclusive } = req.body ?? {};
     if ((name !== undefined && typeof name !== 'string') || (companyName !== undefined && typeof companyName !== 'string')) {
       return res.status(400).json({ error: '名稱格式不正確' });
     }
@@ -256,6 +257,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       ...(name !== undefined && { name: name.trim() }),
       ...(companyName !== undefined && { companyName: companyName.trim() }),
       ...(assessmentId !== undefined && { assessmentId }),
+      ...(exclusive !== undefined && { exclusive: exclusive === true }),
       ...(nextMemberIds !== undefined && { memberIds: nextMemberIds }),
       ...(groupComment !== undefined && { groupComment: String(groupComment).slice(0, 10000) }),
       ...(groupTips !== undefined && {

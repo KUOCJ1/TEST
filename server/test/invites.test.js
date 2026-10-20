@@ -254,3 +254,21 @@ describe('其他修補', () => {
     assert.equal(create.status, 400);
   });
 });
+
+describe('專屬班級（客戶專案）：成員只看得到本班的評量', () => {
+  test('專屬班級的學員評量清單只剩本班評量；非專屬班與教練不受影響', async () => {
+    const { agents, users, db, group } = await setup();
+    db.data.assessments.find((a) => a.id === 'disc').enabled = true;
+    group.assessmentId = 'ai-competency';
+    const names = async (agent) => (await agent.get('/api/assessments')).body.assessments.map((a) => a.id);
+    assert.ok((await names(agents.ratee)).includes('disc'), '非專屬班看得到全部啟用的評量');
+    const put = await agents.coach.put(`/api/coach/groups/${group.id}`).send({ exclusive: true });
+    assert.equal(put.body.group.exclusive, true);
+    assert.deepEqual(await names(agents.ratee), ['ai-competency']);
+    assert.ok((await names(agents.coach)).length > 1, '教練不受限');
+    assert.ok((await names(agents.admin)).length > 1, '管理員不受限');
+    assert.ok((await names(agents.outsider)).includes('disc'), '不在專屬班的人不受影響');
+    await agents.coach.put(`/api/coach/groups/${group.id}`).send({ exclusive: false });
+    assert.ok((await names(agents.ratee)).includes('disc'));
+  });
+});

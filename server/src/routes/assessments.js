@@ -6,8 +6,17 @@ export function createAssessmentsRouter({ db, requireAuth }) {
   const router = Router();
 
   // ── 評量清單 ─────────────────────────────────────────────
-  router.get('/assessments', requireAuth, (_req, res) => {
-    const list = (db.data.assessments ?? []).filter((a) => a.enabled);
+  router.get('/assessments', requireAuth, (req, res) => {
+    let list = (db.data.assessments ?? []).filter((a) => a.enabled);
+    // 專屬班級（客戶專案）：屬於任何「專屬班級」的學員只看得到那些班指定的評量，
+    // 首頁不會出現其他評量。只影響一般學員；教練與管理員不受限。
+    if (req.user.role === 'user') {
+      const exclusive = (db.data.groups ?? []).filter((g) => g.exclusive && (g.memberIds ?? []).includes(req.user.id));
+      if (exclusive.length > 0) {
+        const allowed = new Set(exclusive.map((g) => g.assessmentId ?? 'ai-competency'));
+        list = list.filter((a) => allowed.has(a.id));
+      }
+    }
     res.json({ assessments: list });
   });
 

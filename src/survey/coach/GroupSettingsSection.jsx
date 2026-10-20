@@ -162,6 +162,27 @@ export default function GroupSettingsSection({
           </p>
         )}
 
+        <label className="mb-3 flex items-start gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={Boolean(group.exclusive)}
+            onChange={async (e) => {
+              try {
+                const updated = await api.updateGroup(group.id, { exclusive: e.target.checked });
+                onGroupUpdated(updated);
+                showToast(e.target.checked ? '已設為專屬班級' : '已取消專屬班級');
+              } catch (err) {
+                setSettingsError(err.message || '儲存失敗');
+              }
+            }}
+            className="mt-1 h-4 w-4 shrink-0 accent-ink-700"
+          />
+          <span>
+            <strong className="font-semibold text-slate-700">專屬班級</strong>（客戶專案適用）：成員的「選擇評量」只會出現本班指定的評量，
+            不會看到其他評量，導覽也會簡化。
+          </span>
+        </label>
+
         <div className="mb-3 flex flex-wrap items-center gap-3">
           <label className="text-sm font-medium text-slate-600">目標人數</label>
           <input type="number" min="0" value={targetHeadcount} onChange={(e) => setTargetHeadcount(e.target.value)}
