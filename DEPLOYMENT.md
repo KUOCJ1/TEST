@@ -57,7 +57,7 @@ nano server/.env
 ```
 `.env` 至少要設定：`JWT_SECRET`（剛產生的隨機字串）、`ADMIN_EMAIL`、`ADMIN_PASSWORD`（請用強密碼）、`NODE_ENV=production`。正式環境在「資料庫裡還沒有管理員」時若沒設定 `ADMIN_PASSWORD`（或仍是預設值），服務會拒絕啟動——這同時能擋住資料庫路徑設錯、以空庫啟動的情況。
 
-**選填：寄信服務（SMTP）**——設定後才會啟用「外部依賴異常時寄告警信給 `ADMIN_EMAIL`」與教練的「寄送提醒信」；
+**選填：寄信服務（SMTP）**（本站網域已在 Resend 驗證：`SMTP_HOST=smtp.resend.com`、`SMTP_PORT=465`、`SMTP_USER=resend`、`SMTP_PASS=`本平台專用的 Resend API 金鑰、`SMTP_FROM=榕耀評測平台 <support@rong-rise.com>`；金鑰只放在 VPS 的 `.env`）——設定後才會啟用「外部依賴異常時寄告警信給 `ADMIN_EMAIL`」與教練的「寄送提醒信」；
 沒設定時這兩項自動停用，其他功能不受影響。在 `.env` 填入：
 ```
 SMTP_HOST=smtp.gmail.com        # 或 SendGrid／Mailgun 等任何 SMTP relay
