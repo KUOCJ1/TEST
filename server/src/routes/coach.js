@@ -16,7 +16,7 @@ import { splitNewMembers } from '../lib/invites.js';
 import {
   newMemberInvite, inviteForCoach, inviteState, inviteExpiry, generateInviteCode, inviteLink,
 } from '../lib/memberInvites.js';
-import { buildInviteMail } from '../lib/inviteMail.js';
+import { buildInviteMail, MAX_INVITE_SUBJECT, MAX_INVITE_BODY } from '../lib/inviteMail.js';
 import { sharedGoalForCoach } from './goals.js';
 import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from '../lib/mailer.js';
 
@@ -120,10 +120,18 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
   const isEnabledAssessment = (id) => (db.data.assessments ?? []).some((a) => a.id === id && a.enabled);
 
   // 邀請制入班（Sprint 19）：這個班的邀請（不含已撤銷），含連結，給教練／管理員的畫面使用。
-  const listMemberInvites = (groupId) => (db.data.memberInvites ?? [])
-    .filter((i) => i.groupId === groupId && i.status !== 'revoked')
-    .map((i) => inviteForCoach(i, appBaseUrl()))
-    .sort((a, b) => a.email.localeCompare(b.email));
+  // 每筆附上「寄給這個人的信」（主旨與內文，含他專屬的連結）：SMTP 還沒設定時，教練可以複製或匯出
+  // 後自己寄（郵件合併、LINE）；設定好之後系統寄出的就是同一份內容。
+  const listMemberInvites = (groupId) => {
+    const group = (db.data.groups ?? []).find((g) => g.id === groupId);
+    return (db.data.memberInvites ?? [])
+      .filter((i) => i.groupId === groupId && i.status !== 'revoked')
+      .map((i) => {
+        const mail = group ? buildInviteMail({ group, invite: i }) : { subject: '', text: '' };
+        return { ...inviteForCoach(i, appBaseUrl()), mailSubject: mail.subject, mailText: mail.text };
+      })
+      .sort((a, b) => a.email.localeCompare(b.email));
+  };
 
   // 取得有權管理的班級與其中一筆邀請（找不到／無權限時直接回應並回傳 null）。
   function manageInvite(req, res) {
@@ -237,7 +245,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: '無權限' });
     }
-    const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes, startDate, endDate, exclusive } = req.body ?? {};
+    const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes, startDate, endDate, exclusive, inviteSubject, inviteBody } = req.body ?? {};
     if ((name !== undefined && typeof name !== 'string') || (companyName !== undefined && typeof companyName !== 'string')) {
       return res.status(400).json({ error: '名稱格式不正確' });
     }
@@ -265,6 +273,9 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       ...(companyName !== undefined && { companyName: companyName.trim() }),
       ...(assessmentId !== undefined && { assessmentId }),
       ...(exclusive !== undefined && { exclusive: exclusive === true }),
+      // 邀請信的自訂主旨與內文（見 lib/inviteMail.js）：空字串＝改回預設的信。
+      ...(inviteSubject !== undefined && { inviteSubject: typeof inviteSubject === 'string' ? inviteSubject.trim().slice(0, MAX_INVITE_SUBJECT) : '' }),
+      ...(inviteBody !== undefined && { inviteBody: typeof inviteBody === 'string' ? inviteBody.trim().slice(0, MAX_INVITE_BODY) : '' }),
       ...(nextMemberIds !== undefined && { memberIds: nextMemberIds }),
       ...(groupComment !== undefined && { groupComment: String(groupComment).slice(0, 10000) }),
       ...(groupTips !== undefined && {

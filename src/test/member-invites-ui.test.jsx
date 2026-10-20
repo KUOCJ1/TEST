@@ -5,9 +5,10 @@ import RedeemInviteBox from '../survey/components/RedeemInviteBox.jsx';
 import InviteBanner from '../survey/components/InviteBanner.jsx';
 import LoginPage from '../survey/auth/LoginPage.jsx';
 import { extractInviteCode } from '../survey/utils/inviteCode';
+import { INVITE_TEMPLATES } from '../survey/data/invite-mail-templates';
 
 const m = vi.hoisted(() => ({
-  regenerateMemberInvite: vi.fn(), revokeMemberInvite: vi.fn(), sendMemberInvites: vi.fn(), redeemInvite: vi.fn(),
+  regenerateMemberInvite: vi.fn(), revokeMemberInvite: vi.fn(), sendMemberInvites: vi.fn(), redeemInvite: vi.fn(), updateGroup: vi.fn(),
   login: vi.fn(), register: vi.fn(),
 }));
 vi.mock('../survey/api/client', () => ({ api: m }));
@@ -23,8 +24,8 @@ beforeEach(() => {
 
 const FUTURE = new Date(Date.now() + 5 * 864e5).toISOString();
 const invites = [
-  { id: 'a', email: 'ming@x.co', name: '小明', code: 'AAAAAAAAAA', link: 'https://s/?invite=AAAAAAAAAA', state: 'invited', expiresAt: FUTURE, sendCount: 0 },
-  { id: 'b', email: 'old@x.co', name: '', code: 'BBBBBBBBBB', link: 'https://s/?invite=BBBBBBBBBB', state: 'expired', expiresAt: '2020-01-01T00:00:00Z', sendCount: 1 },
+  { id: 'a', email: 'ming@x.co', name: '小明', code: 'AAAAAAAAAA', link: 'https://s/?invite=AAAAAAAAAA', state: 'invited', expiresAt: FUTURE, sendCount: 0, mailSubject: '主旨甲', mailText: '小明 您好：請點 https://s/?invite=AAAAAAAAAA' },
+  { id: 'b', email: 'old@x.co', name: '', code: 'BBBBBBBBBB', link: 'https://s/?invite=BBBBBBBBBB', state: 'expired', expiresAt: '2020-01-01T00:00:00Z', sendCount: 1, mailSubject: '主旨乙', mailText: '內文乙' },
   { id: 'c', email: 'done@x.co', name: '已加入', code: 'CCCCCCCCCC', link: 'https://s/?invite=CCCCCCCCCC', state: 'joined', expiresAt: FUTURE, sendCount: 1 },
 ];
 const group = { id: 'g1', name: 'AI 實戰班' };
@@ -57,8 +58,10 @@ describe('學員邀請管理', () => {
     fireEvent.click(screen.getByRole('button', { name: /匯出連結清單/ }));
     const [rows, filename] = buildCsvBlob.mock.calls[0];
     expect(filename).toBe('AI 實戰班-邀請連結.csv');
-    expect(rows[0]).toEqual(['姓名', 'Email', '邀請連結', '邀請碼', '狀態', '有效至']);
+    expect(rows[0]).toEqual(['姓名', 'Email', '邀請連結', '邀請碼', '狀態', '有效至', '主旨', '信件內容']);
     expect(rows.slice(1).map((r) => r[1])).toEqual(['ming@x.co', 'old@x.co']);
+    // 郵件合併用：最後兩欄是寄給這個人的完整信件。
+    expect(rows[1].slice(6)).toEqual(['主旨甲', '小明 您好：請點 https://s/?invite=AAAAAAAAAA']);
   });
 
   it('重新產生、撤銷、寄信都會呼叫 API 並要求父層重新載入', async () => {
@@ -85,6 +88,52 @@ describe('學員邀請管理', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('無權限');
     rerender(<MemberInvitesPanel group={group} invites={[]} mailConfigured showToast={vi.fn()} />);
     expect(screen.getByText(/批量匯入名單/)).toBeInTheDocument();
+  });
+});
+
+describe('邀請信內容（客戶承辦署名）', () => {
+  const grp = { id: 'g1', name: 'AI 實戰班', inviteSubject: '', inviteBody: '' };
+
+  it('複製整封信（主旨＋內文）', async () => {
+    render(<MemberInvitesPanel group={grp} invites={invites} mailConfigured={false} showToast={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: '複製寄給 ming@x.co 的整封信' }));
+    await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledWith('主旨甲\n\n小明 您好：請點 https://s/?invite=AAAAAAAAAA'));
+  });
+
+  it('套用承辦窗口範本後可儲存；【】沒填會提醒；儲存呼叫 updateGroup 並回報更新後的班級', async () => {
+    m.updateGroup.mockResolvedValue({ ...grp, inviteBody: 'x' });
+    const onGroupUpdated = vi.fn();
+    render(<MemberInvitesPanel group={grp} invites={invites} mailConfigured onGroupUpdated={onGroupUpdated} showToast={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /邀請信內容（預設）/ }));
+    expect(screen.getByRole('button', { name: '儲存邀請信內容' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /套用範本：客戶承辦窗口寄出/ }));
+    expect(screen.getByLabelText('內文').value).toContain('{{連結}}');
+    expect(screen.getByLabelText('內文').value).toContain('承辦人姓名');
+    expect(screen.getByText(/內文還有【…】的地方沒改/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '儲存邀請信內容' }));
+    await waitFor(() => expect(m.updateGroup).toHaveBeenCalledWith('g1', expect.objectContaining({ inviteBody: expect.stringContaining('{{連結}}'), inviteSubject: expect.stringContaining('{{公司}}') })));
+    await waitFor(() => expect(onGroupUpdated).toHaveBeenCalled());
+  });
+
+  it('已自訂時標示；改回預設會清空；儲存後才顯示預覽', async () => {
+    m.updateGroup.mockResolvedValue({ ...grp });
+    render(<MemberInvitesPanel group={{ ...grp, inviteBody: '自訂內文', inviteSubject: '自訂主旨' }} invites={invites} mailConfigured showToast={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /邀請信內容（已自訂）/ }));
+    expect(screen.getByText(/預覽：寄給 小明 的信/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '改回預設' }));
+    expect(screen.getByLabelText('內文')).toHaveValue('');
+    fireEvent.click(screen.getByRole('button', { name: '儲存邀請信內容' }));
+    await waitFor(() => expect(m.updateGroup).toHaveBeenCalledWith('g1', { inviteSubject: '', inviteBody: '' }));
+  });
+
+  it('範本的欄位都是系統支援的（不會寄出沒換掉的 {{…}}）', () => {
+    const supported = new Set(['姓名', '班級', '公司', '講師', '連結', '邀請碼', '期限']);
+    for (const t of INVITE_TEMPLATES) {
+      for (const text of [t.subject, t.body]) {
+        for (const [, key] of text.matchAll(/\{\{\s*([^{}\s]+)\s*\}\}/g)) expect(supported.has(key), `${t.id}: ${key}`).toBe(true);
+      }
+      expect(t.body).toContain('{{連結}}');
+    }
   });
 });
 

@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { buildCsvBlob } from '../utils/csvExport';
 import InfoTip from '../components/InfoTip';
 import { formatDate } from '../utils/format';
+import { INVITE_TEMPLATES } from '../data/invite-mail-templates';
 
 const STATE_LABEL = {
   invited: { text: '已邀請，等對方註冊', cls: 'bg-blue-50 text-blue-700' },
@@ -16,11 +17,83 @@ async function copyText(text) {
 }
 
 /**
+ * 邀請信內容：自訂主旨與內文（例如由客戶承辦窗口署名、用承辦自己的信箱寄出）。
+ * 每位學員的專屬連結與邀請碼由系統帶入；不自訂就用預設的信。儲存後，上方「複製信件」、
+ * 「匯出連結清單」與系統寄出的信都是同一份內容。
+ */
+function InviteMailEditor({ group, sample, onGroupUpdated, showToast }) {
+  const [open, setOpen] = useState(false);
+  const [subject, setSubject] = useState(group.inviteSubject ?? '');
+  const [body, setBody] = useState(group.inviteBody ?? '');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+  const dirty = subject !== (group.inviteSubject ?? '') || body !== (group.inviteBody ?? '');
+
+  const save = async () => {
+    setSaving(true);
+    setErr('');
+    try {
+      const updated = await api.updateGroup(group.id, { inviteSubject: subject, inviteBody: body });
+      onGroupUpdated?.(updated);
+      showToast?.(body.trim() ? '已儲存邀請信內容' : '已改回預設的邀請信');
+    } catch (e) {
+      setErr(e.message || '儲存失敗');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mb-3 rounded-xl border border-slate-200 px-3 py-2">
+      <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between text-left text-sm font-semibold text-slate-700">
+        邀請信內容{group.inviteBody ? '（已自訂）' : '（預設）'}
+        <span className="text-xs font-normal text-slate-400">{open ? '收合' : '修改'}</span>
+      </button>
+      {open && (
+        <div className="mt-3 space-y-3">
+          <p className="text-xs text-slate-500">
+            可以改成由客戶承辦窗口（HR）署名、用他們自己的信箱寄出的信。可用欄位：
+            <code className="mx-1 rounded bg-slate-100 px-1">{'{{姓名}} {{班級}} {{公司}} {{講師}} {{連結}} {{邀請碼}} {{期限}}'}</code>
+            ，寄給每個人時換成他自己的。內文沒放 <code className="rounded bg-slate-100 px-1">{'{{連結}}'}</code> 時，系統會在最後補上專屬連結。
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {INVITE_TEMPLATES.map((t) => (
+              <button key={t.id} type="button" title={t.hint} onClick={() => { setSubject(t.subject); setBody(t.body); }} className="btn-secondary btn-sm">
+                套用範本：{t.label}
+              </button>
+            ))}
+            <button type="button" onClick={() => { setSubject(''); setBody(''); }} className="btn-ghost btn-sm">改回預設</button>
+          </div>
+          <label className="block text-sm">
+            <span className="mb-1 block font-semibold text-slate-700">主旨</span>
+            <input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={150} className="input" placeholder="留空＝預設主旨" />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block font-semibold text-slate-700">內文</span>
+            <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} maxLength={4000} className="input font-mono text-xs" placeholder="留空＝預設的邀請信" />
+          </label>
+          {/【[^】]*】/.test(body) && <p className="text-xs text-amber-600">內文還有【…】的地方沒改（例如承辦人、日期），寄出前請先填好。</p>}
+          {err && <p role="alert" className="text-xs text-red-600">{err}</p>}
+          <button type="button" disabled={saving || !dirty} onClick={save} className="btn-primary btn-sm disabled:opacity-50">{saving ? '儲存中…' : '儲存邀請信內容'}</button>
+          {sample && !dirty && (
+            <details className="text-xs text-slate-500">
+              <summary className="cursor-pointer font-semibold">預覽：寄給 {sample.name || sample.email} 的信</summary>
+              <p className="mt-2 font-semibold">主旨：{sample.mailSubject}</p>
+              <pre className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-3 font-sans text-xs text-slate-600">{sample.mailText}</pre>
+            </details>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * 「學員邀請」：後台先把學員 Email 編進班級，每位未註冊的學員得到一組專屬邀請連結（14 天有效、只能用一次）。
  * 學員用連結註冊（Email 與姓名已帶入）後自動入班。SMTP 沒設定時「寄送邀請信」停用，
  * 其餘功能（複製連結、匯出連結清單、重新產生、撤銷）不受影響。
  */
-export default function MemberInvitesPanel({ group, invites, mailConfigured, onChanged, showToast }) {
+export default function MemberInvitesPanel({ group, invites, mailConfigured, onChanged, onGroupUpdated, showToast }) {
   const [busyId, setBusyId] = useState('');
   const [error, setError] = useState('');
 
@@ -43,13 +116,15 @@ export default function MemberInvitesPanel({ group, invites, mailConfigured, onC
   };
 
   const copyLink = async (inv) => showToast?.((await copyText(inv.link)) ? `已複製 ${inv.email} 的邀請連結` : '無法存取剪貼簿，請手動選取連結');
+  const copyMail = async (inv) => showToast?.((await copyText(`${inv.mailSubject}\n\n${inv.mailText}`)) ? `已複製寄給 ${inv.email} 的整封信（含主旨）` : '無法存取剪貼簿');
   const copyAll = async () => {
     const text = outstanding.map((i) => `${i.name || i.email}\t${i.link}`).join('\n');
     showToast?.((await copyText(text)) ? `已複製 ${outstanding.length} 筆邀請連結（姓名與連結）` : '無法存取剪貼簿');
   };
   const exportCsv = () => {
-    const rows = [['姓名', 'Email', '邀請連結', '邀請碼', '狀態', '有效至']];
-    invites.filter((i) => i.state !== 'joined').forEach((i) => rows.push([i.name, i.email, i.link, i.code, STATE_LABEL[i.state].text, formatDate(i.expiresAt)]));
+    // 最後兩欄是「寄給這個人的完整信件」：郵件合併時直接用「主旨」與「信件內容」兩欄即可。
+    const rows = [['姓名', 'Email', '邀請連結', '邀請碼', '狀態', '有效至', '主旨', '信件內容']];
+    invites.filter((i) => i.state !== 'joined').forEach((i) => rows.push([i.name, i.email, i.link, i.code, STATE_LABEL[i.state].text, formatDate(i.expiresAt), i.mailSubject, i.mailText]));
     buildCsvBlob(rows, `${group.name}-邀請連結.csv`);
   };
 
@@ -98,6 +173,8 @@ export default function MemberInvitesPanel({ group, invites, mailConfigured, onC
 
       {error && <p role="alert" className="mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
 
+      <InviteMailEditor group={group} sample={invites.find((i) => i.state !== 'joined') ?? invites[0]} onGroupUpdated={onGroupUpdated} showToast={showToast} />
+
       <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 text-sm">
         {invites.map((inv) => {
           const st = STATE_LABEL[inv.state];
@@ -116,9 +193,14 @@ export default function MemberInvitesPanel({ group, invites, mailConfigured, onC
               {inv.state !== 'joined' && (
                 <div className="flex flex-wrap gap-1.5">
                   {inv.state === 'invited' && (
-                    <button type="button" onClick={() => copyLink(inv)} aria-label={`複製 ${inv.email} 的邀請連結`} className="btn-secondary btn-sm">
-                      <Link2 className="h-3.5 w-3.5" /> 複製連結
-                    </button>
+                    <>
+                      <button type="button" onClick={() => copyLink(inv)} aria-label={`複製 ${inv.email} 的邀請連結`} className="btn-secondary btn-sm">
+                        <Link2 className="h-3.5 w-3.5" /> 複製連結
+                      </button>
+                      <button type="button" onClick={() => copyMail(inv)} aria-label={`複製寄給 ${inv.email} 的整封信`} className="btn-secondary btn-sm">
+                        <Copy className="h-3.5 w-3.5" /> 複製信件
+                      </button>
+                    </>
                   )}
                   <button
                     type="button" disabled={busy}

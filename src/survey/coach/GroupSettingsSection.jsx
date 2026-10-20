@@ -375,6 +375,7 @@ export default function GroupSettingsSection({
           invites={memberInvites}
           mailConfigured={mailConfigured}
           onChanged={refreshSubmissions}
+          onGroupUpdated={onGroupUpdated}
           showToast={showToast}
         />
 

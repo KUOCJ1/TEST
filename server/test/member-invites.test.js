@@ -335,3 +335,63 @@ describe('舊的待加入名單轉成邀請', () => {
     assert.equal(createDb(file).data.memberInvites.length, 1, '重開不會再轉一次');
   });
 });
+
+describe('邀請信可自訂主旨與內文（例如由客戶承辦窗口署名寄出）', () => {
+  const BODY = '{{姓名}} 您好：\n\n公司安排 {{講師}} 老師的課程，請於 10/28 前完成評測：\n{{連結}}\n（邀請碼 {{邀請碼}}，{{期限}} 前有效）\n\n人資部 王小姐 敬上';
+
+  test('用寄信者自己的口吻與署名；欄位換成每個人自己的；每筆邀請附上完整信件', async (t) => {
+    quiet(t);
+    const { importRoster, agents, group } = await setup();
+    const put = await agents.coach.put(`/api/coach/groups/${group.id}`).send({ inviteSubject: '【{{公司}}】請於上課前完成線上評測', inviteBody: BODY });
+    assert.equal(put.status, 200);
+    const { memberInvites } = await importRoster([{ name: '小明', email: 'ming@b.co' }, { name: '小華', email: 'hua@b.co' }]);
+    const ming = memberInvites.find((i) => i.email === 'ming@b.co');
+    assert.equal(ming.mailSubject, '【榕耀】請於上課前完成線上評測');
+    assert.match(ming.mailText, /^小明 您好：/);
+    assert.match(ming.mailText, /王教練 老師的課程/);
+    assert.ok(ming.mailText.includes(ming.link) && ming.mailText.includes(`邀請碼 ${ming.code}`));
+    assert.match(ming.mailText, /人資部 王小姐 敬上$/, '署名是承辦單位，不是平台');
+    assert.doesNotMatch(ming.mailText, /邀請你加入「/, '不會夾帶預設信的句子');
+    const hua = memberInvites.find((i) => i.email === 'hua@b.co');
+    assert.match(hua.mailText, /^小華 您好：/);
+    assert.ok(!hua.mailText.includes(ming.link), '不會夾帶別人的連結');
+  });
+
+  test('內文忘了放 {{連結}} 時，會在最後補上專屬連結與邀請碼；沒有的欄位原樣保留', async (t) => {
+    quiet(t);
+    const { importRoster, agents, group } = await setup();
+    await agents.coach.put(`/api/coach/groups/${group.id}`).send({ inviteBody: '{{姓名}} 您好，請完成評測。{{不存在的欄位}}' });
+    const { memberInvites: [inv] } = await importRoster([{ name: '小明', email: 'ming@b.co' }]);
+    assert.ok(inv.mailText.includes(`專屬連結：${inv.link}`));
+    assert.ok(inv.mailText.includes('{{不存在的欄位}}'));
+    assert.equal(inv.mailSubject, '【AI 實戰班】邀請你加入線上評測', '沒設主旨就用預設主旨');
+  });
+
+  test('沒有自訂時維持預設的信；長度有上限、非字串清掉、空字串改回預設', async (t) => {
+    quiet(t);
+    const { importRoster, agents, group } = await setup();
+    const { memberInvites } = await importRoster([{ name: '小明', email: 'ming@b.co' }]);
+    assert.match(memberInvites[0].mailText, /邀請你加入「AI 實戰班」/);
+    const long = await agents.coach.put(`/api/coach/groups/${group.id}`).send({ inviteBody: 'a'.repeat(9000), inviteSubject: 'b'.repeat(500) });
+    assert.equal(long.body.group.inviteBody.length, 4000);
+    assert.equal(long.body.group.inviteSubject.length, 150);
+    const bad = await agents.coach.put(`/api/coach/groups/${group.id}`).send({ inviteBody: { x: 1 }, inviteSubject: 5 });
+    assert.equal(bad.body.group.inviteBody, '');
+    assert.equal(bad.body.group.inviteSubject, '');
+    const detail = await agents.coach.get(`/api/coach/groups/${group.id}`);
+    assert.match(detail.body.memberInvites[0].mailText, /邀請你加入「AI 實戰班」/);
+  });
+
+  test('系統寄出的信就是教練看到的那一份', async (t) => {
+    quiet(t);
+    process.env.SMTP_HOST = 'smtp.example.com'; process.env.SMTP_USER = 'bot@example.com'; process.env.SMTP_PASS = 'secret';
+    const sent = [];
+    t.mock.method(nodemailer, 'createTransport', () => ({ sendMail: async (m) => { sent.push(m); } }));
+    const { importRoster, agents, group } = await setup();
+    await agents.coach.put(`/api/coach/groups/${group.id}`).send({ inviteSubject: '請完成評測', inviteBody: BODY });
+    const { memberInvites } = await importRoster([{ name: '小明', email: 'ming@b.co' }]);
+    await agents.coach.post(`/api/coach/groups/${group.id}/member-invites/send`).send({});
+    assert.equal(sent[0].text, memberInvites[0].mailText);
+    assert.equal(sent[0].subject, '請完成評測');
+  });
+});
