@@ -1,6 +1,7 @@
 import { formatDate } from '../utils/format';
+import QuickGoalButton from './QuickGoalButton';
 
-export function CoachCommentPanel({ comments }) {
+export function CoachCommentPanel({ comments, assessmentId = null }) {
   if (!comments?.length) return null;
   return (
     <section className="mt-6 rounded-md bg-brass-50/60 px-5 py-6 ring-1 ring-brass-100 sm:px-7">
@@ -29,7 +30,12 @@ export function CoachCommentPanel({ comments }) {
                       <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-brass-100 text-xs font-bold text-brass-600">
                         {i + 1}
                       </span>
-                      {tip}
+                      <span className="min-w-0 flex-1">
+                        {tip}
+                        {assessmentId && (
+                          <span className="ml-2 inline-block align-middle"><QuickGoalButton assessmentId={assessmentId} text={tip} label="轉成目標" /></span>
+                        )}
+                      </span>
                     </li>
                   ))}
                 </ol>

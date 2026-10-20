@@ -6,6 +6,7 @@ import DimensionHeatmap from '../components/DimensionHeatmap';
 import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import GroupGainReport from './GroupGainReport';
 import ProgressPanel from './ProgressPanel';
+import SharedGoalsPanel from './SharedGoalsPanel';
 import { badgeBg } from '../utils/color';
 
 // 「總覽」分頁內容：KPI 卡、班級雷達圖、能力熱力圖、成員比較表、班級敘事報告、
@@ -15,7 +16,7 @@ import { badgeBg } from '../utils/color';
 // 沿用本檔案原本 GroupTimelineCard／QrCodeCard 已經在用的作法。
 export default function GroupOverviewSection({
   group, members, groupStats, memberRows, strongestWeakest, commentedCount,
-  submissions, onGroupUpdated, showToast, confirm, onOpenMember, pendingInviteCount = 0,
+  submissions, onGroupUpdated, showToast, confirm, onOpenMember, pendingInviteCount = 0, sharedGoals = [],
 }) {
   const [groupComment, setGroupComment] = useState(group.groupComment ?? '');
   const [groupTips, setGroupTips] = useState(group.groupTips?.length ? group.groupTips : ['']);
@@ -189,6 +190,8 @@ export default function GroupOverviewSection({
       )}
 
       <GroupGainReport group={group} submissions={submissions} />
+
+      <SharedGoalsPanel goals={sharedGoals} />
 
       {/* 班級整體評語（教練撰寫，學員在分析頁看得到） */}
       <div className="rounded-xl border border-brass-200 bg-brass-50 p-4">

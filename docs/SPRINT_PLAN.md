@@ -708,3 +708,17 @@ FAQ「資料安全與隱私」只寫「只有你、教練、管理者看得到�
 
 決策：公開註冊先保留；邀請 14 天有效；第一版不等 SMTP（複製連結為主）；掃碼報到照舊。
 
+## Sprint 20：發展閉環（2026-10-20）
+
+來源：對「個人發展紀錄與需求」的評估（見對話紀錄／CHANGELOG）。決策：目標預設私密、可選擇分享給教練；第一批全做。
+
+| 項目 | 內容 |
+|---|---|
+| 20-A 後端 | `PATCH /goals/:id` 可改 `reviewDate`／`sharedWithCoach`；`POST /goals/:id/snooze`；追蹤紀錄 `POST/DELETE /goals/:id/checkins`；`GET /coach/groups/:id` 帶 `sharedGoals`（不含筆記）；`GET /admin/development-funnel` |
+| 20-B 學員端 | `GoalItem`（我的分析與我的學習共用）；「我的學習」可操作；已達成目標與歷程 |
+| 20-C 需求→目標 | `QuickGoalButton`（教練建議、360° 落差）；`data/goal-starters.js` 起手行動；`GoalReminders`＋`utils/goalReminders.js` 站內提醒 |
+| 20-D 教練／管理 | 班級總覽「學員分享的目標」；管理端漏斗；政策文字、測試、文件 |
+| 專屬班級 | 班級選項 `exclusive`：客戶專案成員只看到本班評量 |
+
+後續批次（尚未做）：SMTP 設定後的期中／逾期提醒信、列印「個人發展計畫」、匿名彙總給教練、接班準備度的發展計畫。
+

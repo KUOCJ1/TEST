@@ -10,6 +10,7 @@ import LevelDistribution from '../components/charts/LevelDistribution';
 import { formatDate } from '../utils/format';
 import InfoTip from '../components/InfoTip';
 import LearningResourceStatsPanel from './LearningResourceStatsPanel';
+import DevelopmentFunnelPanel from './DevelopmentFunnelPanel';
 import CohortTrendSection from './CohortTrendSection';
 import { badgeBg } from '../utils/color';
 
@@ -256,6 +257,7 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
         </>
       )}
 
+      <DevelopmentFunnelPanel />
       <LearningResourceStatsPanel />
     </div>
   );

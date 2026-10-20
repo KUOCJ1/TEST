@@ -179,6 +179,31 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
     });
   });
 
+  // 發展閉環漏斗（只有彙總數字，沒有任何個人內容）：看「訂目標 → 有行動 → 有追蹤 → 複測」每一步有多少人。
+  // 「複測」＝目標設定之後、預計檢視日後 7 天內，又做了同一份評量的自評。
+  router.get('/development-funnel', (_req, res) => {
+    const goals = db.data.goals ?? [];
+    const WEEK = 7 * 24 * 60 * 60 * 1000;
+    const selfSubs = db.data.submissions.map(normalizeSubmission).filter((s) => s.raterType === 'self');
+    const assessedUsers = new Set(selfSubs.map((s) => s.userId));
+    const goalUsers = new Set(goals.map((g) => g.userId));
+    const retestedInTime = (g) => g.reviewDate && selfSubs.some((s) => s.userId === g.userId
+      && s.assessmentId === (g.assessmentId ?? 'ai-competency')
+      && Date.parse(s.createdAt) > Date.parse(g.createdAt)
+      && Date.parse(s.createdAt) <= Date.parse(g.reviewDate) + WEEK);
+    res.json({
+      assessedUsers: assessedUsers.size,
+      usersWithGoal: goalUsers.size,
+      goals: goals.length,
+      goalsWithDoneAction: goals.filter((g) => (g.actions ?? []).some((a) => a.done)).length,
+      goalsWithCheckin: goals.filter((g) => (g.checkins ?? []).length > 0).length,
+      goalsAchieved: goals.filter((g) => g.achievedAt).length,
+      goalsRetestedInTime: goals.filter(retestedInTime).length,
+      goalsShared: goals.filter((g) => g.sharedWithCoach === true).length,
+      goalsSnoozed: goals.filter((g) => (g.snoozeCount ?? 0) > 0).length,
+    });
+  });
+
   // 稽核紀錄（只讀、只增不改）：新的在前。可用 ?action=、?limit=（最多 200）、?before=（上一頁最後一筆的 ts）。
   router.get('/audit-log', (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);

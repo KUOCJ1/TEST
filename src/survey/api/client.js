@@ -153,6 +153,11 @@ export const api = {
   createGoal: (body) => request('/goals', { method: 'POST', body }).then((d) => d.goal),
   updateGoal: (id, body) => request(`/goals/${id}`, { method: 'PATCH', body }).then((d) => d.goal),
   deleteGoal: (id) => request(`/goals/${id}`, { method: 'DELETE' }),
+  // 發展閉環（Sprint 20）：延後檢視日、追蹤紀錄（一句話＋自評 1–5）。都回傳更新後的目標。
+  snoozeGoal: (id, days = 7) => request(`/goals/${id}/snooze`, { method: 'POST', body: { days } }).then((d) => d.goal),
+  addGoalCheckin: (id, body) => request(`/goals/${id}/checkins`, { method: 'POST', body }).then((d) => d.goal),
+  removeGoalCheckin: (id, checkinId) => request(`/goals/${id}/checkins/${checkinId}`, { method: 'DELETE' }).then((d) => d.goal),
+  adminDevelopmentFunnel: () => request('/admin/development-funnel'),
   // 完全公開、免登入：QR 報到連結在使用者登入前就要能顯示班級資訊。
   // 邀請連結落地頁：註冊前先查「誰邀請你加入哪個班」與被邀請的 Email（有邀請碼才查得到）。
   publicInviteInfo: (code) => request(`/public/invite/${encodeURIComponent(code)}`),

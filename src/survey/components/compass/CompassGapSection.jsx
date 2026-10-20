@@ -1,5 +1,7 @@
 import { GAP_TEXT } from '../../utils/compassText.js';
 import { dimTextStyle } from '../../utils/color';
+import QuickGoalButton from '../QuickGoalButton.jsx';
+import { startersFor } from '../../data/goal-starters';
 
 /**
  * 自評與他評落差。gaps 為 computeGaps() 的回傳值。
@@ -36,6 +38,17 @@ export default function CompassGapSection({ gaps, colors = {} }) {
                 </span>
               </span>
             </div>
+            {d.type !== 'aligned' && (
+              <div className="mt-1">
+                <QuickGoalButton
+                  assessmentId="leadership-compass"
+                  dimension={{ id: d.id, name: d.name, average: d.self }}
+                  text={`針對「${d.name}」，和他人聊聊他們看到的樣子，並找出一個我可以調整的行為`}
+                  actions={startersFor('leadership-compass', d.id).slice(0, 2)}
+                  label="針對這個構面訂目標"
+                />
+              </div>
+            )}
           </li>
         ))}
       </ul>

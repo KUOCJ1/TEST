@@ -3,6 +3,8 @@ import { BookOpen, Check, ExternalLink, Target, Trash2 } from 'lucide-react';
 import { api } from '../api/client';
 import { formatDate } from '../utils/format';
 import LoadingState from '../components/LoadingState';
+import GoalItem from '../components/GoalItem';
+import GoalReminders from '../components/GoalReminders';
 
 /**
  * 「我的學習」：把目前散落在各評量報告頁的「發展目標」與「延伸閱讀學習清單」
@@ -22,6 +24,9 @@ export default function MyLearningPage() {
       .catch((e) => active && setError(e.message || '載入失敗'));
     return () => { active = false; };
   }, []);
+
+  const updateGoal = (g) => setGoals((prev) => prev.map((x) => (x.id === g.id ? g : x)));
+  const removeGoal = (g) => setGoals((prev) => prev.filter((x) => x.id !== g.id));
 
   const toggleRead = async (item) => {
     const updated = await api.markReadingListItem(item.id, !item.read).catch(() => null);
@@ -53,38 +58,32 @@ export default function MyLearningPage() {
         </p>
       </header>
 
+      <GoalReminders goals={goals} onGoalChanged={updateGoal} />
+
       <section className="mb-6 rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
         <h3 className="mb-4 flex items-center gap-1.5 text-base font-bold text-slate-700">
           <Target className="h-4 w-4 text-brass-500" /> 進行中目標（{inProgress.length}）
         </h3>
         {inProgress.length === 0 ? (
           <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-            還沒有進行中的目標。完成一次評測後，到報告頁的「我的發展目標」訂一個吧。
+            還沒有進行中的目標。完成一次評測後，到「我的分析」的「我的發展目標」訂一個吧。
           </p>
         ) : (
           <ul className="space-y-3">
-            {inProgress.map((g) => {
-              const doneCount = g.actions.filter((a) => a.done).length;
-              return (
-                <li key={g.id} className="rounded-xl border border-slate-200 px-4 py-3">
-                  {g.dimensionName && (
-                    <span className="mb-1 inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">
-                      {g.dimensionName}
-                    </span>
-                  )}
-                  <p className="text-sm font-semibold text-slate-700">{g.text}</p>
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    設定於 {formatDate(g.createdAt)}
-                    {g.actions.length > 0 && ` · 行動 ${doneCount}/${g.actions.length}`}
-                    {g.reviewDate && ` · 建議 ${formatDate(g.reviewDate)} 前回來複測`}
-                  </p>
-                </li>
-              );
-            })}
+            {inProgress.map((g) => (
+              <GoalItem key={g.id} goal={g} onChange={updateGoal} onDelete={removeGoal} />
+            ))}
           </ul>
         )}
         {achieved.length > 0 && (
-          <p className="mt-4 text-xs text-slate-400">另有 {achieved.length} 個已達成的目標，可在各評量報告頁查看完整記錄。</p>
+          <details className="mt-5">
+            <summary className="cursor-pointer text-sm font-semibold text-slate-500">已達成的目標（{achieved.length}）</summary>
+            <ul className="mt-3 space-y-3">
+              {achieved.map((g) => (
+                <GoalItem key={g.id} goal={g} onChange={updateGoal} onDelete={removeGoal} />
+              ))}
+            </ul>
+          </details>
         )}
       </section>
 

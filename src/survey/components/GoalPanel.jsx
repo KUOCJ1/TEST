@@ -1,28 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Target, Plus, Trash2, Check, X } from 'lucide-react';
+import { Target, Plus, X } from 'lucide-react';
 import { api } from '../api/client';
-import { formatDate } from '../utils/format';
-import { useConfirm } from './useConfirm';
 import { dimTextStyle } from '../utils/color';
+import GoalItem from './GoalItem';
+import { startersFor } from '../data/goal-starters';
 
 const MAX_ACTIONS = 5;
-
-// 行動項目文字裡常會帶著「加入目標」流程自動填入的文章連結（見
-// AddToGoalButton.jsx 的 actionTextFor()），把它 render 成可點擊的連結，而不是
-// 一長串看不出是連結的純文字。
-const URL_RE = /(https?:\/\/[^\s]+)/g;
-function linkifyText(text) {
-  // split() 搭配「一個 capture group」的 regex 會把「符合的部分」跟「不符合的
-  // 部分」交錯放進結果陣列——單數索引固定是抓到的網址、雙數索引固定是網址以外
-  // 的文字，不需要（也不該）再用同一個帶 g flag 的 regex 呼叫 .test() 判斷一次：
-  // 帶 g flag 的 regex 呼叫 .test() 時會用 lastIndex 記狀態，同一個 regex 物件
-  // 對不同字串輪流呼叫會因為殘留的 lastIndex 而誤判。
-  return text.split(URL_RE).map((part, i) =>
-    i % 2 === 1
-      ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline hover:text-brass-600" onClick={(e) => e.stopPropagation()}>{part}</a>
-      : <span key={i}>{part}</span>,
-  );
-}
 
 /**
  * 個人發展目標：讓學員針對弱項構面訂下目標與具體行動，下次回來可以打勾。
@@ -40,19 +23,7 @@ function defaultReviewDateInput() {
   return d.toISOString().slice(0, 10);
 }
 
-function BaselineDelta({ goal, dimensions }) {
-  if (!goal.dimensionId || goal.baselineAverage == null) return null;
-  const current = dimensions.find((d) => d.id === goal.dimensionId);
-  if (!current) return null;
-  return (
-    <p className="mt-1 text-xs text-slate-500">
-      設定目標時「{current.subtitle}」平均 {goal.baselineAverage.toFixed(1)} 分 → 最新 {current.average.toFixed(1)} 分
-    </p>
-  );
-}
-
 export default function GoalPanel({ assessmentId, weakestDimension, profileMode = false, dimensions = [] }) {
-  const confirm = useConfirm();
   const [goals, setGoals] = useState(null);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
@@ -105,31 +76,14 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
     }
   };
 
-  const patchGoal = async (goal, body) => {
-    setError('');
-    try {
-      const updated = await api.updateGoal(goal.id, body);
-      setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
-    } catch (e) {
-      setError(e.message || '更新失敗');
-    }
-  };
-
-  const toggleAction = (goal, actionId) =>
-    patchGoal(goal, {
-      actions: goal.actions.map((a) => (a.id === actionId ? { ...a, done: !a.done } : a)),
-    });
-
-  const handleDelete = async (goal) => {
-    if (!(await confirm('確定要刪除這個目標嗎？'))) return;
-    setError('');
-    try {
-      await api.deleteGoal(goal.id);
-      setGoals((prev) => prev.filter((g) => g.id !== goal.id));
-    } catch (e) {
-      setError(e.message || '刪除失敗');
-    }
-  };
+  // 起手行動範例：點一下放進行動清單（不超過上限、不重複），仍可自己修改。
+  const starters = startersFor(assessmentId, selectedDim?.id);
+  const addStarter = (text) => setDraftActions((prev) => {
+    if (prev.includes(text)) return prev;
+    const emptyIdx = prev.findIndex((t) => !t.trim());
+    if (emptyIdx >= 0) return prev.map((t, i) => (i === emptyIdx ? text : t));
+    return prev.length >= MAX_ACTIONS ? prev : [...prev, text];
+  });
 
   if (goals === null) return null;
 
@@ -146,7 +100,7 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
         )}
       </div>
       <p className="mb-4 text-xs text-slate-400">
-        只有你看得到，教練與管理者都不會讀到——可以誠實記錄。
+        預設只有你看得到，可以誠實記錄；個別目標也可以選擇分享給教練（分享後才看得到，追蹤筆記永遠只有你看得到）。
       </p>
 
       {error && (
@@ -190,6 +144,17 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
             rows={2}
             className="input"
           />
+          <div className="mt-3">
+            <p className="mb-1.5 text-xs font-semibold text-slate-500">起手行動範例（點一下加入，可再修改）</p>
+            <div className="flex flex-wrap gap-1.5">
+              {starters.map((t) => (
+                <button key={t} type="button" onClick={() => addStarter(t)}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-left text-xs text-slate-600 hover:border-brass-400 hover:text-brass-600">
+                  ＋ {t}
+                </button>
+              ))}
+            </div>
+          </div>
           <p className="mb-1.5 mt-3 text-xs font-semibold text-slate-500">具體行動（最多 {MAX_ACTIONS} 條）</p>
           {draftActions.map((a, i) => (
             <div key={i} className="mb-2 flex gap-2">
@@ -248,80 +213,15 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
       )}
 
       <ul className="space-y-3">
-        {goals.map((goal) => {
-          const doneCount = goal.actions.filter((a) => a.done).length;
-          return (
-            <li
-              key={goal.id}
-              className={`rounded-xl border px-4 py-3 ${
-                goal.achievedAt ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  {goal.dimensionName && (
-                    <span className="mb-1 inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">
-                      {goal.dimensionName}
-                    </span>
-                  )}
-                  <p className={`text-sm font-semibold ${goal.achievedAt ? 'text-emerald-800' : 'text-slate-700'}`}>
-                    {goal.text}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    設定於 {formatDate(goal.createdAt)}
-                    {goal.actions.length > 0 && ` · 行動 ${doneCount}/${goal.actions.length}`}
-                    {goal.achievedAt && ` · 已於 ${formatDate(goal.achievedAt)} 達成`}
-                    {!goal.achievedAt && goal.reviewDate && ` · 建議 ${formatDate(goal.reviewDate)} 前回來複測`}
-                  </p>
-                  <BaselineDelta goal={goal} dimensions={dimensions} />
-                </div>
-                <div className="flex shrink-0 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => patchGoal(goal, { achieved: !goal.achievedAt })}
-                    className={`btn-sm ${goal.achievedAt ? 'btn-ghost' : 'btn-secondary'}`}
-                  >
-                    {goal.achievedAt ? '取消達成' : '標記達成'}
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="刪除目標"
-                    onClick={() => handleDelete(goal)}
-                    className="btn-icon"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              {goal.actions.length > 0 && (
-                <ul className="mt-3 space-y-1.5">
-                  {goal.actions.map((a) => (
-                    <li key={a.id}>
-                      <button
-                        type="button"
-                        onClick={() => toggleAction(goal, a.id)}
-                        className="flex w-full items-start gap-2 rounded-lg px-1.5 py-1 text-left hover:bg-slate-50"
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                            a.done ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300'
-                          }`}
-                        >
-                          {a.done && <Check className="h-3 w-3" />}
-                        </span>
-                        <span className={`text-sm ${a.done ? 'text-slate-400 line-through' : 'text-slate-600'}`}>
-                          {linkifyText(a.text)}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          );
-        })}
+        {goals.map((goal) => (
+          <GoalItem
+            key={goal.id}
+            goal={goal}
+            dimensions={dimensions}
+            onChange={(updated) => setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)))}
+            onDelete={(removed) => setGoals((prev) => prev.filter((g) => g.id !== removed.id))}
+          />
+        ))}
       </ul>
     </section>
   );

@@ -17,6 +17,7 @@ import {
   newMemberInvite, inviteForCoach, inviteState, inviteExpiry, generateInviteCode, inviteLink,
 } from '../lib/memberInvites.js';
 import { buildInviteMail } from '../lib/inviteMail.js';
+import { sharedGoalForCoach } from './goals.js';
 import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from '../lib/mailer.js';
 
 // 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
@@ -207,6 +208,12 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       invites,
       memberInvites: listMemberInvites(group.id),
       mailConfigured: isMailConfigured(),
+      // 學員「選擇分享給教練」的發展目標（預設私密）；只含本班評量、本班成員，且不含追蹤筆記。
+      sharedGoals: (db.data.goals ?? [])
+        .filter((g) => g.sharedWithCoach === true
+          && group.memberIds.includes(g.userId)
+          && (g.assessmentId ?? 'ai-competency') === (group.assessmentId ?? 'ai-competency'))
+        .map((g) => sharedGoalForCoach(g, db.data.users.find((u) => u.id === g.userId))),
     });
   });
 

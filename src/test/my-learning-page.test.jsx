@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import MyLearningPage from '../survey/learning/MyLearningPage';
+import { ConfirmProvider } from '../survey/components/ConfirmDialog';
+
+// 目標元件會用到路由（提醒的導頁）與確認對話框。
+const renderPage = () => render(<MemoryRouter><ConfirmProvider><MyLearningPage /></ConfirmProvider></MemoryRouter>);
 
 const {
   myGoals, myReadingList, markReadingListItem, removeReadingListItem,
@@ -16,7 +21,7 @@ vi.mock('../survey/api/client', () => ({
 }));
 
 const goal = {
-  id: 'g1', text: '每週練習表達', dimensionName: '溝通力', actions: [{ done: true }, { done: false }],
+  id: 'g1', text: '每週練習表達', dimensionName: '溝通力', actions: [{ id: 'a1', text: '行動一', done: true }, { id: 'a2', text: '行動二', done: false }], checkins: [], sharedWithCoach: false,
   createdAt: '2026-01-01T00:00:00Z', reviewDate: '2026-02-01T00:00:00Z', achievedAt: null,
 };
 const item = {
@@ -28,7 +33,7 @@ describe('MyLearningPage', () => {
   it('空狀態：沒有目標與學習清單時顯示引導文字', async () => {
     myGoals.mockResolvedValue([]);
     myReadingList.mockResolvedValue([]);
-    render(<MyLearningPage />);
+    renderPage();
     expect(await screen.findByText(/還沒有進行中的目標/)).toBeInTheDocument();
     expect(screen.getByText(/還沒有加入任何文章/)).toBeInTheDocument();
   });
@@ -36,7 +41,7 @@ describe('MyLearningPage', () => {
   it('顯示進行中目標與學習清單項目', async () => {
     myGoals.mockResolvedValue([goal]);
     myReadingList.mockResolvedValue([item]);
-    render(<MyLearningPage />);
+    renderPage();
     expect(await screen.findByText('每週練習表達')).toBeInTheDocument();
     expect(screen.getByText(/行動 1\/2/)).toBeInTheDocument();
     expect(screen.getByText('溝通的藝術', { exact: false })).toBeInTheDocument();
@@ -46,7 +51,7 @@ describe('MyLearningPage', () => {
     myGoals.mockResolvedValue([]);
     myReadingList.mockResolvedValue([item]);
     markReadingListItem.mockResolvedValue({ ...item, read: true, readAt: '2026-01-02T00:00:00Z' });
-    render(<MyLearningPage />);
+    renderPage();
     await screen.findByText('溝通的藝術', { exact: false });
     fireEvent.click(screen.getByRole('button', { name: '標記為已讀' }));
     expect(markReadingListItem).toHaveBeenCalledWith('r1', true);
@@ -57,7 +62,7 @@ describe('MyLearningPage', () => {
     myGoals.mockResolvedValue([]);
     myReadingList.mockResolvedValue([item]);
     removeReadingListItem.mockResolvedValue({ ok: true });
-    render(<MyLearningPage />);
+    renderPage();
     await screen.findByText('溝通的藝術', { exact: false });
     fireEvent.click(screen.getByRole('button', { name: '移除' }));
     expect(removeReadingListItem).toHaveBeenCalledWith('r1');

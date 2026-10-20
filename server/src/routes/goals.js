@@ -4,6 +4,9 @@ import { randomUUID } from 'node:crypto';
 const MAX_ACTIONS = 5;
 const MAX_TEXT = 500;
 const MAX_GOALS_PER_USER = 50;
+const MAX_CHECKINS = 100;
+const MAX_SNOOZE_DAYS = 60;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function sanitizeText(v, max = MAX_TEXT) {
   return typeof v === 'string' ? v.trim().slice(0, max) : '';
@@ -44,6 +47,34 @@ function publicGoal(g) {
     // 建議複測日：預設建立後 4 週，可由使用者建立時調整。用於首頁「下一步」
     // 提醒使用者該回來複測了（見 src/survey/utils/nextStep.js）。
     reviewDate: g.reviewDate ?? null,
+    // 預設只有本人看得到；本人可以對「個別目標」選擇分享給教練（見 sharedGoalForCoach）。
+    sharedWithCoach: g.sharedWithCoach === true,
+    // 追蹤紀錄：每次一句話＋自評「這段時間有做嗎」(1–5)，讓過程看得見，不只剩勾選。
+    checkins: (g.checkins ?? []).map((c) => ({ id: c.id, at: c.at, text: c.text, rating: c.rating ?? null })),
+  };
+}
+
+/**
+ * 給教練看的版本：只有本人明確分享的目標才會出現。追蹤筆記是最私人的內容，
+ * 即使分享了目標也不給教練看，只給次數與最近一次的自評分數，讓教練知道有沒有在持續進行。
+ */
+export function sharedGoalForCoach(g, user) {
+  const checkins = g.checkins ?? [];
+  const last = checkins.at(-1);
+  return {
+    id: g.id,
+    userId: g.userId,
+    userName: user?.name ?? '',
+    assessmentId: g.assessmentId,
+    dimensionName: g.dimensionName,
+    text: g.text,
+    actions: (g.actions ?? []).map((a) => ({ text: a.text, done: a.done })),
+    createdAt: g.createdAt,
+    reviewDate: g.reviewDate ?? null,
+    achievedAt: g.achievedAt,
+    baselineAverage: typeof g.baselineAverage === 'number' ? g.baselineAverage : null,
+    checkinCount: checkins.length,
+    lastCheckin: last ? { at: last.at, rating: last.rating ?? null } : null,
   };
 }
 
@@ -51,7 +82,7 @@ const FOUR_WEEKS_MS = 28 * 24 * 60 * 60 * 1000;
 
 /**
  * 個人發展目標 — 讓學員針對某個構面訂下目標與具體行動，下次回來可以打勾。
- * 目標屬於學員個人，只有本人讀得到、改得動（教練與管理者也看不到）。
+ * 目標屬於學員個人，預設只有本人讀得到、改得動；本人可以對個別目標選擇「分享給教練」（見 sharedGoalForCoach）。
  * @param {{db, requireAuth}} deps
  */
 export function createGoalsRouter({ db, requireAuth }) {
@@ -101,6 +132,8 @@ export function createGoalsRouter({ db, requireAuth }) {
       achievedAt: null,
       baselineAverage: cleanBaseline,
       reviewDate: cleanReviewDate,
+      sharedWithCoach: false,
+      checkins: [],
     };
     db.data.goals.push(goal);
     db.persist();
@@ -111,7 +144,7 @@ export function createGoalsRouter({ db, requireAuth }) {
     const goal = ownGoal(req);
     if (!goal) return res.status(404).json({ code: 'NOT_FOUND', error: '找不到這個目標' });
 
-    const { text, actions, achieved } = req.body ?? {};
+    const { text, actions, achieved, reviewDate, sharedWithCoach } = req.body ?? {};
     if (text !== undefined) {
       const cleanText = sanitizeText(text);
       if (!cleanText) return res.status(400).json({ code: 'INVALID_GOAL', error: '請輸入目標內容' });
@@ -121,7 +154,62 @@ export function createGoalsRouter({ db, requireAuth }) {
     if (achieved !== undefined) {
       goal.achievedAt = achieved ? (goal.achievedAt ?? new Date().toISOString()) : null;
     }
+    // 預計檢視日可以改（以前建立後就改不了）。改了之後提醒信要能再寄，所以清掉「已寄」記號。
+    if (reviewDate !== undefined) {
+      if (typeof reviewDate !== 'string' || Number.isNaN(Date.parse(reviewDate))) {
+        return res.status(400).json({ code: 'INVALID_DATE', error: '預計檢視日格式不正確' });
+      }
+      goal.reviewDate = new Date(reviewDate).toISOString();
+      delete goal.reviewReminderSentAt;
+    }
+    // 分享給教練：只接受明確的布林值；預設與取消都是私密。
+    if (sharedWithCoach !== undefined) {
+      if (typeof sharedWithCoach !== 'boolean') return res.status(400).json({ code: 'INVALID_SHARE', error: '分享設定格式不正確' });
+      goal.sharedWithCoach = sharedWithCoach;
+    }
     goal.updatedAt = new Date().toISOString();
+    db.persist();
+    res.json({ goal: publicGoal(goal) });
+  });
+
+  // 延後：把預計檢視日往後挪幾天（預設 7 天，從「今天與原定日期較晚者」起算），並讓提醒信可以再寄一次。
+  router.post('/goals/:id/snooze', requireAuth, (req, res) => {
+    const goal = ownGoal(req);
+    if (!goal) return res.status(404).json({ code: 'NOT_FOUND', error: '找不到這個目標' });
+    const days = Math.min(Math.max(Math.floor(Number(req.body?.days) || 7), 1), MAX_SNOOZE_DAYS);
+    const base = Math.max(Date.now(), goal.reviewDate ? Date.parse(goal.reviewDate) : 0);
+    goal.reviewDate = new Date(base + days * DAY_MS).toISOString();
+    goal.snoozeCount = (goal.snoozeCount ?? 0) + 1;
+    delete goal.reviewReminderSentAt;
+    goal.updatedAt = new Date().toISOString();
+    db.persist();
+    res.json({ goal: publicGoal(goal) });
+  });
+
+  // 追蹤紀錄：一句話＋自評 1–5。內容只有本人看得到（分享目標時也不給教練）。
+  router.post('/goals/:id/checkins', requireAuth, (req, res) => {
+    const goal = ownGoal(req);
+    if (!goal) return res.status(404).json({ code: 'NOT_FOUND', error: '找不到這個目標' });
+    const text = sanitizeText(req.body?.text, 300);
+    const rawRating = req.body?.rating;
+    const rating = Number.isInteger(rawRating) && rawRating >= 1 && rawRating <= 5 ? rawRating : null;
+    if (!text && rating === null) {
+      return res.status(400).json({ code: 'INVALID_CHECKIN', error: '請寫一句話，或選擇這段時間的進行程度' });
+    }
+    goal.checkins ??= [];
+    if (goal.checkins.length >= MAX_CHECKINS) {
+      return res.status(400).json({ code: 'TOO_MANY_CHECKINS', error: '追蹤紀錄已達上限' });
+    }
+    goal.checkins.push({ id: randomUUID(), at: new Date().toISOString(), text, rating });
+    goal.updatedAt = new Date().toISOString();
+    db.persist();
+    res.status(201).json({ goal: publicGoal(goal) });
+  });
+
+  router.delete('/goals/:id/checkins/:checkinId', requireAuth, (req, res) => {
+    const goal = ownGoal(req);
+    if (!goal) return res.status(404).json({ code: 'NOT_FOUND', error: '找不到這個目標' });
+    goal.checkins = (goal.checkins ?? []).filter((c) => c.id !== req.params.checkinId);
     db.persist();
     res.json({ goal: publicGoal(goal) });
   });

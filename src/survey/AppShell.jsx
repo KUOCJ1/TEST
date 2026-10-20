@@ -15,6 +15,7 @@ import NextStepCard from './components/NextStepCard';
 import GroupStatusBar from './components/GroupStatusBar';
 import GoalProgressChip from './components/GoalProgressChip';
 import GroupInvites from './components/GroupInvites';
+import GoalReminders from './components/GoalReminders';
 import RedeemInviteBox from './components/RedeemInviteBox';
 import RaterSetup from './components/RaterSetup';
 import SurveyApp from './SurveyApp';
@@ -137,6 +138,11 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
       <OnboardingBanner role="user" show={mySubmissions.length === 0 && myGroups.length === 0} />
       <GroupInvites invites={groupInvites} onChanged={() => { setLoading(true); setReloadTick((t) => t + 1); }} />
       <RedeemInviteBox onJoined={() => { setLoading(true); setReloadTick((t) => t + 1); }} />
+      <GoalReminders
+        goals={goals}
+        skipOverdue={nextStep?.kind === 'retest-reminder'}
+        onGoalChanged={(g) => setGoals((prev) => prev.map((x) => (x.id === g.id ? g : x)))}
+      />
       <NextStepCard nextStep={nextStep} onStartSurvey={onStartSurvey} onGoTo360={onGoTo360} onViewAnalysis={onViewAnalysis} />
       {/* 班級狀態與目標摘要並排成一條資訊列（Sprint 8），不再各佔一整列。 */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row [&>*]:flex-1 [&:empty]:hidden">

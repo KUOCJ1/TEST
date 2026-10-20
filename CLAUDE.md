@@ -106,6 +106,11 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - **不再依 Email 自動入班**（沒驗證信箱會被搶先註冊）；舊 `pendingMembers` 在啟動時轉成邀請。公開註冊與 QR 報到保留。
 - 教練端 `coach/MemberInvitesPanel.jsx`；寄信走 `lib/inviteMail.js`＋`sendMail`（SMTP 未設定回 503，前端停用按鈕）。
 
+## 發展目標與專屬班級（Sprint 20）
+
+- 目標（`routes/goals.js`）：預設只有本人看得到；單一目標可 `sharedWithCoach`，教練在 `GET /coach/groups/:id` 的 `sharedGoals` 看到（不含追蹤筆記，見 `sharedGoalForCoach`）。追蹤紀錄 `checkins`、延後 `snooze`、檢視日可改。前端 `components/GoalItem.jsx` 為共用元件；站內提醒 `utils/goalReminders.js`；起手行動 `data/goal-starters.js`（新增構面要補，有測試）。
+- 專屬班級：班級欄位 `exclusive`，`GET /assessments` 對一般學員只回本班評量；客戶專案流程見 `docs/CUSTOMER_PROJECT_PLAYBOOK.md`。
+
 ## 班級管理與 QR Code 報到
 
 - 每筆作答提交都會寫入 `groupId`，精準對應提交當下所屬的班級（同一梯次）。班級報告

@@ -253,7 +253,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
             benchmarkDims={benchmarkForActive?.dimensionAverages ?? null}
           />
 
-          <CoachCommentPanel comments={latest.comments} />
+          <CoachCommentPanel comments={latest.comments} assessmentId={activeId} />
           <GroupCommentPanel group={myGroupForActive} />
 
           <JourneyTimeline
