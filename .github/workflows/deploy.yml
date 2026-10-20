@@ -14,8 +14,11 @@ permissions:
   contents: read
 
 jobs:
+  # runs-on 固定 ubuntu-24.04，不用 ubuntu-latest：latest 已經指到 26.04，而 Playwright 還不支援，
+  # `playwright install --with-deps` 會直接失敗（2026-10-20 的 CI 就是這樣壞掉）。
+  # 等 Playwright 支援新版 Ubuntu 後再放開。
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # 同一個分支／PR 有新的推送就取消舊的檢查，省時間也避免舊結果干擾。
     concurrency:
       group: verify-${{ github.ref }}
@@ -77,7 +80,7 @@ jobs:
     needs: verify
     # PR 不部署預覽站。
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     # 發佈不要被新的推送中途取消（會留下半套檔案）：排隊等前一個發佈完。
