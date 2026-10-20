@@ -47,6 +47,10 @@ export default function GoalItem({ goal, onChange, onDelete, dimensions }) {
   const [note, setNote] = useState('');
   const [rating, setRating] = useState(0);
   const [showAll, setShowAll] = useState(false);
+  // 分享開關要立刻有反應（樂觀更新）：等伺服器回應才翻轉的話，網路慢時看起來像「按了沒反應」，
+  // 使用者會連按。失敗時 run() 會顯示錯誤，pending 清掉就回到伺服器的狀態。
+  const [pendingShared, setPendingShared] = useState(null);
+  const shared = pendingShared ?? goal.sharedWithCoach;
   const [editingDate, setEditingDate] = useState(false);
   const [dateValue, setDateValue] = useState(toDateInput(goal.reviewDate));
 
@@ -203,13 +207,18 @@ export default function GoalItem({ goal, onChange, onDelete, dimensions }) {
 
       {/* 分享給教練：預設關閉 */}
       <label className="mt-3 flex items-start gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
-        <input type="checkbox" checked={goal.sharedWithCoach} disabled={busy}
-          onChange={(e) => run(() => api.updateGoal(goal.id, { sharedWithCoach: e.target.checked }))}
+        <input type="checkbox" checked={shared} disabled={busy && pendingShared === null}
+          onChange={async (e) => {
+            const next = e.target.checked;
+            setPendingShared(next);
+            await run(() => api.updateGoal(goal.id, { sharedWithCoach: next }));
+            setPendingShared(null);
+          }}
           className="mt-0.5 h-4 w-4 shrink-0 accent-ink-700" />
         <span>
           <span className="inline-flex items-center gap-1 font-semibold text-slate-600"><Share2 className="h-3.5 w-3.5" /> 分享給我的教練</span>
           <span className="block">
-            {goal.sharedWithCoach
+            {shared
               ? '教練現在看得到這個目標、行動與進度；你的追蹤筆記仍然只有你看得到。隨時可以取消。'
               : '目前只有你看得到。分享後，教練可以看到目標、行動與進度（不含追蹤筆記），方便給你支持。'}
           </span>

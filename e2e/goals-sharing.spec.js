@@ -52,6 +52,8 @@ test('發展目標預設私密；分享給教練後教練看得到（不含筆�
   await share.check();
   await expect(page.getByText(/教練現在看得到這個目標/)).toBeVisible();
 
+  // 開關是樂觀更新（畫面先翻轉），伺服器稍後才寫入：用輪詢等教練端看到。
+  await expect.poll(async () => (await (await coach.get(`/api/coach/groups/${gid}`)).json()).sharedGoals.length, { timeout: 10000 }).toBe(1);
   view = await ok(await coach.get(`/api/coach/groups/${gid}`), 'coach view 2');
   expect(view.sharedGoals).toHaveLength(1);
   expect(view.sharedGoals[0].text).toBe('每週用 AI 完成一份分析');
@@ -62,8 +64,7 @@ test('發展目標預設私密；分享給教練後教練看得到（不含筆�
   // 取消分享立即生效。
   await share.uncheck();
   await expect(page.getByText(/目前只有你看得到/)).toBeVisible();
-  view = await ok(await coach.get(`/api/coach/groups/${gid}`), 'coach view 3');
-  expect(view.sharedGoals).toHaveLength(0);
+  await expect.poll(async () => (await (await coach.get(`/api/coach/groups/${gid}`)).json()).sharedGoals.length, { timeout: 10000 }).toBe(0);
 
   await ctx.close();
   for (const c of [admin, coach, learner]) await c.dispose();
