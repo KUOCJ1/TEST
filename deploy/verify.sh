@@ -52,7 +52,13 @@ if command -v systemctl >/dev/null 2>&1 && systemctl cat "$SERVICE" >/dev/null 2
 fi
 
 # 2. 後端健康檢查＋版本
-HEALTH="$(curl -sf --max-time 5 "$API_URL/api/health" 2>/dev/null || true)"
+# 剛重啟的服務需要幾秒才會開始監聽（載入資料庫）：最多等約 15 秒，避免「重啟後立刻驗證」誤判成失敗。
+HEALTH=""
+for _ in 1 2 3 4 5 6 7 8; do
+  HEALTH="$(curl -sf --max-time 5 "$API_URL/api/health" 2>/dev/null || true)"
+  [ "$(json_get "$HEALTH" ok)" = "true" ] && break
+  sleep 2
+done
 if [ "$(json_get "$HEALTH" ok)" = "true" ]; then
   pass "後端健康檢查 $API_URL/api/health"
   BACKEND_COMMIT="$(json_get "$HEALTH" version.commit)"
