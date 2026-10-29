@@ -330,6 +330,17 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 | `disc` | DISC 行為風格評測 | **PROFILE_MODE** | 4 大構面（互相獨立） | 32 題（含反向題） | 是 | 風格輪廓，6 種主流組合 + default，中性用語（無優劣） |
 | `archetype` | 識己®性格原型評測 | **PROFILE_MODE** | 4 組性格光譜（二元對立） | 40 題（含反向題） | **否**（見下） | 16 種原創原型，自陳偏好量表 |
 
+### 5.1 課後學習成效問卷（`ai-course-post`，班級限定）
+
+為客戶工作坊（例如韋能《AI 深度整合工作坊》）設計的課後問卷，**不是一般評測**：
+- **班級限定（`classOnly`）**：`assessments` 紀錄帶 `classOnly: true`；只有「班級附加了這份問卷」的成員在 `GET /assessments` 看得到，其他人（含教練、管理員）清單裡都沒有；首頁評測工具庫與建班選單也不列出（前端題庫設定 `CLASS_ONLY = true`）。
+- **附加方式**：教練在「成員與設定」勾「附加課後學習成效問卷」→ 班級欄位 `extraAssessmentIds: ['ai-course-post']`（`PUT /coach/groups/:id`，只收存在、已啟用、classOnly 的 id，並寫稽核）。班級原本的 `assessmentId`（課前評測）不變。
+- **提交**：`POST /submissions` 有獨立的 classOnly 分支（`routes/submissions.js`）：必須是附加班的成員、班級在開放期間內、每人每班一次；答案經 `lib/courseSurvey.js` 白名單清洗；**結果由伺服器計算**，不採用前端送來的 `result`。紀錄**刻意不寫 `groupId`**（寫 `surveyGroupId`），所以不會混進班級原本的課前／課後報告、統計、催交與匯出。
+- **題型與計分**：前端題目與解析在 `data/assessments/ai-course-post.js`；標準答案、構面對應、欄位白名單在伺服器 `lib/courseSurvey.js`，兩邊的一致性由 `src/test/course-post.test.jsx` 檢查。構面沿用 `ai-competency` 的 id 與順序，結果頁可以把「課前評測／課前回溯／現在」放在一起比較。
+- **隱私**：教練與班級承辦只看到彙總——`GET /coach/groups/:id/course-survey`：完成率永遠顯示；少於 3 人時不顯示任何彙總；開放文字不附姓名、依文字排序；被排除（不列入統計）的人不計入。個人的作答與結果不經由教練的 `overview`、`submissions/ratee` 回傳（本人與管理者除外）。
+- **30／60 天追蹤**：目前只實作「**同意與到期日**」——題目 D7 取得明確同意（預設不勾），彙總顯示同意人數與 30／60 天到期日；學員可在結果頁撤回（`PATCH /course-survey/follow-up`，寫稽核）。**追蹤問卷本身與寄信排程尚未實作**（需要先確認 SMTP）；60 天後建議請學員重做 48 題（既有的課前／課後比較）。
+- 設計稿與題目全文：`docs/post-course-survey-design.md`。
+
 > 識己® 不開放 360°：測的是「天生比較自在的內在傾向」，屬自陳量表，讓
 > 別人代填猜測的效度遠不如本人自陳，故 `SUPPORTS_360 = false`。
 

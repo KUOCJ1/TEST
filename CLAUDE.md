@@ -111,6 +111,12 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - 目標（`routes/goals.js`）：預設只有本人看得到；單一目標可 `sharedWithCoach`，教練在 `GET /coach/groups/:id` 的 `sharedGoals` 看到（不含追蹤筆記，見 `sharedGoalForCoach`）。追蹤紀錄 `checkins`、延後 `snooze`、檢視日可改。前端 `components/GoalItem.jsx` 為共用元件；站內提醒 `utils/goalReminders.js`；起手行動 `data/goal-starters.js`（新增構面要補，有測試）。
 - 專屬班級：班級欄位 `exclusive`，`GET /assessments` 對一般學員只回本班評量；客戶專案流程見 `docs/CUSTOMER_PROJECT_PLAYBOOK.md`。
 
+## 課後學習成效問卷（ai-course-post，班級限定）
+
+- 客戶工作坊的課後問卷（韋能《AI 深度整合工作坊》）：滿意度、課前 vs 現在的能力自評、情境檢核、30 天承諾。設計稿 `docs/post-course-survey-design.md`；說明見 `docs/PLATFORM_MANUAL.md` 5.1。
+- `assessments.classOnly`＋班級 `extraAssessmentIds`：只有附加了的班級成員看得到；**提交不寫 `groupId`**（寫 `surveyGroupId`），結果由伺服器 `lib/courseSurvey.js` 計算（標準答案只在伺服器）；教練只看彙總（`GET /coach/groups/:id/course-survey`，少於 3 人不顯示），個人明細不經 overview／ratee 回傳。
+- 前後端題目結構的一致性由 `src/test/course-post.test.jsx` 檢查；改題目要兩邊一起改。30／60 天追蹤目前只有同意紀錄，**尚未寄信**。
+
 ## 班級管理與 QR Code 報到
 
 - 每筆作答提交都會寫入 `groupId`，精準對應提交當下所屬的班級（同一梯次）。班級報告

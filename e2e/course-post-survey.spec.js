@@ -108,9 +108,11 @@ test('課後問卷：附加到班級、學員填寫、教練看完成率與彙�
   await cpage.goto('/');
   await login(cpage, coachEmail, PW);
   await cpage.goto('/coach');
-  await cpage.getByRole('button', { name: new RegExp(`課後班 ${sfx}`) }).first().click();
+  // 只有一個班時會自動選取；班級原本的課前／課後進度不受影響。
+  await expect(cpage.getByText(`課後班 ${sfx}`).first()).toBeVisible({ timeout: 20000 });
   await expect(cpage.getByText('3 / 3 人（100%）')).toBeVisible({ timeout: 20000 });
   await expect(cpage.getByText(/最有價值的收穫（2 則，不附姓名）/)).toBeVisible();
+  await expect(cpage.getByText('課前未完成（3）')).toBeVisible();
 
   await lctx.close();
   await cctx.close();
