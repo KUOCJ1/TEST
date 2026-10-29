@@ -19,6 +19,7 @@ import {
 import { buildInviteMail, MAX_INVITE_SUBJECT, MAX_INVITE_BODY } from '../lib/inviteMail.js';
 import { sharedGoalForCoach } from './goals.js';
 import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from '../lib/mailer.js';
+import { COURSE_SURVEY_ID, summarizeCourseSurvey } from '../lib/courseSurvey.js';
 
 // 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
 export const REMINDER_COOLDOWN_MS = 60 * 60 * 1000;
@@ -71,6 +72,8 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       // 嚴格隱私題庫的他評只回傳「誰收到哪一類評分」的計數用欄位（見 compassPrivacy.js）。
       submissions: stripRaterDetails(db.data.submissions
         .map(normalizeSubmission)
+        // 課後問卷只以彙總呈現給教練（GET /groups/:id/course-survey），個人的作答與結果不經由這裡。
+        .filter((s) => s.assessmentId !== COURSE_SURVEY_ID)
         .filter((s) => canSee(s.rateeId) || canSee(s.userId))
         .map((s) => ({ ...s, answers: undefined }))),
     });
@@ -118,6 +121,12 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
   const isKnownAssessment = (id) => typeof id === 'string' && (db.data.assessments ?? []).some((a) => a.id === id);
   // 建班／換評量時，評量必須已啟用（停用的評量不開放建班，避免繞過「驗收後才啟用」的流程）。
   const isEnabledAssessment = (id) => (db.data.assessments ?? []).some((a) => a.id === id && a.enabled);
+  // 班級可附加的「課後問卷」（classOnly 評量）：只收存在、已啟用、標記為 classOnly 的 id，去重。
+  const sanitizeExtraAssessmentIds = (ids) => {
+    if (!Array.isArray(ids)) return [];
+    return [...new Set(ids)].filter((id) => typeof id === 'string'
+      && (db.data.assessments ?? []).some((a) => a.id === id && a.enabled && a.classOnly)).slice(0, 5);
+  };
 
   // 邀請制入班（Sprint 19）：這個班的邀請（不含已撤銷），含連結，給教練／管理員的畫面使用。
   // 每筆附上「寄給這個人的信」（主旨與內文，含他專屬的連結）：SMTP 還沒設定時，教練可以複製或匯出
@@ -243,6 +252,35 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     });
   });
 
+  // 課後問卷彙總（課後學習成效問卷，見 docs/post-course-survey-design.md）。
+  // 只回彙總：完成率、平均、答對人數、開放題文字（不附姓名）；少於 3 人的項目不顯示。
+  // 被排除（不列入統計）的人不計入應填與彙總。
+  router.get('/groups/:id/course-survey', (req, res) => {
+    const group = (db.data.groups ?? []).find((g) => g.id === req.params.id);
+    if (!group) return res.status(404).json({ error: '班別不存在' });
+    if (group.coachId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '無權限' });
+    }
+    if (!(group.extraAssessmentIds ?? []).includes(COURSE_SURVEY_ID)) return res.json({ attached: false });
+    const excluded = new Set(group.excludedUserIds ?? []);
+    const expectedIds = new Set((group.memberIds ?? []).filter((id) => !excluded.has(id)));
+    const latest = new Map();
+    for (const sub of db.data.submissions) {
+      if (sub.assessmentId !== COURSE_SURVEY_ID || sub.surveyGroupId !== group.id || !expectedIds.has(sub.userId)) continue;
+      const prev = latest.get(sub.userId);
+      if (!prev || new Date(sub.createdAt) > new Date(prev.createdAt)) latest.set(sub.userId, sub);
+    }
+    const subs = [...latest.values()];
+    const consented = subs.filter((s) => s.answers?.d7 === 'yes');
+    const firstAt = consented.map((s) => new Date(s.createdAt).getTime()).sort((a, b) => a - b)[0];
+    const addDays = (t, d) => new Date(t + d * 864e5).toISOString().slice(0, 10);
+    res.json({
+      attached: true,
+      ...summarizeCourseSurvey(subs, expectedIds.size),
+      followUp: { consented: consented.length, due30: firstAt ? addDays(firstAt, 30) : null, due60: firstAt ? addDays(firstAt, 60) : null },
+    });
+  });
+
   // 排除／恢復「不列入統計」：資料不刪除，只是不進這個班的報告、統計與匯出，也不再被催交。
   // 用在掃碼報到「先收後審」時，名單外或誤填的人。排除記錄在班級上，即使之後把人移出班級也仍然有效。
   router.put('/groups/:id/exclusions', (req, res) => {
@@ -286,7 +324,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     if (groups[idx].coachId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: '無權限' });
     }
-    const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes, startDate, endDate, exclusive, inviteSubject, inviteBody, maxMembers, joinEmailDomains } = req.body ?? {};
+    const { name, companyName, assessmentId, memberIds, groupComment, groupTips, focusDimensionIds, targetHeadcount, dimensionNotes, startDate, endDate, exclusive, inviteSubject, inviteBody, maxMembers, joinEmailDomains, extraAssessmentIds } = req.body ?? {};
     if ((name !== undefined && typeof name !== 'string') || (companyName !== undefined && typeof companyName !== 'string')) {
       return res.status(400).json({ error: '名稱格式不正確' });
     }
@@ -314,6 +352,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       ...(companyName !== undefined && { companyName: companyName.trim() }),
       ...(assessmentId !== undefined && { assessmentId }),
       ...(exclusive !== undefined && { exclusive: exclusive === true }),
+      ...(extraAssessmentIds !== undefined && { extraAssessmentIds: sanitizeExtraAssessmentIds(extraAssessmentIds) }),
       // 邀請信的自訂主旨與內文（見 lib/inviteMail.js）：空字串＝改回預設的信。
       // 報到限制（掃碼報到的保護，見 lib/joinCode.js）：人數上限（null＝不限）與限定 Email 網域（空陣列＝不限）。
       ...(maxMembers !== undefined && { maxMembers: sanitizeMaxMembers(maxMembers) }),
@@ -334,6 +373,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       ...(endDate !== undefined && isISODate(endDate) && { endDate: endDate ?? null }),
       updatedAt: new Date().toISOString(),
     };
+    if (extraAssessmentIds !== undefined) auditLog(req, 'set_group_extra_assessments', { groupId: groups[idx].id, groupName: groups[idx].name, extraAssessmentIds: groups[idx].extraAssessmentIds });
     db.persist();
     res.json({ group: { ...groups[idx], phase: getGroupPhase(groups[idx]) }, invitedIds });
   });

@@ -5,9 +5,10 @@ import { REGISTRY, getAssessment } from '../survey/data/assessments/index.js';
 // 首頁的「評測工具庫」為了不把 35KB 的題庫拉進第一屏，是手抄一份摘要數字。
 // 這支測試負責確保那份摘要不會跟真實題庫設定走鐘——首頁曾經寫死 L9D 的
 // 「9 構面 / 20 子能力 / 90 題」，讓 AI 職能評測（6 構面 / 48 題）的訪客看到錯的規格。
+// 班級限定的問卷（CLASS_ONLY，例如課後學習成效問卷）不在公開的評測工具庫裡展示。
 describe('首頁評測工具庫摘要', () => {
   it('涵蓋所有已註冊的題庫，沒有遺漏也沒有多餘', () => {
-    expect(ASSESSMENT_SUMMARIES.map((s) => s.id).sort()).toEqual(Object.keys(REGISTRY).sort());
+    expect(ASSESSMENT_SUMMARIES.map((s) => s.id).sort()).toEqual(Object.keys(REGISTRY).filter((id) => !REGISTRY[id].CLASS_ONLY).sort());
   });
 
   it.each(ASSESSMENT_SUMMARIES)('$id 的構面數、題數、子能力數與實際設定一致', (summary) => {

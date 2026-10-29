@@ -4,6 +4,7 @@ import * as disc from './disc.js';
 import * as archetype from './archetype.js';
 import * as leadershipCompass from './leadership-compass.js';
 import * as successionIntent from './succession-intent.js';
+import * as aiCoursePost from './ai-course-post.js';
 
 export const REGISTRY = {
   [aiCompetency.ID]: aiCompetency,
@@ -12,6 +13,7 @@ export const REGISTRY = {
   [archetype.ID]: archetype,
   [leadershipCompass.ID]: leadershipCompass,
   [successionIntent.ID]: successionIntent,
+  [aiCoursePost.ID]: aiCoursePost,
 };
 
 export function getAssessment(id) {

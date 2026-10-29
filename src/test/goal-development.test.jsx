@@ -139,7 +139,7 @@ describe('GoalReminders 站內提醒', () => {
 
 describe('起手行動範例', () => {
   it('每個評量的每個構面都有範例（新增構面時這裡會提醒補上）', () => {
-    for (const [id, cfg] of Object.entries(REGISTRY)) {
+    for (const [id, cfg] of Object.entries(REGISTRY).filter(([, c]) => !c.CLASS_ONLY)) {
       for (const d of cfg.DIMENSIONS ?? []) {
         const key = `${id}:${d.id}`;
         // 接班準備度的面向是「意向」，不是要練習的能力，不提供行動範例。

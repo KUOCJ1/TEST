@@ -8,6 +8,11 @@ export function createAssessmentsRouter({ db, requireAuth }) {
   // ── 評量清單 ─────────────────────────────────────────────
   router.get('/assessments', requireAuth, (req, res) => {
     let list = (db.data.assessments ?? []).filter((a) => a.enabled);
+    // classOnly（課後問卷）：只有「班級附加了這份問卷」的成員看得到，其他人（包含教練、管理員）清單裡都不出現。
+    const attached = new Set(
+      (db.data.groups ?? []).filter((g) => (g.memberIds ?? []).includes(req.user.id)).flatMap((g) => g.extraAssessmentIds ?? []),
+    );
+    list = list.filter((a) => !a.classOnly || attached.has(a.id));
     // 專屬班級（客戶專案）：屬於任何「專屬班級」的學員只看得到那些班指定的評量，
     // 首頁不會出現其他評量。只影響一般學員；教練與管理員不受限。
     if (req.user.role === 'user') {

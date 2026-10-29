@@ -12,6 +12,7 @@ export const ENGLISH_NAMES = {
   archetype: 'Personality Archetype Assessment',
   'leadership-compass': 'Leadership Compass Assessment',
   'succession-intent': 'Succession Readiness Assessment',
+  'ai-course-post': 'Post-Workshop Learning Survey',
 };
 
 export const englishNameOf = (id) => ENGLISH_NAMES[id] ?? null;

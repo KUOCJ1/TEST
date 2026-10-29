@@ -83,6 +83,8 @@ export function createDb(file) {
     { id: 'leadership-compass', name: '領導力羅盤八向評測', renamedFrom: ['雙環領導羅盤', '雙環領導羅盤八大構面評測'], description: '8 構面、精簡版 32 題／完整版 69 題，含人機協作與張力指標', enabled: false },
     // 接班補充問卷：預設停用；涉及職涯與去留意向，啟用前須完成隱私政策更新與重新同意（見 docs/leadership-new/06）
     { id: 'succession-intent', name: '接班準備度評測', renamedFrom: ['接班補充問卷'], description: '4 面向、20 題，整理升任企圖、準備程度、可接受條件與長期意向（自評）', enabled: false },
+    // 課後學習成效問卷：只對「附加了這份問卷的班級」成員可見（classOnly），不出現在一般學員的評量清單。
+    { id: 'ai-course-post', name: 'AI 深度整合工作坊｜課後學習成效問卷', description: '課程滿意度、課前／現在能力自評、情境檢核與 30 天承諾', enabled: true, classOnly: true },
   ];
   if (data.assessments.length === 0) {
     data.assessments = KNOWN_ASSESSMENTS.map(({ renamedFrom: _r, ...rest }) => rest);

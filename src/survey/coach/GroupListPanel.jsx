@@ -32,7 +32,7 @@ export default function GroupListPanel({
       .catch(() => {});
     return () => { active = false; };
   }, []);
-  const assessmentIds = Object.keys(REGISTRY).filter((id) => !enabledIds || enabledIds.includes(id));
+  const assessmentIds = Object.keys(REGISTRY).filter((id) => !REGISTRY[id].CLASS_ONLY && (!enabledIds || enabledIds.includes(id)));
   // 預設的 ai-competency 若被管理者停用就不在選項裡，改用第一個可選的，避免畫面顯示 A、實際送出 B。
   const selectedId = assessmentIds.includes(newAssessmentId) ? newAssessmentId : (assessmentIds[0] ?? newAssessmentId);
   const newDims = getAssessment(selectedId)?.DIMENSIONS ?? [];

@@ -24,7 +24,7 @@ const renderGuide = (id) => render(
 
 describe('每個評測都有說明', () => {
   it('所有已註冊的評測：有編輯層說明，或有專屬的框架頁（新增評測沒寫說明會讓這個測試失敗）', () => {
-    Object.values(REGISTRY).forEach((c) => {
+    Object.values(REGISTRY).filter((c) => !c.CLASS_ONLY).forEach((c) => {
       expect(Boolean(GUIDES[c.ID]) || Boolean(c.FRAMEWORK_PATH), c.ID).toBe(true);
     });
   });
@@ -96,6 +96,6 @@ describe('入口連結', () => {
   it('首頁統計的評測工具數等於摘要的數量', () => {
     render(<MemoryRouter><LandingPage loggedIn={false} onEnter={() => {}} /></MemoryRouter>);
     const label = screen.getByText('評測工具 Assessments');
-    expect(label.nextElementSibling.textContent).toBe(String(Object.keys(REGISTRY).length));
+    expect(label.nextElementSibling.textContent).toBe(String(Object.values(REGISTRY).filter((c) => !c.CLASS_ONLY).length));
   });
 });

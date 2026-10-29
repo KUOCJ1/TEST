@@ -5,6 +5,7 @@ import { notifyNewComment } from '../lib/notifications.js';
 import { isStrictPrivacy, presentRateeSubmissions } from '../lib/compassPrivacy.js';
 import { POLICY_VERSION, CONSENT_REQUIRED_ASSESSMENTS } from '../lib/policy.js';
 import { isActiveInvite } from '../lib/invites.js';
+import { COURSE_SURVEY_ID, sanitizeCourseAnswers, buildCourseResult } from '../lib/courseSurvey.js';
 
 const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
 
@@ -14,6 +15,47 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
 
   router.post('/submissions', requireAuth, (req, res) => {
     const { answers, result, assessmentId, phase, rateeId, raterType } = req.body || {};
+
+    // 課後問卷（classOnly）：結果由伺服器依清洗後的答案計算，不採用前端送來的 result；
+    // 只有被附加這份問卷的班級成員能提交，每人每班一次。
+    const classOnlyRecord = (db.data.assessments ?? []).find((a) => a.id === assessmentId && a.classOnly);
+    if (classOnlyRecord) {
+      if (!classOnlyRecord.enabled) return res.status(403).json({ code: 'ASSESSMENT_DISABLED', error: '這份問卷目前未開放' });
+      if (classOnlyRecord.id !== COURSE_SURVEY_ID) return res.status(400).json({ code: 'UNKNOWN_ASSESSMENT', error: '評量不存在' });
+      const groups = (db.data.groups ?? []).filter(
+        (g) => (g.memberIds ?? []).includes(req.user.id) && (g.extraAssessmentIds ?? []).includes(COURSE_SURVEY_ID),
+      );
+      if (groups.length === 0) return res.status(403).json({ code: 'NOT_IN_CLASS', error: '這份問卷只開放給指定班級的成員' });
+      const submittedTo = (gid) => db.data.submissions.some(
+        (s) => s.userId === req.user.id && s.assessmentId === COURSE_SURVEY_ID && s.surveyGroupId === gid,
+      );
+      const group = groups.find((g) => !submittedTo(g.id)) ?? groups[0];
+      if (getGroupPhase(group) !== 'in_progress') {
+        return res.status(403).json({ code: 'PHASE_LOCKED', error: '目前不在開放作答期間' });
+      }
+      if (submittedTo(group.id)) return res.status(409).json({ code: 'ALREADY_SUBMITTED', error: '已完成作答，不可重複提交' });
+      const cleaned = sanitizeCourseAnswers(answers);
+      if (cleaned.error) return res.status(400).json({ code: 'INVALID_ANSWERS', error: cleaned.error });
+      const record = {
+        id: randomUUID(),
+        userId: req.user.id,
+        userName: req.user.name,
+        rateeId: req.user.id,
+        raterType: 'self',
+        assessmentId: COURSE_SURVEY_ID,
+        // 刻意不寫 groupId：班級原本的報告、統計、催交都靠 groupId／評量 id 歸屬，這份問卷不能混進去。
+        groupId: null,
+        surveyGroupId: group.id,
+        phase: null,
+        createdAt: new Date().toISOString(),
+        answers: cleaned.answers,
+        result: buildCourseResult(cleaned.answers),
+      };
+      db.data.submissions.push(record);
+      db.persist();
+      return res.status(201).json({ submission: record });
+    }
+
     const shapeError = validateResultShape(result);
     if (shapeError) {
       return res.status(400).json({ code: 'INVALID_RESULT', error: `作答結果格式不正確：${shapeError}` });
@@ -105,6 +147,23 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
     res.status(201).json({ submission: record });
   });
 
+  // 撤回（或重新同意）課後追蹤信：更新自己「最新一筆」課後問卷的同意標記。
+  router.patch('/course-survey/follow-up', requireAuth, (req, res) => {
+    const { consent } = req.body || {};
+    if (typeof consent !== 'boolean') return res.status(400).json({ error: 'consent 必須是 true 或 false' });
+    const mine = db.data.submissions
+      .filter((s) => s.userId === req.user.id && s.assessmentId === COURSE_SURVEY_ID)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    if (mine.length === 0) return res.status(404).json({ error: '找不到課後問卷的作答紀錄' });
+    for (const sub of mine) {
+      sub.answers = { ...sub.answers, d7: consent ? 'yes' : 'no' };
+      if (sub.result?.course) sub.result.course.followUpConsent = consent;
+    }
+    auditLog(req, consent ? 'course_followup_consent' : 'course_followup_withdraw', {});
+    db.persist();
+    res.json({ followUpConsent: consent });
+  });
+
   // Supports ?page=&limit= pagination. answers field excluded (large, not used by frontend).
   router.get('/submissions/me', requireAuth, (req, res) => {
     const limit = Math.min(Number(req.query.limit) || 100, 500);
@@ -152,6 +211,8 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
         const rid = s.rateeId ?? s.userId;
         const matchRatee = rid === rateeId;
         const matchAssessment = !assessmentId || (s.assessmentId ?? 'ai-competency') === assessmentId;
+        // 課後問卷的個人作答只有本人（與管理者）看得到；教練只看彙總。
+        if (isCoachOfRatee && s.assessmentId === COURSE_SURVEY_ID) return false;
         return matchRatee && matchAssessment;
       })
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));

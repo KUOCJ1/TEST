@@ -7,6 +7,7 @@ import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import GroupGainReport from './GroupGainReport';
 import ProgressPanel from './ProgressPanel';
 import SharedGoalsPanel from './SharedGoalsPanel';
+import CourseSurveyPanel from './CourseSurveyPanel';
 import { badgeBg } from '../utils/color';
 
 // 「總覽」分頁內容：KPI 卡、班級雷達圖、能力熱力圖、成員比較表、班級敘事報告、
@@ -51,6 +52,8 @@ export default function GroupOverviewSection({
         confirm={confirm}
         pendingInviteCount={pendingInviteCount}
       />
+
+      <CourseSurveyPanel group={group} />
 
       {groupStats && groupStats.respondents === 0 ? (
         <div className="rounded-xl bg-white px-6 py-12 text-center text-slate-400 shadow-sm ring-1 ring-slate-100">

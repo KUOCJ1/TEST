@@ -19,6 +19,7 @@ import GoalReminders from './components/GoalReminders';
 import RedeemInviteBox from './components/RedeemInviteBox';
 import RaterSetup from './components/RaterSetup';
 import SurveyApp from './SurveyApp';
+import CoursePostSurvey from './course/CoursePostSurvey.jsx';
 import UserDashboard from './dashboard/UserDashboard';
 import MultiRaterHome from './analysis/MultiRaterHome';
 import MyLearningPage from './learning/MyLearningPage';
@@ -213,6 +214,10 @@ function SurveyRoute({ user, onSubmitted }) {
   const rateeId = location.state?.rateeId ?? user.id;
   const raterType = location.state?.raterType ?? 'self';
   const rateeName = location.state?.rateeName;
+  // 課後學習成效問卷有自己的作答畫面（題型不是單純的李克特量表）。
+  if (getAssessment(assessmentId)?.FORM === 'course-post') {
+    return <CoursePostSurvey key={assessmentId} user={user} onSubmitted={(result) => onSubmitted('self', result)} />;
+  }
   return (
     <SurveyApp
       key={`${assessmentId}-${rateeId}-${raterType}`}

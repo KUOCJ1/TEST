@@ -11,6 +11,7 @@ import RaterInvitePanel from '../components/compass/RaterInvitePanel.jsx';
 import MemberInvitesPanel from './MemberInvitesPanel';
 import MemberScreeningPanel from './MemberScreeningPanel';
 import { parseRoster } from '../utils/roster';
+import { CourseSurveyToggle } from './CourseSurveyPanel';
 
 /**
  * 掃碼報到的保護（客戶專案）：人數上限與限定 Email 網域。額滿或網域不符的人，註冊時就會被擋下並說明原因，
@@ -185,6 +186,8 @@ export default function GroupSettingsSection({
       <QrCodeCard group={group} onUpdated={onGroupUpdated} />
 
       <JoinSafeguards group={group} onGroupUpdated={onGroupUpdated} showToast={showToast} />
+
+      <CourseSurveyToggle group={group} onGroupUpdated={onGroupUpdated} showToast={showToast} />
 
       <div className="rounded-xl border border-brass-200 bg-brass-50/50 p-4">
         <h3 className="mb-3 flex items-center gap-1.5 font-semibold text-brass-600">
