@@ -9,7 +9,8 @@ import { REGISTRY } from '../survey/data/assessments/index.js';
 const { assessments, createGroup } = vi.hoisted(() => ({ assessments: vi.fn(), createGroup: vi.fn() }));
 vi.mock('../survey/api/client', () => ({ api: { assessments, createGroup, deleteGroup: vi.fn() } }));
 
-const ALL = Object.keys(REGISTRY);
+// 班級限定的問卷（CLASS_ONLY）不能當班級的主要評量，不在建班選項裡。
+const ALL = Object.keys(REGISTRY).filter((id) => !REGISTRY[id].CLASS_ONLY);
 const asList = (ids) => ids.map((id) => ({ id, name: id, enabled: true }));
 const group = (over = {}) => ({ id: 'g1', name: '現有班', assessmentId: 'ai-competency', memberIds: [], phase: 'not_started', ...over });
 
