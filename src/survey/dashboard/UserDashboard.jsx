@@ -34,8 +34,10 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
   useEffect(() => {
     let active = true;
     Promise.all([api.mySubmissions(), api.myGroups()])
-      .then(([list, groups]) => {
+      .then(([all, groups]) => {
         if (!active) return;
+        // 班級限定的問卷（課後問卷）沒有分析頁，結果在問卷頁本身看；不要混進「我的分析」。
+        const list = all.filter((s) => !getAssessment(s.assessmentId)?.CLASS_ONLY);
         setSubs(list);
         setMyGroups(groups);
         if (!selectedId && list.length > 0) {

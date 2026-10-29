@@ -102,8 +102,10 @@ export function computeNextStep({ assessments = [], mySubmissions = [], myGroups
   }
 
   // ⑤：有作答紀錄就導去看最新一筆的分析報告。
-  if (mySubmissions.length > 0) {
-    const latestSelf = mySubmissions.find((s) => (s.raterType ?? 'self') === 'self') ?? mySubmissions[0];
+  // 班級限定的問卷（課後問卷）沒有「成長報告」可看，不算在內。
+  const reportable = mySubmissions.filter((s) => !getAssessment(s.assessmentId)?.CLASS_ONLY);
+  if (reportable.length > 0) {
+    const latestSelf = reportable.find((s) => (s.raterType ?? 'self') === 'self') ?? reportable[0];
     return {
       kind: 'view-report',
       assessmentId: latestSelf.assessmentId ?? 'ai-competency',

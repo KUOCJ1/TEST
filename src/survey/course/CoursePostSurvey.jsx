@@ -37,7 +37,7 @@ function ScaleRow({ name, label, value, onChange, min = 1, max = 5, labels = nul
         {values.map((v) => (
           <label
             key={v}
-            className={`flex min-h-[2.5rem] min-w-[2.5rem] cursor-pointer items-center justify-center rounded-lg border px-2 text-sm font-semibold transition-colors ${
+            className={`flex min-h-[2.75rem] min-w-[2.75rem] cursor-pointer items-center justify-center rounded-lg border px-2 text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-brass-400 ${
               value === v ? 'border-ink-700 bg-ink-700 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-brass-400'
             }`}
             title={labels?.[v - min]}
@@ -70,6 +70,7 @@ export default function CoursePostSurvey({ user = { id: 'guest', name: '訪客' 
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(true);
   const [done, setDone] = useState(null); // { result, preDimensions }
+  const [closedNotice, setClosedNotice] = useState('');
 
   const keys = useMemo(() => requiredKeys(), []);
   const answered = keys.filter((k) => isAnswered(answers[k])).length;
@@ -85,6 +86,15 @@ export default function CoursePostSurvey({ user = { id: 'guest', name: '訪客' 
       })
       .catch(() => {})
       .finally(() => active && setChecking(false));
+    // 班級不在開放期間時先提醒，不要讓人填了 50 題才被擋下（仍可填寫，草稿會保留）。
+    Promise.resolve(api.myGroups?.())
+      .then((groups) => {
+        const g = (groups ?? []).find((x) => (x.extraAssessmentIds ?? []).includes(ID));
+        if (active && g && g.phase && g.phase !== 'in_progress') {
+          setClosedNotice(g.phase === 'not_started' ? '這個班級的問卷還沒開放作答。' : '這個班級的作答期間已結束，無法再送出。');
+        }
+      })
+      .catch(() => {});
     return () => { active = false; };
   }, []);
 
@@ -121,6 +131,14 @@ export default function CoursePostSurvey({ user = { id: 'guest', name: '訪客' 
       onSubmitted?.(sub.result);
       window.scrollTo?.({ top: 0, behavior: 'smooth' });
     } catch (e) {
+      if (e.code === 'ALREADY_SUBMITTED') {
+        // 在別的分頁或裝置已經交過：直接顯示結果，不要讓人對著一張交不出去的表單。
+        try {
+          const subs = await api.mySubmissions();
+          const mine = subs.find((s) => s.assessmentId === ID);
+          if (mine) { setDone({ result: mine.result, preDimensions: preDimensionsOf(subs), fresh: false }); return; }
+        } catch { /* 顯示錯誤訊息 */ }
+      }
       setError(e.message || '送出失敗，請稍後再試');
     } finally {
       setSubmitting(false);
@@ -133,6 +151,7 @@ export default function CoursePostSurvey({ user = { id: 'guest', name: '訪客' 
   return (
     <div className="card">
       <ProgressBar answered={answered} total={keys.length} />
+      {closedNotice && <p role="status" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{closedNotice}</p>}
       <header className="mb-6">
         <h1 className="text-2xl font-extrabold text-slate-800">{NAME}</h1>
         <p lang="en" className="text-xs text-slate-400">{NAME_EN}</p>

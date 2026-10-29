@@ -120,6 +120,8 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
 
   const isKnownAssessment = (id) => typeof id === 'string' && (db.data.assessments ?? []).some((a) => a.id === id);
   // 建班／換評量時，評量必須已啟用（停用的評量不開放建班，避免繞過「驗收後才啟用」的流程）。
+  // 班級限定的問卷（classOnly）只能「附加」在班級上，不能當班級的主要評量（否則會繞過彙總規則）。
+  const isClassOnlyAssessment = (id) => (db.data.assessments ?? []).some((a) => a.id === id && a.classOnly);
   const isEnabledAssessment = (id) => (db.data.assessments ?? []).some((a) => a.id === id && a.enabled);
   // 班級可附加的「課後問卷」（classOnly 評量）：只收存在、已啟用、標記為 classOnly 的 id，去重。
   const sanitizeExtraAssessmentIds = (ids) => {
@@ -171,7 +173,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       return res.status(400).json({ error: '請輸入班別名稱' });
     }
     // 不認得的題庫 id 會讓前端整個班級畫面找不到題庫設定；沒帶時沿用預設的 ai-competency。
-    if (assessmentId !== undefined && !isKnownAssessment(assessmentId)) return res.status(400).json({ error: '評量不存在' });
+    if (assessmentId !== undefined && (!isKnownAssessment(assessmentId) || isClassOnlyAssessment(assessmentId))) return res.status(400).json({ error: '評量不存在' });
     if (assessmentId !== undefined && !isEnabledAssessment(assessmentId)) return res.status(403).json({ code: 'ASSESSMENT_DISABLED', error: '這份評量目前未開放，請先請管理者啟用' });
     const group = {
       id: randomUUID(),
@@ -219,6 +221,8 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       .map(normalizeSubmission)
       // 被排除（不列入統計）的人：他的作答與別人對他的評分都不進班級報告、統計與匯出。
       .filter((n) => !excluded.has(n.userId) && !excluded.has(n.rateeId))
+      // 課後問卷只以彙總呈現（GET /groups/:id/course-survey），不進班級的作答明細。
+      .filter((n) => n.assessmentId !== COURSE_SURVEY_ID)
       .filter((n) => (n.groupId
         ? n.groupId === group.id
         : group.memberIds.includes(n.userId) && n.assessmentId === group.assessmentId))
@@ -262,21 +266,27 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       return res.status(403).json({ error: '無權限' });
     }
     if (!(group.extraAssessmentIds ?? []).includes(COURSE_SURVEY_ID)) return res.json({ attached: false });
+    // 彙總的對象是「已經交了問卷的人」，不受之後的排除或退班影響：否則教練可以把某位學員排除再重新查詢，
+    // 用前後差回推他的個別答案（差分攻擊）。應填人數 = 目前未排除的成員 ∪ 已交的人（排除一位尚未交的人
+    // 只會改變分母，不洩漏任何答案）。
     const excluded = new Set(group.excludedUserIds ?? []);
-    const expectedIds = new Set((group.memberIds ?? []).filter((id) => !excluded.has(id)));
     const latest = new Map();
     for (const sub of db.data.submissions) {
-      if (sub.assessmentId !== COURSE_SURVEY_ID || sub.surveyGroupId !== group.id || !expectedIds.has(sub.userId)) continue;
+      if (sub.assessmentId !== COURSE_SURVEY_ID || sub.surveyGroupId !== group.id) continue;
       const prev = latest.get(sub.userId);
       if (!prev || new Date(sub.createdAt) > new Date(prev.createdAt)) latest.set(sub.userId, sub);
     }
     const subs = [...latest.values()];
+    const expectedIds = new Set([...(group.memberIds ?? []).filter((id) => !excluded.has(id)), ...latest.keys()]);
+    const summary = summarizeCourseSurvey(subs, expectedIds.size);
+    if (summary.hidden) return res.json({ attached: true, ...summary });
+    // 追蹤信的同意與到期日只在人數足夠時提供（人數少時會直接等於個人的答案與作答日期）。
     const consented = subs.filter((s) => s.answers?.d7 === 'yes');
     const firstAt = consented.map((s) => new Date(s.createdAt).getTime()).sort((a, b) => a - b)[0];
     const addDays = (t, d) => new Date(t + d * 864e5).toISOString().slice(0, 10);
     res.json({
       attached: true,
-      ...summarizeCourseSurvey(subs, expectedIds.size),
+      ...summary,
       followUp: { consented: consented.length, due30: firstAt ? addDays(firstAt, 30) : null, due60: firstAt ? addDays(firstAt, 60) : null },
     });
   });
@@ -328,7 +338,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     if ((name !== undefined && typeof name !== 'string') || (companyName !== undefined && typeof companyName !== 'string')) {
       return res.status(400).json({ error: '名稱格式不正確' });
     }
-    if (assessmentId !== undefined && !isKnownAssessment(assessmentId)) return res.status(400).json({ error: '評量不存在' });
+    if (assessmentId !== undefined && (!isKnownAssessment(assessmentId) || isClassOnlyAssessment(assessmentId))) return res.status(400).json({ error: '評量不存在' });
     if (assessmentId !== undefined && assessmentId !== groups[idx].assessmentId && !isEnabledAssessment(assessmentId)) {
       return res.status(403).json({ code: 'ASSESSMENT_DISABLED', error: '這份評量目前未開放，請先請管理者啟用' });
     }
@@ -478,7 +488,7 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
 
     const selfSubs = db.data.submissions
       .map(normalizeSubmission)
-      .filter((n) => n.raterType === 'self' && (n.groupId
+      .filter((n) => n.raterType === 'self' && n.assessmentId !== COURSE_SURVEY_ID && (n.groupId
         ? n.groupId === group.id
         : group.memberIds.includes(n.userId) && n.assessmentId === group.assessmentId));
     const preDone = new Set(selfSubs.filter((n) => (n.phase ?? 'pre') === 'pre').map((n) => n.userId));

@@ -3,7 +3,7 @@
 // 這份問卷不走共用的李克特計分：結果由伺服器依清洗後的答案計算（server/src/lib/courseSurvey.js），
 // 前端只負責收集答案與顯示。構面沿用課前評測 ai-competency 的 id 與順序，才能在同一張圖比較。
 // 欄位白名單、情境題標準答案、構面對應都在伺服器那份；兩邊必須一致，有測試檢查
-// （src/test/course-survey-parity.test.js）。標準答案刻意不放在前端，解析由伺服器結果決定顯示哪一個。
+// （src/test/course-post.test.jsx）。標準答案刻意不放在前端，解析由伺服器結果決定顯示哪一個。
 import { DIMENSIONS as AI_DIMENSIONS } from './ai-competency.js';
 
 export const ID = 'ai-course-post';

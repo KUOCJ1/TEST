@@ -338,6 +338,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 - **提交**：`POST /submissions` 有獨立的 classOnly 分支（`routes/submissions.js`）：必須是附加班的成員、班級在開放期間內、每人每班一次；答案經 `lib/courseSurvey.js` 白名單清洗；**結果由伺服器計算**，不採用前端送來的 `result`。紀錄**刻意不寫 `groupId`**（寫 `surveyGroupId`），所以不會混進班級原本的課前／課後報告、統計、催交與匯出。
 - **題型與計分**：前端題目與解析在 `data/assessments/ai-course-post.js`；標準答案、構面對應、欄位白名單在伺服器 `lib/courseSurvey.js`，兩邊的一致性由 `src/test/course-post.test.jsx` 檢查。構面沿用 `ai-competency` 的 id 與順序，結果頁可以把「課前評測／課前回溯／現在」放在一起比較。
 - **隱私**：教練與班級承辦只看到彙總——`GET /coach/groups/:id/course-survey`：完成率永遠顯示；少於 3 人時不顯示任何彙總；開放文字不附姓名、依文字排序；被排除（不列入統計）的人不計入。個人的作答與結果不經由教練的 `overview`、`submissions/ratee` 回傳（本人與管理者除外）。
+- **彙總不能被用來回推個人**：彙總的對象是「已交問卷的人」，之後的排除或退班不改變它（否則教練可以排除某人再重新查詢，用前後差回推個人答案）；追蹤同意數與到期日只在人數 ≥ 3 時提供；全站基準（benchmark）對這份問卷一律回空；課後問卷不能設成班級的主要評量。
 - **30／60 天追蹤**：目前只實作「**同意與到期日**」——題目 D7 取得明確同意（預設不勾），彙總顯示同意人數與 30／60 天到期日；學員可在結果頁撤回（`PATCH /course-survey/follow-up`，寫稽核）。**追蹤問卷本身與寄信排程尚未實作**（需要先確認 SMTP）；60 天後建議請學員重做 48 題（既有的課前／課後比較）。
 - 設計稿與題目全文：`docs/post-course-survey-design.md`。
 

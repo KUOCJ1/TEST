@@ -127,7 +127,7 @@ export default function CourseSurveyPanel({ group }) {
           {[['e1', '最有價值的收穫'], ['e2', '希望調整或加強'], ['e3', '工作上最想用 AI 解決的痛點'], ['d6', '承諾的第一個一週衝刺']].map(([key, title]) => (
             <details key={key} className="rounded-xl border border-slate-200 px-4 py-2">
               <summary className="cursor-pointer text-sm font-semibold text-slate-700">{title}（{data.openText[key].length} 則，不附姓名）</summary>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">{data.openText[key].map((t) => <li key={t}>{t}</li>)}</ul>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">{data.openText[key].map((t, i) => <li key={`${i}-${t}`}>{t}</li>)}</ul>
             </details>
           ))}
         </div>

@@ -62,6 +62,11 @@ test('課後問卷：附加到班級、學員填寫、教練看完成率與彙�
   await ok(await coach.put(`/api/coach/groups/${gid}`, { data: { extraAssessmentIds: ['ai-course-post'] } }), 'attach');
   expect(await listed(learners[0].ctx)).toContain('ai-course-post');
   expect(await listed(outsider)).not.toContain('ai-course-post');
+  // 專屬班級（客戶專案）：只看到主要評量與附加的問卷。
+  await ok(await coach.put(`/api/coach/groups/${gid}`, { data: { exclusive: true } }), 'exclusive');
+  expect((await listed(learners[0].ctx)).sort()).toEqual(['ai-competency', 'ai-course-post']);
+  // 課後問卷不能被設成班級的主要評量（會繞過彙總規則）。
+  expect((await coach.put(`/api/coach/groups/${gid}`, { data: { assessmentId: 'ai-course-post' } })).status()).toBe(400);
   expect((await outsider.post('/api/submissions', { data: { assessmentId: 'ai-course-post', answers: answers() } })).status()).toBe(403);
 
   // 學員 1 用畫面填寫。

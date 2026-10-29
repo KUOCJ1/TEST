@@ -44,10 +44,17 @@ export function validateResultShape(result) {
   return null;
 }
 
+// 班級的開始／結束日：教練介面送來的是只有日期的字串（YYYY-MM-DD）。直接 new Date() 會當成 UTC 的
+// 00:00，也就是台灣時間 08:00——結束日當天早上 8 點班級就關閉了。只有日期時，開始日算當天 00:00、
+// 結束日算當天 23:59:59（台灣時間 UTC+8）；有帶時間的完整時間戳記則照原樣使用。
+const BARE_DATE = /^\d{4}-\d{2}-\d{2}$/;
+export const groupStart = (v) => new Date(BARE_DATE.test(v) ? `${v}T00:00:00+08:00` : v);
+export const groupEnd = (v) => new Date(BARE_DATE.test(v) ? `${v}T23:59:59.999+08:00` : v);
+
 export function getGroupPhase(group) {
   const now = new Date();
-  if (!group.startDate || now < new Date(group.startDate)) return 'not_started';
-  if (!group.endDate || now <= new Date(group.endDate)) return 'in_progress';
+  if (!group.startDate || now < groupStart(group.startDate)) return 'not_started';
+  if (!group.endDate || now <= groupEnd(group.endDate)) return 'in_progress';
   if (!group.publishedAt) return 'closed';
   return 'published';
 }

@@ -211,3 +211,59 @@ describe('教練端', () => {
     expect(onUpdated).toHaveBeenCalled();
   });
 });
+
+describe('不影響其他畫面（稽核回饋）', () => {
+  it('卡片：做完的課後問卷只有「查看我的結果」，沒有「查看分析」與重做', async () => {
+    const { default: AssessmentCard } = await import('../survey/components/AssessmentCard.jsx');
+    const onStart = vi.fn();
+    render(
+      <AssessmentCard
+        assessment={{ id: 'ai-course-post', name: '課後問卷', description: 'x' }}
+        latestSubmission={{ createdAt: '2026-10-30', result: { total: 6, maxScore: 6, level: { badge: '課後問卷已完成', color: '#2c5282' } } }}
+        groupPhase={null} submittedPhases={null}
+        onStart={onStart} onViewAnalysis={vi.fn()} onGoTo360={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: '查看分析' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /重新作答/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '查看我的結果' }));
+    expect(onStart).toHaveBeenCalledWith('ai-course-post');
+  });
+
+  it('「下一步」不會把學員導去課後問卷的（不存在的）分析頁', async () => {
+    const { computeNextStep } = await import('../survey/utils/nextStep.js');
+    const step = computeNextStep({
+      assessments: [{ id: 'ai-competency', name: 'AI', enabled: true }],
+      mySubmissions: [
+        { assessmentId: 'ai-course-post', raterType: 'self', groupId: null },
+        { assessmentId: 'ai-competency', raterType: 'self', groupId: 'g1', phase: 'pre' },
+      ],
+      myGroups: [], groupMembers: [], goals: [],
+    });
+    expect(step.kind).toBe('view-report');
+    expect(step.assessmentId).toBe('ai-competency');
+    const onlyCourse = computeNextStep({
+      assessments: [{ id: 'ai-competency', name: 'AI', enabled: true }],
+      mySubmissions: [{ assessmentId: 'ai-course-post', raterType: 'self' }], myGroups: [], groupMembers: [], goals: [],
+    });
+    expect(onlyCourse.kind).toBe('start-any');
+  });
+
+  it('班級不在開放期間：填之前就先提醒', async () => {
+    m.mySubmissions.mockResolvedValue([]);
+    m.myGroups = vi.fn().mockResolvedValue([{ id: 'g1', phase: 'closed', extraAssessmentIds: ['ai-course-post'] }]);
+    renderSurvey();
+    expect(await screen.findByRole('status')).toHaveTextContent('作答期間已結束');
+  });
+
+  it('在別處已經交過（409）：直接顯示結果，不卡在表單上', async () => {
+    m.mySubmissions.mockResolvedValueOnce([]);
+    m.createSubmission.mockRejectedValue(Object.assign(new Error('已完成作答，不可重複提交'), { code: 'ALREADY_SUBMITTED' }));
+    renderSurvey();
+    await screen.findByText('A 課程體驗');
+    fillAll();
+    m.mySubmissions.mockResolvedValue([{ assessmentId: 'ai-course-post', result: buildCourseResult(answersFor()), createdAt: new Date().toISOString() }]);
+    fireEvent.click(screen.getByRole('button', { name: '送出問卷' }));
+    expect(await screen.findByText('您已完成這份問卷')).toBeInTheDocument();
+  });
+});

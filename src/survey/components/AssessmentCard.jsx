@@ -16,6 +16,8 @@ export default function AssessmentCard({
   // 按鈕仍要能點——使用者要靠它才能進去選「課後複測」。
   const alreadySubmitted = inGroup && !!submittedPhases?.has('pre') && !!submittedPhases?.has('post');
   const supports360 = !!config?.SUPPORTS_360;
+  // 班級限定的問卷（課後問卷）：做完只能回到問卷頁看結果，沒有分析頁，也不能重做。
+  const classOnly = !!config?.CLASS_ONLY;
 
   let startLabel = hasResult ? '重新作答' : '開始作答';
   if (!canStart && !hasResult) startLabel = '尚未開放作答';
@@ -63,7 +65,7 @@ export default function AssessmentCard({
           )}
         </div>
 
-        {hasResult && (
+        {hasResult && !classOnly && (
           <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3">
             <p className="text-xs font-medium text-slate-400">最近作答 · {formatDate(latestSubmission.createdAt)}</p>
             <div className="mt-1 flex items-center gap-3">
@@ -89,7 +91,11 @@ export default function AssessmentCard({
           按鈕。現在：做過的評量主要動作是「查看分析」，沒做過是「開始作答」，其餘放在
           下方一排小按鈕；按鈕文字一律不換行。 */}
       <div className="mt-5 space-y-2">
-        {hasResult ? (
+        {hasResult && classOnly ? (
+          <button type="button" onClick={() => onStart(assessment.id)} className="btn-primary w-full whitespace-nowrap">
+            查看我的結果
+          </button>
+        ) : hasResult ? (
           <button type="button" onClick={() => onViewAnalysis(assessment.id)} className="btn-primary w-full whitespace-nowrap">
             查看分析
           </button>
@@ -103,7 +109,7 @@ export default function AssessmentCard({
             {startLabel}
           </button>
         )}
-        {(hasResult || (supports360 && onGoTo360)) && (
+        {!classOnly && (hasResult || (supports360 && onGoTo360)) && (
           <div className="flex flex-wrap gap-2">
             {hasResult && !alreadySubmitted && canStart && (
               <button type="button" onClick={() => onStart(assessment.id)} className="btn-secondary btn-sm flex-1 whitespace-nowrap">

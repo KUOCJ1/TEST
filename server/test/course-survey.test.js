@@ -222,6 +222,61 @@ describe('個人作答不經由教練的明細介面外洩', () => {
   });
 });
 
+describe('課後問卷不能繞過彙總規則', () => {
+  test('不能把課後問卷設成班級的主要評量（建班、改班都擋）；改不成就看不到個人明細', async () => {
+    const s = await setup();
+    await submit(await s.login(s.learners[0]));
+    const coach = await s.login(s.coach);
+    const put = await coach.put('/api/coach/groups/g1').send({ assessmentId: COURSE_SURVEY_ID });
+    assert.equal(put.status, 400);
+    const post = await coach.post('/api/coach/groups').send({ name: '新班', assessmentId: COURSE_SURVEY_ID });
+    assert.equal(post.status, 400);
+    assert.equal(s.group.assessmentId, 'ai-competency');
+  });
+
+  test('即使班級資料裡的主要評量被設成問卷（舊資料、直接改庫），班級明細與催交也不含個人問卷', async () => {
+    const s = await setup();
+    await submit(await s.login(s.learners[0]));
+    s.group.assessmentId = COURSE_SURVEY_ID;
+    const coach = await s.login(s.coach);
+    const detail = await coach.get('/api/coach/groups/g1');
+    assert.equal(detail.body.submissions.length, 0);
+    assert.ok(!JSON.stringify(detail.body).includes('學員1的'));
+  });
+
+  test('全站基準（benchmark）不提供課後問卷的資料', async () => {
+    const s = await setup();
+    for (const l of s.learners) await submit(await s.login(l));
+    const res = await (await s.login(s.learners[0])).get(`/api/assessments/${COURSE_SURVEY_ID}/benchmark`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.count, 0);
+    assert.deepEqual(res.body.totals, []);
+  });
+});
+
+describe('專屬班級（客戶專案）也看得到附加的問卷', () => {
+  test('exclusive 班級：只看到主要評量與附加問卷，看不到其他評量', async () => {
+    const s = await setup();
+    s.group.exclusive = true;
+    const res = await (await s.login(s.learners[0])).get('/api/assessments');
+    const ids = res.body.assessments.map((a) => a.id).sort();
+    assert.deepEqual(ids, ['ai-competency', COURSE_SURVEY_ID].sort());
+  });
+});
+
+describe('班級開放期間：只填日期的結束日算到當天結束（台灣時間）', () => {
+  test('結束日是今天（只有日期）→ 今天仍可作答；結束日是昨天 → 不可作答', async () => {
+    const { getGroupPhase } = await import('../src/lib/helpers.js');
+    const taipeiDay = (offset) => new Date(Date.now() + 8 * 3600e3 + offset * DAY).toISOString().slice(0, 10);
+    assert.equal(getGroupPhase({ startDate: taipeiDay(-1), endDate: taipeiDay(0) }), 'in_progress');
+    assert.equal(getGroupPhase({ startDate: taipeiDay(0), endDate: taipeiDay(0) }), 'in_progress');
+    assert.equal(getGroupPhase({ startDate: taipeiDay(-3), endDate: taipeiDay(-1) }), 'closed');
+    assert.equal(getGroupPhase({ startDate: taipeiDay(1), endDate: taipeiDay(2) }), 'not_started');
+    // 完整時間戳記照原樣使用。
+    assert.equal(getGroupPhase({ startDate: new Date(Date.now() - DAY).toISOString(), endDate: new Date(Date.now() - 1000).toISOString() }), 'closed');
+  });
+});
+
 describe('班級附加問卷的設定', () => {
   test('只接受存在、已啟用、classOnly 的評量；其他 id 被丟掉', async () => {
     const s = await setup({ extra: [] });
@@ -276,14 +331,40 @@ describe('教練端彙總', () => {
     assert.deepEqual(b.openText.e1, [...b.openText.e1].sort((x, y) => x.localeCompare(y, 'zh-Hant')));
   });
 
-  test('被排除的人不計入應填與彙總', async () => {
+  test('差分攻擊：排除已交問卷的人，彙總與完成率完全不變（不能用前後差回推個人答案）', async () => {
     const s = await setup({ members: 4 });
-    for (const l of s.learners) await submit(await s.login(l));
+    for (const [i, l] of s.learners.entries()) await submit(await s.login(l), validAnswers({ a8: i + 1, e1: `收穫${i}` }));
+    const coach = await s.login(s.coach);
+    const before = (await coach.get('/api/coach/groups/g1/course-survey')).body;
     s.group.excludedUserIds = [s.learners[3].id];
-    const b = (await (await s.login(s.coach)).get('/api/coach/groups/g1/course-survey')).body;
-    assert.equal(b.expected, 3);
-    assert.equal(b.completed, 3);
-    assert.equal(b.completionRate, 100);
+    const afterExclude = (await coach.get('/api/coach/groups/g1/course-survey')).body;
+    assert.deepEqual(afterExclude, before);
+    s.group.memberIds = s.group.memberIds.filter((id) => id !== s.learners[3].id);
+    const afterRemove = (await coach.get('/api/coach/groups/g1/course-survey')).body;
+    assert.deepEqual(afterRemove, before);
+    assert.equal(before.completed, 4);
+  });
+
+  test('排除一位「還沒交」的人只改分母，不影響任何彙總內容', async () => {
+    const s = await setup({ members: 4 });
+    for (const l of s.learners.slice(0, 3)) await submit(await s.login(l));
+    const coach = await s.login(s.coach);
+    const before = (await coach.get('/api/coach/groups/g1/course-survey')).body;
+    assert.equal(before.expected, 4);
+    s.group.excludedUserIds = [s.learners[3].id];
+    const after = (await coach.get('/api/coach/groups/g1/course-survey')).body;
+    assert.equal(after.expected, 3);
+    assert.equal(after.completionRate, 100);
+    assert.deepEqual({ ...after, expected: 0, completionRate: 0 }, { ...before, expected: 0, completionRate: 0 });
+  });
+
+  test('少於 3 人時不提供追蹤信同意數與到期日（會等於個人答案與作答日期）', async () => {
+    const s = await setup();
+    await submit(await s.login(s.learners[0]));
+    const body = (await (await s.login(s.coach)).get('/api/coach/groups/g1/course-survey')).body;
+    assert.equal(body.hidden, true);
+    assert.equal(body.followUp, undefined);
+    assert.equal(JSON.stringify(body).includes('due30'), false);
   });
 
   test('別班教練 403；管理員可看；沒附加問卷回 attached:false', async () => {

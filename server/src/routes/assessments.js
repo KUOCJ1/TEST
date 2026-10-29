@@ -18,7 +18,8 @@ export function createAssessmentsRouter({ db, requireAuth }) {
     if (req.user.role === 'user') {
       const exclusive = (db.data.groups ?? []).filter((g) => g.exclusive && (g.memberIds ?? []).includes(req.user.id));
       if (exclusive.length > 0) {
-        const allowed = new Set(exclusive.map((g) => g.assessmentId ?? 'ai-competency'));
+        // 專屬班級除了主要評量，也要放行班級附加的問卷（extraAssessmentIds）。
+        const allowed = new Set(exclusive.flatMap((g) => [g.assessmentId ?? 'ai-competency', ...(g.extraAssessmentIds ?? [])]));
         list = list.filter((a) => allowed.has(a.id));
       }
     }
@@ -46,6 +47,10 @@ export function createAssessmentsRouter({ db, requireAuth }) {
 
   router.get('/assessments/:id/benchmark', requireAuth, (req, res) => {
     const assessmentId = req.params.id;
+    // 班級限定的問卷（課後問卷）不提供全站基準：人數少時會直接等於個人的分數。
+    if ((db.data.assessments ?? []).some((a) => a.id === assessmentId && a.classOnly)) {
+      return res.json({ assessmentId, count: 0, avgTotal: 0, totals: [], dimensionAverages: [] });
+    }
     const submissionCount = db.data.submissions.length;
     const cached = benchmarkCache.get(assessmentId);
     if (cached && cached.submissionCount === submissionCount) {
