@@ -330,6 +330,10 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 | `disc` | DISC 行為風格評測 | **PROFILE_MODE** | 4 大構面（互相獨立） | 32 題（含反向題） | 是 | 風格輪廓，6 種主流組合 + default，中性用語（無優劣） |
 | `archetype` | 識己®性格原型評測 | **PROFILE_MODE** | 4 組性格光譜（二元對立） | 40 題（含反向題） | **否**（見下） | 16 種原創原型，自陳偏好量表 |
 
+### 5.0 班級前測分布與前後測比較
+
+`utils/prePost.js`（純函式）＋ `coach/PrePostAnalysis.jsx`，顯示在教練「總覽」。每人每階段取最新一筆自評（沒有 phase 的舊資料視為前測）；比較只用配對樣本；構面用 `result.dimensions[].average`（1–5）才能跨題數比較。適用條件 `supportsPrePost(config)`：有 `LEVELS`，且不是 `PROFILE_MODE`／`SCORING`／`REPORT` 專屬計分的題庫；不適用的題庫仍用 `GroupGainReport`。人數少（一班十幾人）所以只提供描述統計與效果量 dz，不做顯著性檢定；dz 需 ≥5 人且差有變異才提供。
+
 ### 5.1 課後學習成效問卷（`ai-course-post`，班級限定）
 
 為客戶工作坊（例如韋能《AI 深度整合工作坊》）設計的課後問卷，**不是一般評測**：

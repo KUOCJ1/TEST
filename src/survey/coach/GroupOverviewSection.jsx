@@ -5,6 +5,9 @@ import RadarChart from '../components/RadarChart';
 import DimensionHeatmap from '../components/DimensionHeatmap';
 import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import GroupGainReport from './GroupGainReport';
+import PrePostAnalysis from './PrePostAnalysis';
+import { supportsPrePost } from '../utils/prePost.js';
+import { getAssessment } from '../data/assessments/index.js';
 import ProgressPanel from './ProgressPanel';
 import SharedGoalsPanel from './SharedGoalsPanel';
 import CourseSurveyPanel from './CourseSurveyPanel';
@@ -192,7 +195,9 @@ export default function GroupOverviewSection({
         </>
       )}
 
-      <GroupGainReport group={group} submissions={submissions} />
+      {/* 一般題庫：前測分布＋前後測比較（含落點變化、構面差異、個人變化）；風格型題庫維持原本的風格分布變化。 */}
+      <PrePostAnalysis group={group} submissions={submissions} members={members} />
+      {!supportsPrePost(getAssessment(group.assessmentId)) && <GroupGainReport group={group} submissions={submissions} />}
 
       <SharedGoalsPanel goals={sharedGoals} />
 
