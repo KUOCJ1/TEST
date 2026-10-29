@@ -50,7 +50,6 @@ test('教練總覽：前測分布與前後測比較', async ({ browser }) => {
   await expect(page.getByRole('table', { name: '落點等級變化矩陣' })).toBeVisible();
   await expect(page.getByRole('region', { name: '每位成員前後測變化' })).toContainText('比較學員3');
   await expect(page.getByText(/只做了前測 1 人/)).toBeVisible();
-  if (process.env.PP_SHOT) await page.getByText('前測分布與前後測比較').locator('xpath=ancestor::div[contains(@class,"panel")]').first().screenshot({ path: process.env.PP_SHOT });
   await context.close();
   await coach.dispose();
   await admin.dispose();
