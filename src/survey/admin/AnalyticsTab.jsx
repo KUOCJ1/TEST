@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Download, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { getAssessment } from '../data/assessments/index.js';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
+import { selfSubmissions } from '../utils/groupRows';
 import { exportAdminCsv } from '../utils/csvExport';
 import { useAssessmentFilter } from '../hooks/useAssessmentFilter';
 import RadarChart from '../components/RadarChart';
@@ -45,8 +46,10 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
   const [sortKey, setSortKey] = useState('total');
   const [sortDir, setSortDir] = useState('desc');
   const initialId = adminAssessments[0]?.id ?? null;
+  // 統計的單位是「受評者」：360° 的他評（userId 是評分者）不能當成評分者本人的成績，只算自評。
+  const selfOnly = useMemo(() => selfSubmissions(submissions), [submissions]);
   const { activeId: selectedId, setSelectedId, filtered: filteredSubs } =
-    useAssessmentFilter(submissions, initialId);
+    useAssessmentFilter(selfOnly, initialId);
 
   const activeConfig = useMemo(() => (selectedId ? getAssessment(selectedId) : null), [selectedId]);
   // 風格型題庫（DISC、識己®）沒有高低之分：不顯示「達成率」「總分」這類暗示越高

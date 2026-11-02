@@ -6,6 +6,7 @@ import PhaseBadge from '../components/PhaseBadge';
 import { formatDay } from '../utils/format';
 import { pickDefaultGroup } from '../utils/groups';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
+import { selfSubmissions, othersSummary } from '../utils/groupRows';
 import PrintableReport from '../components/PrintableReport';
 import CompassGroupReport from './CompassGroupReport.jsx';
 import BatchPrintableReport from '../components/BatchPrintableReport';
@@ -145,13 +146,17 @@ export default function GroupWorkspace({ users, currentUserId }) {
 
   const config = groupDetail ? getAssessment(groupDetail.group.assessmentId) : null;
 
+  // 成員成績只用「自評」：360° 的他評（含批次匯入）userId 是評分者，若算進來，評分者會被當成拿到成績的成員。
+  const selfSubs = useMemo(() => selfSubmissions(patchedSubmissions), [patchedSubmissions]);
+  const show360 = !!config?.SUPPORTS_360 && !config?.STRICT_RATER_PRIVACY;
+
   const memberRows = useMemo(() => {
     if (!groupDetail || !config) return [];
-    const latest = latestPerUser(patchedSubmissions);
+    const latest = latestPerUser(selfSubs);
     // 這個班的全部作答（不只最新一筆）依人分組，讓抽屜能顯示個人歷程趨勢，
     // 而不是只看得到單次成績——教練端本來看不到學員的成長軌跡。
     const historyByUser = new Map();
-    for (const s of patchedSubmissions) {
+    for (const s of selfSubs) {
       const list = historyByUser.get(s.userId) ?? [];
       list.push(s);
       historyByUser.set(s.userId, list);
@@ -172,15 +177,17 @@ export default function GroupWorkspace({ users, currentUserId }) {
           level: s.result.level,
           history: historyByUser.get(s.userId) ?? [s],
           hasMyComment: (s.comments ?? []).some((c) => c.coachId === currentUserId),
+          // 360° 題庫：這位成員（受評者）收到的他評摘要，供總覽對照自評。
+          others: show360 ? othersSummary(patchedSubmissions, s.userId) : null,
         };
       })
       .sort((a, b) => b.total - a.total);
-  }, [groupDetail, config, patchedSubmissions, users, currentUserId]);
+  }, [groupDetail, config, patchedSubmissions, selfSubs, show360, users, currentUserId]);
 
   const groupStats = useMemo(() => {
     if (!groupDetail || !config) return null;
-    return aggregateStats(patchedSubmissions, config);
-  }, [groupDetail, config, patchedSubmissions]);
+    return aggregateStats(selfSubs, config);
+  }, [groupDetail, config, selfSubs]);
 
   const groupBenchmark = useMemo(() => {
     if (!groupStats) return null;
@@ -302,7 +309,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
                 memberInvites={groupDetail.memberInvites ?? []}
                 mailConfigured={groupDetail.mailConfigured ?? false}
                 users={users}
-                patchedSubmissions={patchedSubmissions}
+                patchedSubmissions={selfSubs}
                 onGroupUpdated={handleGroupUpdated}
                 refreshSubmissions={refreshSubmissions}
                 showToast={showToast}
@@ -340,7 +347,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
       {showGroupReport && groupDetail && (
         <GroupPrintableReport
           group={groupDetail.group}
-          submissions={patchedSubmissions}
+          submissions={selfSubs}
           users={users}
           onClose={() => setShowGroupReport(false)}
         />

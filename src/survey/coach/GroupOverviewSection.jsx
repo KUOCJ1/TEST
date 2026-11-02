@@ -22,6 +22,7 @@ export default function GroupOverviewSection({
   group, members, groupStats, memberRows, strongestWeakest, commentedCount,
   submissions, onGroupUpdated, showToast, confirm, onOpenMember, pendingInviteCount = 0, sharedGoals = [],
 }) {
+  const has360 = memberRows.some((r) => r.others);
   const [groupComment, setGroupComment] = useState(group.groupComment ?? '');
   const [groupTips, setGroupTips] = useState(group.groupTips?.length ? group.groupTips : ['']);
   const [savingComment, setSavingComment] = useState(false);
@@ -126,6 +127,7 @@ export default function GroupOverviewSection({
                     <th className="py-2 pr-3 font-medium">總分（與班平均）</th>
                     <th className="py-2 pr-3 font-medium">達成率</th>
                     <th className="py-2 pr-3 font-medium">落點等級</th>
+                    {has360 && <th className="py-2 pr-3 font-medium">他評（平均總分）</th>}
                     <th className="py-2 pr-3 font-medium">評語</th>
                     <th className="py-2 font-medium">報告</th>
                   </tr>
@@ -165,6 +167,31 @@ export default function GroupOverviewSection({
                             {r.level.badge}
                           </span>
                         </td>
+                        {has360 && (
+                          <td className="py-2.5 pr-3">
+                            {r.others ? (
+                              <>
+                                <span className="font-semibold text-slate-700">{r.others.avgTotal}</span>
+                                <span className="ml-1.5 text-xs text-slate-500">
+                                  （{r.others.count} 人
+                                  {r.others.byType.manager ? `：主管 ${r.others.byType.manager}` : ''}
+                                  {r.others.byType.peer ? `、同儕 ${r.others.byType.peer}` : ''}
+                                  {r.others.byType.subordinate ? `、部屬 ${r.others.byType.subordinate}` : ''}）
+                                </span>
+                                {(() => {
+                                  const gap = Math.round((r.total - r.others.avgTotal) * 10) / 10;
+                                  return gap === 0 ? null : (
+                                    <span className={`ml-1.5 text-xs font-semibold ${gap > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                      自評{gap > 0 ? '高' : '低'} {Math.abs(gap)}
+                                    </span>
+                                  );
+                                })()}
+                              </>
+                            ) : (
+                              <span className="text-xs text-slate-400">尚無他評</span>
+                            )}
+                          </td>
+                        )}
                         <td className="py-2.5 pr-3">
                           {r.hasMyComment ? (
                             <span className="text-xs font-semibold text-emerald-600">已寫</span>

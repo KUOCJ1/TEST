@@ -57,6 +57,15 @@ test('批次匯入 70 題 360 → 建班加入成員 → 教練後台看得到�
   await expect(page.getByRole('heading', { name: `森永 360 ${sfx}` })).toBeVisible({ timeout: 20000 });
   // 自評結果在班級總覽的成員表裡，落點用 L9D 的等級名稱。
   await expect(page.getByText('受評者甲').first()).toBeVisible({ timeout: 15000 });
+  // 成員比較表只列「有自評的受評者」；評分者（部屬一、主管乙…）不會被當成拿到成績的成員，
+  // 受評者那一列顯示他收到的他評摘要（人數與各類評分者）。
+  const table = page.getByRole('region', { name: '成員比較表' });
+  await expect(table).toContainText('受評者甲');
+  await expect(table).not.toContainText('部屬一');
+  await expect(table).not.toContainText('主管乙');
+  await expect(table).toContainText('4 人');
+  await expect(table).toContainText('主管 1');
+  await expect(table).toContainText('部屬 3');
   await expect(page.getByText(/領導/).first()).toBeVisible();
   await context.close();
   await admin.dispose();
