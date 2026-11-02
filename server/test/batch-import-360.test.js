@@ -122,3 +122,58 @@ describe('移除批次匯入的作答（改分組後重新匯入用）', () => {
     assert.equal(empty.body.count, 0);
   });
 });
+
+describe('批次匯入的最後防線', () => {
+  test('結果是用別份評量算的（assessmentId 對不上上傳目標）→ 拒絕，不存入', async () => {
+    const { db, ag } = await setup();
+    const r = row('s@p.invalid', '謝玉瑟', 'self', '', '', 4);
+    const res = await ag.post('/api/admin/batch-import').send({ assessmentId: 'ai-competency', rows: [r] });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.added, 0);
+    assert.equal(res.body.errors.length, 1);
+    assert.match(res.body.errors[0].message, /不一致/);
+    assert.equal(db.data.submissions.length, 0);
+  });
+});
+
+describe('班級與資料的一致性警告', () => {
+  const importedSub = (assessmentId, userId, extra = {}) => ({
+    id: randomUUID(), userId, rateeId: userId, assessmentId, raterType: 'self', source: 'imported', answers: [], createdAt: new Date().toISOString(),
+    result: { total: 1, dimensions: [{ id: 'd', average: 3 }] }, ...extra,
+  });
+
+  test('這次事故：班級用 L9D，成員的匯入作答屬於 70 題 360 → 警告；對的班級沒有警告', async () => {
+    const { db, ag } = await setup();
+    const u = { id: randomUUID(), name: '潘', email: 'p@p.invalid', role: 'user', passwordHash: null, createdAt: new Date().toISOString() };
+    db.data.users.push(u);
+    const admin = db.data.users.find((x) => x.role === 'admin');
+    const wrong = { id: 'g-wrong', name: '用錯評量的班', assessmentId: 'leadership-9d', coachId: admin.id, memberIds: [u.id], startDate: null, endDate: null };
+    const right = { id: 'g-right', name: '對的班', assessmentId: ID, coachId: admin.id, memberIds: [u.id], startDate: null, endDate: null };
+    db.data.groups.push(wrong, right);
+    db.data.submissions.push(importedSub(ID, u.id));
+    const w = (await ag.get('/api/coach/groups/g-wrong')).body.warnings;
+    assert.equal(w.length, 1);
+    assert.equal(w[0].code, 'imported-other-assessment');
+    assert.match(w[0].message, /70 題/);
+    assert.deepEqual((await ag.get('/api/coach/groups/g-right')).body.warnings, []);
+  });
+
+  test('匯入的作答有構面平均 0（沒有作答）→ 警告；學員自己做的別份評量不警告', async () => {
+    const { db, ag } = await setup();
+    const u = { id: randomUUID(), name: '謝', email: 's@p.invalid', role: 'user', passwordHash: null, createdAt: new Date().toISOString() };
+    db.data.users.push(u);
+    const admin = db.data.users.find((x) => x.role === 'admin');
+    db.data.groups.push({ id: 'g1', name: '班', assessmentId: 'leadership-9d', coachId: admin.id, memberIds: [u.id], startDate: null, endDate: null });
+    db.data.submissions.push(importedSub('leadership-9d', u.id, { result: { total: 1, dimensions: [{ id: 'a', average: 4 }, { id: 'b', average: 0 }] } }));
+    db.data.submissions.push({ ...importedSub('ai-competency', u.id), source: undefined }); // 自己做的別份評量
+    const w = (await ag.get('/api/coach/groups/g1')).body.warnings;
+    assert.deepEqual(w.map((x) => x.code), ['imported-blank-dimension']);
+  });
+
+  test('沒有任何問題的班級：warnings 是空陣列', async () => {
+    const { db, ag } = await setup();
+    const admin = db.data.users.find((x) => x.role === 'admin');
+    db.data.groups.push({ id: 'g2', name: '空班', assessmentId: 'ai-competency', coachId: admin.id, memberIds: [], startDate: null, endDate: null });
+    assert.deepEqual((await ag.get('/api/coach/groups/g2')).body.warnings, []);
+  });
+});

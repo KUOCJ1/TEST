@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, FileText, Plus, X } from 'lucide-react';
+import { AlertTriangle, Eye, FileText, Plus, X } from 'lucide-react';
 import { api } from '../api/client';
 import RadarChart from '../components/RadarChart';
 import DimensionHeatmap from '../components/DimensionHeatmap';
@@ -21,7 +21,7 @@ import { badgeBg } from '../utils/color';
 // 沿用本檔案原本 GroupTimelineCard／QrCodeCard 已經在用的作法。
 export default function GroupOverviewSection({
   group, members, groupStats, memberRows, strongestWeakest, commentedCount,
-  submissions, onGroupUpdated, showToast, confirm, onOpenMember, pendingInviteCount = 0, sharedGoals = [],
+  submissions, onGroupUpdated, showToast, confirm, onOpenMember, pendingInviteCount = 0, sharedGoals = [], warnings = [],
 }) {
   const has360 = memberRows.some((r) => r.others);
   const [report360, setReport360] = useState(null); // { id, name }：要產出 360° 完整報告的受評者
@@ -58,6 +58,15 @@ export default function GroupOverviewSection({
         confirm={confirm}
         pendingInviteCount={pendingInviteCount}
       />
+
+      {warnings.length > 0 && (
+        <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+          <p className="mb-1 flex items-center gap-1.5 text-sm font-bold text-amber-800"><AlertTriangle className="h-4 w-4" /> 請先確認這個班的資料</p>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-amber-800">
+            {warnings.map((w) => <li key={w.code}>{w.message}</li>)}
+          </ul>
+        </div>
+      )}
 
       {report360 && <ThreeSixtyReport rateeId={report360.id} rateeName={report360.name} assessmentId={group.assessmentId} onClose={() => setReport360(null)} />}
 

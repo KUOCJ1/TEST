@@ -3,6 +3,8 @@ import { NA_VALUE, completeness, unansweredQuestionIds, buildResult } from '../.
 // 接班準備度評測。規格：docs/leadership-new/06-succession-questionnaire-v0.1.md
 // 只自評；不做總分與排名；「長期意向」面向的題目可選答。
 export const ID = 'succession-intent';
+// 題庫結構版本（結構一變就要升版，見 utils/assessmentFingerprint.js）。
+export const ITEM_VERSION = '2026-10';
 export const SUPPORTS_360 = false;
 export const NAME = '接班準備度評測';
 export const NAME_EN = 'Succession Readiness Assessment';

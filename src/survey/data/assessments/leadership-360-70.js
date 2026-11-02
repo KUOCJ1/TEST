@@ -18,6 +18,8 @@
 import * as L9D from './leadership-9d.js';
 
 export const ID = 'leadership-360-70';
+// 題庫結構版本（結構一變就要升版，見 utils/assessmentFingerprint.js）。分組變動後已匯入的結果要移除重匯。
+export const ITEM_VERSION = '2026-11';
 export const SUPPORTS_360 = true;
 export const LIBRARY_HIDDEN = true;
 export const NAME = '經贏® 領導力 360° 行為評量（70 題）';

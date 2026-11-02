@@ -3,7 +3,7 @@ import { useConfirm } from '../components/useConfirm';
 import { ChevronUp, ChevronDown, Download, Check, X } from 'lucide-react';
 import { api } from '../api/client';
 import { REGISTRY } from '../data/assessments/index.js';
-import { buildResult } from '../utils/scoring.js';
+import { validateAndScore } from './batchValidation.js';
 import { RATER_LABELS, RATER_COLORS as RATER_COLOR } from '../constants/raterTypes';
 import { parseFile } from './batchFileParsing.js';
 import { badgeBg } from '../utils/color';
@@ -14,8 +14,6 @@ const RATER_TYPE_OPTIONS = [
   { value: 'peer',        en: 'peer',        desc: '由同階同事或橫向協作夥伴填寫，需填寫同事的 rater_email' },
   { value: 'subordinate', en: 'subordinate', desc: '由受測者的直屬部屬填寫，需填寫部屬的 rater_email' },
 ].map((o) => ({ ...o, label: RATER_LABELS[o.value] }));
-
-const RATER_TYPE_SET = new Set(RATER_TYPE_OPTIONS.map((o) => o.value));
 
 function generateTemplateCsv(config) {
   const allQIds = config.ALL_QUESTIONS.map((q) => q.id);
@@ -38,58 +36,6 @@ function downloadCsv(csv, filename) {
   URL.revokeObjectURL(url);
 }
 
-function validateAndScore(rawRows, config) {
-  const results = [];
-  const errors = [];
-
-  for (let i = 0; i < rawRows.length; i++) {
-    const row = rawRows[i];
-    const rowNum = i + 2;
-
-    const rateeEmail = String(row['ratee_email'] ?? '').trim().toLowerCase();
-    const rateeName  = String(row['ratee_name']  ?? '').trim();
-    const raterType  = String(row['rater_type']  ?? '').trim().toLowerCase();
-    const raterEmail = String(row['rater_email'] ?? '').trim().toLowerCase();
-    const raterName  = String(row['rater_name']  ?? '').trim();
-
-    if (!rateeEmail) { errors.push({ row: rowNum, message: '缺少 ratee_email' }); continue; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rateeEmail)) { errors.push({ row: rowNum, message: `ratee_email 格式錯誤：${rateeEmail}` }); continue; }
-    if (!RATER_TYPE_SET.has(raterType)) { errors.push({ row: rowNum, message: `rater_type 必須為 self / manager / peer / subordinate，目前值：「${raterType}」` }); continue; }
-    if (raterType !== 'self' && !raterEmail) { errors.push({ row: rowNum, message: `rater_type="${raterType}" 時，rater_email 不可為空` }); continue; }
-    if (raterEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raterEmail)) { errors.push({ row: rowNum, message: `rater_email 格式錯誤：${raterEmail}` }); continue; }
-
-    const answers = {};
-    let invalidCount = 0;
-    for (const q of config.ALL_QUESTIONS) {
-      const raw = row[q.id];
-      if (raw === '' || raw === null || raw === undefined) continue;
-      const n = Number(raw);
-      if (!Number.isFinite(n) || n < config.SCALE_MIN || n > config.SCALE_MAX) { invalidCount++; continue; }
-      answers[q.id] = n;
-    }
-
-    const answered = Object.keys(answers).length;
-    if (answered === 0) { errors.push({ row: rowNum, message: '未偵測到任何有效答題資料，請確認題目欄位名稱是否與範本一致' }); continue; }
-    if (invalidCount > 0) errors.push({ row: rowNum, message: `${invalidCount} 題答案超出量表範圍（${config.SCALE_MIN}–${config.SCALE_MAX}），已略過不計分` });
-
-    const result = buildResult(answers, config);
-
-    results.push({
-      _rowNum: rowNum,
-      rateeEmail,
-      rateeName: rateeName || rateeEmail.split('@')[0],
-      raterType,
-      raterEmail: raterType === 'self' ? rateeEmail : raterEmail,
-      raterName:  raterType === 'self' ? (rateeName || rateeEmail.split('@')[0]) : (raterName || raterEmail.split('@')[0]),
-      answers,
-      result,
-      answeredCount: answered,
-      totalQuestions: config.TOTAL_QUESTIONS,
-    });
-  }
-  return { results, errors };
-}
-
 function ColTag({ children }) {
   return <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-brass-600">{children}</code>;
 }
@@ -101,6 +47,9 @@ export default function BatchUploadSection() {
   const [guideOpen, setGuideOpen] = useState(false);
   const [parsedRows, setParsedRows] = useState(null);
   const [parseErrors, setParseErrors] = useState([]);
+  const [fileIssues, setFileIssues] = useState([]); // 檔案層級的問題：error 代表整個檔案不能匯入
+  const [rawRows, setRawRows] = useState(null);
+  const [allowPartial, setAllowPartial] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const [uploadError, setUploadError] = useState('');
@@ -117,6 +66,14 @@ export default function BatchUploadSection() {
     downloadCsv(csv, `範本_${config.NAME}_批次上傳.csv`);
   };
 
+  // 以目前選的評量與「允許缺題」重新驗證已載入的檔案（切換評量或勾選時不必重新選檔）。
+  const runValidation = (raw, cfg, partial) => {
+    const { results, errors, fileIssues: issues } = validateAndScore(raw, cfg, { allowPartial: partial });
+    setParsedRows(results);
+    setParseErrors(errors);
+    setFileIssues(issues);
+  };
+
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -126,10 +83,9 @@ export default function BatchUploadSection() {
     setUploadResult(null);
     setUploadError('');
     try {
-      const rawRows = await parseFile(file);
-      const { results, errors } = validateAndScore(rawRows, config);
-      setParsedRows(results);
-      setParseErrors(errors);
+      const raw = await parseFile(file);
+      setRawRows(raw);
+      runValidation(raw, config, allowPartial);
     } catch (err) {
       setUploadError(err.message);
     }
@@ -178,6 +134,8 @@ export default function BatchUploadSection() {
   const handleClear = () => {
     setParsedRows(null);
     setParseErrors([]);
+    setFileIssues([]);
+    setRawRows(null);
     setUploadResult(null);
     setUploadError('');
     setFileName('');
@@ -374,7 +332,13 @@ export default function BatchUploadSection() {
               <label className="mb-1 block text-xs font-medium text-slate-500">評量</label>
               <select
                 value={assessmentId}
-                onChange={(e) => { setAssessmentId(e.target.value); handleClear(); }}
+                onChange={(e) => {
+                  const nextId = e.target.value;
+                  setAssessmentId(nextId);
+                  setUploadResult(null);
+                  // 已經載入檔案時，用新選的評量重新驗證（對不上會直接擋下），不必重新選檔。
+                  if (rawRows) runValidation(rawRows, REGISTRY[nextId], allowPartial);
+                }}
                 className="input w-auto"
               >
                 {Object.entries(REGISTRY).map(([id, cfg]) => (
@@ -412,7 +376,28 @@ export default function BatchUploadSection() {
             )}
           </div>
           <p className="mt-1 text-xs text-slate-400">支援 .csv 及 .xlsx（Excel）格式，單次最多 2,000 筆資料列。</p>
+          <label className="mt-2 flex items-start gap-2 text-xs text-slate-500">
+            <input
+              type="checkbox"
+              checked={allowPartial}
+              onChange={(e) => { setAllowPartial(e.target.checked); if (rawRows) runValidation(rawRows, config, e.target.checked); }}
+              className="mt-0.5 h-3.5 w-3.5 accent-ink-700"
+            />
+            <span>允許缺題（預設不勾：每一列必須答滿 {totalQ} 題才會匯入；缺題的題目會被當成沒作答，影響分數）</span>
+          </label>
         </div>
+
+        {/* 檔案層級的問題：error 代表整個檔案不能匯入（通常是評量選錯或檔案是別份評量的） */}
+        {fileIssues.length > 0 && (
+          <div className="space-y-2" role="alert">
+            {fileIssues.map((issue, i) => (
+              <div key={i} className={`rounded-lg border px-4 py-3 text-xs ${issue.level === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                <p className="font-bold">{issue.level === 'error' ? '不能匯入' : '注意'}</p>
+                <p className="mt-0.5">{issue.message}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Parse errors */}
         {parseErrors.length > 0 && (
@@ -512,7 +497,7 @@ export default function BatchUploadSection() {
                 disabled={uploading}
                 className="btn-primary"
               >
-                {uploading ? '上傳中…' : `確認匯入 ${parsedRows.length} 筆`}
+                {uploading ? '上傳中…' : `確認匯入 ${parsedRows.length} 筆到「${config.NAME}」`}
               </button>
               <button type="button" onClick={handleClear}
                 className="btn-ghost">

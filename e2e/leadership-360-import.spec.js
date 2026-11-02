@@ -46,6 +46,10 @@ test('批次匯入 70 題 360 → 建班加入成員 → 教練後台看得到�
   expect(ids).toHaveLength(5);
   await ok(await admin.put(`/api/coach/groups/${group.id}`, { data: { memberIds: ids } }), 'members');
 
+  // 故意開一個用 L9D 的班、成員一樣：模擬「評量選錯」，總覽要提醒。
+  const { group: wrong } = await ok(await admin.post('/api/coach/groups', { data: { name: `用錯評量 ${sfx}`, companyName: '森永', assessmentId: 'leadership-9d' } }), 'wrong group');
+  await ok(await admin.put(`/api/coach/groups/${wrong.id}`, { data: { memberIds: ids } }), 'wrong members');
+
   const context = await browser.newContext({ storageState: await admin.storageState(), viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();
   await page.goto('/');
@@ -79,6 +83,13 @@ test('批次匯入 70 題 360 → 建班加入成員 → 教練後台看得到�
   // 評分者只以類別呈現，不出現姓名。
   await expect(doc).not.toContainText('部屬一');
   await expect(doc).not.toContainText('主管乙');
+  // 對的班級沒有警告；選到用錯評量的班，總覽最上方提醒「成員的匯入作答屬於別份評量」。
+  await page.getByRole('button', { name: '✕ 關閉' }).click();
+  await expect(page.getByText('請先確認這個班的資料')).toHaveCount(0);
+  await page.getByText(`用錯評量 ${sfx}`, { exact: true }).first().click();
+  await expect(page.getByRole('heading', { name: `用錯評量 ${sfx}` })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText('請先確認這個班的資料')).toBeVisible();
+  await expect(page.getByText(/批次匯入的作答屬於/)).toBeVisible();
   await context.close();
   await admin.dispose();
 });

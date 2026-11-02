@@ -1,4 +1,6 @@
 export const ID = 'disc';
+// 題庫結構版本（結構一變就要升版，見 utils/assessmentFingerprint.js）。
+export const ITEM_VERSION = '2026-06';
 export const NAME = 'DISC 行為風格評測';
 export const NAME_EN = 'DISC Behavioral Style Assessment';
 export const ABBR = 'DISC';

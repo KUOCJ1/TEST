@@ -385,6 +385,11 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
           errors.push({ row: i + 2, message: `計算結果不正確：${shapeError}` });
           continue;
         }
+        // 最後一道防線：結果是用哪一份評量算的，必須和上傳目標一致（防止別份評量的結果被存進這份評量）。
+        if (result.assessmentId !== undefined && result.assessmentId !== assessmentId) {
+          errors.push({ row: i + 2, message: `這筆結果是用「${result.assessmentId}」算的，與上傳目標「${assessmentId}」不一致，已拒絕` });
+          continue;
+        }
 
         const rateeUser = await findOrCreateUser(rateeEmail, rateeName);
         const effectiveRaterEmail = raterType === 'self' ? rateeEmail : (raterEmail || rateeEmail);

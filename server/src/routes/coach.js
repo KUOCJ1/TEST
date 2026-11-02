@@ -20,6 +20,7 @@ import { buildInviteMail, MAX_INVITE_SUBJECT, MAX_INVITE_BODY } from '../lib/inv
 import { sharedGoalForCoach } from './goals.js';
 import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from '../lib/mailer.js';
 import { COURSE_SURVEY_ID, summarizeCourseSurvey } from '../lib/courseSurvey.js';
+import { groupWarnings } from '../lib/groupConsistency.js';
 
 // 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
 export const REMINDER_COOLDOWN_MS = 60 * 60 * 1000;
@@ -243,6 +244,8 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     res.json({
       group: { ...group, phase: getGroupPhase(group) },
       submissions: stripRaterDetails(memberSubs),
+      // 班級與資料的一致性警告（例如成員有批次匯入的作答屬於別份評量）。
+      warnings: groupWarnings(db.data, group),
       members,
       invites,
       memberInvites: listMemberInvites(group.id),

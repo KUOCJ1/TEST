@@ -1,0 +1,34 @@
+{
+  "ai-competency": {
+    "version": "2026-10",
+    "hash": "ff3df4b2"
+  },
+  "leadership-9d": {
+    "version": "2026-06",
+    "hash": "c94aa20d"
+  },
+  "disc": {
+    "version": "2026-06",
+    "hash": "c95e9880"
+  },
+  "archetype": {
+    "version": "2026-06",
+    "hash": "d820666e"
+  },
+  "leadership-compass": {
+    "version": "compass-0.3",
+    "hash": "a7e4cc9b"
+  },
+  "succession-intent": {
+    "version": "2026-10",
+    "hash": "a3ba9b6b"
+  },
+  "ai-course-post": {
+    "version": "2026-10-30",
+    "hash": "a22da97e"
+  },
+  "leadership-360-70": {
+    "version": "2026-11",
+    "hash": "705687f5"
+  }
+}

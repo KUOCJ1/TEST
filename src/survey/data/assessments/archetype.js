@@ -1,4 +1,6 @@
 export const ID = 'archetype';
+// 題庫結構版本（結構一變就要升版，見 utils/assessmentFingerprint.js）。
+export const ITEM_VERSION = '2026-06';
 export const NAME = '識己®性格原型評測';
 export const NAME_EN = 'Self-Insight Archetype Assessment';
 export const ABBR = '識己';
