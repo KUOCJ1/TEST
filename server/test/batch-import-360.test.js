@@ -108,4 +108,17 @@ describe('移除批次匯入的作答（改分組後重新匯入用）', () => {
     await coach.post('/api/auth/login').send({ email: 'c@b.co', password: 'abcdef12' });
     assert.equal((await coach.delete(`/api/admin/batch-import/${ID}`)).status, 403);
   });
+
+  test('移除前可以預覽：筆數與受評者；只算該評量批次匯入的', async () => {
+    const { db, ag } = await setup();
+    await ag.post('/api/admin/batch-import').send({ assessmentId: ID, rows: [row('s@p.invalid', '謝玉瑟', 'self', '', '', 4), row('s@p.invalid', '謝玉瑟', 'manager', 'p@p.invalid', '潘信諺', 3)] });
+    db.data.submissions.push({ id: randomUUID(), userId: 'x', rateeId: 'x', assessmentId: ID, raterType: 'self', answers: {}, result: {}, createdAt: new Date().toISOString() });
+    const res = await ag.get(`/api/admin/batch-import/${ID}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.count, 2);
+    assert.deepEqual(res.body.ratees, [{ name: '謝玉瑟', email: 's@p.invalid' }]);
+    assert.equal((await ag.get('/api/admin/batch-import/nope')).status, 404);
+    const empty = await ag.get('/api/admin/batch-import/ai-competency');
+    assert.equal(empty.body.count, 0);
+  });
 });

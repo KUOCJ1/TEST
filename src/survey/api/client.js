@@ -109,6 +109,8 @@ export const api = {
     request(`/admin/assessment-content/${id}/rollback`, { method: 'POST', body: { version, note } }).then((d) => d.content),
   batchImport: (payload) => request('/admin/batch-import', { method: 'POST', body: payload }),
   // 移除某份評量「批次匯入」的作答（學員自己填的不受影響），回傳 { removed }。
+  // 移除前預覽：{ count, ratees:[{name,email}] }。
+  countImportedSubmissions: (assessmentId) => request(`/admin/batch-import/${assessmentId}`),
   deleteImportedSubmissions: (assessmentId) => request(`/admin/batch-import/${assessmentId}`, { method: 'DELETE' }),
   setUserRole: (userId, role) =>
     request(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role } }).then((d) => d.user),

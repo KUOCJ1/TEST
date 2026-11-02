@@ -160,10 +160,14 @@ export default function BatchUploadSection() {
 
   // 移除這份評量先前批次匯入的作答（匯入的結果是當下算好的快照，題庫分組改了或資料有誤時要先移除再重新匯入）。
   const handleRemoveImported = async () => {
-    const ok = await confirm(`確定要移除「${config.NAME}」所有批次匯入的作答嗎？學員自己填寫的不受影響；匯入時建立的帳號會保留。移除後可以重新匯入。`);
-    if (!ok) return;
     setRemoveMsg('');
     try {
+      // 先看會移除什麼，再讓管理員確認（這份評量可能還有別的專案匯入的資料）。
+      const { count, ratees } = await api.countImportedSubmissions(assessmentId);
+      if (count === 0) { setRemoveMsg('這份評量沒有批次匯入的作答。'); return; }
+      const names = ratees.map((r) => r.name).slice(0, 12).join('、') + (ratees.length > 12 ? `…等 ${ratees.length} 人` : '');
+      const ok = await confirm(`「${config.NAME}」有 ${count} 筆批次匯入的作答，受評者：${names}。確定全部移除嗎？學員自己填寫的不受影響；匯入時建立的帳號會保留。移除後可以重新匯入。`);
+      if (!ok) return;
       const { removed } = await api.deleteImportedSubmissions(assessmentId);
       setRemoveMsg(removed > 0 ? `已移除 ${removed} 筆匯入的作答。` : '這份評量沒有批次匯入的作答。');
     } catch (err) {

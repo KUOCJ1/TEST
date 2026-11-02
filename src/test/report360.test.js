@@ -91,4 +91,24 @@ describe('build360Report', () => {
     expect(only.basis).toBe('others');
     expect(only.dimensions.every((d) => d.gap === null)).toBe(true);
   });
+
+  it('沒有作答的構面（平均 0）不列入報告：不是強項、不是優先發展、不產生差距', () => {
+    // 模擬「問卷沒有這個構面的題目」：該構面的平均與子能力平均都是 0。
+    const blank = (result, ids) => ({
+      ...result,
+      dimensions: result.dimensions.map((d) => (ids.includes(d.id) ? { ...d, average: 0, score: 0, subs: d.subs.map((x) => ({ ...x, average: 0 })) } : d)),
+    });
+    const ids = ['self-development', 'adaptive-innovation'];
+    const partial = build360Report([
+      sub('ratee', 'self', blank(resultOf(4), ids)),
+      sub('m1', 'manager', blank(resultOf(3), ids)),
+    ], config);
+    expect(partial.dimensions.map((d) => d.id)).not.toContain('self-development');
+    expect(partial.dimensions.map((d) => d.id)).not.toContain('adaptive-innovation');
+    expect(partial.dimensions).toHaveLength(6);
+    const all = [...partial.strengths, ...partial.develop, ...partial.blind, ...partial.hidden].map((d) => d.id);
+    for (const id of ids) expect(all).not.toContain(id);
+    expect(Object.keys(partial.narratives)).not.toContain('self-development');
+    expect(partial.develop.every((d) => d.others > 0)).toBe(true);
+  });
 });

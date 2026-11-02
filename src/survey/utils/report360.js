@@ -30,9 +30,12 @@ function averageDimensions(results) {
   const byDim = new Map();
   for (const r of results) {
     for (const d of r.dimensions ?? []) {
+      // 沒有作答的構面（量表是 1–5，平均 0 只可能是「這份問卷沒有這個構面的題目」）視為未評量，不是低分。
+      if (!(d.average > 0)) continue;
       const e = byDim.get(d.id) ?? { id: d.id, name: d.name, subtitle: d.subtitle, color: d.color, avgs: [], subs: new Map() };
       e.avgs.push(d.average);
       for (const sub of d.subs ?? []) {
+        if (!(sub.average > 0)) continue;
         const se = e.subs.get(sub.id) ?? { id: sub.id, name: sub.name, avgs: [] };
         se.avgs.push(sub.average);
         e.subs.set(sub.id, se);
@@ -73,7 +76,8 @@ export function build360Report(submissions, config) {
   const typeDims = Object.fromEntries(OTHER_TYPES.map((t) => [t, averageDimensions(otherSubs.filter((s) => s.raterType === t).map((s) => s.result))]));
   const othersDims = averageDimensions(otherSubs.map((s) => s.result));
 
-  const dimensions = (config.DIMENSIONS ?? []).map((cd) => {
+  // 這份問卷沒有題目（沒有任何作答）的構面不列入報告：不是「零分的弱項」，而是沒有評量。
+  const dimensions = (config.DIMENSIONS ?? []).filter((cd) => selfDims.has(cd.id) || othersDims.has(cd.id)).map((cd) => {
     const self = selfDims.get(cd.id) ?? null;
     const others = othersDims.get(cd.id) ?? null;
     const selfAvg = self?.average ?? null;
