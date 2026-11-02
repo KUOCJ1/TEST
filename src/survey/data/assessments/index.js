@@ -5,6 +5,7 @@ import * as archetype from './archetype.js';
 import * as leadershipCompass from './leadership-compass.js';
 import * as successionIntent from './succession-intent.js';
 import * as aiCoursePost from './ai-course-post.js';
+import * as leadership360 from './leadership-360-70.js';
 
 export const REGISTRY = {
   [aiCompetency.ID]: aiCompetency,
@@ -14,6 +15,7 @@ export const REGISTRY = {
   [leadershipCompass.ID]: leadershipCompass,
   [successionIntent.ID]: successionIntent,
   [aiCoursePost.ID]: aiCoursePost,
+  [leadership360.ID]: leadership360,
 };
 
 export function getAssessment(id) {

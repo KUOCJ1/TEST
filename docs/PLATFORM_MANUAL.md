@@ -330,6 +330,10 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 | `disc` | DISC 行為風格評測 | **PROFILE_MODE** | 4 大構面（互相獨立） | 32 題（含反向題） | 是 | 風格輪廓，6 種主流組合 + default，中性用語（無優劣） |
 | `archetype` | 識己®性格原型評測 | **PROFILE_MODE** | 4 組性格光譜（二元對立） | 40 題（含反向題） | **否**（見下） | 16 種原創原型，自陳偏好量表 |
 
+### 5.00 客戶專案專用（隱藏）題庫：`leadership-360-70`
+
+`assessments` 紀錄帶 `hidden: true`（`db.js` 種子）：`GET /assessments` 對教練與管理員一律回傳；對一般學員只有在「自己的班級使用它（主要或附加評量）」時才回傳；前端題庫設定另有 `LIBRARY_HIDDEN = true`，不列入公開評測工具庫與說明頁。`hidden` 與 `classOnly`（課後問卷，只能附加、不能當班級主要評量）不同：hidden 的題庫可以當班級的主要評量。題號 `l1`–`l70` 對應客戶表單的題號，批次上傳（管理後台，`POST /admin/batch-import`）的欄位就是 `ratee_email, ratee_name, rater_type, rater_email, rater_name, l1…l70`；匯入的帳號沒有密碼（`source: 'imported'`），只能由管理員加入班級。測試：`server/test/batch-import-360.test.js`、`hidden-assessment.test.js`、`src/test/leadership-360-70.test.js`。
+
 ### 5.0 班級前測分布與前後測比較
 
 `utils/prePost.js`（純函式）＋ `coach/PrePostAnalysis.jsx`，顯示在教練「總覽」。每人每階段取最新一筆自評（沒有 phase 的舊資料視為前測）；比較只用配對樣本；構面用 `result.dimensions[].average`（1–5）才能跨題數比較。適用條件 `supportsPrePost(config)`：有 `LEVELS`，且不是 `PROFILE_MODE`／`SCORING`／`REPORT` 專屬計分的題庫；不適用的題庫仍用 `GroupGainReport`。人數少（一班十幾人）所以只提供描述統計與效果量 dz，不做顯著性檢定；dz 需 ≥5 人且差有變異才提供。

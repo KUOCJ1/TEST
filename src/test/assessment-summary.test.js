@@ -8,7 +8,7 @@ import { REGISTRY, getAssessment } from '../survey/data/assessments/index.js';
 // 班級限定的問卷（CLASS_ONLY，例如課後學習成效問卷）不在公開的評測工具庫裡展示。
 describe('首頁評測工具庫摘要', () => {
   it('涵蓋所有已註冊的題庫，沒有遺漏也沒有多餘', () => {
-    expect(ASSESSMENT_SUMMARIES.map((s) => s.id).sort()).toEqual(Object.keys(REGISTRY).filter((id) => !REGISTRY[id].CLASS_ONLY).sort());
+    expect(ASSESSMENT_SUMMARIES.map((s) => s.id).sort()).toEqual(Object.keys(REGISTRY).filter((id) => !REGISTRY[id].CLASS_ONLY && !REGISTRY[id].LIBRARY_HIDDEN).sort());
   });
 
   it.each(ASSESSMENT_SUMMARIES)('$id 的構面數、題數、子能力數與實際設定一致', (summary) => {

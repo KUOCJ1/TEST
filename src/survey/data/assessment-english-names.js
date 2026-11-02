@@ -13,6 +13,7 @@ export const ENGLISH_NAMES = {
   'leadership-compass': 'Leadership Compass Assessment',
   'succession-intent': 'Succession Readiness Assessment',
   'ai-course-post': 'Post-Workshop Learning Survey',
+  'leadership-360-70': 'Leadership 360° Behavioral Assessment (70 items)',
 };
 
 export const englishNameOf = (id) => ENGLISH_NAMES[id] ?? null;

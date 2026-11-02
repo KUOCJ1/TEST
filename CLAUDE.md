@@ -117,6 +117,10 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - `assessments.classOnly`＋班級 `extraAssessmentIds`：只有附加了的班級成員看得到；**提交不寫 `groupId`**（寫 `surveyGroupId`），結果由伺服器 `lib/courseSurvey.js` 計算（標準答案只在伺服器）；教練只看彙總（`GET /coach/groups/:id/course-survey`，少於 3 人不顯示），個人明細不經 overview／ratee 回傳。
 - 前後端題目結構的一致性由 `src/test/course-post.test.jsx` 檢查；改題目要兩邊一起改。30／60 天追蹤目前只有同意紀錄，**尚未寄信**。
 
+## 客戶專案專用（隱藏）題庫
+
+- `assessments.hidden`（前端 `LIBRARY_HIDDEN`）：不出現在公開評測工具庫與一般學員的清單，只有教練、管理員與「班級使用它」的成員看得到；可以當班級的主要評量（`leadership-360-70`，森永高階教練 360，70 題 l1–l70）。與 `classOnly`（課後問卷，只能附加）是兩回事，見 `docs/PLATFORM_MANUAL.md` 5.00。批次匯入進來的帳號沒有密碼，教練不能直接加入班級（只能發邀請），要由管理員加入。
+
 ## 班級管理與 QR Code 報到
 
 - 每筆作答提交都會寫入 `groupId`，精準對應提交當下所屬的班級（同一梯次）。班級報告

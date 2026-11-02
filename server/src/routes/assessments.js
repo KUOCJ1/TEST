@@ -13,6 +13,13 @@ export function createAssessmentsRouter({ db, requireAuth }) {
       (db.data.groups ?? []).filter((g) => (g.memberIds ?? []).includes(req.user.id)).flatMap((g) => g.extraAssessmentIds ?? []),
     );
     list = list.filter((a) => !a.classOnly || attached.has(a.id));
+    // hidden（客戶專案專用題庫）：教練與管理員看得到；一般學員只有在自己的班級使用它（主要或附加）時才看得到。
+    if (req.user.role === 'user') {
+      const usedByMyGroups = new Set(
+        (db.data.groups ?? []).filter((g) => (g.memberIds ?? []).includes(req.user.id)).map((g) => g.assessmentId ?? 'ai-competency'),
+      );
+      list = list.filter((a) => !a.hidden || usedByMyGroups.has(a.id) || attached.has(a.id));
+    }
     // 專屬班級（客戶專案）：屬於任何「專屬班級」的學員只看得到那些班指定的評量，
     // 首頁不會出現其他評量。只影響一般學員；教練與管理員不受限。
     if (req.user.role === 'user') {
