@@ -52,6 +52,8 @@ test('批次匯入 70 題 360 → 建班加入成員 → 教練後台看得到�
   // 管理員帳號第一次登入要先同意隱私權政策。
   await acceptConsentIfAsked(page);
   await page.getByRole('button', { name: '教練後台', exact: true }).click();
+  // 管理員看得到所有班級（CI 上前面的測試也建過班），不會自動選取：自己點這個班。
+  await page.getByText(`森永 360 ${sfx}`, { exact: true }).first().click({ timeout: 20000 });
   await expect(page.getByRole('heading', { name: `森永 360 ${sfx}` })).toBeVisible({ timeout: 20000 });
   // 自評結果在班級總覽的成員表裡，落點用 L9D 的等級名稱。
   await expect(page.getByText('受評者甲').first()).toBeVisible({ timeout: 15000 });
