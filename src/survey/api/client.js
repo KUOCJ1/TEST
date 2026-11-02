@@ -64,6 +64,13 @@ export const api = {
   toggleAssessment: (id, enabled) =>
     request(`/admin/assessments/${id}`, { method: 'PATCH', body: { enabled } }).then((d) => d.assessment),
 
+  // 專案範本（客戶專案開班用）：教練讀清單；管理員維護。
+  coachProjectTemplates: () => request('/coach/project-templates').then((d) => d.templates),
+  adminProjectTemplates: () => request('/admin/project-templates').then((d) => d.templates),
+  createProjectTemplate: (body) => request('/admin/project-templates', { method: 'POST', body }).then((d) => d.template),
+  updateProjectTemplate: (id, body) => request(`/admin/project-templates/${id}`, { method: 'PUT', body }).then((d) => d.template),
+  deleteProjectTemplate: (id) => request(`/admin/project-templates/${id}`, { method: 'DELETE' }),
+
   createSubmission: (payload) =>
     request('/submissions', { method: 'POST', body: payload }).then((d) => d.submission),
   mySubmissions: () => request('/submissions/me').then((d) => d.submissions),

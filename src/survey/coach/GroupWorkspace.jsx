@@ -45,6 +45,7 @@ function GroupHeader({ group, memberCount }) {
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-lg font-bold text-slate-800">{group.name}</h3>
         <PhaseBadge phase={group.phase} />
+        {group.templateId && <span className="chip bg-ink-700 text-white" title="這個班使用專案範本，評量已鎖定">專案範本・評量已鎖定</span>}
       </div>
       <p className="mt-1 text-sm text-slate-500">
         {group.companyName && <>{group.companyName} · </>}{assessmentName} · {memberCount} 人 · {range}

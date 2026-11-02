@@ -9,6 +9,7 @@ import SystemStatusTab from './SystemStatusTab';
 import ContentEditorTab from './ContentEditorTab';
 import AuditLogTab from './AuditLogTab';
 import RaterRevealTab from './RaterRevealTab';
+import ProjectTemplatesTab from './ProjectTemplatesTab';
 import { FRONTEND_BUILD, isVersionMismatch } from '../utils/buildInfo';
 
 // 內含 xlsx（體積較大），只有點開「批次上傳」分頁才需要，獨立拆成自己的 chunk。
@@ -21,6 +22,7 @@ const TABS = [
   { id: 'analytics', label: '各評量統計', hint: '選一份評量，看所有填答者的整體分佈、趨勢與明細（可匯出 CSV）。' },
   { id: 'users', label: '用戶管理', hint: '調整角色、停用帳號、產生重設密碼連結。' },
   { id: 'groups', label: '班別與發佈', hint: '管理所有班別的負責教練、施測期間，並發佈成果。（評量要不要對學員開放，在頁面最上方的「題庫啟用狀態」。）' },
+  { id: 'templates', label: '專案範本', hint: '客戶專案開班用的固定組合（評量、附加課後問卷、專屬班級）。教練開班選範本，評量就鎖定，不會選錯。' },
   { id: 'content', label: '題庫內容', hint: '修改題目、構面與評語的文字（草稿、預覽、發佈、還原）；不影響計分。' },
   { id: 'import', label: '批次上傳', hint: '用 CSV 匯入既有的作答與 360° 評分資料。' },
   { id: 'reveal', label: '身分還原', hint: '嚴格隱私評量（領導力羅盤）的評分者身分，只有管理員能查，必須填理由並留下稽核紀錄。' },
@@ -177,6 +179,7 @@ export default function AdminDashboard() {
       {tab === 'groups' && (
         <GroupsTab groups={adminGroups} users={users} onGroupUpdated={handleGroupUpdated} />
       )}
+      {tab === 'templates' && <ProjectTemplatesTab />}
       {tab === 'content' && <ContentEditorTab />}
       {tab === 'reveal' && <RaterRevealTab users={users} />}
       {tab === 'audit' && <AuditLogTab />}

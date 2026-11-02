@@ -21,6 +21,7 @@ import { sharedGoalForCoach } from './goals.js';
 import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from '../lib/mailer.js';
 import { COURSE_SURVEY_ID, summarizeCourseSurvey } from '../lib/courseSurvey.js';
 import { groupWarnings } from '../lib/groupConsistency.js';
+import { publicTemplate } from '../lib/projectTemplates.js';
 
 // 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
 export const REMINDER_COOLDOWN_MS = 60 * 60 * 1000;
@@ -168,8 +169,25 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     return out.slice(0, 10);
   };
 
+  // 專案範本清單（管理員維護）：開班時選範本，評量就鎖定。
+  router.get('/project-templates', (_req, res) => {
+    res.json({ templates: (db.data.projectTemplates ?? []).map(publicTemplate) });
+  });
+
   router.post('/groups', (req, res) => {
-    const { name, companyName, assessmentId, memberIds, focusDimensionIds, targetHeadcount, dimensionNotes, exclusive } = req.body ?? {};
+    const { name, companyName, memberIds, focusDimensionIds, targetHeadcount, dimensionNotes, templateId } = req.body ?? {};
+    let { assessmentId, exclusive } = req.body ?? {};
+    // 選了專案範本：評量、附加問卷與專屬班級都以範本為準；不能另選別的評量。
+    let template = null;
+    if (templateId !== undefined && templateId !== null && templateId !== '') {
+      template = (db.data.projectTemplates ?? []).find((t) => t.id === templateId);
+      if (!template) return res.status(400).json({ code: 'UNKNOWN_TEMPLATE', error: '專案範本不存在' });
+      if (assessmentId !== undefined && assessmentId !== template.assessmentId) {
+        return res.status(400).json({ code: 'TEMPLATE_LOCKED', error: `這個班使用專案範本「${template.name}」，評量已鎖定，不能另選別的評量` });
+      }
+      assessmentId = template.assessmentId;
+      exclusive = template.exclusive === true;
+    }
     if (typeof name !== 'string' || !name.trim() || (companyName !== undefined && typeof companyName !== 'string')) {
       return res.status(400).json({ error: '請輸入班別名稱' });
     }
@@ -179,12 +197,13 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     const group = {
       id: randomUUID(),
       name: name.trim(),
-      companyName: companyName?.trim() ?? '',
+      companyName: (companyName?.trim() || template?.clientName) ?? '',
       assessmentId: typeof assessmentId === 'string' ? assessmentId : 'ai-competency',
       coachId: req.user.id,
       coachName: req.user.name,
       memberIds: [],
       exclusive: exclusive === true,
+      ...(template && { templateId: template.id, extraAssessmentIds: sanitizeExtraAssessmentIds(template.extraAssessmentIds) }),
       focusDimensionIds: sanitizeFocusDimensionIds(focusDimensionIds),
       targetHeadcount: sanitizeTargetHeadcount(targetHeadcount),
       dimensionNotes: sanitizeDimensionNotes(dimensionNotes),
@@ -342,6 +361,11 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       return res.status(400).json({ error: '名稱格式不正確' });
     }
     if (assessmentId !== undefined && (!isKnownAssessment(assessmentId) || isClassOnlyAssessment(assessmentId))) return res.status(400).json({ error: '評量不存在' });
+    // 使用專案範本開的班：評量鎖定，不能事後改成別份（範本被刪除就不再鎖）。
+    if (assessmentId !== undefined && assessmentId !== groups[idx].assessmentId && groups[idx].templateId) {
+      const locked = (db.data.projectTemplates ?? []).find((t) => t.id === groups[idx].templateId);
+      if (locked) return res.status(400).json({ code: 'TEMPLATE_LOCKED', error: `這個班使用專案範本「${locked.name}」，評量已鎖定，不能改成別份評量` });
+    }
     if (assessmentId !== undefined && assessmentId !== groups[idx].assessmentId && !isEnabledAssessment(assessmentId)) {
       return res.status(403).json({ code: 'ASSESSMENT_DISABLED', error: '這份評量目前未開放，請先請管理者啟用' });
     }

@@ -121,6 +121,12 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 
 - `assessments.hidden`（前端 `LIBRARY_HIDDEN`）：不出現在公開評測工具庫與一般學員的清單，只有教練、管理員與「班級使用它」的成員看得到；可以當班級的主要評量（`leadership-360-70`，森永高階教練 360，70 題 l1–l70，框架沿用 L9D，對照見 `docs/leadership-360-70-mapping.md`）。與 `classOnly`（課後問卷，只能附加）是兩回事，見 `docs/PLATFORM_MANUAL.md` 5.00。批次匯入進來的帳號沒有密碼，教練不能直接加入班級（只能發邀請），要由管理員加入。
 
+## 評量定義固定與防呆（Sprint 21）
+
+- 改題庫「結構」（題數、題號、構面、子能力、反向題、量表、等級門檻）要先升版該題庫的 `ITEM_VERSION`，再更新 `src/test/fixtures/assessment-fingerprints.json`（`node scripts/print-fingerprints.mjs`）；測試會擋。文字修正不用。
+- 批次上傳：缺題的列預設不匯入、欄位與評量對不上整檔擋下（`admin/batchValidation.js`）；匯錯了用「移除已匯入的作答」（先預覽再確認）。
+- 客戶專案用「專案範本」開班（管理後台維護），評量鎖定；班級總覽有資料一致性警告（`lib/groupConsistency.js`）。
+
 ## 班級管理與 QR Code 報到
 
 - 每筆作答提交都會寫入 `groupId`，精準對應提交當下所屬的班級（同一梯次）。班級報告

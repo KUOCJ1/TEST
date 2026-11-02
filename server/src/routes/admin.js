@@ -9,6 +9,7 @@ import { getBuildInfo } from '../lib/buildInfo.js';
 import { deepHealthCheck } from '../lib/health.js';
 import { isMailConfigured } from '../lib/mailer.js';
 import { stripRaterDetails } from '../lib/compassPrivacy.js';
+import { sanitizeTemplate, publicTemplate } from '../lib/projectTemplates.js';
 import {
   sanitizeOverrides, sanitizeNote, getContentRecord, publishOverrides, isEmptyOverrides,
 } from '../lib/assessmentContent.js';
@@ -293,6 +294,43 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
     db.persist();
     auditLog(req, 'generate_reset_token', { targetUserId: user.id });
     res.json({ token, email: user.email, expiresInHours: 24 });
+  });
+
+  // ── 專案範本（客戶專案開班用，見 lib/projectTemplates.js）──────
+  router.get('/project-templates', (_req, res) => {
+    res.json({ templates: (db.data.projectTemplates ?? []).map(publicTemplate) });
+  });
+
+  router.post('/project-templates', (req, res) => {
+    const out = sanitizeTemplate(req.body, db.data);
+    if (out.error) return res.status(400).json({ code: 'INVALID_TEMPLATE', error: out.error });
+    const template = { id: randomUUID(), ...out.template, createdBy: req.user.id, createdAt: new Date().toISOString() };
+    (db.data.projectTemplates ??= []).push(template);
+    db.persist();
+    auditLog(req, 'create_project_template', { templateId: template.id, name: template.name, assessmentId: template.assessmentId });
+    res.status(201).json({ template: publicTemplate(template) });
+  });
+
+  router.put('/project-templates/:id', (req, res) => {
+    const list = db.data.projectTemplates ?? [];
+    const idx = list.findIndex((t) => t.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: '範本不存在' });
+    const out = sanitizeTemplate(req.body, db.data);
+    if (out.error) return res.status(400).json({ code: 'INVALID_TEMPLATE', error: out.error });
+    list[idx] = { ...list[idx], ...out.template, updatedAt: new Date().toISOString() };
+    db.persist();
+    auditLog(req, 'update_project_template', { templateId: list[idx].id, name: list[idx].name, assessmentId: list[idx].assessmentId });
+    res.json({ template: publicTemplate(list[idx]) });
+  });
+
+  router.delete('/project-templates/:id', (req, res) => {
+    const list = db.data.projectTemplates ?? [];
+    const t = list.find((x) => x.id === req.params.id);
+    if (!t) return res.status(404).json({ error: '範本不存在' });
+    db.data.projectTemplates = list.filter((x) => x.id !== t.id);
+    db.persist();
+    auditLog(req, 'delete_project_template', { templateId: t.id, name: t.name });
+    res.json({ ok: true });
   });
 
   // 移除前先看會移除什麼：這份評量批次匯入的作答筆數與受評者（避免誤刪別的專案匯入的資料）。

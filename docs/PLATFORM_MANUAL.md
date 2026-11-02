@@ -334,6 +334,13 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 
 `assessments` 紀錄帶 `hidden: true`（`db.js` 種子）：`GET /assessments` 對教練與管理員一律回傳；對一般學員只有在「自己的班級使用它（主要或附加評量）」時才回傳；前端題庫設定另有 `LIBRARY_HIDDEN = true`，不列入公開評測工具庫與說明頁。`hidden` 與 `classOnly`（課後問卷，只能附加、不能當班級主要評量）不同：hidden 的題庫可以當班級的主要評量。框架沿用 L9D（構面、子能力、圈層、等級、敘事評語），對照與差異見 `docs/leadership-360-70-mapping.md`。題號 `l1`–`l70` 對應客戶表單的題號，批次上傳（管理後台，`POST /admin/batch-import`）的欄位就是 `ratee_email, ratee_name, rater_type, rater_email, rater_name, l1…l70`；匯入的帳號沒有密碼（`source: 'imported'`），只能由管理員加入班級。測試：`server/test/batch-import-360.test.js`、`hidden-assessment.test.js`、`src/test/leadership-360-70.test.js`。
 
+### 5.0000 評量定義固定與防呆（Sprint 21）
+
+- **版本與指紋**：每份評量設定檔匯出 `ITEM_VERSION`；`utils/assessmentFingerprint.js` 取「結構」（構面、子能力、題號、反向題、subId、量表、等級門檻；不含任何顯示文字）的雜湊，登記在 `src/test/fixtures/assessment-fingerprints.json`。改結構時：先升版 `ITEM_VERSION`，再 `node scripts/print-fingerprints.mjs > src/test/fixtures/assessment-fingerprints.json`。已有人作答的評量，舊結果是快照，不會跟著變，所以結構變更一律開新版本。
+- **批次上傳驗證**：`admin/batchValidation.js`（`validateAndScore`、`columnReport`）。伺服器 `POST /admin/batch-import` 另外拒絕 `result.assessmentId` 與目標不一致的列。「移除已匯入的作答」先 `GET /admin/batch-import/:id` 預覽筆數與受評者。
+- **專案範本**：集合 `projectTemplates`（`lib/projectTemplates.js`），管理後台「專案範本」維護；教練 `GET /coach/project-templates`；`POST /coach/groups` 帶 `templateId` 時評量與專屬班級以範本為準，另選評量回 400 `TEMPLATE_LOCKED`，班級存 `templateId`，`PUT /coach/groups/:id` 不能改評量（範本被刪就不再鎖）。
+- **班級一致性警告**：`lib/groupConsistency.js`，`GET /coach/groups/:id` 回 `warnings`，班級總覽最上方顯示。
+
 ### 5.000 360° 完整報告（PDF）
 
 `utils/report360.js`（純函式 `build360Report`）整理資料、`components/ThreeSixtyReport.jsx` 負責版面（沿用 `#report-portal` 與列印樣式）。入口：班級總覽成員表的「360° 報告」（該成員有他評時）、`MultiRaterDashboard` 的「產出 360° 完整報告（PDF）」。適用非嚴格隱私的 360° 題庫（`SUPPORTS_360` 且非 `STRICT_RATER_PRIVACY`；領導力羅盤有專屬匿名報告）。規則：自評取最新一筆；每位評分者（類別＋填答者）取最新一筆；「他評合計」是所有他評評分者的等權重平均；差距＝自評 − 他評合計，≥ 0.5 為盲點、≤ −0.5 為被低估的優勢；他評落點用題庫的 `LEVELS` 門檻；沒有他評時報告以自評為依據。目前不含逐題層級（教練端 API 不回傳 `answers`）。

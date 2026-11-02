@@ -15,6 +15,9 @@ export default function GroupListPanel({
   const [newGroupName, setNewGroupName] = useState('');
   const [newCompany, setNewCompany] = useState('');
   const [newAssessmentId, setNewAssessmentId] = useState('ai-competency');
+  // 專案範本（管理員維護）：選了範本，評量就鎖定成範本的評量，不能另選（避免客戶專案選錯評量）。
+  const [templates, setTemplates] = useState([]);
+  const [templateId, setTemplateId] = useState('');
   const [newTarget, setNewTarget] = useState('');
   const [newFocusDims, setNewFocusDims] = useState([]);
   const [savingGroup, setSavingGroup] = useState(false);
@@ -32,9 +35,17 @@ export default function GroupListPanel({
       .catch(() => {});
     return () => { active = false; };
   }, []);
+  useEffect(() => {
+    let active = true;
+    Promise.resolve(api.coachProjectTemplates?.())
+      .then((list) => { if (active && Array.isArray(list)) setTemplates(list); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
   const assessmentIds = Object.keys(REGISTRY).filter((id) => !REGISTRY[id].CLASS_ONLY && (!enabledIds || enabledIds.includes(id)));
   // 預設的 ai-competency 若被管理者停用就不在選項裡，改用第一個可選的，避免畫面顯示 A、實際送出 B。
-  const selectedId = assessmentIds.includes(newAssessmentId) ? newAssessmentId : (assessmentIds[0] ?? newAssessmentId);
+  const template = templates.find((t) => t.id === templateId) ?? null;
+  const selectedId = template ? template.assessmentId : (assessmentIds.includes(newAssessmentId) ? newAssessmentId : (assessmentIds[0] ?? newAssessmentId));
   const newDims = getAssessment(selectedId)?.DIMENSIONS ?? [];
   const toggleNewFocus = (dimId) =>
     setNewFocusDims((prev) => (prev.includes(dimId) ? prev.filter((id) => id !== dimId) : [...prev, dimId]));
@@ -48,6 +59,7 @@ export default function GroupListPanel({
         name: newGroupName.trim(),
         companyName: newCompany.trim(),
         assessmentId: selectedId,
+        ...(template && { templateId: template.id }),
         memberIds: [],
         targetHeadcount: newTarget === '' ? null : Number(newTarget),
         focusDimensionIds: newFocusDims,
@@ -58,6 +70,7 @@ export default function GroupListPanel({
       setNewCompany('');
       setNewTarget('');
       setNewFocusDims([]);
+      setTemplateId('');
       onSelectGroup(group.id);
       showToast('已建立班別');
     } catch (e) {
@@ -114,12 +127,27 @@ export default function GroupListPanel({
             placeholder="公司名稱（選填）"
             className="input"
           />
-          <select aria-label="評量題庫" value={selectedId} onChange={(e) => { setNewAssessmentId(e.target.value); setNewFocusDims([]); }}
-            className="input">
-            {assessmentIds.map((id) => (
+          {templates.length > 0 && (
+            <select aria-label="專案範本" value={templateId}
+              onChange={(e) => {
+                const next = templates.find((t) => t.id === e.target.value);
+                setTemplateId(e.target.value);
+                setNewFocusDims([]);
+                if (next && !newCompany.trim()) setNewCompany(next.clientName ?? '');
+              }}
+              className="input">
+              <option value="">不使用專案範本（自選評量）</option>
+              {templates.map((t) => <option key={t.id} value={t.id}>專案範本：{t.name}</option>)}
+            </select>
+          )}
+          <select aria-label="評量題庫" value={selectedId} disabled={!!template}
+            onChange={(e) => { setNewAssessmentId(e.target.value); setNewFocusDims([]); }}
+            className="input disabled:cursor-not-allowed disabled:opacity-70">
+            {(template ? [template.assessmentId] : assessmentIds).map((id) => (
               <option key={id} value={id}>{getAssessment(id)?.NAME ?? id}</option>
             ))}
           </select>
+          {template && <p className="text-xs text-brass-600">使用專案範本「{template.name}」：評量已鎖定{template.exclusive ? '，學員只會看到本班評量' : ''}{template.extraAssessmentIds.length ? '，並附加課後問卷' : ''}。</p>}
           <input type="number" min="0" value={newTarget} onChange={(e) => setNewTarget(e.target.value)}
             placeholder="目標人數（選填）"
             className="input"

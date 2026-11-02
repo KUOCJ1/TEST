@@ -254,7 +254,7 @@ describe('App 流程', () => {
     fireEvent.click(screen.getByRole('button', { name: '登入帳號' }));
     fireEvent.click((await screen.findAllByRole('button', { name: '管理後台' }))[0]);
     expect(await screen.findByRole('heading', { name: '管理後台' }, { timeout: 15000 })).toBeInTheDocument();
-    ['班級分析', '各評量統計', '用戶管理', '班別與發佈', '題庫內容', '批次上傳', '系統狀態'].forEach((n) => expect(screen.getByRole('button', { name: n })).toBeInTheDocument());
+    ['班級分析', '各評量統計', '用戶管理', '班別與發佈', '專案範本', '題庫內容', '批次上傳', '系統狀態'].forEach((n) => expect(screen.getByRole('button', { name: n })).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: '快速分析' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '數據分析' })).not.toBeInTheDocument();
     expect(screen.getByText(/選一份評量，看所有填答者的整體分佈/)).toBeInTheDocument();
