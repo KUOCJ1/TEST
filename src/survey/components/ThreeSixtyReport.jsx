@@ -8,12 +8,13 @@ import { formatDate } from '../utils/format';
 import RadarChart from './RadarChart';
 import { TONE_COLOR } from './printable-report/tokens.js';
 import { toneOf } from './printable-report/helpers.js';
-import { PageMeta, PageFooter, SectionTitle } from './printable-report/primitives.jsx';
+import { PageFooter, SectionTitle } from './printable-report/primitives.jsx';
 
 // 360° 完整報告（列印／存為 PDF）：封面、整體評價、自評 vs 他評、各構面與子能力、發展建議與討論。
 // 資料整理在 utils/report360.js；這裡只負責版面。評分者只以「類別」呈現（主管／同儕／部屬），不列姓名。
 
-const PAGE = { pageBreakAfter: 'always', padding: '32px 52px' };
+// 連續排版：各章節接續往下排（不再每章強制換頁，避免每頁只有半頁）；卡片與表格用 breakInside 避免被切斷。
+const SECTION = { marginTop: 26 };
 const f1 = (n) => (typeof n === 'number' ? n.toFixed(1) : '—');
 const signed = (n) => (n > 0 ? `+${n.toFixed(1)}` : n.toFixed(1));
 const KIND = {
@@ -48,13 +49,13 @@ function DimList({ items, valueKey, empty }) {
 
 function Cover({ r, name, date }) {
   return (
-    <div style={{ pageBreakAfter: 'always' }}>
-      <div style={{ background: '#241f18', padding: '44px 52px 38px', color: '#fff' }}>
+    <div>
+      <div style={{ background: '#241f18', padding: '34px 40px 30px', color: '#fff', borderRadius: 10 }}>
         <div style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.12em', marginBottom: 10 }}>CONFIDENTIAL · 360° FEEDBACK REPORT</div>
         <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.25 }}>{r.assessmentName}<br /><span style={{ fontSize: 20, fontWeight: 600, opacity: 0.85 }}>360° 完整回饋報告</span></div>
         <div style={{ marginTop: 16, fontSize: 11, opacity: 0.65 }}>報告日期 {date}</div>
       </div>
-      <div style={{ padding: '28px 52px 0' }}>
+      <div style={{ padding: '22px 4px 0' }}>
         <div style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', marginBottom: 5 }}>受評者</div>
         <div style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', marginBottom: 22 }}>{name}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
@@ -73,16 +74,14 @@ function Cover({ r, name, date }) {
           {!r.hasOthers && '（尚無他評）'}
         </div>
       </div>
-      <PageFooter />
     </div>
   );
 }
 
-function Overall({ r, name, date }) {
+function Overall({ r }) {
   const basisNote = r.basis === 'others' ? '以下的強項與發展方向，以「他人眼中」的分數為依據。' : '目前沒有他評，以下以自評為依據。';
   return (
-    <div style={PAGE}>
-      <PageMeta reportLabel="360° 回饋報告" name={name} section="整體評價" date={date} assessmentName={r.assessmentName} />
+    <div style={SECTION}>
       <SectionTitle sub={basisNote}>整體評價</SectionTitle>
       {r.summaryText && <p style={{ fontSize: 12, lineHeight: 1.85, color: '#334155', margin: '0 0 20px' }}>{r.summaryText}</p>}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
@@ -109,12 +108,11 @@ function Overall({ r, name, date }) {
           </div>
         </div>
       )}
-      <PageFooter />
     </div>
   );
 }
 
-function Compare({ r, name, date }) {
+function Compare({ r }) {
   const dims = r.dimensions;
   const pct = (v) => (typeof v === 'number' ? Math.round((v / 5) * 100) : 0);
   const radarSelf = dims.map((d) => ({ id: d.id, name: d.name, subtitle: d.subtitle, color: d.color, percent: pct(d.self ?? d.others) }));
@@ -122,8 +120,7 @@ function Compare({ r, name, date }) {
   const cols = ['self', 'manager', 'peer', 'subordinate', 'others'];
   const head = { self: '自評', manager: '主管', peer: '同儕', subordinate: '部屬', others: '他評合計' };
   return (
-    <div style={PAGE}>
-      <PageMeta reportLabel="360° 回饋報告" name={name} section="自評 vs 他評" date={date} assessmentName={r.assessmentName} />
+    <div style={{ ...SECTION, breakInside: 'avoid' }}>
       <SectionTitle sub="分數為 1–5 的平均；同一類評分者取平均，「他評合計」為所有他評評分者的平均">各構面：自評與各類評分者</SectionTitle>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
         <RadarChart dimensions={radarSelf} compare={radarCompare} compareLabel="他評" size={250} />
@@ -150,18 +147,18 @@ function Compare({ r, name, date }) {
         </tbody>
       </table>
       <div style={{ fontSize: 9, color: '#64748b', marginTop: 8 }}>分數顏色：≥4.2 精熟、≥3.4 熟練、≥2.6 發展中、≥1.8 萌芽。差距＝自評 − 他評合計。</div>
-      <PageFooter />
     </div>
   );
 }
 
-function DimensionDetail({ r, name, date, dims, index }) {
+function DimensionDetails({ r }) {
   return (
-    <div style={PAGE}>
-      <PageMeta reportLabel="360° 回饋報告" name={name} section={`構面詳述 ${index}`} date={date} assessmentName={r.assessmentName} />
-      {index === 1 && <SectionTitle sub="各構面的子能力得分、自評與他評對照，以及依他人眼中的表現整理的評語">構面與子能力詳述</SectionTitle>}
-      {dims.map((d) => (
-        <div key={d.id} style={{ pageBreakInside: 'avoid', marginBottom: 20, border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }}>
+    <div style={SECTION}>
+      {r.dimensions.map((d, i) => (
+        // 第一張卡片和章節標題綁在一起，標題不會單獨落在頁尾。
+        <div key={d.id} style={i === 0 ? { breakInside: 'avoid' } : undefined}>
+          {i === 0 && <SectionTitle sub="各構面的子能力得分、自評與他評對照，以及依他人眼中的表現整理的評語">構面與子能力詳述</SectionTitle>}
+          <div style={{ pageBreakInside: 'avoid', marginBottom: 14, border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: d.color, marginRight: 8 }} />{d.name}</div>
             <div style={{ fontSize: 11, color: '#475569' }}>自評 <Score value={d.self} bold />&emsp;他評 <Score value={d.others} bold />{d.gap != null && d.kind !== 'aligned' && <> <Chip color={KIND[d.kind].color}>{KIND[d.kind].label} {signed(d.gap)}</Chip></>}</div>
@@ -182,14 +179,24 @@ function DimensionDetail({ r, name, date, dims, index }) {
               </tbody>
             </table>
           )}
+          </div>
         </div>
       ))}
-      <PageFooter />
     </div>
   );
 }
 
-function PlanPage({ r, name, date }) {
+function PlanCard({ p }) {
+  return (
+    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 16px', pageBreakInside: 'avoid' }}>
+      <div style={{ fontSize: 9, fontWeight: 700, color: '#8a6a2f', marginBottom: 3 }}>{p.horizon}</div>
+      <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>{p.title}</div>
+      <ul style={{ margin: 0, paddingLeft: 18, listStyle: 'disc', fontSize: 11, lineHeight: 1.75, color: '#334155' }}>{p.actions.map((a) => <li key={a}>{a}</li>)}</ul>
+    </div>
+  );
+}
+
+function PlanPage({ r }) {
   const prompts = [];
   if (r.blind[0]) prompts.push(`在「${r.blind[0].name}」，您的自評（${f1(r.blind[0].self)}）高於他人的看法（${f1(r.blind[0].others)}）。您認為他人沒有感受到的是哪些行為？有沒有具體的情境可以回想？`);
   if (r.hidden[0]) prompts.push(`在「${r.hidden[0].name}」，他人（${f1(r.hidden[0].others)}）比您自己（${f1(r.hidden[0].self)}）看到更多優勢。這些行為您是怎麼做到的？可以怎麼更有意識地運用？`);
@@ -197,17 +204,13 @@ function PlanPage({ r, name, date }) {
   prompts.push('不同評分者（主管、同儕、部屬）的看法有哪些差異？背後可能的原因是什麼？');
   prompts.push('這份回饋中，最讓您意外的是哪一點？最想先採取的第一個行動是什麼？');
   return (
-    <div style={PAGE}>
-      <PageMeta reportLabel="360° 回饋報告" name={name} section="發展建議與討論" date={date} assessmentName={r.assessmentName} />
-      <SectionTitle sub="依他人眼中的表現整理；可作為與受評者面談時的討論素材">發展建議</SectionTitle>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
-        {r.plan.map((p) => (
-          <div key={p.id} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 16px', pageBreakInside: 'avoid' }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: '#8a6a2f', marginBottom: 3 }}>{p.horizon}</div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>{p.title}</div>
-            <ul style={{ margin: 0, paddingLeft: 18, listStyle: 'disc', fontSize: 11, lineHeight: 1.75, color: '#334155' }}>{p.actions.map((a) => <li key={a}>{a}</li>)}</ul>
-          </div>
-        ))}
+    <div style={SECTION}>
+      <div style={{ breakInside: 'avoid' }}>
+        <SectionTitle sub="依他人眼中的表現整理；可作為與受評者面談時的討論素材">發展建議</SectionTitle>
+        {r.plan[0] && <PlanCard p={r.plan[0]} />}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22, marginTop: 12 }}>
+        {r.plan.slice(1).map((p) => <PlanCard key={p.id} p={p} />)}
       </div>
       <SectionTitle sub="面談時可以從這幾題開始">討論題</SectionTitle>
       <ol style={{ margin: '0 0 22px', paddingLeft: 20, listStyle: 'decimal', fontSize: 11, lineHeight: 1.85, color: '#334155' }}>{prompts.map((p) => <li key={p}>{p}</li>)}</ol>
@@ -247,9 +250,6 @@ export default function ThreeSixtyReport({ rateeId, rateeName, assessmentId, onC
   const portal = document.getElementById('report-portal');
   if (!portal) return null;
 
-  const pairs = [];
-  if (report) for (let i = 0; i < report.dimensions.length; i += 2) pairs.push(report.dimensions.slice(i, i + 2));
-
   return createPortal(
     <>
       <div className="report-toolbar">
@@ -262,17 +262,17 @@ export default function ThreeSixtyReport({ rateeId, rateeName, assessmentId, onC
           <button onClick={onClose} style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>✕ 關閉</button>
         </div>
       </div>
-      <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
+      <div className="report-flow" style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
         {error && <p style={{ padding: 40, color: '#dc2626' }}>{error}</p>}
         {!error && subs === null && <p style={{ padding: 40, color: '#64748b' }}>載入 360° 資料中…</p>}
         {subs !== null && !report && <p style={{ padding: 40, color: '#64748b' }}>這位受評者還沒有可用的評測資料。</p>}
         {report && (
           <>
             <Cover r={report} name={rateeName} date={date} />
-            <Overall r={report} name={rateeName} date={date} />
-            <Compare r={report} name={rateeName} date={date} />
-            {pairs.map((dims, i) => <DimensionDetail key={dims[0].id} r={report} name={rateeName} date={date} dims={dims} index={i + 1} />)}
-            <PlanPage r={report} name={rateeName} date={date} />
+            <Overall r={report} />
+            <Compare r={report} />
+            <DimensionDetails r={report} />
+            <PlanPage r={report} />
           </>
         )}
       </div>

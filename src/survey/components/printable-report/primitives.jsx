@@ -52,7 +52,7 @@ export function PageFooter({ label = '本報告屬機密文件，僅限受測者
 
 export function SectionTitle({ children, sub }) {
   return (
-    <div style={{ marginBottom: 18, paddingBottom: 12, borderBottom: '1px solid #f1f5f9' }}>
+    <div style={{ marginBottom: 18, paddingBottom: 12, borderBottom: '1px solid #f1f5f9', breakAfter: 'avoid' }}>
       <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em' }}>{children}</div>
       {sub && <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>{sub}</div>}
     </div>
