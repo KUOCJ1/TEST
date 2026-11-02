@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useConfirm } from '../components/useConfirm';
 import { ChevronUp, ChevronDown, Download, Check, X } from 'lucide-react';
 import { api } from '../api/client';
 import { REGISTRY } from '../data/assessments/index.js';
@@ -94,6 +95,8 @@ function ColTag({ children }) {
 }
 
 export default function BatchUploadSection() {
+  const confirm = useConfirm();
+  const [removeMsg, setRemoveMsg] = useState('');
   const [assessmentId, setAssessmentId] = useState(Object.keys(REGISTRY)[0]);
   const [guideOpen, setGuideOpen] = useState(false);
   const [parsedRows, setParsedRows] = useState(null);
@@ -152,6 +155,19 @@ export default function BatchUploadSection() {
       setUploadError(err.message || '上傳失敗');
     } finally {
       setUploading(false);
+    }
+  };
+
+  // 移除這份評量先前批次匯入的作答（匯入的結果是當下算好的快照，題庫分組改了或資料有誤時要先移除再重新匯入）。
+  const handleRemoveImported = async () => {
+    const ok = await confirm(`確定要移除「${config.NAME}」所有批次匯入的作答嗎？學員自己填寫的不受影響；匯入時建立的帳號會保留。移除後可以重新匯入。`);
+    if (!ok) return;
+    setRemoveMsg('');
+    try {
+      const { removed } = await api.deleteImportedSubmissions(assessmentId);
+      setRemoveMsg(removed > 0 ? `已移除 ${removed} 筆匯入的作答。` : '這份評量沒有批次匯入的作答。');
+    } catch (err) {
+      setRemoveMsg(err.message || '移除失敗，請稍後再試');
     }
   };
 
@@ -510,6 +526,14 @@ export default function BatchUploadSection() {
         )}
 
         {/* Upload result */}
+        <div className="rounded-lg border border-slate-200 px-4 py-3 text-xs text-slate-500">
+          <p>資料有誤、或題庫的構面分組調整過，需要重新匯入時，先移除這份評量先前批次匯入的作答（學員自己填寫的不受影響）：</p>
+          <button type="button" onClick={handleRemoveImported} className="mt-2 inline-flex items-center gap-1 font-semibold text-red-500 hover:underline">
+            移除「{config.NAME}」已匯入的作答
+          </button>
+          {removeMsg && <p role="status" className="mt-1 text-slate-600">{removeMsg}</p>}
+        </div>
+
         {uploadResult && (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4">
             <p className="text-sm font-bold text-emerald-700">

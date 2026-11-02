@@ -295,6 +295,29 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
     res.json({ token, email: user.email, expiresInHours: 24 });
   });
 
+  // ── 管理後台：移除某份評量「批次匯入」的作答 ─────────────────
+  // 批次匯入的結果是匯入當下算好的快照；題庫的構面分組改了以後，舊的匯入結果不會跟著變，必須移除後重新匯入。
+  // 只會移除 source 為 imported 的作答（學員自己填的不受影響）；匯入時建立的帳號保留，重新匯入會沿用同一個帳號。
+  router.delete('/batch-import/:assessmentId', (req, res) => {
+    const { assessmentId } = req.params;
+    if (!(db.data.assessments ?? []).some((a) => a.id === assessmentId)) {
+      return res.status(404).json({ code: 'UNKNOWN_ASSESSMENT', error: '評量不存在' });
+    }
+    const keep = [];
+    let removed = 0;
+    for (const s of db.data.submissions) {
+      if ((s.assessmentId ?? 'ai-competency') === assessmentId && s.source === 'imported') removed++;
+      else keep.push(s);
+    }
+    if (removed > 0) {
+      db.data.submissions.length = 0;
+      db.data.submissions.push(...keep);
+      db.persist();
+    }
+    auditLog(req, 'delete_imported_submissions', { assessmentId, removed });
+    res.json({ removed });
+  });
+
   // ── 管理後台：批次匯入 ────────────────────────────────────
   router.post('/batch-import', asyncHandler(async (req, res) => {
     const { assessmentId, rows } = req.body;

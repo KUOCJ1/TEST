@@ -332,7 +332,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 
 ### 5.00 客戶專案專用（隱藏）題庫：`leadership-360-70`
 
-`assessments` 紀錄帶 `hidden: true`（`db.js` 種子）：`GET /assessments` 對教練與管理員一律回傳；對一般學員只有在「自己的班級使用它（主要或附加評量）」時才回傳；前端題庫設定另有 `LIBRARY_HIDDEN = true`，不列入公開評測工具庫與說明頁。`hidden` 與 `classOnly`（課後問卷，只能附加、不能當班級主要評量）不同：hidden 的題庫可以當班級的主要評量。題號 `l1`–`l70` 對應客戶表單的題號，批次上傳（管理後台，`POST /admin/batch-import`）的欄位就是 `ratee_email, ratee_name, rater_type, rater_email, rater_name, l1…l70`；匯入的帳號沒有密碼（`source: 'imported'`），只能由管理員加入班級。測試：`server/test/batch-import-360.test.js`、`hidden-assessment.test.js`、`src/test/leadership-360-70.test.js`。
+`assessments` 紀錄帶 `hidden: true`（`db.js` 種子）：`GET /assessments` 對教練與管理員一律回傳；對一般學員只有在「自己的班級使用它（主要或附加評量）」時才回傳；前端題庫設定另有 `LIBRARY_HIDDEN = true`，不列入公開評測工具庫與說明頁。`hidden` 與 `classOnly`（課後問卷，只能附加、不能當班級主要評量）不同：hidden 的題庫可以當班級的主要評量。框架沿用 L9D（構面、子能力、圈層、等級、敘事評語），對照與差異見 `docs/leadership-360-70-mapping.md`。題號 `l1`–`l70` 對應客戶表單的題號，批次上傳（管理後台，`POST /admin/batch-import`）的欄位就是 `ratee_email, ratee_name, rater_type, rater_email, rater_name, l1…l70`；匯入的帳號沒有密碼（`source: 'imported'`），只能由管理員加入班級。測試：`server/test/batch-import-360.test.js`、`hidden-assessment.test.js`、`src/test/leadership-360-70.test.js`。
 
 ### 5.0 班級前測分布與前後測比較
 

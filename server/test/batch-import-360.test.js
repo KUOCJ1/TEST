@@ -25,7 +25,7 @@ async function setup() {
   const app = createApp({ db, jwtSecret: 'test-secret-please-change' });
   const ag = request.agent(app);
   await ag.post('/api/auth/login').send({ email: admin.email, password: 'abcdef12' });
-  return { db, ag };
+  return { db, ag, app };
 }
 
 describe('批次匯入 70 題 360（森永高階教練）', () => {
@@ -76,5 +76,36 @@ describe('批次匯入 70 題 360（森永高階教練）', () => {
     const res = await ag.post('/api/admin/batch-import').send({ assessmentId: ID, rows: [bad1, good] });
     assert.equal(res.body.added, 1);
     assert.equal(res.body.errors.length, 1);
+  });
+});
+
+describe('移除批次匯入的作答（改分組後重新匯入用）', () => {
+  test('只移除該評量 source=imported 的作答；學員自己填的、其他評量的不受影響；可重新匯入、沿用同一帳號', async () => {
+    const { db, ag } = await setup();
+    await ag.post('/api/admin/batch-import').send({ assessmentId: ID, rows: [row('s@p.invalid', '謝玉瑟', 'self', '', '', 4), row('p@p.invalid', '潘信諺', 'self', '', '', 3)] });
+    const user = db.data.users.find((u) => u.email === 's@p.invalid');
+    // 非匯入的作答（學員自己填）與其他評量的匯入。
+    db.data.submissions.push({ id: randomUUID(), userId: user.id, rateeId: user.id, assessmentId: ID, raterType: 'self', source: undefined, answers: {}, result: {}, createdAt: new Date().toISOString() });
+    db.data.submissions.push({ id: randomUUID(), userId: user.id, rateeId: user.id, assessmentId: 'ai-competency', raterType: 'self', source: 'imported', answers: {}, result: {}, createdAt: new Date().toISOString() });
+    const res = await ag.delete(`/api/admin/batch-import/${ID}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.removed, 2);
+    assert.equal(db.data.submissions.length, 2);
+    assert.ok(db.data.submissions.some((s) => s.assessmentId === ID && s.source !== 'imported'));
+    assert.ok(db.data.submissions.some((s) => s.assessmentId === 'ai-competency'));
+    assert.ok(db.data.auditLog.some((e) => e.action === 'delete_imported_submissions' && e.removed === 2));
+    const again = await ag.post('/api/admin/batch-import').send({ assessmentId: ID, rows: [row('s@p.invalid', '謝玉瑟', 'self', '', '', 5)] });
+    assert.equal(again.body.added, 1);
+    assert.equal(again.body.usersCreated, 0);
+  });
+
+  test('評量不存在 404；非管理員不能用', async () => {
+    const { db, app, ag } = await setup();
+    assert.equal((await ag.delete('/api/admin/batch-import/nope')).status, 404);
+    const pw = await hashPassword('abcdef12');
+    db.data.users.push({ id: randomUUID(), name: '教練', email: 'c@b.co', role: 'coach', passwordHash: pw, createdAt: new Date().toISOString() });
+    const coach = request.agent(app);
+    await coach.post('/api/auth/login').send({ email: 'c@b.co', password: 'abcdef12' });
+    assert.equal((await coach.delete(`/api/admin/batch-import/${ID}`)).status, 403);
   });
 });

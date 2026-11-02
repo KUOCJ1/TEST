@@ -119,7 +119,7 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 
 ## 客戶專案專用（隱藏）題庫
 
-- `assessments.hidden`（前端 `LIBRARY_HIDDEN`）：不出現在公開評測工具庫與一般學員的清單，只有教練、管理員與「班級使用它」的成員看得到；可以當班級的主要評量（`leadership-360-70`，森永高階教練 360，70 題 l1–l70）。與 `classOnly`（課後問卷，只能附加）是兩回事，見 `docs/PLATFORM_MANUAL.md` 5.00。批次匯入進來的帳號沒有密碼，教練不能直接加入班級（只能發邀請），要由管理員加入。
+- `assessments.hidden`（前端 `LIBRARY_HIDDEN`）：不出現在公開評測工具庫與一般學員的清單，只有教練、管理員與「班級使用它」的成員看得到；可以當班級的主要評量（`leadership-360-70`，森永高階教練 360，70 題 l1–l70，框架沿用 L9D，對照見 `docs/leadership-360-70-mapping.md`）。與 `classOnly`（課後問卷，只能附加）是兩回事，見 `docs/PLATFORM_MANUAL.md` 5.00。批次匯入進來的帳號沒有密碼，教練不能直接加入班級（只能發邀請），要由管理員加入。
 
 ## 班級管理與 QR Code 報到
 
