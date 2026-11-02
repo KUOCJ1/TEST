@@ -24,7 +24,7 @@ export function RatingPill({ label, tone, size = 10 }) {
   );
 }
 
-export function PageMeta({ name, section, date, assessmentName }) {
+export function PageMeta({ name, section, date, assessmentName, reportLabel = '個人評測報告' }) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between',
@@ -32,7 +32,7 @@ export function PageMeta({ name, section, date, assessmentName }) {
       borderBottom: '0.5px solid #e2e8f0', paddingBottom: 7, marginBottom: 18,
     }}>
       <span style={{ fontWeight: 600 }}>
-        {name}{assessmentName ? ` · ${assessmentName}` : ''} · 個人評測報告
+        {name}{assessmentName ? ` · ${assessmentName}` : ''} · {reportLabel}
       </span>
       <span>{section} · {date}</span>
     </div>

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Eye, Plus, X } from 'lucide-react';
+import { Eye, FileText, Plus, X } from 'lucide-react';
 import { api } from '../api/client';
 import RadarChart from '../components/RadarChart';
 import DimensionHeatmap from '../components/DimensionHeatmap';
 import GroupNarrativeReport from '../components/GroupNarrativeReport';
 import GroupGainReport from './GroupGainReport';
 import PrePostAnalysis from './PrePostAnalysis';
+import ThreeSixtyReport from '../components/ThreeSixtyReport.jsx';
 import { supportsPrePost } from '../utils/prePost.js';
 import { getAssessment } from '../data/assessments/index.js';
 import ProgressPanel from './ProgressPanel';
@@ -23,6 +24,7 @@ export default function GroupOverviewSection({
   submissions, onGroupUpdated, showToast, confirm, onOpenMember, pendingInviteCount = 0, sharedGoals = [],
 }) {
   const has360 = memberRows.some((r) => r.others);
+  const [report360, setReport360] = useState(null); // { id, name }：要產出 360° 完整報告的受評者
   const [groupComment, setGroupComment] = useState(group.groupComment ?? '');
   const [groupTips, setGroupTips] = useState(group.groupTips?.length ? group.groupTips : ['']);
   const [savingComment, setSavingComment] = useState(false);
@@ -56,6 +58,8 @@ export default function GroupOverviewSection({
         confirm={confirm}
         pendingInviteCount={pendingInviteCount}
       />
+
+      {report360 && <ThreeSixtyReport rateeId={report360.id} rateeName={report360.name} assessmentId={group.assessmentId} onClose={() => setReport360(null)} />}
 
       <CourseSurveyPanel group={group} />
 
@@ -200,9 +204,16 @@ export default function GroupOverviewSection({
                           )}
                         </td>
                         <td className="py-2.5">
-                          <button type="button" onClick={() => onOpenMember(i)} className="btn-secondary btn-sm" aria-label={`查看 ${r.name} 的報告`}>
-                            <Eye className="h-3.5 w-3.5" /> 查看
-                          </button>
+                          <div className="flex gap-1.5">
+                            <button type="button" onClick={() => onOpenMember(i)} className="btn-secondary btn-sm" aria-label={`查看 ${r.name} 的報告`}>
+                              <Eye className="h-3.5 w-3.5" /> 查看
+                            </button>
+                            {r.others && (
+                              <button type="button" onClick={() => setReport360({ id: r.userId, name: r.name })} className="btn-secondary btn-sm" aria-label={`產出 ${r.name} 的 360° 完整報告`}>
+                                <FileText className="h-3.5 w-3.5" /> 360° 報告
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

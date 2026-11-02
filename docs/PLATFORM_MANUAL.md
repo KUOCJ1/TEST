@@ -334,6 +334,10 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 
 `assessments` 紀錄帶 `hidden: true`（`db.js` 種子）：`GET /assessments` 對教練與管理員一律回傳；對一般學員只有在「自己的班級使用它（主要或附加評量）」時才回傳；前端題庫設定另有 `LIBRARY_HIDDEN = true`，不列入公開評測工具庫與說明頁。`hidden` 與 `classOnly`（課後問卷，只能附加、不能當班級主要評量）不同：hidden 的題庫可以當班級的主要評量。框架沿用 L9D（構面、子能力、圈層、等級、敘事評語），對照與差異見 `docs/leadership-360-70-mapping.md`。題號 `l1`–`l70` 對應客戶表單的題號，批次上傳（管理後台，`POST /admin/batch-import`）的欄位就是 `ratee_email, ratee_name, rater_type, rater_email, rater_name, l1…l70`；匯入的帳號沒有密碼（`source: 'imported'`），只能由管理員加入班級。測試：`server/test/batch-import-360.test.js`、`hidden-assessment.test.js`、`src/test/leadership-360-70.test.js`。
 
+### 5.000 360° 完整報告（PDF）
+
+`utils/report360.js`（純函式 `build360Report`）整理資料、`components/ThreeSixtyReport.jsx` 負責版面（沿用 `#report-portal` 與列印樣式）。入口：班級總覽成員表的「360° 報告」（該成員有他評時）、`MultiRaterDashboard` 的「產出 360° 完整報告（PDF）」。適用非嚴格隱私的 360° 題庫（`SUPPORTS_360` 且非 `STRICT_RATER_PRIVACY`；領導力羅盤有專屬匿名報告）。規則：自評取最新一筆；每位評分者（類別＋填答者）取最新一筆；「他評合計」是所有他評評分者的等權重平均；差距＝自評 − 他評合計，≥ 0.5 為盲點、≤ −0.5 為被低估的優勢；他評落點用題庫的 `LEVELS` 門檻；沒有他評時報告以自評為依據。目前不含逐題層級（教練端 API 不回傳 `answers`）。
+
 ### 5.0 班級前測分布與前後測比較
 
 `utils/prePost.js`（純函式）＋ `coach/PrePostAnalysis.jsx`，顯示在教練「總覽」。每人每階段取最新一筆自評（沒有 phase 的舊資料視為前測）；比較只用配對樣本；構面用 `result.dimensions[].average`（1–5）才能跨題數比較。適用條件 `supportsPrePost(config)`：有 `LEVELS`，且不是 `PROFILE_MODE`／`SCORING`／`REPORT` 專屬計分的題庫；不適用的題庫仍用 `GroupGainReport`。人數少（一班十幾人）所以只提供描述統計與效果量 dz，不做顯著性檢定；dz 需 ≥5 人且差有變異才提供。

@@ -67,6 +67,18 @@ test('批次匯入 70 題 360 → 建班加入成員 → 教練後台看得到�
   await expect(table).toContainText('主管 1');
   await expect(table).toContainText('部屬 3');
   await expect(page.getByText(/領導/).first()).toBeVisible();
+  // 360° 完整報告：從成員表開啟，有各頁內容（整體評價、自評 vs 他評、構面詳述、發展建議）。
+  await page.getByRole('button', { name: '產出 受評者甲 的 360° 完整報告' }).click();
+  const doc = page.locator('#report-portal');
+  await expect(doc.getByText('360° 完整回饋報告').first()).toBeVisible({ timeout: 15000 });
+  await expect(doc.getByText('整體評價').first()).toBeVisible();
+  await expect(doc.getByText('各構面：自評與各類評分者')).toBeVisible();
+  await expect(doc.getByText('構面與子能力詳述')).toBeVisible();
+  await expect(doc.getByText('發展建議').first()).toBeVisible();
+  await expect(doc.getByText('部屬 3 位', { exact: false }).first()).toBeVisible();
+  // 評分者只以類別呈現，不出現姓名。
+  await expect(doc).not.toContainText('部屬一');
+  await expect(doc).not.toContainText('主管乙');
   await context.close();
   await admin.dispose();
 });

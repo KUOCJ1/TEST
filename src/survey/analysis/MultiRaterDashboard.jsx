@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users } from 'lucide-react';
+import { Users, FileText } from 'lucide-react';
 import { api } from '../api/client';
 import RadarChart from '../components/RadarChart';
 import { RATER_LABELS } from '../constants/raterTypes';
@@ -7,6 +7,7 @@ import { dimTextStyle } from '../utils/color';
 import { getAssessment } from '../data/assessments/index.js';
 import { gapsFromAverages } from '../utils/compassScoring.js';
 import CompassGapSection from '../components/compass/CompassGapSection.jsx';
+import ThreeSixtyReport from '../components/ThreeSixtyReport.jsx';
 
 const RATER_COLORS = {
   self: '#7c3aed',
@@ -281,6 +282,7 @@ function QuadrantPanel({ selfDims, othersDims }) {
 export default function MultiRaterDashboard({ rateeId, rateeName, assessmentId, canDeanonymize = false }) {
   const [subs, setSubs] = useState(null);
   const [error, setError] = useState('');
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -339,8 +341,16 @@ export default function MultiRaterDashboard({ rateeId, rateeName, assessmentId, 
 
   return (
     <div className="space-y-6">
+      {showReport && <ThreeSixtyReport rateeId={rateeId} rateeName={rateeName} assessmentId={assessmentId} onClose={() => setShowReport(false)} />}
       <header>
+        <div className="flex flex-wrap items-start justify-between gap-3">
         <h3 className="text-xl font-extrabold text-slate-800">{rateeName} — 360° 多元視角分析</h3>
+        {!strict && (
+          <button type="button" onClick={() => setShowReport(true)} className="btn-primary btn-sm">
+            <FileText className="h-3.5 w-3.5" /> 產出 360° 完整報告（PDF）
+          </button>
+        )}
+        </div>
         <p className="mt-1 text-sm text-slate-500">
           {selfSubs.length > 0 && `自評 1 份`}
           {Object.entries(byType)
