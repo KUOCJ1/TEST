@@ -89,6 +89,11 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - 題庫的 `DIMENSION_COMMENTARY`（構面 × high/mid/low，`bandOf` 同一組門檻 4.5／3.5）給報告顯示構面專屬說明；`COMMENTARY` 仍是子能力語句。L9D 與 70 題 360° 共用同一套（70 題多「應變與創新」）。文字修改不影響結構指紋與 `ITEM_VERSION`。構面名稱以系統名稱為準（領導影響力、協作關係、應變與創新、人才發展、自我成長）。
 - 構面落差提示在 `utils/dimensionInsights.js`（規則＋學員可讀文字＋建議課程），目前只有「任務管理低、執行力高」，門檻暫定。新增規則要補測試（`src/test/dimension-text.test.js`）。
 
+## 兩套領導力評測與核心 7 構面（2026-11）
+
+- **L9D 九大構面（90 題，高階／接班）**＝核心 7 ＋ 思辨與決策 ＋ 接班成熟度；**八大構面（70 題，一般主管，`leadership-360-70`）**＝核心 7 ＋ 應變與創新。沒有任何一套是十大構面，兩邊名稱都維持。
+- 核心 7 構面（溝通力、協作關係、任務管理、執行力、領導影響力、人才發展、自我成長）在 `utils/coreDimensions.js`；兩套總分範圍不同（90–450／70–350）不能比總分，跨評量比較一律用核心構面平均。管理後台「各評量統計」底下有 `CoreCompareSection`。教練端刻意不做跨評量比較：教練不應看到學員在別的班或別的評量的結果。
+
 ## 領導力羅盤與接班準備度評測（Sprint 13–18，預設停用）
 
 - 原創的領導力評量（取代 L9D 是長期方向，**目前 L9D 不動、兩者並存**）與獨立的接班準備度評測；設計、決策與實作紀錄都在 `docs/leadership-new/`（`04-platform-spec-v0.1.md` 第 16–22 節最重要）。
@@ -124,7 +129,7 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 
 ## 客戶專案專用（隱藏）題庫
 
-- `assessments.hidden`（前端 `LIBRARY_HIDDEN`）：不出現在公開評測工具庫與一般學員的清單，只有教練、管理員與「班級使用它」的成員看得到；可以當班級的主要評量（`leadership-360-70`，森永高階教練 360，70 題 l1–l70，框架沿用 L9D，對照見 `docs/leadership-360-70-mapping.md`）。與 `classOnly`（課後問卷，只能附加）是兩回事，見 `docs/PLATFORM_MANUAL.md` 5.00。批次匯入進來的帳號沒有密碼，教練不能直接加入班級（只能發邀請），要由管理員加入。
+- `assessments.hidden`（前端 `LIBRARY_HIDDEN`）：不出現在公開評測工具庫與一般學員的清單，只有教練、管理員與「班級使用它」的成員看得到；可以當班級的主要評量。**目前沒有任何已知題庫是 hidden**：`leadership-360-70`（70 題 l1–l70，框架沿用 L9D，對照見 `docs/leadership-360-70-mapping.md`）原為森永專案專用，2026-11 起公開為「經贏® 領導力八大構面行為評量（一般主管）」。hidden 旗標以 `server/src/db.js` 的 `KNOWN_ASSESSMENTS` 為準（資料庫殘留的 hidden 在啟動時清掉），機制本身仍保留給日後的客戶專案題庫。與 `classOnly`（課後問卷，只能附加）是兩回事，見 `docs/PLATFORM_MANUAL.md` 5.00。批次匯入進來的帳號沒有密碼，教練不能直接加入班級（只能發邀請），要由管理員加入。
 
 ## 評量定義固定與防呆（Sprint 21）
 

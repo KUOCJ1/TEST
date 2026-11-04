@@ -31,6 +31,15 @@ export const ASSESSMENT_SUMMARIES = [
     features: ['9 大構面 × 20 項子能力', '90 題行為情境', '支援 360° 多元評測'],
   },
   {
+    id: 'leadership-360-70',
+    name: '經贏® 領導力八大構面行為評量（70 題）',
+    tagline: '一般管理主管的領導行為，八個構面一次看',
+    dimensions: 8,
+    items: 70,
+    subCompetencies: 18,
+    features: ['8 大構面 × 18 項子能力', '70 題行為情境', '支援 360° 多元評測'],
+  },
+  {
     id: 'disc',
     name: 'DISC 行為風格評測',
     tagline: '認識自己與他人的行為風格組合',

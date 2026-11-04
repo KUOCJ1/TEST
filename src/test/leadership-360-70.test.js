@@ -62,9 +62,10 @@ describe('領導力 360° 行為評量（70 題）：沿用 L9D 框架', () => {
     expect(config.LEVELS.some((l) => /九大構面|接班成熟度/.test(l.desc + l.advice))).toBe(false);
   });
 
-  it('是 360° 題庫、不在公開評測工具庫；圈層沿用 L9D 且不含不存在的構面', () => {
+  it('是 360° 題庫、已公開（會列在評測工具庫）；圈層沿用 L9D 且不含不存在的構面', () => {
     expect(config.SUPPORTS_360).toBe(true);
-    expect(config.LIBRARY_HIDDEN).toBe(true);
+    expect(config.LIBRARY_HIDDEN).toBeUndefined();
+    expect(config.NAME).toBe('經贏® 領導力八大構面行為評量（70 題）');
     const all = config.LAYERS.flatMap((l) => l.dimensions).sort();
     expect(all).toEqual(config.DIMENSIONS.map((d) => d.id).sort());
   });

@@ -13,6 +13,7 @@ import InfoTip from '../components/InfoTip';
 import LearningResourceStatsPanel from './LearningResourceStatsPanel';
 import DevelopmentFunnelPanel from './DevelopmentFunnelPanel';
 import CohortTrendSection from './CohortTrendSection';
+import CoreCompareSection from './CoreCompareSection';
 import { badgeBg } from '../utils/color';
 
 function Kpi({ label, value, suffix, tip }) {
@@ -259,6 +260,8 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
           </section>
         </>
       )}
+
+      <CoreCompareSection submissions={selfOnly} />
 
       <DevelopmentFunnelPanel />
       <LearningResourceStatsPanel />

@@ -83,8 +83,9 @@ export function createDb(file) {
     { id: 'leadership-compass', name: '領導力羅盤八向評測', renamedFrom: ['雙環領導羅盤', '雙環領導羅盤八大構面評測'], description: '8 構面、精簡版 32 題／完整版 69 題，含人機協作與張力指標', enabled: false },
     // 接班補充問卷：預設停用；涉及職涯與去留意向，啟用前須完成隱私政策更新與重新同意（見 docs/leadership-new/06）
     { id: 'succession-intent', name: '接班準備度評測', renamedFrom: ['接班補充問卷'], description: '4 面向、20 題，整理升任企圖、準備程度、可接受條件與長期意向（自評）', enabled: false },
-    // 客戶專案專用題庫（隱藏）：不出現在一般學員的評量清單，只有教練、管理員，以及班級使用這份評量的成員看得到。
-    { id: 'leadership-360-70', name: '經贏® 領導力 360° 行為評量（70 題）', renamedFrom: ['領導力 360° 行為評量（70 題）'], description: '沿用經贏® 領導力構面框架的 70 題行為描述，整合自評與主管、同儕、部屬的他評', enabled: true, hidden: true },
+    // 八大構面（一般主管）：原為森永專案專用的隱藏題庫，題目歸顧問團隊所有，2026-11 起公開。
+    // 與 L9D 共用核心 7 個構面，另有「應變與創新」（L9D 則有「思辨與決策」「接班成熟度」）。
+    { id: 'leadership-360-70', name: '經贏® 領導力八大構面行為評量（70 題）', renamedFrom: ['領導力 360° 行為評量（70 題）', '經贏® 領導力 360° 行為評量（70 題）'], description: '8 大構面、70 題行為描述，沿用經贏® 領導力構面框架；適用一般管理主管，可整合自評與主管、同儕、部屬的他評', enabled: true },
     // 課後學習成效問卷：只對「附加了這份問卷的班級」成員可見（classOnly），不出現在一般學員的評量清單。
     { id: 'ai-course-post', name: 'AI 深度整合工作坊｜課後學習成效問卷', description: '課程滿意度、課前／現在能力自評、情境檢核與 30 天承諾', enabled: true, classOnly: true },
   ];
@@ -97,6 +98,15 @@ export function createDb(file) {
     if (missing.length > 0) {
       data.assessments.push(...missing.map(({ renamedFrom: _r, ...rest }) => rest));
       freshlySeeded = true;
+    }
+    // hidden（客戶專案專用題庫）以這份清單為準：清單裡沒有標 hidden 的題庫，資料庫裡殘留的 hidden 旗標會在啟動時清掉
+    // （後台沒有切換 hidden 的功能，所以不會蓋掉管理者的操作）。公開原本隱藏的題庫只要拿掉這裡的 hidden。
+    for (const known of KNOWN_ASSESSMENTS) {
+      const existing = data.assessments.find((a) => a.id === known.id);
+      if (existing && existing.hidden && !known.hidden) {
+        delete existing.hidden;
+        freshlySeeded = true;
+      }
     }
     // 改名：資料庫裡已經有的題庫，若名稱還是「舊的預設名」就換成新名稱（管理者自己改過的名稱不動）。
     for (const known of KNOWN_ASSESSMENTS) {
