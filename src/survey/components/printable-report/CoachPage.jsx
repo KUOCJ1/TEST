@@ -1,5 +1,7 @@
 // ─── Page 8: Coach narrative ────────────────────────────────────
 import { buildNarrative, buildCoachNarrative } from '../../utils/narrative';
+import { buildInsights } from '../../utils/dimensionInsights';
+import InsightBlock from './InsightBlock.jsx';
 import { formatDate } from '../../utils/format';
 import { TONE_BG, TONE_BORDER, TONE_COLOR } from './tokens.js';
 import { toneOf } from './helpers.js';
@@ -39,16 +41,20 @@ export function CoachFeedbackBlock({ comments }) {
   );
 }
 
-export default function CoachPage({ result, config, user, date, comments = [] }) {
+// startsPage=false：接在前一頁後面連續排版；isLast=false：不印頁尾（後面還有內容）。
+export default function CoachPage({ result, config, user, date, comments = [], startsPage = true, isLast = true }) {
   const seedBase = result.total;
   const coachText = config ? buildCoachNarrative(result, config, seedBase) : null;
+  const insights = config ? buildInsights(result.dimensions) : [];
 
   return (
-    <div style={{ pageBreakBefore: 'always', padding: '32px 52px' }}>
-      <PageMeta name={user?.name ?? '—'} section="教練視角" date={date} assessmentName={result?.assessmentName} />
+    <div style={{ ...(startsPage ? { pageBreakBefore: 'always' } : { marginTop: 12 }), padding: startsPage ? '32px 52px 0' : '0 52px' }}>
+      {startsPage && <PageMeta name={user?.name ?? '—'} section="教練視角" date={date} assessmentName={result?.assessmentName} />}
+      <div style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
       <SectionTitle sub="以教練視角分析您的領導行為模式，提供個人化發展方向">教練視角 · Coach Perspective</SectionTitle>
 
       <CoachFeedbackBlock comments={comments} />
+      </div>
 
       {coachText && (
         <div style={{
@@ -60,6 +66,8 @@ export default function CoachPage({ result, config, user, date, comments = [] })
         </div>
       )}
 
+      <InsightBlock insights={insights} />
+
       {config && (
       <>
       <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>各構面教練評語</div>
@@ -70,6 +78,7 @@ export default function CoachPage({ result, config, user, date, comments = [] })
           if (!narrative) return null;
           return (
             <div key={dim.id} style={{
+              breakInside: 'avoid', pageBreakInside: 'avoid',
               borderRadius: 9, border: `1px solid ${TONE_BORDER[tone]}`,
               padding: '10px 13px', background: TONE_BG[tone],
             }}>
@@ -88,7 +97,7 @@ export default function CoachPage({ result, config, user, date, comments = [] })
       </>
       )}
 
-      <PageFooter />
+      {isLast && <PageFooter />}
     </div>
   );
 }

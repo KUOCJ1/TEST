@@ -24,7 +24,7 @@ export default function ReadingGuidePage({ user, date, config, result, hasSubs }
   const maxScore = config?.MAX_SCORE ?? result?.maxScore;
 
   return (
-    <div style={{ pageBreakAfter: 'always', padding: '32px 52px' }}>
+    <div style={{ pageBreakAfter: 'always', padding: '32px 52px 0' }}>
       <PageMeta name={user?.name ?? '—'} section="閱讀指南" date={date} assessmentName={assessmentName} />
       <SectionTitle sub="本頁說明如何解讀報告中的各項指標與圖表">如何閱讀本報告</SectionTitle>
 

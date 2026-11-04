@@ -49,7 +49,7 @@ export default function QuadrantPage({ result, benchmark, user, date }) {
   const yLabel = hasBench ? '相較常模均值' : '相較構面均值';
 
   return (
-    <div style={{ pageBreakBefore: 'always', padding: '32px 52px' }}>
+    <div style={{ pageBreakBefore: 'always', padding: '32px 52px 0' }}>
       <PageMeta name={user?.name ?? '—'} section="子能力四象限" date={date} assessmentName={result?.assessmentName} />
       <SectionTitle sub={`${allSubs.length} 項子能力依「得分高低」×「${yLabel}差距」四象限分佈，快速識別優勢與發展機會`}>
         子能力四象限分析

@@ -121,8 +121,8 @@ const BLOCKS = [
 const EXTRA_DIMENSION = {
   id: 'adaptive-innovation', name: '應變與創新', subtitle: 'Adaptability & Innovation', color: '#d53f8c', layer: 'organizational',
   subDimensions: [
-    { id: 'adapting', name: '應變與變革' },
-    { id: 'innovating', name: '創新' },
+    { id: 'adapting', name: '因應環境變化' },
+    { id: 'innovating', name: '創新思考' },
   ],
   blocks: { adapting: [27, 28, 29], innovating: [30, 31, 32, 33] },
 };
@@ -173,17 +173,21 @@ export const LEVELS = clone(L9D.LEVELS).map((l) => {
 
 export const dimensionRating = L9D.dimensionRating;
 
-// 敘事評語：沿用 L9D 的子能力評語；L9D 沒有的兩個子能力（應變與變革、創新）以相同三段語氣新寫（待審核）。
+// 敘事評語：沿用 L9D 的子能力評語；L9D 沒有的兩個子能力（因應環境變化、創新思考）採用
+// 「領導力八大構面回饋語句 V5.0」的正式語句（取代先前暫定版）。
 export const COMMENTARY = {
   ...clone(L9D.COMMENTARY),
   adapting: {
-    high: '在多變的環境中仍能保持從容，面對挫折能建設性回應，並主動為變革做好規劃',
-    mid: '多數情況下能適應變化與挫折，在變革的規劃與參與上仍有加強空間',
-    low: '面對變動與挫折時容易受影響，較難在變革中主動規劃與調整',
+    high: '能靈活調整作法應對變化，並在壓力中保持穩定的工作狀態',
+    mid: '面對變化能進行基本調整，在高壓或突發狀況中仍有穩定反應',
+    low: '在面對變動或壓力時若僵化反應，可能影響調整速度與團隊士氣',
   },
   innovating: {
-    high: '具備想像力與原創性，在組織中鼓勵創新，敢於採取大膽但可控的做法並視阻礙為契機',
-    mid: '能在工作中嘗試新做法，鼓勵創新的行動與承擔風險的膽識可再加強',
-    low: '傾向沿用既有做法，較少主動提出新想法或鼓勵他人創新',
+    high: '鼓勵新想法並以開放態度接納創新，是促進組織進步的推手',
+    mid: '具開放態度與嘗試精神，在既有流程中能適度提出創新作法',
+    low: '偏好既定方式、對於新的嘗試容易猶豫而不採取行動，可能錯失提升效率或突破現狀的機會',
   },
 };
+
+// 構面層說明：沿用 L9D（含「應變與創新」）。
+export const DIMENSION_COMMENTARY = clone(L9D.DIMENSION_COMMENTARY);

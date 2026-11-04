@@ -8,10 +8,21 @@
  * - 評語內容來自題庫設定的 config.COMMENTARY；無設定則回傳空字串（呼叫端不顯示）。
  */
 
+import { DIM_DEVELOPMENT } from '../components/printable-report/tokens.js';
+
 export function bandOf(average) {
   if (average >= 4.5) return 'high';
   if (average >= 3.5) return 'mid';
   return 'low';
+}
+
+/**
+ * 構面層說明：依構面平均取 config.DIMENSION_COMMENTARY 的高／中／低一句。
+ * 題庫沒有設定或該構面沒有文字時回傳 null（呼叫端退回通用說明）。
+ */
+export function dimensionText(dimId, average, config) {
+  const text = config?.DIMENSION_COMMENTARY?.[dimId]?.[bandOf(average)];
+  return typeof text === 'string' && text.length > 0 ? text : null;
 }
 
 const TEMPLATES = {
@@ -383,18 +394,22 @@ export function buildDevelopmentPlan(result, config, options = {}) {
   const mid = weakestFirst.find((d) => d.id !== near.id);
   const strongest = [...dims].sort((a, b) => b.average - a.average)[0];
 
+  // 行動建議：低／中段先給該構面專屬的一條（DIM_DEVELOPMENT），再接通用做法；
+  // 高段把構面名稱帶進句子。這樣三個階段（不同構面）的建議不會逐字重複。
   const ACTIONS = {
-    low: [
+    low: (dim) => [
+      DIM_DEVELOPMENT[dim.id]?.action,
       '鎖定一個高頻情境，設計可每週重複的具體行為，並記錄前後差異。',
       '尋求一位導師或同儕給予即時回饋，每兩週檢視一次進展。',
-    ],
-    mid: [
+    ].filter(Boolean),
+    mid: (dim) => [
+      DIM_DEVELOPMENT[dim.id]?.action,
       '將既有行為標準化為可複製的流程，並在團隊中試行。',
       '挑選一個略高於現況的挑戰任務，作為能力延伸的試煉場。',
-    ],
-    high: [
-      '把這項優勢轉化為團隊可學習的範本，透過帶教擴大影響。',
-      '在跨部門或更高層級的任務中發揮此強項，累積組織能見度。',
+    ].filter(Boolean),
+    high: (dim) => [
+      `把「${dim.name}」這項優勢轉化為團隊可學習的範本，透過帶教擴大影響。`,
+      `在跨部門或更高層級的任務中發揮「${dim.name}」的強項，累積組織能見度。`,
     ],
   };
 
@@ -402,7 +417,7 @@ export function buildDevelopmentPlan(result, config, options = {}) {
     id: dim.id,
     horizon,
     title: `${label}：聚焦「${dim.name}」（目前 ${dim.average.toFixed(1)} / 5）`,
-    actions: ACTIONS[bandOf(dim.average)],
+    actions: ACTIONS[bandOf(dim.average)](dim),
   });
 
   const plan = [phase(near, '近期（0–3 個月）', '打底')];
@@ -412,7 +427,7 @@ export function buildDevelopmentPlan(result, config, options = {}) {
       id: strongest.id,
       horizon: '長期（6–12 個月）',
       title: `發揮：以「${strongest.name}」帶動全局（目前 ${strongest.average.toFixed(1)} / 5）`,
-      actions: ACTIONS.high,
+      actions: ACTIONS.high(strongest),
     });
   }
   return plan;

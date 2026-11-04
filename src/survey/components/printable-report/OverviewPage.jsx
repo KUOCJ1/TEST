@@ -11,7 +11,7 @@ export default function OverviewPage({ result, benchmark, user, date }) {
   const radarCompare = dimAvgs?.map((b) => ({ id: b.id, percent: b.percent })) ?? null;
 
   return (
-    <div style={{ pageBreakAfter: 'always', padding: '32px 52px' }}>
+    <div style={{ pageBreakAfter: 'always', padding: '32px 52px 0' }}>
       <PageMeta name={user?.name ?? '—'} section="構面總覽" date={date} assessmentName={result?.assessmentName} />
       <SectionTitle sub="雷達圖與各構面得分 vs 全體平均對照（| 為常模基準線）">構面落點總覽</SectionTitle>
 

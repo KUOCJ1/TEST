@@ -7,7 +7,8 @@
 //   「他評合計」＝所有他評評分者平均（每位評分者等權重，不因某類人數多而偏重）。
 // - 構面與子能力分數用 1–5 的平均（result.dimensions[].average、subs[].average）。
 // - 差距＝自評 − 他評合計；≥ 0.5 視為「自評高於他評（可能的盲點）」，≤ −0.5 視為「他評高於自評（被低估的優勢）」。
-import { buildNarrative, buildOverallSummary, buildDevelopmentPlan } from './narrative.js';
+import { buildNarrative, buildOverallSummary, buildDevelopmentPlan, dimensionText } from './narrative.js';
+import { buildInsights } from './dimensionInsights.js';
 
 export const GAP_THRESHOLD = 0.5;
 const OTHER_TYPES = ['manager', 'peer', 'subordinate'];
@@ -124,6 +125,8 @@ export function build360Report(submissions, config) {
   };
   const seed = composite.total ?? 0;
   const narratives = Object.fromEntries(composite.dimensions.map((d) => [d.id, buildNarrative(d, config, seed)]));
+  // 構面專屬說明（依他人眼中的分數；無他評時用自評）。
+  const dimTexts = Object.fromEntries(composite.dimensions.map((d) => [d.id, dimensionText(d.id, d.average, config)]));
 
   return {
     assessmentName: (selfSub ?? otherSubs[0])?.result?.assessmentName ?? config.NAME,
@@ -137,6 +140,8 @@ export function build360Report(submissions, config) {
     strengths, develop, blind, hidden,
     summaryText: buildOverallSummary(composite, config, seed),
     narratives,
+    dimTexts,
+    insights: buildInsights(composite.dimensions),
     plan: buildDevelopmentPlan(composite, config),
     basis: othersCount ? 'others' : 'self',
   };

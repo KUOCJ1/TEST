@@ -16,7 +16,7 @@ export default function ExecutiveSummaryPage({ result, benchmark, config, user, 
   const dimAvgs = benchmark?.dimensionAverages ?? null;
 
   return (
-    <div style={{ pageBreakAfter: 'always', padding: '32px 52px' }}>
+    <div style={{ pageBreakAfter: 'always', padding: '32px 52px 0' }}>
       <PageMeta name={user?.name ?? '—'} section="關鍵發現" date={date} assessmentName={result?.assessmentName} />
       <SectionTitle sub="本頁彙整評測最核心的發現，建議優先閱讀">關鍵發現 · Key Findings</SectionTitle>
 

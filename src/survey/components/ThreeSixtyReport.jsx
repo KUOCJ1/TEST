@@ -9,6 +9,7 @@ import RadarChart from './RadarChart';
 import { TONE_COLOR } from './printable-report/tokens.js';
 import { toneOf } from './printable-report/helpers.js';
 import { PageFooter, SectionTitle } from './printable-report/primitives.jsx';
+import InsightBlock from './printable-report/InsightBlock.jsx';
 
 // 360° 完整報告（列印／存為 PDF）：封面、整體評價、自評 vs 他評、各構面與子能力、發展建議與討論。
 // 資料整理在 utils/report360.js；這裡只負責版面。評分者只以「類別」呈現（主管／同儕／部屬），不列姓名。
@@ -163,6 +164,7 @@ function DimensionDetails({ r }) {
             <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: d.color, marginRight: 8 }} />{d.name}</div>
             <div style={{ fontSize: 11, color: '#475569' }}>自評 <Score value={d.self} bold />&emsp;他評 <Score value={d.others} bold />{d.gap != null && d.kind !== 'aligned' && <> <Chip color={KIND[d.kind].color}>{KIND[d.kind].label} {signed(d.gap)}</Chip></>}</div>
           </div>
+          {r.dimTexts?.[d.id] && <p style={{ fontSize: 11, lineHeight: 1.8, color: '#0f172a', fontWeight: 600, margin: '0 0 8px' }}>{r.dimTexts[d.id]}</p>}
           {r.narratives[d.id] && <p style={{ fontSize: 11, lineHeight: 1.8, color: '#334155', margin: '0 0 10px' }}>{r.narratives[d.id]}</p>}
           {d.subs.length > 0 && (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
@@ -205,6 +207,7 @@ function PlanPage({ r }) {
   prompts.push('這份回饋中，最讓您意外的是哪一點？最想先採取的第一個行動是什麼？');
   return (
     <div style={SECTION}>
+      <InsightBlock insights={r.insights} />
       <div style={{ breakInside: 'avoid' }}>
         <SectionTitle sub="依他人眼中的表現整理；可作為與受評者面談時的討論素材">發展建議</SectionTitle>
         {r.plan[0] && <PlanCard p={r.plan[0]} />}

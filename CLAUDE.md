@@ -84,6 +84,11 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
   （`data/assessments/overrides.js`）；舊的作答結果是快照，`api/client.js` 會用目前文字更新其顯示用字
   （`refreshResult.js`）。改題庫設定檔時不要在模組載入時把這些文字複製到別處快取，否則覆寫不會生效。
 
+## 構面說明與落差提示（Sprint 22）
+
+- 題庫的 `DIMENSION_COMMENTARY`（構面 × high/mid/low，`bandOf` 同一組門檻 4.5／3.5）給報告顯示構面專屬說明；`COMMENTARY` 仍是子能力語句。L9D 與 70 題 360° 共用同一套（70 題多「應變與創新」）。文字修改不影響結構指紋與 `ITEM_VERSION`。構面名稱以系統名稱為準（領導影響力、協作關係、應變與創新、人才發展、自我成長）。
+- 構面落差提示在 `utils/dimensionInsights.js`（規則＋學員可讀文字＋建議課程），目前只有「任務管理低、執行力高」，門檻暫定。新增規則要補測試（`src/test/dimension-text.test.js`）。
+
 ## 領導力羅盤與接班準備度評測（Sprint 13–18，預設停用）
 
 - 原創的領導力評量（取代 L9D 是長期方向，**目前 L9D 不動、兩者並存**）與獨立的接班準備度評測；設計、決策與實作紀錄都在 `docs/leadership-new/`（`04-platform-spec-v0.1.md` 第 16–22 節最重要）。

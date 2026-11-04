@@ -8,12 +8,12 @@ const HORIZON_STYLE = {
   '長期（6–12 個月）': { bg: '#f0fdf4', border: '#bbf7d0', color: '#15803d', icon: '🚀' },
 };
 
-export default function DevPlanPage({ result, config, user, date }) {
+export default function DevPlanPage({ result, config, user, date, startsPage = true }) {
   const plan = buildDevelopmentPlan(result, config);
 
   return (
-    <div style={{ pageBreakBefore: 'always', padding: '32px 52px' }}>
-      <PageMeta name={user?.name ?? '—'} section="發展行動計畫" date={date} assessmentName={result?.assessmentName} />
+    <div style={{ ...(startsPage ? { pageBreakBefore: 'always' } : { marginTop: 12 }), padding: startsPage ? '32px 52px 0' : '0 52px' }}>
+      {startsPage && <PageMeta name={user?.name ?? '—'} section="發展行動計畫" date={date} assessmentName={result?.assessmentName} />}
       <SectionTitle sub="依據您的評測結果，系統建議的三階段個人發展計畫">發展行動計畫 · Development Roadmap</SectionTitle>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
@@ -21,6 +21,7 @@ export default function DevPlanPage({ result, config, user, date }) {
           const style = HORIZON_STYLE[phase.horizon] ?? { bg: '#f8fafc', border: '#e2e8f0', color: '#475569', icon: '📌' };
           return (
             <div key={phase.id} style={{
+              breakInside: 'avoid', pageBreakInside: 'avoid',
               background: style.bg, border: `1px solid ${style.border}`,
               borderRadius: 12, padding: '16px 20px',
             }}>

@@ -46,13 +46,14 @@ export function ReportPages({ result, benchmark, user, submittedAt, comments = [
       <OverviewPage result={result} benchmark={benchmark} user={user} date={date} />
       {hasSubs && <QuadrantPage result={result} benchmark={benchmark} user={user} date={date} />}
       {layers
-        ? layers.map((layer) => (
-            <LayerPage key={layer.id} layer={layer} result={result} benchmark={benchmark} config={config} user={user} date={date} />
+        ? layers.map((layer, i) => (
+            <LayerPage key={layer.id} layer={layer} result={result} benchmark={benchmark} config={config} user={user} date={date}
+              startsPage={i === 0} isLast={i === layers.length - 1} />
           ))
         : <LayerPage layer={{ id: 'all', name: '構面詳細分析', desc: '', dimensions: result.dimensions.map((d) => d.id) }} result={result} benchmark={benchmark} config={config} user={user} date={date} />
       }
-      {(showNarrative || comments.length > 0) && <CoachPage result={result} config={config} user={user} date={date} comments={comments} />}
-      {showNarrative && <DevPlanPage result={result} config={config} user={user} date={date} />}
+      {(showNarrative || comments.length > 0) && <CoachPage result={result} config={config} user={user} date={date} comments={comments} startsPage={false} isLast={!showNarrative} />}
+      {showNarrative && <DevPlanPage result={result} config={config} user={user} date={date} startsPage={false} />}
     </div>
   );
 }

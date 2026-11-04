@@ -1,5 +1,5 @@
 // ─── Dimension detail block — 用於 LayerPage 內逐一列出構面 ──────────
-import { buildNarrative } from '../../utils/narrative';
+import { buildNarrative, dimensionText } from '../../utils/narrative';
 import { TONE_COLOR, TONE_BG, TONE_BORDER, BARS_ANCHOR } from './tokens.js';
 import { toneOf, gapInfo } from './helpers.js';
 import { HBar } from './primitives.jsx';
@@ -9,6 +9,8 @@ export default function DimBlock({ dim, benchPct, config }) {
   const tone = toneOf(dim.average);
   const marker = gapInfo(dim.average, benchAvg);
   const narrative = buildNarrative(dim, config, dim.id);
+  // 構面專屬說明優先；題庫沒有設定時退回依等級的通用說明。
+  const dimText = dimensionText(dim.id, dim.average, config);
   const sortedSubs = dim.subs?.length > 0
     ? [...dim.subs].sort((a, b) => b.average - a.average)
     : [];
@@ -36,7 +38,9 @@ export default function DimBlock({ dim, benchPct, config }) {
       <div style={{ padding: '12px 14px', background: TONE_BG[tone] }}>
         {/* BARS anchor */}
         <div style={{ fontSize: 10, color: TONE_COLOR[tone], fontStyle: 'italic', marginBottom: 10, lineHeight: 1.6 }}>
-          <span style={{ fontWeight: 600 }}>行為錨點 ({dim.rating.label})：</span>{BARS_ANCHOR[dim.rating.label]}
+          {dimText
+            ? <><span style={{ fontWeight: 600 }}>整體說明：</span>{dimText}</>
+            : <><span style={{ fontWeight: 600 }}>行為錨點 ({dim.rating.label})：</span>{BARS_ANCHOR[dim.rating.label]}</>}
         </div>
 
         {/* Score bar vs benchmark */}
