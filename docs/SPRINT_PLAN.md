@@ -752,3 +752,12 @@ FAQ「資料安全與隱私」只寫「只有你、教練、管理者看得到�
 | 22-G 報告檔名 | `utils/reportFilename.js`（命名規則）＋`hooks/useReportFilename.js`（報告開啟時設 `document.title`，列印前再設一次，關閉還原）；五種報告都接上，工具列顯示存檔檔名；`ai-competency` 補 `ABBR` |
 
 未做（等顧問審核 Excel 回覆後）：候補落差規則（領導影響力 > 人才發展、溝通力 > 協作關係）、構面說明文字微調、管理後台是否開放編輯構面說明。分數門檻與觸發條件皆為暫定值。
+
+## Sprint 23：課後追蹤與批次上傳課前課後（2026-11-05）
+
+| 項目 | 內容 |
+|---|---|
+| 23-A 30／60 天追蹤 | `server/src/lib/courseFollowUp.js`（到期判斷、寄信、答案白名單、完成率）、`courseFollowUps` 集合；`GET /course-follow-ups/me`、`POST /course-follow-ups/:stage`；`server.js` 每小時與複測提醒一起跑；前端 `course/FollowUpSurvey.jsx`、`FollowUpBanner.jsx`、`data/course-follow-up.js`（前後端題目一致性由 `src/test/course-follow-up.test.jsx` 檢查）；教練端 `CourseSurveyPanel` 加完成率（到期 ≥ 3 人才顯示） |
+| 23-B 批次 phase | `phase` 選填欄（`batchValidation.js`、伺服器 `batch-import`）；每列 `createdAt` 錯開 1 毫秒（重複列以後面為準、課後晚於課前）；範本、說明、SOP、測試 |
+
+未做：60 天追蹤裡「重做 48 題」只有文字提示（班級結束日若已過，要請教練延長才能重做）；追蹤答案的彙總報告（目前只有完成率）；追蹤信內容與時間的後台設定；隱私權政策未升版（只補述一句）。

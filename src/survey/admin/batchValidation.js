@@ -9,7 +9,15 @@ import { buildResult } from '../utils/scoring.js';
 // 3. 每一列必須答滿這份評量的所有題目；缺題的列預設不匯入，要勾「允許缺題」才會匯入（缺題不計分）。
 
 export const RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
-const META = new Set(['ratee_email', 'ratee_name', 'rater_type', 'rater_email', 'rater_name']);
+const META = new Set(['ratee_email', 'ratee_name', 'rater_type', 'rater_email', 'rater_name', 'phase']);
+// 階段（選填）：pre＝課前／前測、post＝課後／後測；也接受中文。留空＝不標記階段（分析時視為前測）。
+const PHASE_ALIASES = { pre: 'pre', post: 'post', 課前: 'pre', 前測: 'pre', 課後: 'post', 後測: 'post' };
+export function parsePhase(raw) {
+  const key = String(raw ?? '').trim().toLowerCase();
+  if (key === '') return { phase: null };
+  const phase = PHASE_ALIASES[key];
+  return phase ? { phase } : { error: key };
+}
 // 題目欄位的樣子：字母加數字（l12、q5…）。
 const QUESTION_LIKE = /^[a-z]{1,3}\d{1,3}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -68,6 +76,8 @@ export function validateAndScore(rawRows, config, { allowPartial = false } = {})
     if (!RATER_TYPES.has(raterType)) { errors.push({ row: rowNum, message: `rater_type 必須為 self / manager / peer / subordinate，目前值：「${raterType}」` }); continue; }
     if (raterType !== 'self' && !raterEmail) { errors.push({ row: rowNum, message: `rater_type="${raterType}" 時，rater_email 不可為空` }); continue; }
     if (raterEmail && !EMAIL.test(raterEmail)) { errors.push({ row: rowNum, message: `rater_email 格式錯誤：${raterEmail}` }); continue; }
+    const parsedPhase = parsePhase(row['phase']);
+    if (parsedPhase.error !== undefined) { errors.push({ row: rowNum, message: `phase 必須為 pre / post（或 課前 / 課後），或留空；目前值：「${parsedPhase.error}」` }); continue; }
 
     const answers = {};
     let invalidCount = 0;
@@ -95,6 +105,7 @@ export function validateAndScore(rawRows, config, { allowPartial = false } = {})
       rateeEmail,
       rateeName: rateeName || rateeEmail.split('@')[0],
       raterType,
+      phase: parsedPhase.phase,
       raterEmail: raterType === 'self' ? rateeEmail : raterEmail,
       raterName: raterType === 'self' ? (rateeName || rateeEmail.split('@')[0]) : (raterName || raterEmail.split('@')[0]),
       answers,

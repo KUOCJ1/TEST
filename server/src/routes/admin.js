@@ -385,6 +385,7 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
     }
 
     const now = new Date().toISOString();
+    const baseTime = Date.now();
     let added = 0;
     let usersCreated = 0;
     const errors = [];
@@ -410,6 +411,8 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
       const row = rows[i];
       try {
         const { rateeEmail, rateeName, raterType, raterEmail, raterName, answers, result } = row;
+        // 階段（選填）：只收 pre／post，其他值當成沒標記。
+        const phase = row.phase === 'pre' || row.phase === 'post' ? row.phase : null;
         if (!rateeEmail || !raterType || !VALID_RATER_TYPES.has(raterType)) {
           errors.push({ row: i + 2, message: '缺少 ratee_email 或 rater_type 無效' });
           continue;
@@ -442,8 +445,10 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
           raterType,
           answers: Object.entries(answers).map(([questionId, value]) => ({ questionId, value: Number(value) })),
           result,
+          phase,
           source: 'imported',
-          createdAt: now,
+          // 每列錯開 1 毫秒：檔案裡較後面的列視為較新（同一人同一階段重複時以最新一列為準），課前列先於課後列。
+          createdAt: new Date(baseTime + i).toISOString(),
         };
         db.data.submissions.push(submission);
         added++;

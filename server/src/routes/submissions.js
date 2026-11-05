@@ -6,6 +6,7 @@ import { isStrictPrivacy, presentRateeSubmissions } from '../lib/compassPrivacy.
 import { POLICY_VERSION, CONSENT_REQUIRED_ASSESSMENTS } from '../lib/policy.js';
 import { isActiveInvite } from '../lib/invites.js';
 import { COURSE_SURVEY_ID, sanitizeCourseAnswers, buildCourseResult } from '../lib/courseSurvey.js';
+import { followUpStatus, submitFollowUp } from '../lib/courseFollowUp.js';
 
 const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
 
@@ -162,6 +163,17 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
     auditLog(req, consent ? 'course_followup_consent' : 'course_followup_withdraw', {});
     db.persist();
     res.json({ followUpConsent: consent });
+  });
+
+  // 課後問卷的 30／60 天追蹤：我的狀態（沒有課後問卷紀錄時回空陣列）。
+  router.get('/course-follow-ups/me', requireAuth, (req, res) => {
+    res.json({ items: followUpStatus(db, req.user.id) });
+  });
+
+  router.post('/course-follow-ups/:stage', requireAuth, (req, res) => {
+    const out = submitFollowUp(db, req.user.id, Number(req.params.stage), req.body?.answers);
+    if (!out.ok) return res.status(out.code === 'ALREADY_DONE' ? 409 : out.code === 'NOT_DUE' ? 403 : out.code === 'NO_COURSE_SURVEY' ? 404 : 400).json({ code: out.code, error: out.error });
+    res.status(201).json({ ok: true });
   });
 
   // Supports ?page=&limit= pagination. answers field excluded (large, not used by frontend).

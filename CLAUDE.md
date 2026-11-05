@@ -129,7 +129,7 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 
 - 客戶工作坊的課後問卷（韋能《AI 深度整合工作坊》）：滿意度、課前 vs 現在的能力自評、情境檢核、30 天承諾。設計稿 `docs/post-course-survey-design.md`；說明見 `docs/PLATFORM_MANUAL.md` 5.1。
 - `assessments.classOnly`＋班級 `extraAssessmentIds`：只有附加了的班級成員看得到；**提交不寫 `groupId`**（寫 `surveyGroupId`），結果由伺服器 `lib/courseSurvey.js` 計算（標準答案只在伺服器）；教練只看彙總（`GET /coach/groups/:id/course-survey`，少於 3 人不顯示），個人明細不經 overview／ratee 回傳。
-- 前後端題目結構的一致性由 `src/test/course-post.test.jsx` 檢查；改題目要兩邊一起改。30／60 天追蹤目前只有同意紀錄，**尚未寄信**。
+- 前後端題目結構的一致性由 `src/test/course-post.test.jsx` 檢查；改題目要兩邊一起改。30／60 天追蹤（Sprint 23）：`server/src/lib/courseFollowUp.js`，同意者在交問卷後滿 30／60 天收信（每人每階段一封、撤回即停），答案存 `courseFollowUps`；教練只看到完成人數與比例（到期 ≥ 3 人）。前後端題目一致性由 `src/test/course-follow-up.test.jsx` 檢查。
 
 ## 客戶專案專用（隱藏）題庫
 
@@ -138,7 +138,7 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 ## 評量定義固定與防呆（Sprint 21）
 
 - 改題庫「結構」（題數、題號、構面、子能力、反向題、量表、等級門檻）要先升版該題庫的 `ITEM_VERSION`，再更新 `src/test/fixtures/assessment-fingerprints.json`（`node scripts/print-fingerprints.mjs`）；測試會擋。文字修正不用。
-- 批次上傳：缺題的列預設不匯入、欄位與評量對不上整檔擋下（`admin/batchValidation.js`）；匯錯了用「移除已匯入的作答」（先預覽再確認）。
+- 批次上傳：選填 `phase` 欄（pre／post）標記課前課後，沒標記視為前測；缺題的列預設不匯入、欄位與評量對不上整檔擋下（`admin/batchValidation.js`）；匯錯了用「移除已匯入的作答」（先預覽再確認）。
 - 客戶專案用「專案範本」開班（管理後台維護），評量鎖定；班級總覽有資料一致性警告（`lib/groupConsistency.js`）。
 
 ## 班級管理與 QR Code 報到

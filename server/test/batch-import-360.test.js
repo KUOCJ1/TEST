@@ -177,3 +177,24 @@ describe('班級與資料的一致性警告', () => {
     assert.deepEqual((await ag.get('/api/coach/groups/g2')).body.warnings, []);
   });
 });
+
+describe('批次匯入的 phase（課前／課後）', () => {
+  const withPhase = (r, phase) => ({ ...r, phase });
+
+  test('phase 寫進作答；只收 pre／post，其他值當成沒標記；同一人課前課後都在，課後比課前新', async () => {
+    const { db, ag } = await setup();
+    const rows = [
+      withPhase(row('a@p.invalid', '甲', 'self', '', '', 3), 'pre'),
+      withPhase(row('a@p.invalid', '甲', 'self', '', '', 4), 'post'),
+      withPhase(row('b@p.invalid', '乙', 'self', '', '', 3), 'whatever'),
+      row('c@p.invalid', '丙', 'self', '', '', 3),
+    ];
+    const res = await ag.post('/api/admin/batch-import').send({ assessmentId: ID, rows });
+    assert.equal(res.body.added, 4);
+    const subs = db.data.submissions.filter((s) => s.assessmentId === ID);
+    const a = subs.filter((s) => s.rateeId === db.data.users.find((u) => u.email === 'a@p.invalid').id);
+    assert.deepEqual(a.map((s) => s.phase), ['pre', 'post']);
+    assert.ok(new Date(a[1].createdAt) > new Date(a[0].createdAt), '課後晚於課前');
+    assert.deepEqual(subs.map((s) => s.phase), ['pre', 'post', null, null]);
+  });
+});

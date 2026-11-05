@@ -5,6 +5,7 @@ import { hashPassword } from './auth.js';
 import { checkAndAlert } from './lib/health.js';
 import { isMailConfigured } from './lib/mailer.js';
 import { sendDueRetestReminders } from './lib/notifications.js';
+import { sendDueCourseFollowUps } from './lib/courseFollowUp.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -93,8 +94,17 @@ if (NOTIFY_INTERVAL_MINUTES > 0) {
       })
       .catch((err) => console.error('[notify] 複測提醒失敗', err?.message ?? err));
   };
+  // 課後問卷的 30／60 天追蹤信（每人每階段只寄一次，見 lib/courseFollowUp.js）。
+  const runCourseFollowUps = () => {
+    sendDueCourseFollowUps(db)
+      .then(({ sent, failed }) => {
+        if (sent || failed) console.log(`[notify] 課後追蹤信：寄出 ${sent} 封、失敗 ${failed} 封`);
+      })
+      .catch((err) => console.error('[notify] 課後追蹤信失敗', err?.message ?? err));
+  };
   runRetestReminders();
-  setInterval(runRetestReminders, NOTIFY_INTERVAL_MINUTES * 60 * 1000).unref();
+  runCourseFollowUps();
+  setInterval(() => { runRetestReminders(); runCourseFollowUps(); }, NOTIFY_INTERVAL_MINUTES * 60 * 1000).unref();
 }
 
 if (!isMailConfigured()) {

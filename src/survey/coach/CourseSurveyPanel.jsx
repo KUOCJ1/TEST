@@ -88,6 +88,22 @@ export default function CourseSurveyPanel({ group }) {
             <Stat label="下週五前完成衝刺（1–5）" value={mean(data.commitment.d1)} />
           </div>
 
+          {data.followUp && (
+            <div className="grid grid-cols-2 gap-3" aria-label="追蹤問卷完成率">
+              {[30, 60].map((stage) => {
+                const s = data.followUp[`stage${stage}`];
+                return (
+                  <Stat
+                    key={stage}
+                    label={`${stage} 天追蹤問卷完成率`}
+                    value={s && !s.hidden ? `${s.rate}%` : '—'}
+                    sub={s && !s.hidden ? `${s.completed} / ${s.due} 人（到期且同意收信者）` : '到期人數不足 3 人，或尚未到期'}
+                  />
+                );
+              })}
+            </div>
+          )}
+
           <div>
             <h4 className="mb-1 text-sm font-bold text-slate-700">各構面：課前（回溯）→ 現在</h4>
             <table className="w-full text-sm">

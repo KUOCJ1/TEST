@@ -22,6 +22,7 @@ import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from '../lib
 import { COURSE_SURVEY_ID, summarizeCourseSurvey } from '../lib/courseSurvey.js';
 import { groupWarnings } from '../lib/groupConsistency.js';
 import { publicTemplate } from '../lib/projectTemplates.js';
+import { followUpProgress } from '../lib/courseFollowUp.js';
 
 // 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
 export const REMINDER_COOLDOWN_MS = 60 * 60 * 1000;
@@ -309,7 +310,13 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     res.json({
       attached: true,
       ...summary,
-      followUp: { consented: consented.length, due30: firstAt ? addDays(firstAt, 30) : null, due60: firstAt ? addDays(firstAt, 60) : null },
+      followUp: {
+        consented: consented.length,
+        due30: firstAt ? addDays(firstAt, 30) : null,
+        due60: firstAt ? addDays(firstAt, 60) : null,
+        // 追蹤問卷的完成率（到期人數少於 3 人不顯示）；只有人數與比例，沒有任何個別答案。
+        ...followUpProgress(db, subs),
+      },
     });
   });
 

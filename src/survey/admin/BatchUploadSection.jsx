@@ -15,14 +15,17 @@ const RATER_TYPE_OPTIONS = [
   { value: 'subordinate', en: 'subordinate', desc: '由受測者的直屬部屬填寫，需填寫部屬的 rater_email' },
 ].map((o) => ({ ...o, label: RATER_LABELS[o.value] }));
 
+const PHASE_LABEL = { pre: '課前', post: '課後' };
+
 function generateTemplateCsv(config) {
   const allQIds = config.ALL_QUESTIONS.map((q) => q.id);
-  const header = ['ratee_email', 'ratee_name', 'rater_type', 'rater_email', 'rater_name', ...allQIds];
-  const exampleSelf = ['example@company.com', '王小明', 'self', '', '', ...allQIds.map(() => '3')];
-  const exampleMgr  = ['example@company.com', '王小明', 'manager', 'boss@company.com', '李經理', ...allQIds.map(() => '4')];
-  const examplePeer = ['example@company.com', '王小明', 'peer', 'peer@company.com', '陳小華', ...allQIds.map(() => '4')];
-  const exampleSub  = ['example@company.com', '王小明', 'subordinate', 'sub@company.com', '張小芳', ...allQIds.map(() => '5')];
-  const rows = [header, exampleSelf, exampleMgr, examplePeer, exampleSub];
+  const header = ['ratee_email', 'ratee_name', 'rater_type', 'rater_email', 'rater_name', 'phase', ...allQIds];
+  const exampleSelf = ['example@company.com', '王小明', 'self', '', '', 'pre', ...allQIds.map(() => '3')];
+  const examplePost = ['example@company.com', '王小明', 'self', '', '', 'post', ...allQIds.map(() => '4')];
+  const exampleMgr  = ['example@company.com', '王小明', 'manager', 'boss@company.com', '李經理', '', ...allQIds.map(() => '4')];
+  const examplePeer = ['example@company.com', '王小明', 'peer', 'peer@company.com', '陳小華', '', ...allQIds.map(() => '4')];
+  const exampleSub  = ['example@company.com', '王小明', 'subordinate', 'sub@company.com', '張小芳', '', ...allQIds.map(() => '5')];
+  const rows = [header, exampleSelf, examplePost, exampleMgr, examplePeer, exampleSub];
   return rows.map((r) => r.map((v) => (String(v).includes(',') ? `"${v}"` : v)).join(',')).join('\r\n');
 }
 
@@ -100,8 +103,8 @@ export default function BatchUploadSection() {
     try {
       const result = await api.batchImport({
         assessmentId,
-        rows: parsedRows.map(({ rateeEmail, rateeName, raterType, raterEmail, raterName, answers, result: r }) => ({
-          rateeEmail, rateeName, raterType, raterEmail, raterName, answers, result: r,
+        rows: parsedRows.map(({ rateeEmail, rateeName, raterType, raterEmail, raterName, phase, answers, result: r }) => ({
+          rateeEmail, rateeName, raterType, raterEmail, raterName, phase, answers, result: r,
         })),
       });
       setUploadResult(result);
@@ -245,6 +248,12 @@ export default function BatchUploadSection() {
                     <td className="px-3 py-2"><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">選填</span></td>
                     <td className="px-3 py-2 text-slate-600">評分者姓名。留空時使用 rater_email @ 前段作為名稱。</td>
                     <td className="px-3 py-2 text-slate-400">李經理</td>
+                  </tr>
+                  <tr className="bg-white">
+                    <td className="px-3 py-2"><ColTag>phase</ColTag></td>
+                    <td className="px-3 py-2"><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">選填</span></td>
+                    <td className="px-3 py-2 text-slate-600">階段：<strong>pre</strong>（課前／前測）或 <strong>post</strong>（課後／後測），也可填「課前」「課後」。要做前後測比較的資料必須標記；留空則不標記階段，分析時視為前測。同一人同一階段重複時以最新一列為準。</td>
+                    <td className="px-3 py-2 text-slate-400">post</td>
                   </tr>
                   <tr className="bg-brass-50/40">
                     <td className="px-3 py-2"><ColTag>{firstQId}</ColTag> … <ColTag>{lastQId}</ColTag></td>
@@ -447,7 +456,7 @@ export default function BatchUploadSection() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50">
                   <tr>
-                    {['列號', '受測者 Email', '受測者姓名', '評分者類型', '評分者 Email', '答題數', '總分', '落點等級'].map((h) => (
+                    {['列號', '受測者 Email', '受測者姓名', '評分者類型', '階段', '評分者 Email', '答題數', '總分', '落點等級'].map((h) => (
                       <th key={h} className="whitespace-nowrap px-3 py-2 font-semibold text-slate-500">{h}</th>
                     ))}
                   </tr>
@@ -463,6 +472,7 @@ export default function BatchUploadSection() {
                           {raterTypeLabel(r.raterType)}
                         </span>
                       </td>
+                      <td className="px-3 py-2 text-slate-600">{PHASE_LABEL[r.phase] ?? <span className="text-slate-300">未標記</span>}</td>
                       <td className="px-3 py-2 text-slate-500">
                         {r.raterType === 'self' ? <span className="text-slate-300">—（同受測者）</span> : r.raterEmail}
                       </td>

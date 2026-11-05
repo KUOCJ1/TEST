@@ -76,6 +76,9 @@ export const api = {
   mySubmissions: () => request('/submissions/me').then((d) => d.submissions),
   // 課後學習成效問卷（ai-course-post）：撤回／重新同意 30、60 天追蹤信；教練端取得班級彙總（只含彙總、不含姓名）。
   setCourseFollowUp: (consent) => request('/course-survey/follow-up', { method: 'PATCH', body: { consent } }),
+  // 課後問卷的 30／60 天追蹤問卷：我的狀態、送出。
+  getMyFollowUps: () => request('/course-follow-ups/me'),
+  submitFollowUp: (stage, answers) => request(`/course-follow-ups/${stage}`, { method: 'POST', body: { answers } }),
   getCourseSurveySummary: (groupId) => request(`/coach/groups/${groupId}/course-survey`),
   rateeSubmissions: (rateeId, assessmentId, opts = {}) => {
     const qs = new URLSearchParams({ assessmentId, ...(opts.deanonymize ? { deanonymize: '1' } : {}) });
