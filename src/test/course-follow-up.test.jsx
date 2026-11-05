@@ -4,7 +4,7 @@ import FollowUpBanner from '../survey/course/FollowUpBanner.jsx';
 import { FOLLOW_UP } from '../survey/data/course-follow-up.js';
 import { api } from '../survey/api/client';
 // 伺服器的欄位白名單與前端題目必須一致（改題目要兩邊一起改）。
-import { FOLLOW_UP_QUESTIONS } from '../../server/src/lib/courseFollowUp.js';
+import { FOLLOW_UP_QUESTIONS } from '../../server/src/lib/courseFollowUpQuestions.js';
 
 describe('前後端追蹤問卷題目一致', () => {
   it.each([30, 60])('%i 天：題目 id、型別、必填與選項完全相同', (stage) => {

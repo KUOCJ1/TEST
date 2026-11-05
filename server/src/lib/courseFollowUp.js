@@ -5,64 +5,15 @@
 // 到期日是「這個人交課後問卷那天」加 30／60 天。每人每個階段最多寄一封（courseFollowUps 的 sentAt）。
 // 承辦單位（教練）只看得到完成率，看不到個別答案（routes/coach.js 的 course-survey 彙總）。
 import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from './mailer.js';
-import { COURSE_SURVEY_ID, BARRIER_CODES, MIN_N } from './courseSurvey.js';
+import { COURSE_SURVEY_ID, MIN_N } from './courseSurvey.js';
+import { FOLLOW_UP_STAGES, sanitizeFollowUpAnswers } from './courseFollowUpQuestions.js';
+
+export { FOLLOW_UP_STAGES, FOLLOW_UP_QUESTIONS, sanitizeFollowUpAnswers } from './courseFollowUpQuestions.js';
 import { randomUUID } from 'node:crypto';
 
-export const FOLLOW_UP_STAGES = [30, 60];
 const DAY = 864e5;
 // 到期後超過這麼多天才開始寄（例如伺服器停了很久）就不寄了：過了太久的「30 天追蹤」沒有意義。
 export const MAX_LATE_DAYS = 21;
-const HOURS = ['0', 'lt1', '1to3', '3to5', 'gt5'];
-
-/** 追蹤問卷的欄位白名單（前端的題目與選項在 src/survey/data/course-follow-up.js，兩邊由測試檢查一致）。 */
-export const FOLLOW_UP_QUESTIONS = {
-  30: [
-    { id: 'f1', type: 'single', required: true, options: ['done', 'half', 'none'] },
-    { id: 'f2', type: 'multi', options: BARRIER_CODES },
-    { id: 'f3', type: 'single', required: true, options: ['reused', 'built', 'not_yet'] },
-    { id: 'f4', type: 'single', required: true, options: ['daily', 'weekly35', 'weekly12', 'rare', 'never'] },
-    { id: 'f5', type: 'single', required: true, options: HOURS },
-    { id: 'f6', type: 'single', required: true, options: ['yes', 'no'] },
-    { id: 'f7', type: 'text', max: 500 },
-  ],
-  60: [
-    { id: 'g1', type: 'single', required: true, options: ['none', 'few', 'some', 'many'] },
-    { id: 'g2', type: 'single', required: true, options: HOURS },
-    { id: 'g3', type: 'text', max: 500 },
-    { id: 'g4', type: 'text', max: 500 },
-    { id: 'g5', type: 'single', required: true, options: ['yes', 'maybe', 'no'] },
-  ],
-};
-
-/** 清洗追蹤問卷答案：只留白名單欄位；必填沒答或選項不認得就丟錯。 */
-export function sanitizeFollowUpAnswers(stage, input) {
-  const spec = FOLLOW_UP_QUESTIONS[stage];
-  if (!spec) throw new Error('不認得的追蹤階段');
-  if (!input || typeof input !== 'object') throw new Error('缺少答案');
-  const out = {};
-  for (const q of spec) {
-    const v = input[q.id];
-    const blank = v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
-    if (blank) {
-      if (q.required) throw new Error(`${q.id} 必填`);
-      continue;
-    }
-    if (q.type === 'single') {
-      if (!q.options.includes(v)) throw new Error(`${q.id} 有不認得的選項`);
-      out[q.id] = v;
-    } else if (q.type === 'multi') {
-      if (!Array.isArray(v) || v.length > q.options.length) throw new Error(`${q.id} 格式不正確`);
-      const picked = [...new Set(v)];
-      if (picked.some((c) => !q.options.includes(c))) throw new Error(`${q.id} 有不認得的選項`);
-      out[q.id] = picked;
-    } else {
-      if (typeof v !== 'string') throw new Error(`${q.id} 格式不正確`);
-      out[q.id] = v.trim().slice(0, q.max);
-    }
-  }
-  return out;
-}
-
 const stageDueAt = (sub, stage) => new Date(sub.createdAt).getTime() + stage * DAY;
 
 /** 每位學員「最新一筆」課後問卷（用來判斷同意與起算日）。 */
