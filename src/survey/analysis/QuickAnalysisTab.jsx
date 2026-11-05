@@ -321,6 +321,7 @@ export default function QuickAnalysisTab({ users }) {
           user={{ name: selectedMember.name, email: selectedMember.email }}
           submittedAt={selectedMember.submission.createdAt}
           comments={selectedMember.submission.comments}
+          groupName={groupDetail?.group?.name}
           onClose={() => setShowMemberReport(false)}
         />
       )}

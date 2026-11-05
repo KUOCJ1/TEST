@@ -68,7 +68,7 @@ export default function GroupOverviewSection({
         </div>
       )}
 
-      {report360 && <ThreeSixtyReport rateeId={report360.id} rateeName={report360.name} assessmentId={group.assessmentId} onClose={() => setReport360(null)} />}
+      {report360 && <ThreeSixtyReport rateeId={report360.id} rateeName={report360.name} assessmentId={group.assessmentId} groupName={group.name} onClose={() => setReport360(null)} />}
 
       <CourseSurveyPanel group={group} />
 

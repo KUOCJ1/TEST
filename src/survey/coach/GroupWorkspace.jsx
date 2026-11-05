@@ -342,6 +342,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
           user={{ name: pdfMember.name, email: pdfMember.email }}
           submittedAt={pdfMember.submission.createdAt}
           comments={pdfMember.submission.comments}
+          groupName={groupDetail?.group.name}
           onClose={() => setPdfMemberIndex(null)}
         />
       )}
@@ -359,6 +360,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
         <BatchPrintableReport
           members={memberRows}
           benchmark={groupBenchmark}
+          groupName={groupDetail?.group.name}
           onClose={() => setShowBatchReport(false)}
         />
       )}

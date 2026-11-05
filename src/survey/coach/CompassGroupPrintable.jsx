@@ -1,4 +1,6 @@
 import { createPortal } from 'react-dom';
+import { reportFilename, REPORT_KIND } from '../utils/reportFilename.js';
+import { useReportFilename } from '../hooks/useReportFilename.js';
 import { useEffect } from 'react';
 import { formatDate } from '../utils/format';
 import { FULL_MIN, BASIC_MIN } from '../utils/compassGroup.js';
@@ -12,6 +14,8 @@ const pct = (avg) => Math.round((avg / 5) * 100);
  * 並沿用同一份匿名分級（report.tier）：人數不足時列印出來也不會多出任何細節。
  */
 export default function CompassGroupPrintable({ report, group, phaseLabel, onClose }) {
+  const filename = reportFilename({ kind: REPORT_KIND.groupDiagnosis, assessmentId: group.assessmentId, groupName: group.name, detail: phaseLabel });
+  const print = useReportFilename(filename);
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -23,9 +27,9 @@ export default function CompassGroupPrintable({ report, group, phaseLabel, onClo
   return createPortal(
     <>
       <div className="report-toolbar">
-        <div><span style={{ fontWeight: 700, fontSize: 14 }}>班級組織診斷報告</span><span style={{ fontSize: 12, opacity: 0.55, marginLeft: 10 }}>{group.name}</span></div>
+        <div><span style={{ fontWeight: 700, fontSize: 14 }}>班級組織診斷報告</span><span style={{ fontSize: 12, opacity: 0.55, marginLeft: 10 }}>{group.name}</span><span style={{ fontSize: 11, opacity: 0.5, marginLeft: 10 }}>存檔檔名：{filename}.pdf</span></div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => window.print()} style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>🖨️ 列印 / 存為 PDF</button>
+          <button onClick={print} style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>🖨️ 列印 / 存為 PDF</button>
           <button onClick={onClose} style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>✕ 關閉</button>
         </div>
       </div>

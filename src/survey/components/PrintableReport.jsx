@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import { getAssessment } from '../data/assessments/index.js';
 import { computePercentile } from '../utils/analytics';
 import { formatDate } from '../utils/format';
+import { reportFilename, REPORT_KIND } from '../utils/reportFilename.js';
+import { useReportFilename } from '../hooks/useReportFilename.js';
 
 // PrintableReport 的每一頁都是各自獨立、可單獨測試的子元件（見
 // components/printable-report/），這支檔案只負責依題庫設定組裝頁面順序，以及
@@ -59,7 +61,9 @@ export function ReportPages({ result, benchmark, user, submittedAt, comments = [
 }
 
 // ─── Main export ───────────────────────────────────────────────
-export default function PrintableReport({ result, benchmark, user, submittedAt, onClose, comments = [] }) {
+export default function PrintableReport({ result, benchmark, user, submittedAt, onClose, comments = [], groupName }) {
+  const filename = reportFilename({ kind: REPORT_KIND.personal, assessmentId: result.assessmentId, groupName, subject: user?.name ?? '受測者' });
+  const print = useReportFilename(filename);
   const isCompass = ['compass', 'succession'].includes(getAssessment(result.assessmentId)?.REPORT);
   const percentile = !isCompass && benchmark?.totals?.length >= 2
     ? computePercentile(result.total, benchmark.totals)
@@ -80,6 +84,7 @@ export default function PrintableReport({ result, benchmark, user, submittedAt, 
         <div>
           <span style={{ fontWeight: 700, fontSize: 14 }}>個人評測報告</span>
           <span style={{ fontSize: 12, opacity: 0.55, marginLeft: 10 }}>{result.assessmentName}</span>
+          <span style={{ fontSize: 11, opacity: 0.5, marginLeft: 10 }}>存檔檔名：{filename}.pdf</span>
           {percentile != null && (
             <span style={{ fontSize: 11, opacity: 0.65, marginLeft: 10 }}>
               · 超越 {percentile}% 填答者
@@ -88,7 +93,7 @@ export default function PrintableReport({ result, benchmark, user, submittedAt, 
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={() => window.print()}
+            onClick={print}
             style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
           >
             🖨️ 列印 / 存為 PDF

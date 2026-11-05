@@ -1,4 +1,6 @@
 import { createPortal } from 'react-dom';
+import { reportFilename, REPORT_KIND } from '../utils/reportFilename.js';
+import { useReportFilename } from '../hooks/useReportFilename.js';
 import { useEffect } from 'react';
 import RadarChart from './RadarChart';
 import { getAssessment } from '../data/assessments/index.js';
@@ -364,6 +366,8 @@ function MemberSummaryPage({ group, row, stats, config, date, rank, total }) {
 
 // ─── Main export ───────────────────────────────────────────────
 export default function GroupPrintableReport({ group, submissions, users, onClose }) {
+  const filename = reportFilename({ kind: REPORT_KIND.group, assessmentId: group.assessmentId, groupName: group.name });
+  const print = useReportFilename(filename);
   const config = getAssessment(group.assessmentId);
   const date = formatDate(new Date().toISOString());
 
@@ -399,10 +403,11 @@ export default function GroupPrintableReport({ group, submissions, users, onClos
         <div>
           <span style={{ fontWeight: 700, fontSize: 14 }}>班級整體分析報告</span>
           <span style={{ fontSize: 12, opacity: 0.55, marginLeft: 10 }}>{group.name} · {rows.length} 位成員</span>
+          <span style={{ fontSize: 11, opacity: 0.5, marginLeft: 10 }}>存檔檔名：{filename}.pdf</span>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={() => window.print()}
+            onClick={print}
             style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
           >
             🖨️ 列印 / 存為 PDF

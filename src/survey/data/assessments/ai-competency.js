@@ -1,5 +1,6 @@
 export const ID = 'ai-competency';
 export const NAME = 'AI 全方位職能實戰課前評測';
+export const ABBR = 'AI職能';
 export const DESCRIPTION = '6 大構面、48 題李克特量表（含反向題）';
 
 export const SCALE_MIN = 1;

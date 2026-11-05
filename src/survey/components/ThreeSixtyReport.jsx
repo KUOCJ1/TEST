@@ -10,6 +10,8 @@ import { TONE_COLOR } from './printable-report/tokens.js';
 import { toneOf } from './printable-report/helpers.js';
 import { PageFooter, SectionTitle } from './printable-report/primitives.jsx';
 import InsightBlock from './printable-report/InsightBlock.jsx';
+import { reportFilename, REPORT_KIND } from '../utils/reportFilename.js';
+import { useReportFilename } from '../hooks/useReportFilename.js';
 
 // 360° 完整報告（列印／存為 PDF）：封面、整體評價、自評 vs 他評、各構面與子能力、發展建議與討論。
 // 資料整理在 utils/report360.js；這裡只負責版面。評分者只以「類別」呈現（主管／同儕／部屬），不列姓名。
@@ -231,8 +233,10 @@ function PlanPage({ r }) {
  * 360° 完整報告（列印／存為 PDF）。自己用 rateeId／assessmentId 載入該受評者的全部作答。
  * 只支援非嚴格隱私的 360° 題庫（領導力羅盤有專屬的匿名化報告）。
  */
-export default function ThreeSixtyReport({ rateeId, rateeName, assessmentId, onClose }) {
+export default function ThreeSixtyReport({ rateeId, rateeName, assessmentId, onClose, groupName }) {
   const config = getAssessment(assessmentId);
+  const filename = reportFilename({ kind: REPORT_KIND.threeSixty, assessmentId, groupName, subject: rateeName });
+  const print = useReportFilename(filename);
   const [subs, setSubs] = useState(null);
   const [error, setError] = useState('');
 
@@ -259,9 +263,10 @@ export default function ThreeSixtyReport({ rateeId, rateeName, assessmentId, onC
         <div>
           <span style={{ fontWeight: 700, fontSize: 14 }}>360° 完整回饋報告</span>
           <span style={{ fontSize: 12, opacity: 0.55, marginLeft: 10 }}>{rateeName}</span>
+          <span style={{ fontSize: 11, opacity: 0.5, marginLeft: 10 }}>存檔檔名：{filename}.pdf</span>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => window.print()} disabled={!report} style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: report ? 1 : 0.5 }}>🖨️ 列印 / 存為 PDF</button>
+          <button onClick={print} disabled={!report} style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: report ? 1 : 0.5 }}>🖨️ 列印 / 存為 PDF</button>
           <button onClick={onClose} style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>✕ 關閉</button>
         </div>
       </div>

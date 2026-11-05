@@ -749,4 +749,6 @@ FAQ「資料安全與隱私」只寫「只有你、教練、管理者看得到�
 | 22-E 公開八大構面 | 70 題改名「八大構面行為評量」並公開（顧問確認題目歸顧問團隊）；`db.js` 以 `KNOWN_ASSESSMENTS` 為準清除殘留 hidden 並更名；GUIDES、ASSESSMENT_SUMMARIES、英文名；`ABBR` 改 L8D |
 | 22-F 核心構面比較 | `utils/coreDimensions.js`、`admin/CoreCompareSection.jsx`（管理後台）；教練端不做（隱私：不看學員在別班／別評量的結果） |
 
+| 22-G 報告檔名 | `utils/reportFilename.js`（命名規則）＋`hooks/useReportFilename.js`（報告開啟時設 `document.title`，列印前再設一次，關閉還原）；五種報告都接上，工具列顯示存檔檔名；`ai-competency` 補 `ABBR` |
+
 未做（等顧問審核 Excel 回覆後）：候補落差規則（領導影響力 > 人才發展、溝通力 > 協作關係）、構面說明文字微調、管理後台是否開放編輯構面說明。分數門檻與觸發條件皆為暫定值。
