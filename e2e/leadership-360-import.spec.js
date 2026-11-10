@@ -76,8 +76,14 @@ test('批次匯入 70 題 360 → 建班加入成員 → 教練後台看得到�
   const doc = page.locator('#report-portal');
   await expect(doc.getByText('360° 完整回饋報告').first()).toBeVisible({ timeout: 15000 });
   await expect(doc.getByText('整體評價').first()).toBeVisible();
-  await expect(doc.getByText('各構面：自評與各類評分者')).toBeVisible();
-  await expect(doc.getByText('構面與子能力詳述')).toBeVisible();
+  // 報告目錄也列了這些章節名稱，所以標題文字會出現兩次（目錄一次、章節標題一次）。
+  await expect(doc.getByText('報告目錄與閱讀指引')).toBeVisible();
+  await expect(doc.getByText('各構面：自評與各類評分者')).toHaveCount(2);
+  await expect(doc.getByText('構面與子能力詳述')).toHaveCount(2);
+  await expect(doc.getByText('子能力排名').first()).toBeVisible();
+  // 新版面：構面 × 評分者群組橫條（8 個構面）、子能力排名（18 個子能力）。
+  await expect(doc.locator('#chart-dim-groups')).toBeVisible();
+  await expect(doc.locator('#chart-sub-ranking [role="img"]')).toHaveCount(18);
   await expect(doc.getByText('發展建議').first()).toBeVisible();
   await expect(doc.getByText('部屬 3 位', { exact: false }).first()).toBeVisible();
   // 評分者只以類別呈現，不出現姓名。
