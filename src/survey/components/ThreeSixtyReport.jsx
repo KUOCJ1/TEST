@@ -10,6 +10,7 @@ import { TONE_COLOR, RATING_SCALE } from './printable-report/tokens.js';
 import { toneOf } from './printable-report/helpers.js';
 import { PageFooter, SectionTitle } from './printable-report/primitives.jsx';
 import InsightBlock from './printable-report/InsightBlock.jsx';
+import { SubRanking, DimGroupBars, SubGroupBars, Contents } from './threesixty/GroupCharts.jsx';
 import { reportFilename, REPORT_KIND } from '../utils/reportFilename.js';
 import { useReportFilename } from '../hooks/useReportFilename.js';
 
@@ -212,36 +213,27 @@ function Compare({ r }) {
   const pct = (v) => (typeof v === 'number' ? Math.round((v / 5) * 100) : 0);
   const radarSelf = dims.map((d) => ({ id: d.id, name: d.name, subtitle: d.subtitle, color: d.color, percent: pct(d.self ?? d.others) }));
   const radarCompare = r.hasSelf && r.hasOthers ? dims.map((d) => ({ id: d.id, percent: pct(d.others) })) : null;
-  const cols = ['self', 'manager', 'peer', 'subordinate', 'others'];
-  const head = { self: '自評', manager: '主管', peer: '同儕', subordinate: '部屬', others: '他評合計' };
   return (
-    <div style={{ ...SECTION, breakInside: 'avoid' }}>
-      <SectionTitle sub="分數為 1–5 的平均；同一類評分者取平均，「他評合計」為所有他評評分者的平均">各構面：自評與各類評分者</SectionTitle>
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
-        <RadarChart dimensions={radarSelf} compare={radarCompare} compareLabel="他評" size={250} />
+    <div style={SECTION}>
+      <div style={{ breakInside: 'avoid' }}>
+        <SectionTitle sub="分數為 1–5 的平均；同一類評分者取平均，「他評合計」為所有他評評分者的平均">各構面：自評與各類評分者</SectionTitle>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+          <RadarChart dimensions={radarSelf} compare={radarCompare} compareLabel="他評" size={250} />
+        </div>
+        {radarCompare && <div style={{ display: 'flex', gap: 16, justifyContent: 'center', fontSize: 9, color: '#64748b', marginBottom: 14 }}><span>━ 自評</span><span style={{ opacity: 0.65 }}>╌ 他評合計</span></div>}
       </div>
-      {radarCompare && <div style={{ display: 'flex', gap: 16, justifyContent: 'center', fontSize: 9, color: '#64748b', marginBottom: 14 }}><span>━ 自評</span><span style={{ opacity: 0.65 }}>╌ 他評合計</span></div>}
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
-        <thead>
-          <tr style={{ borderBottom: '1.5px solid #cbd5e1', color: '#64748b' }}>
-            <th style={{ textAlign: 'left', padding: '6px 4px' }}>構面</th>
-            {cols.map((c) => <th key={c} style={{ textAlign: 'center', padding: '6px 4px' }}>{head[c]}{c !== 'self' && c !== 'others' && r.counts[c] ? `（${r.counts[c]}）` : ''}</th>)}
-            <th style={{ textAlign: 'center', padding: '6px 4px' }}>差距</th>
-            <th style={{ textAlign: 'left', padding: '6px 4px' }}>觀察</th>
-          </tr>
-        </thead>
-        <tbody>
-          {dims.map((d) => (
-            <tr key={d.id} style={{ borderBottom: '0.5px solid #e2e8f0' }}>
-              <td style={{ padding: '6px 4px', fontWeight: 700, color: '#334155' }}>{d.name}</td>
-              {cols.map((c) => <td key={c} style={{ textAlign: 'center', padding: '6px 4px' }}><Score value={d[c]} bold={c === 'others'} /></td>)}
-              <td style={{ textAlign: 'center', padding: '6px 4px', fontWeight: 700, color: d.gap == null ? '#cbd5e1' : KIND[d.kind].color }}>{d.gap == null ? '—' : signed(d.gap)}</td>
-              <td style={{ padding: '6px 4px' }}>{d.kind !== 'aligned' && d.kind !== 'unknown' ? <Chip color={KIND[d.kind].color}>{KIND[d.kind].label}</Chip> : <span style={{ fontSize: 9, color: '#94a3b8' }}>{KIND[d.kind].label}</span>}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div style={{ fontSize: 9, color: '#64748b', marginTop: 8 }}>分數顏色：≥4.2 精熟、≥3.4 熟練、≥2.6 發展中、≥1.8 萌芽。差距＝自評 − 他評合計。</div>
+      <DimGroupBars r={r} labels={r.framework?.scale.labels ?? []} kindInfo={KIND} />
+      <div style={{ fontSize: 9, color: '#64748b', marginTop: 8 }}>差距＝自評 − 他評合計；橫條旁的數字是各群組的平均分（1–5）。</div>
+    </div>
+  );
+}
+
+function SubRankingSection({ r }) {
+  if (!r.subRanking?.all.length) return null;
+  return (
+    <div style={SECTION}>
+      <div style={{ breakInside: 'avoid' }}><SectionTitle sub={`${r.subRanking.all.length} 個子能力依${r.basis === 'others' ? '他人眼中' : '自評'}的分數由高到低排列`}>子能力排名</SectionTitle></div>
+      <SubRanking r={r} labels={r.framework?.scale.labels ?? []} />
     </div>
   );
 }
@@ -260,21 +252,7 @@ function DimensionDetails({ r }) {
           </div>
           {r.dimTexts?.[d.id] && <p style={{ fontSize: 11, lineHeight: 1.8, color: '#0f172a', fontWeight: 600, margin: '0 0 8px' }}>{r.dimTexts[d.id]}</p>}
           {r.narratives[d.id] && <p style={{ fontSize: 11, lineHeight: 1.8, color: '#334155', margin: '0 0 10px' }}>{r.narratives[d.id]}</p>}
-          {d.subs.length > 0 && (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
-              <thead><tr style={{ color: '#64748b', borderBottom: '1px solid #e2e8f0' }}><th style={{ textAlign: 'left', padding: '4px' }}>子能力</th><th style={{ padding: '4px' }}>自評</th><th style={{ padding: '4px' }}>他評</th><th style={{ padding: '4px' }}>差距</th></tr></thead>
-              <tbody>
-                {d.subs.map((s) => (
-                  <tr key={s.id} style={{ borderBottom: '0.5px solid #f1f5f9' }}>
-                    <td style={{ padding: '4px', color: '#334155' }}>{s.name}</td>
-                    <td style={{ textAlign: 'center', padding: '4px' }}><Score value={s.self} /></td>
-                    <td style={{ textAlign: 'center', padding: '4px' }}><Score value={s.others} bold /></td>
-                    <td style={{ textAlign: 'center', padding: '4px', fontWeight: 700, color: s.gap == null ? '#cbd5e1' : KIND[s.gap >= 0.5 ? 'blind' : s.gap <= -0.5 ? 'hidden' : 'aligned'].color }}>{s.gap == null ? '—' : signed(s.gap)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <SubGroupBars dim={d} labels={r.framework?.scale.labels ?? []} />
           </div>
         </div>
       ))}
@@ -369,9 +347,11 @@ export default function ThreeSixtyReport({ rateeId, rateeName, assessmentId, onC
         {report && (
           <>
             <Cover r={report} name={rateeName} date={date} />
+            <Contents r={report} />
             <Framework r={report} />
             <Overall r={report} />
             <Compare r={report} />
+            <SubRankingSection r={report} />
             <DimensionDetails r={report} />
             <PlanPage r={report} />
           </>

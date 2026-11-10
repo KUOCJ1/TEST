@@ -135,3 +135,62 @@ describe('build360Report 的 framework（報告最前面的評量項目與評估
     L9D.DIMENSIONS.forEach((d) => expect(L9D.DIMENSION_DEFINITIONS[d.id], d.id).toBeTruthy());
   });
 });
+
+describe('build360Report：子能力排名、評分者群組差距、參考區間', () => {
+  const build = async () => {
+    const { getAssessment } = await import('../survey/data/assessments/index.js');
+    const { buildResult } = await import('../survey/utils/scoring.js');
+    const { REF_BAND, GROUP_GAP_DIM, GROUP_GAP_SUB } = await import('../survey/utils/report360.js');
+    const cfg = getAssessment('leadership-360-70');
+    const by = (value) => buildResult(Object.fromEntries(cfg.ALL_QUESTIONS.map((q) => [q.id, typeof value === 'function' ? value(q) : value])), cfg);
+    const mk = (raterType, userId, value) => ({ userId, raterType, createdAt: '2026-11-01T00:00:00Z', result: by(value) });
+    return { cfg, mk, REF_BAND, GROUP_GAP_DIM, GROUP_GAP_SUB, report: (subs) => build360Report(subs, cfg) };
+  };
+  it('參考區間＝3.5–4.5（子能力語句「中」段）', async () => {
+    const { REF_BAND } = await build();
+    expect(REF_BAND).toEqual({ min: 3.5, max: 4.5 });
+  });
+  it('子能力排名：由高到低、共 18 個；≥ 3.5 為強項區、< 3.5 為發展機會區', async () => {
+    const { cfg, mk, report } = await build();
+    const lowIds = new Set(cfg.DIMENSIONS.find((d) => d.id === 'communication').questions.map((q) => q.id));
+    expect(report([mk('self', 'r', 4)]).subRanking.all).toHaveLength(18);
+    const { buildResult } = await import('../survey/utils/scoring.js');
+    const mixed = (q) => (lowIds.has(q.id) ? 2 : 5);
+    const r2 = report([
+      { userId: 'r', raterType: 'self', createdAt: '2026-11-01T00:00:00Z', result: buildResult(Object.fromEntries(cfg.ALL_QUESTIONS.map((q) => [q.id, 4])), cfg) },
+      { userId: 'm', raterType: 'manager', createdAt: '2026-11-01T00:00:00Z', result: buildResult(Object.fromEntries(cfg.ALL_QUESTIONS.map((q) => [q.id, mixed(q)])), cfg) },
+    ]);
+    const vals = r2.subRanking.all.map((s) => s.value);
+    expect([...vals].sort((a, b) => b - a)).toEqual(vals);
+    expect(r2.subRanking.opportunities.map((s) => s.dimId)).toEqual(['communication', 'communication', 'communication']);
+    expect(r2.subRanking.strengths).toHaveLength(15);
+    expect(r2.subRanking.all[0].band).toBe('high');
+    expect(r2.subRanking.all.at(-1).band).toBe('low');
+  });
+  it('只有自評時，排名以自評為依據', async () => {
+    const { mk, report } = await build();
+    const r = report([mk('self', 'r', 4)]);
+    expect(r.subRanking.all.every((s) => s.value === s.self)).toBe(true);
+  });
+  it('評分者群組差距：構面 ≥ 1.0、子能力 ≥ 1.5 才標；各類子能力平均都有', async () => {
+    const { cfg, mk, report } = await build();
+    const wide = report([mk('self', 'r', 5), mk('manager', 'm', 3), mk('subordinate', 's', 4)]);
+    const d = wide.dimensions[0];
+    expect(d.spread).toBe(2);
+    expect(d.wideSpread).toBe(true);
+    expect(d.subs[0]).toMatchObject({ manager: 3, subordinate: 4, peer: null, self: 5 });
+    expect(d.subs[0].spread).toBe(2);
+    expect(d.subs[0].wideSpread).toBe(true);
+    const narrow = report([mk('self', 'r', 4), mk('manager', 'm', 3)]);
+    expect(narrow.dimensions[0].spread).toBe(1);
+    expect(narrow.dimensions[0].wideSpread).toBe(true); // 剛好 1.0 → 標
+    expect(narrow.dimensions[0].subs[0].wideSpread).toBe(false); // 1.0 < 1.5
+    expect(cfg.DIMENSIONS.length).toBe(8);
+  });
+  it('只有自評（沒有其他群組）：差距為 null、不標', async () => {
+    const { mk, report } = await build();
+    const r = report([mk('self', 'r', 4)]);
+    expect(r.dimensions[0].spread).toBeNull();
+    expect(r.dimensions[0].wideSpread).toBe(false);
+  });
+});

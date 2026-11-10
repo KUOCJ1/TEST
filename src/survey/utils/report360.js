@@ -7,10 +7,15 @@
 //   「他評合計」＝所有他評評分者平均（每位評分者等權重，不因某類人數多而偏重）。
 // - 構面與子能力分數用 1–5 的平均（result.dimensions[].average、subs[].average）。
 // - 差距＝自評 − 他評合計；≥ 0.5 視為「自評高於他評（可能的盲點）」，≤ −0.5 視為「他評高於自評（被低估的優勢）」。
-import { buildNarrative, buildOverallSummary, buildDevelopmentPlan, dimensionText } from './narrative.js';
+import { buildNarrative, buildOverallSummary, buildDevelopmentPlan, dimensionText, bandOf } from './narrative.js';
 import { buildInsights } from './dimensionInsights.js';
 
 export const GAP_THRESHOLD = 0.5;
+// 穩定展現區間（參考帶）：3.5 ≤ 分數 < 4.5，就是子能力語句的「中」段（bandOf）；圖上畫成底色帶。
+export const REF_BAND = { min: 3.5, max: 4.5 };
+// 評分者群組之間（自評、主管、同儕、部屬）的分數落差：構面 ≥ 1.0、子能力 ≥ 1.5 時，圖上標出落差箭頭。
+export const GROUP_GAP_DIM = 1.0;
+export const GROUP_GAP_SUB = 1.5;
 const OTHER_TYPES = ['manager', 'peer', 'subordinate'];
 const round2 = (n) => Math.round(n * 100) / 100;
 const mean = (xs) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
@@ -53,6 +58,12 @@ function averageDimensions(results) {
 
 function levelOfTotal(config, total) {
   return (config.LEVELS ?? []).find((l) => total >= l.min && total <= l.max) ?? null;
+}
+
+/** 各群組分數的最大差（少於 2 個群組有分數時回 null）。 */
+function spreadOf(values) {
+  const xs = values.filter((v) => typeof v === 'number');
+  return xs.length >= 2 ? round2(Math.max(...xs) - Math.min(...xs)) : null;
 }
 
 const kindOf = (gap) => (gap == null ? 'unknown' : gap >= GAP_THRESHOLD ? 'blind' : gap <= -GAP_THRESHOLD ? 'hidden' : 'aligned');
@@ -114,13 +125,30 @@ export function build360Report(submissions, config) {
       subordinate: typeDims.subordinate.get(cd.id)?.average ?? null,
       gap,
       kind: kindOf(gap),
+      spread: spreadOf([selfAvg, typeDims.manager.get(cd.id)?.average, typeDims.peer.get(cd.id)?.average, typeDims.subordinate.get(cd.id)?.average]),
       subs: subDefs.map((sd) => {
         const s = self?.subs.find((x) => x.id === sd.id)?.average ?? null;
         const o = others?.subs.find((x) => x.id === sd.id)?.average ?? null;
-        return { id: sd.id, name: sd.name, self: s, others: o, gap: s != null && o != null ? round2(s - o) : null };
+        const byType = Object.fromEntries(OTHER_TYPES.map((t) => [t, typeDims[t].get(cd.id)?.subs.find((x) => x.id === sd.id)?.average ?? null]));
+        const spread = spreadOf([s, byType.manager, byType.peer, byType.subordinate]);
+        return {
+          id: sd.id, name: sd.name, self: s, others: o, gap: s != null && o != null ? round2(s - o) : null,
+          manager: byType.manager, peer: byType.peer, subordinate: byType.subordinate,
+          spread, wideSpread: spread != null && spread >= GROUP_GAP_SUB,
+        };
       }),
     };
-  });
+  }).map((d) => ({ ...d, wideSpread: d.spread != null && d.spread >= GROUP_GAP_DIM }));
+
+  // 子能力排名：依「他人眼中」的分數（沒有他評時用自評）由高到低；分成穩定展現以上（≥ 3.5）與有發展機會（< 3.5）。
+  const rankValue = (s) => (othersCount ? s.others : s.self);
+  const subRanking = dimensions
+    .flatMap((d) => d.subs.map((s) => ({ ...s, dimId: d.id, dimName: d.name, color: d.color, value: rankValue(s) })))
+    .filter((s) => typeof s.value === 'number')
+    .map((s) => ({ ...s, band: bandOf(s.value) }))
+    .sort((a, b) => b.value - a.value);
+  const rankedStrengths = subRanking.filter((s) => s.value >= REF_BAND.min);
+  const rankedOpportunities = subRanking.filter((s) => s.value < REF_BAND.min);
 
   const selfTotal = selfSub?.result?.total ?? null;
   const othersTotal = othersCount ? Math.round(mean(otherSubs.map((s) => s.result.total))) : null;
@@ -161,6 +189,7 @@ export function build360Report(submissions, config) {
     strengths, develop, blind, hidden,
     summaryText: buildOverallSummary(composite, config, seed),
     framework: buildFramework(config, dimensions),
+    subRanking: { all: subRanking, strengths: rankedStrengths, opportunities: rankedOpportunities, band: REF_BAND },
     narratives,
     dimTexts,
     insights: buildInsights(composite.dimensions),
