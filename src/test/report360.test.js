@@ -112,3 +112,26 @@ describe('build360Report', () => {
     expect(partial.develop.every((d) => d.others > 0)).toBe(true);
   });
 });
+
+describe('build360Report 的 framework（報告最前面的評量項目與評估方式）', () => {
+  it('只列有資料的構面，含定義、子能力、題數；題數合計＝題庫總題數', async () => {
+    const { getAssessment } = await import('../survey/data/assessments/index.js');
+    const { buildResult } = await import('../survey/utils/scoring.js');
+    const cfg = getAssessment('leadership-360-70');
+    const answers = Object.fromEntries(cfg.ALL_QUESTIONS.map((q) => [q.id, 4]));
+    const r = build360Report([{ userId: 'u', raterType: 'self', createdAt: '2026-11-01T00:00:00Z', result: buildResult(answers, cfg) }], cfg);
+    const f = r.framework;
+    expect(f.dimensions).toHaveLength(8);
+    expect(f.itemCount).toBe(cfg.TOTAL_QUESTIONS);
+    f.dimensions.forEach((d) => { expect(d.definition, d.id).toBeTruthy(); expect(d.subs.length).toBeGreaterThan(0); expect(d.items).toBeGreaterThan(0); });
+    expect(f.dimensions.find((d) => d.id === 'adaptive-innovation').subs).toEqual(['因應環境變化', '創新思考']);
+    expect(f.scale).toMatchObject({ min: 1, max: 5 });
+    expect(f.scale.labels).toHaveLength(5);
+    expect(f.levels.length).toBeGreaterThan(0);
+    expect(f.gapThreshold).toBe(0.5);
+  });
+  it('L9D 的 9 個構面都有定義；沒有作答（沒有題目）的構面不列入', async () => {
+    const L9D = await import('../survey/data/assessments/leadership-9d.js');
+    L9D.DIMENSIONS.forEach((d) => expect(L9D.DIMENSION_DEFINITIONS[d.id], d.id).toBeTruthy());
+  });
+});

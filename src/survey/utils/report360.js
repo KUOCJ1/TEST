@@ -58,6 +58,27 @@ function levelOfTotal(config, total) {
 const kindOf = (gap) => (gap == null ? 'unknown' : gap >= GAP_THRESHOLD ? 'blind' : gap <= -GAP_THRESHOLD ? 'hidden' : 'aligned');
 
 /**
+ * 報告最前面的「評量項目與定義、評估方式」：全部從題庫設定算出，不另外手寫數字。
+ * 只列這份報告實際有資料的構面（沒有題目的構面不是「零分」，而是沒有評量）。
+ */
+function buildFramework(config, dimensions) {
+  const present = new Set(dimensions.map((d) => d.id));
+  const dims = (config.DIMENSIONS ?? []).filter((d) => present.has(d.id)).map((d) => ({
+    id: d.id, name: d.name, subtitle: d.subtitle, color: d.color,
+    definition: config.DIMENSION_DEFINITIONS?.[d.id] ?? '',
+    subs: (d.subDimensions ?? []).map((s) => s.name),
+    items: d.questions.length,
+  }));
+  return {
+    itemCount: dims.reduce((s, d) => s + d.items, 0),
+    scale: { min: config.SCALE_MIN, max: config.SCALE_MAX, labels: (config.SCALE_LABELS ?? []).map((l) => l.label) },
+    dimensions: dims,
+    levels: (config.LEVELS ?? []).map((l) => ({ badge: l.badge, min: l.min, max: l.max, color: l.color })),
+    gapThreshold: GAP_THRESHOLD,
+  };
+}
+
+/**
  * @param {Array} submissions 受評者的全部作答（GET /submissions/ratee/:id 的結果）
  * @param {object} config 題庫設定（getAssessment）
  * @returns {null | object} 沒有任何作答時回 null
@@ -139,6 +160,7 @@ export function build360Report(submissions, config) {
     dimensions,
     strengths, develop, blind, hidden,
     summaryText: buildOverallSummary(composite, config, seed),
+    framework: buildFramework(config, dimensions),
     narratives,
     dimTexts,
     insights: buildInsights(composite.dimensions),

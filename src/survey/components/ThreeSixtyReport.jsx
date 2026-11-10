@@ -6,7 +6,7 @@ import { build360Report } from '../utils/report360.js';
 import { RATER_LABELS } from '../constants/raterTypes';
 import { formatDate } from '../utils/format';
 import RadarChart from './RadarChart';
-import { TONE_COLOR } from './printable-report/tokens.js';
+import { TONE_COLOR, RATING_SCALE } from './printable-report/tokens.js';
 import { toneOf } from './printable-report/helpers.js';
 import { PageFooter, SectionTitle } from './printable-report/primitives.jsx';
 import InsightBlock from './printable-report/InsightBlock.jsx';
@@ -75,6 +75,98 @@ function Cover({ r, name, date }) {
           評分者組成：{r.hasSelf ? '自評 1 份' : '無自評'}
           {['manager', 'peer', 'subordinate'].filter((t) => r.counts[t]).map((t) => `、${RATER_LABELS[t]} ${r.counts[t]} 位`).join('')}
           {!r.hasOthers && '（尚無他評）'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** 報告最前面：評量項目與定義、評估方式。讓閱讀者先知道「評什麼」與「分數怎麼來」。 */
+function Framework({ r }) {
+  const f = r.framework;
+  if (!f || f.dimensions.length === 0) return null;
+  const labels = f.scale.labels.length ? f.scale.labels.map((l, i) => `${f.scale.min + i}＝${l}`).join('、') : `${f.scale.min}–${f.scale.max} 分`;
+  const th = { textAlign: 'left', padding: '5px 6px', fontWeight: 700 };
+  const card = { border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 16px', breakInside: 'avoid', pageBreakInside: 'avoid' };
+  const bullets = { margin: 0, paddingLeft: 18, listStyle: 'disc', fontSize: 10.5, lineHeight: 1.8, color: '#334155' };
+  return (
+    <div style={SECTION}>
+      <div style={{ breakInside: 'avoid' }}>
+        <SectionTitle sub={`本報告評量 ${f.dimensions.length} 個構面、共 ${f.itemCount} 題行為描述；先看評什麼、再看分數怎麼來`}>評量項目與定義</SectionTitle>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5, marginBottom: 18 }}>
+        <thead><tr style={{ color: '#64748b', borderBottom: '1px solid #e2e8f0' }}><th style={th}>構面</th><th style={th}>定義</th><th style={th}>子能力</th><th style={{ ...th, textAlign: 'center' }}>題數</th></tr></thead>
+        <tbody>
+          {f.dimensions.map((d) => (
+            <tr key={d.id} style={{ borderBottom: '0.5px solid #f1f5f9', breakInside: 'avoid', verticalAlign: 'top' }}>
+              <td style={{ padding: '6px', whiteSpace: 'nowrap', fontWeight: 700, color: '#0f172a' }}>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: d.color, marginRight: 6 }} />{d.name}
+                <div style={{ fontSize: 8.5, fontWeight: 500, color: '#94a3b8', marginLeft: 14 }}>{d.subtitle}</div>
+              </td>
+              <td style={{ padding: '6px', color: '#334155', lineHeight: 1.7 }}>{d.definition}</td>
+              <td style={{ padding: '6px', color: '#475569', lineHeight: 1.7 }}>{d.subs.join('、')}</td>
+              <td style={{ padding: '6px', textAlign: 'center', color: '#475569' }}>{d.items}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div style={{ breakInside: 'avoid' }}>
+        <SectionTitle sub="分數如何計算、如何解讀">評估方式</SectionTitle>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={card}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>誰來評分、怎麼作答</div>
+          <ul style={bullets}>
+            <li>受評者本人（自評），以及主管、同儕、部屬從各自的角度，回答同一份行為描述的題目。</li>
+            <li>每題依「這個行為實際出現的程度」作答，量表 {labels}。</li>
+            <li>評分者只以類別（主管／同儕／部屬）呈現，不列姓名；同一位評分者重複作答時只採計最新一次。</li>
+          </ul>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>分數怎麼算</div>
+          <ul style={bullets}>
+            <li>子能力分數＝該子能力所屬題目的平均；構面分數＝該構面全部題目的平均，皆為 {f.scale.min}–{f.scale.max} 分。</li>
+            <li>各類評分者的分數，是該類評分者的平均；「他評合計」是所有他評評分者的平均，<strong>每位評分者權重相同</strong>，不會因為某一類人數較多而偏重。</li>
+            <li>他評的整體落點，是所有他評評分者總分的平均（四捨五入）對照下表等級。</li>
+          </ul>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>構面等級（依構面分數）</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+            <tbody>
+              {RATING_SCALE.map((x) => (
+                <tr key={x.level} style={{ borderBottom: '0.5px solid #f1f5f9' }}>
+                  <td style={{ padding: '3px 6px', fontWeight: 700, color: TONE_COLOR[x.tone], whiteSpace: 'nowrap' }}>{x.level}</td>
+                  <td style={{ padding: '3px 6px', color: '#64748b', whiteSpace: 'nowrap' }}>{x.range}</td>
+                  <td style={{ padding: '3px 6px', color: '#334155' }}>{x.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {f.levels.length > 0 && (
+          <div style={card}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>整體落點（依總分）</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+              <tbody>
+                {f.levels.map((l) => (
+                  <tr key={l.badge} style={{ borderBottom: '0.5px solid #f1f5f9' }}>
+                    <td style={{ padding: '3px 6px', fontWeight: 700, color: '#0f172a' }}>{l.badge}</td>
+                    <td style={{ padding: '3px 6px', color: '#64748b' }}>{l.min}–{l.max} 分</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div style={card}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>自評與他評的差距</div>
+          <ul style={bullets}>
+            <li>差距＝自評 − 他評合計。<strong>差距 ≥ {f.gapThreshold.toFixed(1)}</strong>：自評高於他評，可能的盲點（自己覺得做到、他人感受較少）。</li>
+            <li><strong>差距 ≤ −{f.gapThreshold.toFixed(1)}</strong>：他評高於自評，是被低估的優勢（他人看見的比自己以為的多）。</li>
+            <li>分數與等級門檻是依本題庫推算的暫定值，用來引發對話，不是對一個人的評定；評分者人數少時，單一評分者的影響較大。</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -277,6 +369,7 @@ export default function ThreeSixtyReport({ rateeId, rateeName, assessmentId, onC
         {report && (
           <>
             <Cover r={report} name={rateeName} date={date} />
+            <Framework r={report} />
             <Overall r={report} />
             <Compare r={report} />
             <DimensionDetails r={report} />

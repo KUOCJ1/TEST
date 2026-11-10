@@ -87,6 +87,7 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 ## 構面說明與落差提示（Sprint 22）
 
 - 題庫的 `DIMENSION_COMMENTARY`（構面 × high/mid/low，`bandOf` 同一組門檻 4.5／3.5）給報告顯示構面專屬說明；`COMMENTARY` 仍是子能力語句。L9D 與 70 題 360° 共用同一套（70 題多「應變與創新」）。文字修改不影響結構指紋與 `ITEM_VERSION`。構面名稱以系統名稱為準（領導影響力、協作關係、應變與創新、人才發展、自我成長）。
+- 題庫的 `DIMENSION_DEFINITIONS`（構面 id → 一句話定義）給 360° 報告最前面的「評量項目與定義」用（`utils/report360.js` 的 `buildFramework`，數字與等級全從題庫設定算）；新增構面要補定義（有測試檢查 L9D 與八大構面都有）。
 - 構面落差提示在 `utils/dimensionInsights.js`（規則＋學員可讀文字＋建議課程），目前只有「任務管理低、執行力高」，門檻暫定。新增規則要補測試（`src/test/dimension-text.test.js`）。
 
 ## 兩套領導力評測與核心 7 構面（2026-11）

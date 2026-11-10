@@ -190,3 +190,10 @@ export const COMMENTARY = {
 
 // 構面層說明：沿用 L9D（含「應變與創新」）。
 export const DIMENSION_COMMENTARY = clone(L9D.DIMENSION_COMMENTARY);
+
+// 構面定義：沿用 L9D，另加「應變與創新」。
+export const DIMENSION_DEFINITIONS = {
+  ...clone(L9D.DIMENSION_DEFINITIONS),
+  'adaptive-innovation': '靈活因應環境的變動與壓力，並以開放的態度鼓勵新想法、推動創新與改善。',
+};
+
