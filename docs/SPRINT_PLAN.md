@@ -761,3 +761,16 @@ FAQ「資料安全與隱私」只寫「只有你、教練、管理者看得到�
 | 23-B 批次 phase | `phase` 選填欄（`batchValidation.js`、伺服器 `batch-import`）；每列 `createdAt` 錯開 1 毫秒（重複列以後面為準、課後晚於課前）；範本、說明、SOP、測試 |
 
 未做：60 天追蹤裡「重做 48 題」只有文字提示（班級結束日若已過，要請教練延長才能重做）；追蹤答案的彙總報告（目前只有完成率）；追蹤信內容與時間的後台設定；隱私權政策未升版（只補述一句）。
+
+## 360° 報告改版（2026-11-11）
+
+來源：對一份公開的商用 360° 個別回饋報告範本的版面比較（只參考設計概念，版面與文字為自行設計）。
+
+| 項目 | 內容 |
+|---|---|
+| 資料 | `utils/report360.js`：`REF_BAND`（3.5–4.5）、`GROUP_GAP_DIM`（1.0）、`GROUP_GAP_SUB`（1.5）；每個子能力有各類評分者平均與 `spread`／`wideSpread`；`subRanking`（all／strengths／opportunities） |
+| 版面 | `components/threesixty/GroupCharts.jsx`（`Contents`、`DimGroupBars`、`SubRanking`、`SubGroupBars`；顏色在 `groups.js`）；`ThreeSixtyReport.jsx` 串起 |
+| 測試 | `src/test/report360.test.js`（資料）、`src/test/report360-view.test.jsx`（版面） |
+
+未做：逐題結果附錄（隱私規則待定：主管類顯示、其他類 ≥ 3 位才顯示）；發展指引與 Keep／Stop／Start 規劃頁（內容待顧問撰寫）；關鍵技能對焦與「無法觀察」選項（需要改問卷結構）。
+
