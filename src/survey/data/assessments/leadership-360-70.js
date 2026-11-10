@@ -1,4 +1,4 @@
-// 經贏® 領導力八大構面行為評量（70 題）：適用一般管理主管。最初為客戶專案（森永高階教練 360 評鑑）的題庫，題目歸顧問團隊所有，已公開。
+// 經贏® 領導力八大構面行為評量（70 題）：客戶專案（森永高階教練 360 評鑑）使用的題庫；題目來源的授權確認前維持專案專用（hidden）。
 //
 // 框架直接沿用 L9D（經贏® 領導力九大構面行為評量，見 leadership-9d.js）：構面、子能力、顏色、圈層、
 // 等級名稱、構面評級與子能力敘事評語都取自 L9D，所以報告、雷達圖、敘事報告與 L9D 班級是同一套；
@@ -21,10 +21,12 @@ export const ID = 'leadership-360-70';
 // 題庫結構版本（結構一變就要升版，見 utils/assessmentFingerprint.js）。分組變動後已匯入的結果要移除重匯。
 export const ITEM_VERSION = '2026-11';
 export const SUPPORTS_360 = true;
+// 客戶專案專用：不在公開評測工具庫展示（題目來源的授權與歸屬確認前，先不公開）。
+export const LIBRARY_HIDDEN = true;
 export const NAME = '經贏® 領導力八大構面行為評量（70 題）';
 export const NAME_EN = 'Leadership Eight-Dimension Behavioral Assessment (70 items)';
 export const ABBR = 'L8D';
-export const DESCRIPTION = '8 大構面、70 題行為評量，沿用經贏® 領導力構面框架，適用一般管理主管；可整合自評與主管、同儕、部屬的他評，作為發展回饋。';
+export const DESCRIPTION = '8 大構面、70 題行為評量，沿用經贏® 領導力構面框架；可整合自評與主管、同儕、部屬的他評，作為發展回饋。';
 export const RATER_PROMPT = L9D.RATER_PROMPT;
 
 export const SCALE_MIN = L9D.SCALE_MIN;
