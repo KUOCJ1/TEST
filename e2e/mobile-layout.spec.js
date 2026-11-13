@@ -157,7 +157,7 @@ test('作答：無底部導覽、捲到第 10 題進度列仍看得到、送出�
   await context.close();
 });
 
-test('教練總覽：整頁不水平溢出、底部導覽在、按鈕夠大', async ({ browser }) => {
+test('教練：切換班級、總覽第一屏、成員卡片、QR 置頂、刪除收進選單', async ({ browser }) => {
   const suffix = `${Date.now()}`;
   const admin = await pwRequest.newContext({ baseURL: API });
   await ok(await admin.post('/api/auth/login', { data: { email: 'admin@e2e.test', password: 'E2eTest1234' } }), 'admin login');
@@ -166,7 +166,10 @@ test('教練總覽：整頁不水平溢出、底部導覽在、按鈕夠大', as
   await ok(await admin.patch(`/api/admin/users/${reg.user.id}/role`, { data: { role: 'coach' } }), 'promote');
   await ok(await coach.post('/api/auth/login', { data: { email: `e2e-mobile-coach-${suffix}@example.com`, password: 'abcdef12' } }), 'coach login');
   const groupName = `手機版班 ${suffix}`;
-  const { group } = await ok(await coach.post('/api/coach/groups', { data: { name: groupName, assessmentId: 'ai-competency' } }), 'group');
+  const otherName = `手機第二班 ${suffix}`;
+  const { group: other } = await ok(await coach.post('/api/coach/groups', { data: { name: otherName, assessmentId: 'ai-competency' } }), 'group2');
+  expect(other.id).toBeTruthy();
+  const { group } = await ok(await coach.post('/api/coach/groups', { data: { name: groupName, assessmentId: 'ai-competency', targetHeadcount: 3 } }), 'group');
   const { group: g } = await ok(await coach.post(`/api/coach/groups/${group.id}/join-code`), 'join code');
   for (const [i, v] of [[1, 2], [2, 4]]) {
     const s = await pwRequest.newContext({ baseURL: API });
@@ -181,7 +184,55 @@ test('教練總覽：整頁不水平溢出、底部導覽在、按鈕夠大', as
   await expect(page.getByText('作答進度')).toBeVisible({ timeout: 15000 });
   await expectNoHorizontalOverflow(page, '教練總覽');
   await expect(page.getByRole('navigation', { name: '主要導覽' })).toBeVisible();
-  await expectMinHeight(page.getByRole('button', { name: /的帳號選單/ }), '帳號選單按鈕');
+
+  // 第一屏：班級名稱與完成率（四個數字）在畫面內，班別列表沒有佔滿第一屏。
+  await expect(page.getByRole('heading', { name: groupName })).toBeInViewport();
+  const kpis = page.getByRole('group', { name: '班級關鍵數字' }).or(page.locator('dl[aria-label="班級關鍵數字"]'));
+  await expect(kpis.getByText('完成率')).toBeInViewport();
+  await expect(kpis.getByText('未完成')).toBeInViewport();
+
+  // 成員比較改成卡片：不需要左右滑，姓名、分數、落點都看得到。
+  await expect(page.getByRole('region', { name: '成員比較表' })).toHaveCount(0);
+  const card = page.getByRole('listitem').filter({ hasText: '手機學員2' });
+  await card.scrollIntoViewIfNeeded();
+  await expect(card.getByText(/分/)).toBeVisible();
+  await expectMinHeight(card.getByRole('button', { name: /查看/ }), '成員卡片「查看」');
+  await expectNoHorizontalOverflow(page, '成員卡片');
+  // 熱力圖預設收合。
+  await expect(page.getByText(/構面 × 成員熱力圖（展開後/)).toBeVisible();
+  // 打開一位成員的結果。
+  await card.getByRole('button', { name: /查看/ }).click();
+  await expect(page.getByRole('dialog', { name: /手機學員2 的評測報告/ })).toBeVisible();
+  await page.getByRole('button', { name: '關閉', exact: true }).click();
+
+  // 切換班級：頂部「目前班級」→ 底部清單 → 選第二班。
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole('button', { name: /目前班級/ }).click();
+  const sheet = page.getByRole('dialog', { name: '切換班級' });
+  await expect(sheet).toBeVisible();
+  // 刪除收進「⋯」：預設看不到刪除，展開才出現（只看不刪）。
+  await expect(sheet.getByRole('button', { name: '刪除班別' })).toHaveCount(0);
+  await sheet.getByRole('button', { name: `${otherName} 的更多操作` }).click();
+  await expect(sheet.getByRole('button', { name: '刪除班別' })).toBeVisible();
+  await sheet.getByRole('button', { name: new RegExp(otherName) }).first().click();
+  await expect(page.getByRole('heading', { name: otherName })).toBeVisible();
+
+  // 回到有成員的班，開 QR：置頂、可全螢幕。
+  await page.getByRole('button', { name: /目前班級/ }).click();
+  await page.getByRole('dialog', { name: '切換班級' }).getByRole('button', { name: new RegExp(groupName) }).first().click();
+  await expect(page.getByRole('heading', { name: groupName })).toBeVisible();
+  await page.getByRole('button', { name: '成員與設定' }).click();
+  const qr = page.getByRole('heading', { name: '報到 QR Code' });
+  await expect(qr).toBeVisible();
+  const tl = await page.getByRole('heading', { name: '報到 QR Code' }).boundingBox();
+  const timeline = await page.getByRole('heading', { name: '施測時間軸' }).boundingBox();
+  expect(tl.y, 'QR Code 應該排在「施測時間軸」上面').toBeLessThan(timeline.y);
+  expect(tl.y, 'QR Code 應該在第一屏內').toBeLessThan(500);
+  await expectMinHeight(page.getByRole('button', { name: /複製連結/ }), '複製連結');
+  await expectMinHeight(page.getByRole('button', { name: /^重新產生/ }), '重新產生');
+  await page.getByRole('button', { name: /全螢幕投影/ }).click();
+  await expect(page.getByRole('button', { name: '關閉全螢幕' })).toBeVisible();
+  await page.getByRole('button', { name: '關閉全螢幕' }).click();
   await context.close();
 });
 

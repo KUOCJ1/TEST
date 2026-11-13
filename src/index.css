@@ -229,6 +229,9 @@ body {
   [role='menuitem'] {
     min-width: 44px;
   }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='hidden']) {
+    min-height: 44px;
+  }
   .tap {
     display: inline-flex;
     align-items: center;

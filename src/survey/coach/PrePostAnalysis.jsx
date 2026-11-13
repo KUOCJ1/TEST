@@ -4,6 +4,7 @@ import { buildPrePost, RATING_ORDER, RATING_LABEL } from '../utils/prePost.js';
 import { buildCsvBlob } from '../utils/csvExport.js';
 import { dimTextStyle } from '../utils/color';
 import InfoTip from '../components/InfoTip';
+import { dimLabel } from '../utils/dimensionLabel';
 
 const RATING_COLOR = { strong: '#2f855a', good: '#68a37f', mid: '#d69e2e', low: '#dd6b20', weak: '#c53030' };
 const signed = (n) => (n > 0 ? `+${n}` : String(n));
@@ -96,7 +97,7 @@ function PreSection({ pre }) {
             <tbody>
               {[...pre.dimensions].sort((a, b) => (a.stats?.mean ?? 0) - (b.stats?.mean ?? 0)).map((d) => (
                 <tr key={d.id} className="border-b border-slate-100 last:border-0">
-                  <td className="py-2 pr-3"><span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{d.subtitle}</span></td>
+                  <td className="py-2 pr-3"><span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{dimLabel(d)}</span></td>
                   <td className="pr-3 font-semibold text-slate-700">{f1(d.stats?.mean)}</td>
                   <td className="pr-3 text-slate-500">{d.stats ? `${d.stats.min.toFixed(1)}–${d.stats.max.toFixed(1)}` : '—'}</td>
                   <td>{d.stats && <RatingStack dist={d.ratingDist} n={d.stats.n} />}</td>
@@ -160,7 +161,7 @@ function ComparisonSection({ data, config }) {
             <tbody>
               {p.dimensions.map((d) => (
                 <tr key={d.id} className="border-b border-slate-100 last:border-0">
-                  <td className="py-2 pr-3"><span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{d.subtitle}</span></td>
+                  <td className="py-2 pr-3"><span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{dimLabel(d)}</span></td>
                   <td className="pr-3 text-slate-500">{f1(d.pre)}</td>
                   <td className="pr-3 font-semibold text-slate-700">{f1(d.post)}</td>
                   <td className={`pr-3 font-bold ${tone(d.delta)}`}>{signed1(d.delta)}</td>

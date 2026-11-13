@@ -180,10 +180,13 @@ export default function GroupSettingsSection({
   const dims = getAssessment(group.assessmentId)?.DIMENSIONS ?? [];
 
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-5 sm:block sm:space-y-5">
       <GroupTimelineCard group={group} onUpdated={onGroupUpdated} />
 
-      <QrCodeCard group={group} onUpdated={onGroupUpdated} />
+      {/* 手機：QR Code 置頂（教練最常做的事是開 QR 給學員掃）；桌機維持原本順序。 */}
+      <div className="order-first sm:order-none">
+        <QrCodeCard group={group} onUpdated={onGroupUpdated} />
+      </div>
 
       <JoinSafeguards group={group} onGroupUpdated={onGroupUpdated} showToast={showToast} />
 

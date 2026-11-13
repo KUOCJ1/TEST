@@ -3,6 +3,7 @@ import { computeGroupGain } from '../utils/analytics';
 import { getAssessment } from '../data/assessments/index.js';
 import InfoTip from '../components/InfoTip';
 import { dimTextStyle } from '../utils/color';
+import { dimLabel } from '../utils/dimensionLabel';
 
 /**
  * 班級學習成效報告（Sprint 4 驗收條件 4.3）：課前 vs 課後，只算配對樣本
@@ -63,7 +64,7 @@ export default function GroupGainReport({ group, submissions }) {
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">進步最多</p>
                 <p className="mt-0.5 font-bold text-emerald-800">
-                  {gain.mostImproved.subtitle}
+                  {dimLabel(gain.mostImproved)}
                   <span className="ml-2 text-sm font-normal">{gain.mostImproved.avgDelta > 0 ? `+${gain.mostImproved.avgDelta}` : gain.mostImproved.avgDelta}</span>
                 </p>
               </div>
@@ -72,7 +73,7 @@ export default function GroupGainReport({ group, submissions }) {
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">進步最少</p>
                 <p className="mt-0.5 font-bold text-amber-800">
-                  {gain.leastImproved.subtitle}
+                  {dimLabel(gain.leastImproved)}
                   <span className="ml-2 text-sm font-normal">{gain.leastImproved.avgDelta > 0 ? `+${gain.leastImproved.avgDelta}` : gain.leastImproved.avgDelta}</span>
                 </p>
               </div>
@@ -90,7 +91,7 @@ export default function GroupGainReport({ group, submissions }) {
                 {gain.dimensionDeltas.map((d) => (
                   <tr key={d.id} className="border-b border-slate-100 last:border-0">
                     <td className="py-2 pr-4">
-                      <span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{d.subtitle}</span>
+                      <span className="font-semibold dim-text" style={dimTextStyle(d.color)}>{dimLabel(d)}</span>
                     </td>
                     <td className={`py-2 text-right font-bold ${d.avgDelta > 0 ? 'text-emerald-600' : d.avgDelta < 0 ? 'text-red-500' : 'text-slate-400'}`}>
                       {d.avgDelta > 0 ? `+${d.avgDelta}` : d.avgDelta}

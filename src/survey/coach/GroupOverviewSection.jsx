@@ -13,17 +13,113 @@ import ProgressPanel from './ProgressPanel';
 import SharedGoalsPanel from './SharedGoalsPanel';
 import CourseSurveyPanel from './CourseSurveyPanel';
 import { badgeBg } from '../utils/color';
+import { useIsMobile } from '../hooks/useIsMobile';
+import { dimLabel } from '../utils/dimensionLabel';
 
 // 「總覽」分頁內容：KPI 卡、班級雷達圖、能力熱力圖、成員比較表、班級敘事報告、
 // 學習成效面板、班級整體評語表單。從 GroupWorkspace 拆出（Sprint 5.6）——
 // 班級整體評語的編輯狀態（groupComment/groupTips）只有這裡用得到，故整段隨表單
 // 一起搬過來；父層在切換班別時用 key={group.id} 讓這裡的表單狀態自動重置，
 // 沿用本檔案原本 GroupTimelineCard／QrCodeCard 已經在用的作法。
+function MemberCards({ memberRows, groupStats, has360, sortBy, setSortBy, onOpenMember, onReport360 }) {
+  // 排序只改顯示順序；onOpenMember 要用原本在 memberRows 的索引（抽屜靠它定位成員）。
+  const items = memberRows.map((r, i) => ({ r, i }));
+  if (sortBy === 'name') items.sort((a, b) => a.r.name.localeCompare(b.r.name, 'zh-Hant'));
+  return (
+    <div className="panel">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h4 className="font-semibold text-slate-700">成員比較</h4>
+        <div role="group" aria-label="排序" className="flex gap-1 rounded-lg bg-slate-100 p-1 text-xs font-semibold">
+          {[['score', '分數高→低'], ['name', '姓名']].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={sortBy === id}
+              onClick={() => setSortBy(id)}
+              className={`rounded-md px-3 ${sortBy === id ? 'bg-white text-brass-600 shadow-sm' : 'text-slate-500'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <ul className="space-y-2">
+        {items.map(({ r, i }) => {
+          const diff = Math.round((r.total - groupStats.avgTotal) * 10) / 10;
+          return (
+            <li key={r.userId} className="rounded-xl border border-slate-100 px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-800">{r.name}</p>
+                  <p className="mt-0.5 text-sm text-slate-600">
+                    <span className="font-semibold">{r.total} 分</span>
+                    {diff !== 0 && (
+                      <span className={`ml-1.5 text-xs font-semibold ${diff > 0 ? 'text-emerald-600' : 'text-amber-600'}`}>{diff > 0 ? `▲ +${diff}` : `▽ ${diff}`}</span>
+                    )}
+                    <span className="ml-2 text-xs text-slate-400">達成率 {r.percent}%</span>
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white" style={{ background: badgeBg(r.level.color) }}>
+                  {r.level.badge}
+                </span>
+              </div>
+              {has360 && (
+                <p className="mt-1 text-xs text-slate-500">
+                  {r.others
+                    ? <>他評平均 {r.others.avgTotal}（{r.others.count} 人）{(() => { const gap = Math.round((r.total - r.others.avgTotal) * 10) / 10; return gap === 0 ? '' : `・自評${gap > 0 ? '高' : '低'} ${Math.abs(gap)}`; })()}</>
+                    : '尚無他評'}
+                </p>
+              )}
+              <div className="mt-2 flex items-center gap-2">
+                <span className={`text-xs font-semibold ${r.hasMyComment ? 'text-emerald-600' : 'text-amber-600'}`}>{r.hasMyComment ? '評語已寫' : '評語未寫'}</span>
+                <span className="flex-1" />
+                {r.others && (
+                  <button type="button" onClick={() => onReport360(r)} className="btn-secondary btn-sm" aria-label={`產出 ${r.name} 的 360° 完整報告`}>
+                    <FileText className="h-3.5 w-3.5" /> 360° 報告
+                  </button>
+                )}
+                <button type="button" onClick={() => onOpenMember(i)} className="btn-secondary btn-sm" aria-label={`查看 ${r.name} 的報告`}>
+                  <Eye className="h-3.5 w-3.5" /> 查看
+                </button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function MobileKpis({ group, members, groupStats }) {
+  const expected = members.length || group.memberIds.length;
+  const done = groupStats.respondents;
+  const rate = expected > 0 ? Math.round((done / expected) * 100) : 0;
+  const pending = Math.max(0, expected - done);
+  const tiles = [
+    { label: '完成率', value: `${rate}%`, strong: true },
+    { label: '已作答／應作答', value: `${done}／${expected}` },
+    { label: '平均總分', value: done > 0 ? String(groupStats.avgTotal) : '—' },
+    { label: '未完成', value: `${pending} 人`, warn: pending > 0 },
+  ];
+  return (
+    <dl className="grid grid-cols-2 gap-2" aria-label="班級關鍵數字">
+      {tiles.map((t) => (
+        <div key={t.label} className={`rounded-xl px-4 py-3 ring-1 ${t.strong ? 'bg-ink-700 ring-ink-700' : 'bg-white ring-slate-100'}`}>
+          <dt className={`text-xs ${t.strong ? 'text-white/80' : 'text-slate-400'}`}>{t.label}</dt>
+          <dd className={`mt-0.5 text-2xl font-extrabold ${t.strong ? 'text-white' : t.warn ? 'text-amber-600' : 'text-slate-800'}`}>{t.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export default function GroupOverviewSection({
   group, members, groupStats, memberRows, strongestWeakest, commentedCount,
   submissions, onGroupUpdated, showToast, confirm, onOpenMember, pendingInviteCount = 0, sharedGoals = [], warnings = [],
 }) {
   const has360 = memberRows.some((r) => r.others);
+  const mobile = useIsMobile();
+  const [sortBy, setSortBy] = useState('score'); // 手機成員卡片的排序：score 分數高→低｜name 姓名
   const [report360, setReport360] = useState(null); // { id, name }：要產出 360° 完整報告的受評者
   const [groupComment, setGroupComment] = useState(group.groupComment ?? '');
   const [groupTips, setGroupTips] = useState(group.groupTips?.length ? group.groupTips : ['']);
@@ -49,6 +145,9 @@ export default function GroupOverviewSection({
 
   return (
     <div className="space-y-5">
+      {/* 手機第一屏：四個數字（完成率、已作答／應作答、平均、未完成人數），其餘往下捲。 */}
+      {mobile && groupStats && <MobileKpis group={group} members={members} groupStats={groupStats} />}
+
       <ProgressPanel
         group={group}
         members={members}
@@ -107,8 +206,8 @@ export default function GroupOverviewSection({
               {strongestWeakest && (
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-400">最強／待強化</p>
-                  <p className="mt-1 text-sm font-bold text-emerald-600">{strongestWeakest.strongest.subtitle}</p>
-                  <p className="text-sm font-bold text-amber-600">{strongestWeakest.weakest.subtitle}</p>
+                  <p className="mt-1 text-sm font-bold text-emerald-600">{dimLabel(strongestWeakest.strongest)}</p>
+                  <p className="text-sm font-bold text-amber-600">{dimLabel(strongestWeakest.weakest)}</p>
                 </div>
               )}
             </div>
@@ -118,14 +217,32 @@ export default function GroupOverviewSection({
             <h4 className="mb-2 text-center font-semibold text-slate-700">班級整體能力雷達</h4>
             <p className="mb-3 text-center text-xs text-slate-400">{groupStats.respondents} 人作答平均</p>
             <div className="flex justify-center">
-              <RadarChart dimensions={groupStats.dimensionAverages} />
+              <RadarChart dimensions={groupStats.dimensionAverages} friendly />
             </div>
           </div>
 
-          <DimensionHeatmap dimensions={groupStats.dimensionAverages} memberRows={memberRows} />
+          {mobile ? (
+            <details className="panel">
+              <summary className="tap cursor-pointer font-semibold text-slate-700">構面 × 成員熱力圖（展開後可左右滑動，成員姓名固定在左側）</summary>
+              <div className="mt-2 -mx-4"><DimensionHeatmap dimensions={groupStats.dimensionAverages} memberRows={memberRows} bare /></div>
+            </details>
+          ) : (
+            <DimensionHeatmap dimensions={groupStats.dimensionAverages} memberRows={memberRows} />
+          )}
 
           {/* Member table：達成率加長條、總分加「與班平均差距」，純數字表格
               不容易一眼掃描的問題（V-01）。 */}
+          {mobile ? (
+            <MemberCards
+              memberRows={memberRows}
+              groupStats={groupStats}
+              has360={has360}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              onOpenMember={onOpenMember}
+              onReport360={(r) => setReport360({ id: r.userId, name: r.name })}
+            />
+          ) : (
           <div className="panel">
             <h4 className="mb-3 font-semibold text-slate-700">成員比較</h4>
             <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整欄位</p>
@@ -231,6 +348,7 @@ export default function GroupOverviewSection({
               </table>
             </div>
           </div>
+          )}
 
           {memberRows.length >= 2 && (
             <GroupNarrativeReport

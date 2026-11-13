@@ -121,15 +121,15 @@ export default function QrCodeCard({ group, onUpdated }) {
           </div>
           <div className="flex-1 space-y-2">
             <p className="break-all rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">{joinUrl}</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
               <button type="button" onClick={handleCopy} className="btn-secondary btn-sm">
                 {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 {copied ? '已複製' : '複製連結'}
               </button>
               <button type="button" onClick={handleGenerate} disabled={busy} className="btn-secondary btn-sm">
-                <RefreshCw className="h-3.5 w-3.5" /> {busy ? '重新產生中…' : '重新產生（舊連結立即失效）'}
+                <RefreshCw className="h-3.5 w-3.5" /> {busy ? '重新產生中…' : '重新產生'}<span className="hidden sm:inline">（舊連結立即失效）</span>
               </button>
-              <button type="button" onClick={handleRevoke} disabled={busy} className="btn-warning btn-sm">
+              <button type="button" onClick={handleRevoke} disabled={busy} className="btn-warning btn-sm col-span-2 sm:col-span-1">
                 撤銷
               </button>
             </div>

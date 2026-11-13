@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Trash2, Plus, Star, Scale } from 'lucide-react';
+import { Trash2, Plus, Star, Scale, ChevronDown, MoreHorizontal, Check } from 'lucide-react';
 import { api } from '../api/client';
 import { getAssessment, REGISTRY } from '../data/assessments/index.js';
 import PhaseBadge from '../components/PhaseBadge';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 // 左側「班別列表」欄位：班別清單 + 建立班別表單。從 GroupWorkspace 拆出
 // （Sprint 5.6）——建立/刪除班別的狀態與邏輯只有這裡用得到，獨立成元件後
@@ -22,6 +23,17 @@ export default function GroupListPanel({
   const [newFocusDims, setNewFocusDims] = useState([]);
   const [savingGroup, setSavingGroup] = useState(false);
   const [error, setError] = useState('');
+  // 手機：班別列表不佔第一屏，改成頂部「目前班級」按鈕，點開是底部彈出的清單（含建立班別、比較梯次、⋯ 刪除）。
+  const mobile = useIsMobile();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [menuId, setMenuId] = useState(null);
+  useEffect(() => {
+    if (!sheetOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setSheetOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sheetOpen]);
+  const selectedGroup = groups.find((g) => g.id === selectedGroupId) ?? null;
 
   // 建立班別時可選的題庫：全部「已啟用」的題庫。以前是從現有班別用過的題庫湊出來的，
   // 所以第一次建班只看得到 AI 職能、沒用過的題庫永遠選不到。載入前／載入失敗時退回
@@ -97,7 +109,89 @@ export default function GroupListPanel({
     <div className="min-w-0">
       {/* 欄寬固定 16rem（見 GroupWorkspace）：標題與按鈕在同一列放不下，會被擠成
           「班別列／表」「建立班／別」，所以大螢幕時按鈕移到標題下方、各占一半。 */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      {mobile && (
+        <>
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            aria-haspopup="dialog"
+            className="mb-3 flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 text-left"
+          >
+            <span className="min-w-0">
+              <span className="block text-xs text-slate-400">目前班級</span>
+              <span className="block truncate font-semibold text-slate-800">{selectedGroup ? selectedGroup.name : (groups.length ? '選擇班級' : '尚無班別')}</span>
+            </span>
+            <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
+          </button>
+          {sheetOpen && (
+            <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={() => setSheetOpen(false)}>
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="切換班級"
+                className="animate-slide-up max-h-[80dvh] w-full overflow-y-auto rounded-t-2xl bg-white px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-semibold text-slate-700">切換班級</h3>
+                  <button type="button" onClick={() => setSheetOpen(false)} className="btn-ghost btn-sm">關閉</button>
+                </div>
+                <div className="mb-3 flex gap-2">
+                  <button type="button" onClick={() => { setSheetOpen(false); setCreating(true); }} className="btn-primary flex-1">
+                    <Plus className="h-4 w-4" /> 建立班別
+                  </button>
+                  {groups.length >= 2 && (
+                    <button type="button" onClick={() => { setSheetOpen(false); onCompareCohorts(); }} className="btn-secondary flex-1">
+                      <Scale className="h-4 w-4" /> 比較梯次
+                    </button>
+                  )}
+                </div>
+                {groups.length === 0 && <p className="py-4 text-center text-sm text-slate-400">尚無班別</p>}
+                <div className="space-y-2">
+                  {groups.map((g) => (
+                    <div key={g.id}>
+                      <div className="flex items-stretch gap-1">
+                        <button
+                          type="button"
+                          onClick={() => { setSheetOpen(false); setMenuId(null); onSelectGroup(g.id); }}
+                          aria-current={selectedGroupId === g.id ? 'true' : undefined}
+                          className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border px-4 py-3 text-left ${
+                            selectedGroupId === g.id ? 'border-brass-400 bg-brass-50' : 'border-slate-200 bg-white'
+                          }`}
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate font-semibold text-slate-800">{g.name}</span>
+                            <span className="block truncate text-xs text-slate-400">
+                              {getAssessment(g.assessmentId)?.NAME ?? g.assessmentId} · {g.memberIds.length} 人
+                            </span>
+                          </span>
+                          {selectedGroupId === g.id && <Check className="h-4 w-4 shrink-0 text-brass-600" aria-hidden="true" />}
+                        </button>
+                        {/* 刪除收進「⋯」：不再是緊貼卡片的小圖示，避免選班級時誤觸。 */}
+                        <button
+                          type="button"
+                          onClick={() => setMenuId(menuId === g.id ? null : g.id)}
+                          aria-label={`${g.name} 的更多操作`}
+                          aria-expanded={menuId === g.id}
+                          className="btn-icon h-auto w-11 self-stretch"
+                        >
+                          <MoreHorizontal className="h-5 w-5" />
+                        </button>
+                      </div>
+                      {menuId === g.id && (
+                        <button type="button" onClick={() => handleDeleteGroup(g.id)} className="btn-danger mt-1 w-full">
+                          <Trash2 className="h-4 w-4" /> 刪除班別
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+      <div className={`mb-3 flex flex-wrap items-center justify-between gap-2 ${mobile ? 'hidden' : ''}`}>
         <h3 className="whitespace-nowrap font-semibold text-slate-700">班別列表</h3>
         <div className="flex gap-2 lg:w-full">
           {groups.length >= 2 && (
@@ -181,11 +275,11 @@ export default function GroupListPanel({
         </div>
       )}
 
-      {groups.length === 0 && !creating && (
+      {groups.length === 0 && !creating && !mobile && (
         <p className="text-sm text-slate-400 py-4 text-center">尚無班別，請點右上角「建立班別」</p>
       )}
 
-      <div className="space-y-2">
+      <div className={`space-y-2 ${mobile ? 'hidden' : ''}`}>
         {groups.map((g) => (
           <div key={g.id}
             className={`cursor-pointer rounded-xl border px-4 py-3 transition-colors ${

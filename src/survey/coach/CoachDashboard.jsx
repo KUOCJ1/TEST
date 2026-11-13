@@ -27,7 +27,7 @@ export default function CoachDashboard() {
   ];
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-8">
       <OnboardingBanner role="coach" show={(overview?.users?.length ?? 0) === 0} />
       <header className="mb-5">
         <h2 className="text-2xl font-extrabold text-slate-800">教練後台</h2>
@@ -52,7 +52,8 @@ export default function CoachDashboard() {
         ))}
       </div>
 
-      <div className="rounded-2xl bg-white px-5 py-6 shadow-lg shadow-slate-200/60 sm:px-7">
+      {/* 手機：不再是「白色大卡片裡面又一堆卡片」，內容寬度用滿；桌機維持原樣。 */}
+      <div className="sm:rounded-2xl sm:bg-white sm:px-7 sm:py-6 sm:shadow-lg sm:shadow-slate-200/60">
         {tab === 'group' && (
           <GroupWorkspace users={overview.users} currentUserId={user.id} />
         )}

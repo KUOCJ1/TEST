@@ -1,3 +1,5 @@
+import { dimLabel } from '../utils/dimensionLabel';
+
 // 構面 × 成員熱力圖：橫軸是構面、縱軸是成員，色深代表該構面的分數高低。
 // 用意是讓教練一眼看出「這班哪個構面弱、是被誰拉低的」，不必逐一點開每個人的雷達圖比對。
 function cellTone(percent) {
@@ -7,12 +9,12 @@ function cellTone(percent) {
   return { bg: '#dcefe6', text: '#1d7650' };
 }
 
-export default function DimensionHeatmap({ dimensions, memberRows }) {
+export default function DimensionHeatmap({ dimensions, memberRows, bare = false }) {
   if (!dimensions?.length || !memberRows?.length) return null;
 
   return (
-    <div className="panel">
-      <h4 className="mb-1 font-semibold text-slate-700">構面 × 成員熱力圖</h4>
+    <div className={bare ? '' : 'panel'}>
+      {!bare && <h4 className="mb-1 font-semibold text-slate-700">構面 × 成員熱力圖</h4>}
       <p className="mb-1 text-xs text-slate-400">色塊越紅代表該構面分數越低，越綠代表越高——用來快速定位弱項與是誰拉低的。</p>
       <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整構面</p>
       <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="構面 × 成員熱力圖">
@@ -23,7 +25,7 @@ export default function DimensionHeatmap({ dimensions, memberRows }) {
               <th scope="col" className="sticky left-0 bg-white py-1.5 pr-3 text-left text-xs font-medium text-slate-500">成員</th>
               {dimensions.map((d) => (
                 <th key={d.id} scope="col" className="min-w-[64px] px-1 py-1.5 text-center text-xs font-medium text-slate-500">
-                  {d.subtitle}
+                  {dimLabel(d)}
                 </th>
               ))}
             </tr>
