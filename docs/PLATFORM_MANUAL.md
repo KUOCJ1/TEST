@@ -507,6 +507,33 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   防護；Playwright 以 `contextOptions: { reducedMotion: 'reduce' }` 執行（寫在
   頂層 `use.reducedMotion` 不會生效），否則自動捲動的平滑動畫會讓 E2E 慢 3 倍以上。
 
+### 手機與安裝（PWA，手機 App 化 M1–M5）
+
+方向：不上架商店、不重寫，走 PWA（瀏覽器「加到主畫面」）並把手機介面打磨好。計畫、問題清單與各 Sprint 紀錄在
+[`MOBILE_APP_PLAN.md`](MOBILE_APP_PLAN.md)。改 UI 時遵守：
+
+- **手機樣式只加在 `sm`（640px）以下，桌機版面與列印結果不能變。** 全域手機規則在 `src/index.css` 的
+  `@media (max-width: 639px)`：按鈕、分頁、選單項、下拉、文字輸入欄位 ≥44px；獨立成行的文字連結加 `.tap`
+  （段落裡的行內連結不要加，會破版）；個別元素要豁免用 `min-h-0 min-w-0`。
+- **手機與桌機要用不同元件時，用 `hooks/useIsMobile.js` 只渲染其中一個**（不要兩份都放進 DOM，
+  `getByText` 會撞名）。jsdom 沒有 matchMedia 時一律當桌機，既有單元測試不受影響。例：教練後台的班級切換
+  彈出清單、四格 KPI、成員卡片、管理後台分頁下拉。
+- **頁首高度**由 `AppShell` 量出來寫成 CSS 變數 `--app-header-h`；要「貼在頁首下方」的元素（作答進度列、
+  結果頁章節跳轉列、斷線提示條）用 `top-[var(--app-header-h,…)]`，不要寫死數字或 `top-0`（會被頁首蓋住）。
+- **報告預覽**（五種）：螢幕上、寬度 < 820px 時，工具列換成兩列、報告本體用 `zoom: var(--report-zoom)` 縮到螢幕寬
+  （`--report-zoom` 由 `AppShell` 依視窗寬度寫入）；全是 screen 限定的 CSS，列印不受影響。iPhone 主畫面版
+  `window.print()` 不一定可用，`useReportFilename` 會改顯示說明。**這是縮放預覽，不是手機閱讀版**（閱讀版是計畫的 M6）。
+- **雷達圖**：`RadarChart` 的 `friendly` 屬性（中文標籤、較大字、較小留白）只給螢幕版用；列印報告不要開。
+  表格／圖表的構面名稱用 `utils/dimensionLabel.js` 的 `dimLabel()`（英文副標改中文）。
+- **斷線提示**：`OfflineBanner`（頁首下方）依 `navigator.onLine`；作答草稿本來就存在瀏覽器，提示文字說「連線後再送出」。
+- **安裝引導**：`src/survey/pwa/`（`installPrompt.js` 平台判斷與 30 天不再提示、`InstallPrompt.jsx`）。
+- **測試與量測**：`e2e/mobile-layout.spec.js`（390×844，會擋 CI）檢查整頁不水平溢出、底部導覽、按鈕尺寸、
+  小幫手不蓋內容、進度列、結果頁高度、報告工具列與列印頁數、教練與管理後台的手機流程、斷線提示。
+  `npm run audit:mobile` 走查 29 個畫面並量測（過小觸控目標、需左右滑的區塊、小字），輸出到 `mobile-audit-out/`，
+  只是量測工具、不擋部署。
+- **管理後台**在手機上只保證「看得到、切得到、不壞版」：10 個分頁改下拉；批次上傳、題庫內容、身分還原顯示
+  「建議用電腦操作」提示；管理員底部導覽把「教練」「管理」合併成「後台」。
+
 ---
 
 ## 7. 後端 API 一覽

@@ -172,7 +172,7 @@
 | M2 | 完成（CI 綠，6e0ef0a） | 3（目標 ≤ 5）；結果頁 12871→3212px（目標 <6000） | 3 | 3 | 9 | 剩 3 個是 16px 核取方塊（整列 label 可點） |
 | M3 | 完成（CI 綠，b871121） | — | — | — | 報告預覽 24：0 個過小目標、無需左右滑 | 個人報告與班級報告已目視確認不壞版 |
 | M4 | 已推上，等 CI | 3 | 3（目標 ≤ 10；剩 2 個核取方塊、1 個搜尋欄 34px，已再補） | 3 | 9 | 教練畫面表格需左右滑：3 → 0（熱力圖收合時） |
-| M5 | 待執行 | — | — | — | 目標 ≤ 60 | |
+| M5 | 已推上，等 CI | 3 | 3 | 管理 ≤1／頁 | 6（目標 ≤ 60；516 → 6） | 管理後台各分頁需左右滑 1–2 → 0；剩 6 個是核取方塊與批次上傳的檔案欄 |
 
 ## 8. 決定紀錄（使用者已於 2026-11-13 確認：全部照預設）
 
@@ -279,3 +279,12 @@ bash deploy/deploy.sh
 - 未做：教練「寄送提醒信」等其他面板的手機排版（audit 沒有量到問題，列入實機清單）；`PrePostAnalysis` 等圖表裡 11px 以下的小字（11px 中位數說明、9px 軸刻度）未動，屬 M5 收尾範圍。
 
 **M3 部署與實機確認（等待使用者，不阻擋後續 Sprint）**：部署指令同 M1（只動前端）。實機清單：iPhone Safari、Android Chrome 各開個人、班級、整班彙整、360°、羅盤班級五種報告預覽，確認工具列兩列、按鈕好點、報告縮放後可雙指放大；iPhone 主畫面安裝版按「列印／存為 PDF」應出現說明；LINE 內建瀏覽器的列印行為；電腦上列印 L9D 個人報告與 360° 報告，頁數與改版前一致。
+
+**M5 紀錄**
+
+- 管理後台 `AdminDashboard`：手機用 `<select aria-label="管理分頁">`（`useIsMobile`），桌機分頁列不變；`DESKTOP_RECOMMENDED = ['import','content','reveal']` 顯示 `role="note"` 提示。
+- `AppShell`：管理員的手機底部導覽用 `mobileTabs`（教練＋管理 → 「後台」選單），教練（非管理員）維持單一「教練」項。
+- `OfflineBanner`（`components/OfflineBanner.jsx`）：`navigator.onLine`＋online／offline 事件；e2e 用 `context.setOffline()` 驗證出現與消失。
+- 公開首頁（M5-4）的觸控目標已由 M1 的 `.tap` 與全域規則處理，不另改版型；首頁長度未縮短（計畫不強求）。
+- 手冊：`npm run manual:screenshots` 與 `generate-manual` 已重跑（`docs/images/*.jpg` 14 張、`public/user-manual.pdf`、`docs/user-manual.pdf`）。截圖在這個容器重產，字型與示範資料與原本不同（桌機版面逐張目視確認沒有變動）；若在意字型，請在你的機器重跑一次。手冊文字沒有新增手機章節。
+- 桌機截圖比對：目視 coach-overview 新舊並排，版面一致（差異只有字型渲染與示範資料）。

@@ -139,9 +139,9 @@ test('手機介面走查', async ({ browser }) => {
   // ── 管理者 ──
   const ac = await browser.newContext({ viewport: MOBILE, hasTouch: true, isMobile: true, storageState: await admin.storageState() });
   const adp = await ac.newPage();
-  await step('admin-home', async () => { await adp.goto('/admin'); await expect(adp.getByRole('button', { name: '系統狀態' })).toBeVisible({ timeout: 25000 }); await audit(adp, '40-admin-overview', '管理者'); });
+  await step('admin-home', async () => { await adp.goto('/admin'); await expect(adp.getByRole('combobox', { name: '管理分頁' })).toBeVisible({ timeout: 25000 }); await audit(adp, '40-admin-overview', '管理者'); });
   for (const [i, tab] of ['班級分析', '用戶管理', '班別與發佈', '專案範本', '題庫內容', '批次上傳', '稽核紀錄', '系統狀態'].entries()) {
-    await step(`admin-${tab}`, async () => { await adp.getByRole('button', { name: tab, exact: true }).click({ timeout: 10000 }); await adp.waitForTimeout(1200); await audit(adp, `4${i + 1}-admin-${tab}`, '管理者'); });
+    await step(`admin-${tab}`, async () => { await adp.getByRole('combobox', { name: '管理分頁' }).selectOption({ label: tab }); await adp.waitForTimeout(1200); await audit(adp, `4${i + 1}-admin-${tab}`, '管理者'); });
   }
   await ac.close();
   await Promise.all([admin.dispose(), coach.dispose(), ...ctxs.map((c) => c.dispose())]);

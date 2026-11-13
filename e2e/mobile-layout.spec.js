@@ -271,3 +271,58 @@ test('報告預覽：工具列兩列、按鈕 ≥44px 單行、內容縮放到�
   expect(pages, `個人報告（L9D）列印頁數 ${pages}，改版前基準是 11 頁`).toBe(11);
   await context.close();
 });
+
+test('管理者：任何分頁一步切得到、後台入口合併、電腦限定提示', async ({ browser }) => {
+  const admin = await pwRequest.newContext({ baseURL: API });
+  await ok(await admin.post('/api/auth/login', { data: { email: 'admin@e2e.test', password: 'E2eTest1234' } }), 'admin login');
+  await ok(await admin.post('/api/auth/consent', { data: { accept: true } }), 'consent');
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, storageState: await admin.storageState() });
+  const page = await context.newPage();
+  await page.goto('/admin');
+  const select = page.getByRole('combobox', { name: '管理分頁' });
+  await expect(select).toBeVisible({ timeout: 20000 });
+  await expectNoHorizontalOverflow(page, '管理後台');
+  await expectMinHeight(select, '管理分頁下拉');
+
+  // 底部導覽：管理員只有一個「後台」入口（不是 教練＋管理 兩項），點開選擇。
+  const nav = page.getByRole('navigation', { name: '主要導覽' });
+  await expect(nav.getByRole('button', { name: '教練後台' })).toHaveCount(0);
+  await nav.getByRole('button', { name: '後台' }).click();
+  await expect(page.getByRole('menuitem', { name: '教練後台' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: '管理後台' })).toBeVisible();
+  await page.getByRole('menuitem', { name: '教練後台' }).click();
+  await expect(page).toHaveURL(/\/coach/);
+  await page.goto('/admin');
+  await expect(select).toBeVisible({ timeout: 20000 });
+
+  // 十個分頁每一頁都切得到，整頁不水平溢出。
+  const labels = await select.locator('option').allTextContents();
+  expect(labels.length).toBe(10);
+  for (const label of labels) {
+    await page.getByRole('combobox', { name: '管理分頁' }).selectOption({ label });
+    await page.waitForTimeout(150);
+    await expectNoHorizontalOverflow(page, `管理後台「${label}」`);
+  }
+  // 電腦限定的分頁有提示。
+  await page.getByRole('combobox', { name: '管理分頁' }).selectOption({ label: '批次上傳' });
+  await expect(page.getByRole('note').filter({ hasText: '建議用電腦操作' })).toBeVisible();
+  await page.getByRole('combobox', { name: '管理分頁' }).selectOption({ label: '用戶管理' });
+  await expect(page.getByRole('note').filter({ hasText: '建議用電腦操作' })).toHaveCount(0);
+  await context.close();
+});
+
+test('斷線：作答頁出現提示，恢復連線後消失，作答進度還在', async ({ browser }) => {
+  const { context, page } = await newLearner(browser, '手機斷線學員', { submit: false });
+  await page.goto('/survey/ai-competency');
+  await page.waitForSelector('fieldset[data-question-id]', { timeout: 20000 });
+  await page.locator('fieldset[data-question-id]').first().locator('label').nth(3).click();
+  const banner = page.getByRole('status').filter({ hasText: '沒有網路連線' });
+  await expect(banner).toHaveCount(0);
+  await context.setOffline(true);
+  await expect(banner).toBeVisible();
+  await expect(banner).toContainText('連線後再送出');
+  await context.setOffline(false);
+  await expect(banner).toHaveCount(0);
+  await expect(page.getByText(/1 \/ \d+ 題/)).toBeVisible();
+  await context.close();
+});

@@ -11,6 +11,7 @@ import AuditLogTab from './AuditLogTab';
 import RaterRevealTab from './RaterRevealTab';
 import ProjectTemplatesTab from './ProjectTemplatesTab';
 import { FRONTEND_BUILD, isVersionMismatch } from '../utils/buildInfo';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 // 內含 xlsx（體積較大），只有點開「批次上傳」分頁才需要，獨立拆成自己的 chunk。
 const BatchUploadSection = lazy(() => import('./BatchUploadSection'));
@@ -30,8 +31,12 @@ const TABS = [
   { id: 'system', label: '系統狀態', hint: '版本、外部服務連線、寄信設定與伺服器看到的 IP。' },
 ];
 
+// 手機上顯示「建議用電腦操作」提示的分頁。
+const DESKTOP_RECOMMENDED = ['import', 'content', 'reveal'];
+
 export default function AdminDashboard() {
   const [tab, setTab] = useState('analytics');
+  const mobile = useIsMobile();
   const [overview, setOverview] = useState(null);
   const [adminAssessments, setAdminAssessments] = useState([]);
   const [adminGroups, setAdminGroups] = useState([]);
@@ -140,7 +145,17 @@ export default function AdminDashboard() {
         </section>
       )}
 
-      {/* 五個分頁橫排在窄螢幕上會撐破版面（A-01）：外層限制寬度並允許水平捲動，
+      {mobile ? (
+        /* 手機：10 個分頁橫向捲動看不出後面還有，改成下拉選單，任何分頁一步就能切到。 */
+        <div className="mb-4">
+          <label htmlFor="admin-tab-select" className="mb-1 block text-xs font-medium text-slate-400">管理功能</label>
+          <select id="admin-tab-select" aria-label="管理分頁" value={tab} onChange={(e) => setTab(e.target.value)} className="input font-semibold">
+            {TABS.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
+          </select>
+        </div>
+      ) : (
+        <>
+        {/* 五個分頁橫排在窄螢幕上會撐破版面（A-01）：外層限制寬度並允許水平捲動，
           分頁本身不換行，改成滑動而不是把整頁往右推寬。 */}
       <div className="mb-5 max-w-full overflow-x-auto">
         <div className="flex w-fit gap-1 whitespace-nowrap rounded-lg bg-slate-100 p-1 text-sm font-semibold">
@@ -160,7 +175,17 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+        </>
+      )}
+
       <p className="mb-4 text-sm text-slate-500">{TABS.find((t) => t.id === tab)?.hint}</p>
+
+      {/* 手機：這幾頁（大表格、長文字編輯、需要仔細核對的操作）建議用電腦，仍可進入。 */}
+      {mobile && DESKTOP_RECOMMENDED.includes(tab) && (
+        <p role="note" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          這一頁建議用電腦操作（表格大、需要仔細核對）。在手機上仍可使用，但請多留意。
+        </p>
+      )}
 
       {tab === 'quickAnalysis' && (
         <QuickAnalysisTab users={users} />

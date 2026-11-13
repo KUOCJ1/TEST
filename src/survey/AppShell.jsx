@@ -28,6 +28,7 @@ import HelpModal from './components/HelpModal';
 import OnboardingBanner from './components/OnboardingBanner';
 import ChatBot from './components/ChatBot';
 import UserMenu from './components/UserMenu';
+import OfflineBanner from './components/OfflineBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingState from './components/LoadingState';
 import FollowUpBanner from './course/FollowUpBanner.jsx';
@@ -303,6 +304,15 @@ function AppShellInner() {
     // 手機底部導覽最多 6 項。
   ];
 
+  // 手機底部導覽：管理員有「教練後台」「管理後台」兩項，合併成一個「後台」入口（點開選一個），
+  // 底部導覽才不會擠到 6 項。只有教練（非管理員）仍是單一「教練」項。
+  const [backMenuAt, setBackMenuAt] = useState(null); // 展開時的路徑；換頁後自動視為關閉
+  const backMenuOpen = backMenuAt === location.pathname;
+  const setBackMenuOpen = (fn) => setBackMenuAt((cur) => ((typeof fn === 'function' ? fn(cur === location.pathname) : fn) ? location.pathname : null));
+  const mobileTabs = isAdmin
+    ? [...tabs.filter((t) => t.id !== 'coach' && t.id !== 'admin'), { id: 'backoffice' }]
+    : tabs;
+
   const handleStartSurvey = (id) => {
     navigate(`/survey/${id}`, { state: { rateeId: user.id, raterType: 'self' } });
   };
@@ -426,6 +436,8 @@ function AppShellInner() {
         </div>
       </header>
 
+      <OfflineBanner />
+
       {previewing && (
         <div role="status" className="sticky top-[var(--app-header-h,57px)] z-20 border-b border-amber-300 bg-amber-100 px-4 py-2 text-center text-sm text-amber-900 print:hidden">
           預覽草稿中——只有你看得到，重新整理頁面或
@@ -525,7 +537,43 @@ function AppShellInner() {
           className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden print:hidden"
         >
           <div className="flex items-stretch justify-around">
-            {tabs.map((t) => {
+            {mobileTabs.map((t) => {
+              if (t.id === 'backoffice') {
+                const active = isTabActive('/coach') || isTabActive('/admin');
+                return (
+                  <div key="backoffice" className="relative flex flex-1">
+                    <button
+                      type="button"
+                      aria-haspopup="menu"
+                      aria-expanded={backMenuOpen}
+                      aria-current={active ? 'page' : undefined}
+                      aria-label="後台"
+                      onClick={() => setBackMenuOpen((v) => !v)}
+                      className={`flex min-h-[48px] flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-semibold transition-colors ${
+                        active ? 'text-ink-700' : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      <Shield className={`h-5 w-5 ${active ? 'stroke-[2.5]' : ''}`} />
+                      後台
+                    </button>
+                    {backMenuOpen && (
+                      <div role="menu" aria-label="後台" className="absolute bottom-full right-0 mb-2 w-40 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-slate-200">
+                        {[{ label: '教練後台', path: '/coach', Ico: GraduationCap }, { label: '管理後台', path: '/admin', Ico: Shield }].map((item) => (
+                          <button
+                            key={item.path}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => { setBackMenuOpen(false); navigate(item.path); }}
+                            className={`flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold ${isTabActive(item.path) ? 'text-ink-700' : 'text-slate-600'}`}
+                          >
+                            <item.Ico className="h-4 w-4" /> {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
               const active = isTabActive(t.path);
               return (
                 <button
