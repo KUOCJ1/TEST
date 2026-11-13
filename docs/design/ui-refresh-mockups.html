@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>經贏評測 UI/UX 改版樣張｜榕光（Banyan Glow）設計方向</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* 榕光 Banyan Glow ── 以「榕」的深綠為主、「耀」的暖陽為點綴，暖紙為底 */
+  --paper:#FBF7EF; --paper-2:#F3ECDD; --surface:#FFFFFF;
+  --ink:#1F2924; --ink-2:#3A4740; --muted:#5B6760; --line:#E6DCC8;
+  --banyan:#1F5D4A; --banyan-700:#174838; --banyan-50:#E4F0E6; --banyan-100:#CFE5D6;
+  --sun:#F2B544; --sun-600:#E39A2D; --sun-text:#8A5200; --sun-50:#FCEFD3;
+  --clay:#A8452D; --clay-50:#FBE9E2;
+  --sage:#2F7A55;
+  --r-sm:10px; --r-md:14px; --r-lg:20px;
+  --shadow:0 1px 2px rgba(31,41,36,.05),0 10px 28px -16px rgba(31,41,36,.22);
+  --serif:"Noto Serif TC","Songti TC",serif; --sans:"Noto Sans TC","PingFang TC",system-ui,sans-serif;
+}
+*{box-sizing:border-box} body{margin:0;background:#EFE8D8;color:var(--ink);font:400 16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--serif);margin:0;line-height:1.3}
+.wrap{max-width:1280px;margin:0 auto;padding:40px 24px 80px}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--banyan)}
+.title{font-size:34px;font-weight:700;margin:6px 0 8px}
+.lead{max-width:760px;color:var(--ink-2);margin:0 0 28px}
+section.block{margin-top:56px}
+section.block>h2{font-size:24px;margin-bottom:6px}
+section.block>p.sub{color:var(--muted);margin:0 0 22px;max-width:760px}
+/* tokens board */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.sw{background:var(--surface);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow)}
+.sw i{display:block;height:64px}.sw div{padding:10px 12px;font-size:13px;line-height:1.45}.sw b{display:block;font-size:14px}
+.sw small{color:var(--muted)}
+.panel{background:var(--surface);border-radius:var(--r-lg);padding:24px;box-shadow:var(--shadow)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+/* components */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:12px;border:1px solid transparent;font:600 15px var(--sans);cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--banyan);color:#fff;box-shadow:0 6px 14px -8px rgba(23,72,56,.8)}
+.btn-sun{background:var(--sun);color:var(--ink)}
+.btn-secondary{background:var(--surface);color:var(--banyan);border-color:var(--banyan-100)}
+.btn-ghost{background:transparent;color:var(--ink-2)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600}
+.chip-seed{background:var(--sun-50);color:var(--sun-text)}.chip-sprout{background:var(--banyan-50);color:var(--banyan)}
+.chip-tree{background:var(--banyan);color:#fff}.chip-canopy{background:var(--ink);color:var(--sun)}
+.chip-warn{background:var(--clay-50);color:var(--clay)}
+svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.type-demo h1{font-size:36px}.type-demo h2{font-size:26px}.type-demo .num{font:700 56px/1 var(--serif);font-variant-numeric:tabular-nums}
+/* phone */
+.phones{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.phone{width:390px;height:844px;background:var(--paper);border-radius:36px;box-shadow:0 0 0 10px #1F2924,0 30px 60px -20px rgba(0,0,0,.45);position:relative;overflow:hidden;display:flex;flex-direction:column}
+.phone .scroll{flex:1;overflow:hidden;padding:0 16px 96px}
+.phone .cap{position:absolute;top:-44px;left:0;font-size:14px;font-weight:600;color:var(--ink-2)}
+.pwrap{position:relative;padding-top:72px}
+.appbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--paper)}
+.logo{display:flex;align-items:center;gap:8px;font:700 17px var(--serif)}
+.logo .mark{width:30px;height:30px;border-radius:9px;background:var(--banyan);display:grid;place-items:center;color:var(--sun)}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--banyan-50);color:var(--banyan);display:grid;place-items:center;font-weight:700}
+.nav{position:absolute;left:0;right:0;bottom:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);display:flex;padding:6px 8px 22px}
+.nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--muted);min-height:48px;justify-content:center;border-radius:12px}
+.nav a.on{color:var(--banyan)} .nav a.on .pill{background:var(--banyan-50)}
+.nav .pill{padding:4px 16px;border-radius:999px;display:grid;place-items:center}
+.hello{font:600 22px var(--serif);margin:6px 0 2px}.hello+p{margin:0 0 14px;color:var(--muted);font-size:15px}
+.hero{background:var(--banyan);color:#fff;border-radius:var(--r-lg);padding:20px;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;border:2px solid rgba(242,181,68,.45);box-shadow:0 0 0 18px rgba(242,181,68,.10),0 0 0 38px rgba(242,181,68,.06)}
+.hero small{font-size:13px;color:#BFE0CF;font-weight:600}.hero h3{font-size:19px;margin:6px 0 4px;position:relative}.hero p{margin:0 0 16px;font-size:14px;color:#DCEEE3;position:relative}
+.card{background:var(--surface);border-radius:var(--r-md);padding:16px;box-shadow:var(--shadow);margin-top:12px}
+.card h4{margin:0;font:600 16px var(--serif)} .card p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.meta{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--muted)}
+.bar{height:8px;border-radius:99px;background:var(--paper-2);overflow:hidden}.bar>i{display:block;height:100%;border-radius:99px;background:var(--banyan)}
+.sec-title{font:600 15px var(--serif);margin:20px 0 0;color:var(--ink-2)}
+/* survey */
+.sv-top{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--paper)}
+.sv-top .back{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--ink-2)}
+.sv-prog{flex:1}.sv-prog b{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+.chapter{display:flex;align-items:center;gap:10px;margin:14px 0 10px}
+.chapter span{width:34px;height:34px;border-radius:50%;background:var(--sun);display:grid;place-items:center;font:700 15px var(--serif)}
+.chapter h3{font-size:17px}.chapter small{display:block;color:var(--muted);font:400 13px var(--sans)}
+.q{background:var(--surface);border-radius:var(--r-md);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;border:1.5px solid transparent}
+.q.cur{border-color:var(--banyan-100)}
+.q p{margin:0 0 14px;font-size:16px;line-height:1.65}.q p b{color:var(--banyan);font-family:var(--serif);margin-right:6px}
+.opts{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.opts i{height:48px;border-radius:14px;border:1.5px solid var(--line);display:grid;place-items:center;font:600 17px var(--sans);font-style:normal;color:var(--ink-2);background:var(--paper)}
+.opts i.sel{background:var(--banyan);border-color:var(--banyan);color:#fff;box-shadow:0 6px 12px -6px rgba(23,72,56,.7)}
+.ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:8px}
+.fab{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;min-height:44px;padding:0 18px;display:flex;align-items:center;gap:8px;font:600 14px var(--sans);box-shadow:0 10px 24px -8px rgba(0,0,0,.5);white-space:nowrap}
+/* result */
+.res-hero{background:linear-gradient(180deg,var(--banyan-50),var(--paper));border-radius:0 0 28px 28px;padding:8px 16px 22px;text-align:center}
+.ring{width:176px;height:176px;margin:8px auto 6px;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .c{position:absolute;inset:0;display:grid;place-content:center}
+.ring .c b{font:700 44px/1 var(--serif);color:var(--banyan)}.ring .c small{font-size:13px;color:var(--muted)}
+.stage{display:inline-flex;gap:8px;align-items:center;margin-top:6px}
+.res-hero h2{font-size:22px;margin-top:10px}.res-hero p{margin:4px 0 0;color:var(--ink-2);font-size:15px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.mini{border-radius:var(--r-md);padding:14px}.mini small{font-size:12px;font-weight:700;letter-spacing:.04em}.mini b{display:block;font:600 17px var(--serif);margin-top:4px}.mini span{font-size:13px}
+.mini.good{background:var(--banyan-50);color:var(--banyan-700)}.mini.grow{background:var(--sun-50);color:var(--sun-text)}
+.stages{display:flex;gap:6px;margin-top:10px}.stages i{flex:1;height:6px;border-radius:4px;background:var(--paper-2)}.stages i.on{background:var(--banyan)}.stages i.cur{background:var(--sun-600)}
+.dim{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px}.dim span{width:84px;flex:none;font-weight:600}.dim .bar{flex:1}.dim em{font-style:normal;width:38px;text-align:right;font-weight:600;color:var(--ink-2)}
+/* desktop */
+.desk{width:1200px;max-width:100%;background:var(--paper);border-radius:18px;box-shadow:0 0 0 1px var(--line),0 30px 60px -30px rgba(0,0,0,.35);overflow:hidden;display:grid;grid-template-columns:232px 1fr}
+.side{background:var(--ink);color:#DDE6DF;padding:20px 14px;display:flex;flex-direction:column;gap:4px}
+.side .logo{color:#fff;padding:4px 8px 16px}.side .logo .mark{background:var(--banyan);color:var(--sun)}
+.side a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;font-size:15px;font-weight:500}
+.side a.on{background:rgba(242,181,68,.16);color:#fff}.side a.on svg{color:var(--sun)}
+.side .lbl{font-size:12px;letter-spacing:.08em;color:#8FA399;padding:14px 12px 4px}
+.main{padding:24px 28px 32px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.crumb{font-size:13px;color:var(--muted)}.main h2.pg{font-size:26px}
+.sel{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 14px;font-weight:600}
+.kpis{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:12px}
+.kpi{background:var(--surface);border-radius:var(--r-md);padding:16px 18px;box-shadow:var(--shadow)}
+.kpi small{color:var(--muted);font-size:13px;font-weight:600}.kpi b{display:block;font:700 34px/1.15 var(--serif);margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi.pri{background:var(--banyan);color:#fff}.kpi.pri small{color:#BFE0CF}.kpi.pri b{color:#fff}
+.kpi .bar{margin-top:10px;background:rgba(255,255,255,.2)}.kpi .bar i{background:var(--sun)}
+.grid2{display:grid;grid-template-columns:1fr 1.2fr;gap:12px;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;color:var(--muted);font-weight:600;font-size:13px;padding:8px 10px;border-bottom:1px solid var(--line)}td{padding:11px 10px;border-bottom:1px solid #F0E8D8}
+tr:last-child td{border:0}td.n{font-weight:600}.sparkbar{display:inline-block;width:90px;height:7px;border-radius:9px;background:var(--paper-2);vertical-align:middle;margin-right:8px;overflow:hidden}.sparkbar i{display:block;height:100%;background:var(--banyan)}
+.why li{margin:6px 0}.why{padding-left:20px;margin:0}
+.note{background:var(--sun-50);border-radius:var(--r-md);padding:14px 16px;color:var(--sun-text);font-size:14px;margin-top:14px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z"/><path d="M2 21c0-3 1.9-5.5 6-7"/></symbol>
+<symbol id="list" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/></symbol>
+<symbol id="users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+<symbol id="book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5Z"/><path d="M4 19.5V21h16"/></symbol>
+<symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+<symbol id="qr" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h2v2h-2zM19 15h2v2M15 19h2M19 19h2v2"/></symbol>
+<symbol id="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <div class="eyebrow">經贏評測｜UI/UX 改版樣張 v1</div>
+  <h1 class="title">榕光 Banyan Glow：溫暖、專業、會成長的評測體驗</h1>
+  <p class="lead">品牌「榕耀」的「榕」是榕樹、「耀」是光。這個方向把它直接轉成視覺語言：<b>深榕綠</b>是穩重與專業，<b>暖陽金</b>是被看見與鼓勵，<b>暖紙底色</b>保留顧問報告的質感。學員看到的不是冷冰冰的分數，而是「你正在長成什麼樣的樹」。所有顏色皆通過 WCAG AA（≥ 4.5:1）。以下是設計系統與三個關鍵畫面的樣張（390px 手機 × 3、桌機教練後台 × 1）。</p>
+
+  <section class="block">
+    <h2>1. 色票與字型</h2>
+    <p class="sub">取代現在「全部是褐色系」（墨、暖灰、銅金色相接近，層次靠明度硬撐）的問題：改成綠＋金兩個清楚的色相，其餘為中性。</p>
+    <div class="swatches">
+      <div class="sw"><i style="background:#1F5D4A"></i><div><b>榕綠 Banyan</b>#1F5D4A<br><small>主色、主要按鈕、選取狀態｜白字 7.7:1</small></div></div>
+      <div class="sw"><i style="background:#E4F0E6"></i><div><b>榕綠淡 50</b>#E4F0E6<br><small>強項、已完成、淡底</small></div></div>
+      <div class="sw"><i style="background:#F2B544"></i><div><b>暖陽 Sun</b>#F2B544<br><small>點綴、進度、重點 CTA｜墨字 8.2:1</small></div></div>
+      <div class="sw"><i style="background:#FCEFD3"></i><div><b>暖陽淡 50</b>#FCEFD3<br><small>優先成長、提示｜文字 #8A5200 6.0:1</small></div></div>
+      <div class="sw"><i style="background:#A8452D"></i><div><b>陶土 Clay</b>#A8452D<br><small>錯誤／警示，取代刺眼的紅｜5.5:1</small></div></div>
+      <div class="sw"><i style="background:#FBF7EF;border-bottom:1px solid #E6DCC8"></i><div><b>暖紙 Paper</b>#FBF7EF<br><small>頁面底色</small></div></div>
+      <div class="sw"><i style="background:#1F2924"></i><div><b>墨 Ink</b>#1F2924<br><small>內文與深色區塊｜14:1</small></div></div>
+      <div class="sw"><i style="background:#5B6760"></i><div><b>次要文字</b>#5B6760<br><small>白底 5.9:1、紙底 5.5:1</small></div></div>
+    </div>
+    <div class="panel type-demo" style="margin-top:16px;display:grid;grid-template-columns:1.2fr 1fr;gap:28px">
+      <div>
+        <h1>你正在長成一棵樹</h1>
+        <h2 style="margin-top:10px">領導力九大構面行為評量</h2>
+        <p style="color:var(--ink-2)">標題用 <b>Noto Serif TC</b>（思源宋體）帶出編輯感與溫度；內文與介面用 <b>Noto Sans TC</b>（思源黑體），行高 1.6、基本字級 16px。兩者皆為開源字型。</p>
+      </div>
+      <div><div class="num" style="color:var(--banyan)">164<span style="font-size:22px;color:var(--muted);font-weight:500"> / 240</span></div><p style="color:var(--muted);margin:8px 0 0">大數字用宋體＋等寬數字（tabular-nums），分數一眼就是「主角」。</p></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <div class="row">
+        <button class="btn btn-primary">開始作答 <svg class="i"><use href="#arrow"/></svg></button>
+        <button class="btn btn-sun">開始課後複測</button>
+        <button class="btn btn-secondary">查看分析</button>
+        <button class="btn btn-ghost">稍後再說</button>
+        <span class="chip chip-seed"><svg class="i" style="width:16px;height:16px"><use href="#leaf"/></svg>探索期</span>
+        <span class="chip chip-sprout"><svg class="i" style="width:16px;height:16px"><use href="#leaf"/></svg>發展期</span>
+        <span class="chip chip-tree"><svg class="i" style="width:16px;height:16px"><use href="#leaf"/></svg>精熟期</span>
+        <span class="chip chip-canopy"><svg class="i" style="width:16px;height:16px"><use href="#leaf"/></svg>卓越</span>
+        <span class="chip chip-warn">尚未完成</span>
+      </div>
+      <p style="color:var(--muted);font-size:14px;margin:12px 0 0">按鈕統一 44px 高、12px 圓角；落點等級用「成長階段」的四個徽章，以 SVG 葉片圖示取代現在的 emoji（🚀 等）。</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>2. 學員手機：首頁 → 作答 → 結果</h2>
+    <p class="sub">學員在手機上是主要使用者，所以先把這三屏做到位。重點：每一屏只有一個主要行動；用「成長」的語言取代「得分」的語言。</p>
+    <div class="phones">
+
+      <!-- HOME -->
+      <div class="pwrap"><div class="cap" style="top:20px">① 我的評量（首頁）</div>
+      <div class="phone">
+        <div class="appbar"><div class="logo"><span class="mark"><svg class="i" style="width:18px;height:18px"><use href="#leaf"/></svg></span>經贏評測</div><div class="avatar">王</div></div>
+        <div class="scroll">
+          <div class="hello">嗨，大明，繼續長高吧</div><p>你已完成 1 份評量，還有 1 個發展目標進行中。</p>
+          <div class="hero"><small>下一步</small><h3>該回來複測了：AI 全方位職能實戰</h3><p>完成課後複測，就能看到你這幾週的成長。</p><button class="btn btn-sun">開始課後複測 <svg class="i"><use href="#arrow"/></svg></button></div>
+          <div class="card"><div class="row" style="justify-content:space-between"><h4>AI 職能實戰班 第 1 梯</h4><span class="chip chip-sprout">進行中</span></div><p>教練：陳教練 ・ 課前 ✓　課後 待完成</p>
+            <div class="meta"><svg class="i" style="width:16px;height:16px"><use href="#target"/></svg>發展目標：每週一次跨部門 check-in<span style="margin-left:auto;color:var(--banyan);font-weight:600">查看</span></div></div>
+          <div class="sec-title">選擇評量</div>
+          <div class="card"><h4>AI 全方位職能實戰課前評測</h4><p>看你現在把 AI 用在工作裡的深度，約 12 分鐘。</p>
+            <div class="row" style="margin-top:12px"><button class="btn btn-secondary" style="flex:1">查看分析</button><button class="btn btn-ghost">重新作答</button></div></div>
+          <div class="card"><h4>經贏® 領導力九大構面</h4><p>90 題，了解你在九個構面的行為落點。</p><div class="meta">約 25 分鐘 ・ 可隨時中斷，進度自動儲存</div></div>
+        </div>
+        <div class="nav"><a class="on"><span class="pill"><svg class="i"><use href="#list"/></svg></span>評量</a><a><span class="pill"><svg class="i"><use href="#chart"/></svg></span>分析</a><a><span class="pill"><svg class="i"><use href="#users"/></svg></span>360°</a><a><span class="pill"><svg class="i"><use href="#book"/></svg></span>學習</a></div>
+      </div></div>
+
+      <!-- SURVEY -->
+      <div class="pwrap"><div class="cap" style="top:20px">② 作答（捲動中）</div>
+      <div class="phone">
+        <div class="sv-top"><div class="back"><svg class="i"><use href="#back"/></svg></div>
+          <div class="sv-prog"><b><span>作答進度</span><span>12 / 48 題</span></b><div class="bar"><i style="width:25%;background:var(--sun-600)"></i></div></div></div>
+        <div class="scroll">
+          <div class="chapter"><span>二</span><div><h3>提示詞工程與脈絡設計</h3><small>第 2 章・共 6 章，約再 9 分鐘</small></div></div>
+          <div class="q"><p><b>11.</b>我會把背景、目標與限制條件一起交代給 AI，而不只是丟一句問題。</p>
+            <div class="opts"><i>1</i><i>2</i><i class="sel">3</i><i>4</i><i>5</i></div><div class="ends"><span>非常不同意</span><span>非常同意</span></div></div>
+          <div class="q cur"><p><b>12.</b>當 AI 的回答不如預期，我會調整提問方式再試，而不是直接放棄。</p>
+            <div class="opts"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i></div><div class="ends"><span>非常不同意</span><span>非常同意</span></div></div>
+          <div class="q"><p><b>13.</b>我能說出 2–3 種自己最常用的提示技巧，以及它們各自幫我省了多少時間。</p>
+            <div class="opts"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i></div><div class="ends"><span>非常不同意</span><span>非常同意</span></div></div>
+        </div>
+        <div class="fab"><svg class="i" style="width:18px;height:18px"><use href="#down"/></svg>還有 36 題，跳到下一題</div>
+      </div></div>
+
+      <!-- RESULT -->
+      <div class="pwrap"><div class="cap" style="top:20px">③ 結果</div>
+      <div class="phone">
+        <div class="appbar"><div class="logo"><span class="mark"><svg class="i" style="width:18px;height:18px"><use href="#leaf"/></svg></span>你的結果</div><div class="avatar">王</div></div>
+        <div class="scroll" style="padding:0 0 96px">
+          <div class="res-hero">
+            <div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="#fff" stroke-width="10"/><circle cx="60" cy="60" r="50" fill="none" stroke="#1F5D4A" stroke-width="10" stroke-linecap="round" stroke-dasharray="214 314"/><circle cx="60" cy="60" r="38" fill="none" stroke="#CFE5D6" stroke-width="1.5" stroke-dasharray="3 5"/></svg>
+              <div class="c"><b>164</b><small>/ 240 分</small></div></div>
+            <div class="stage"><span class="chip chip-sprout" style="font-size:15px;padding:6px 16px"><svg class="i" style="width:18px;height:18px"><use href="#leaf"/></svg>AI 數位高潛力股</span></div>
+            <h2>你已經長出穩定的枝幹</h2><p>超越 40% 的填答者。下一步是讓根扎得更深。</p>
+            <div class="stages"><i class="on"></i><i class="cur"></i><i></i><i></i></div>
+            <div class="ends" style="padding:0 2px"><span>探索期</span><span style="color:var(--sun-text);font-weight:700">發展期 ●</span><span>精熟期</span><span>卓越</span></div>
+          </div>
+          <div style="padding:0 16px">
+            <div class="two"><div class="mini good"><small>最強構面</small><b>基礎力</b><span>74%・穩定展現</span></div><div class="mini grow"><small>優先成長</small><b>安全思維力</b><span>65%・本月可先練這個</span></div></div>
+            <div class="sec-title" style="margin-top:22px">六個構面落點</div>
+            <div class="dim"><span>基礎力</span><div class="bar"><i style="width:74%"></i></div><em>74%</em></div>
+            <div class="dim"><span>溝通力</span><div class="bar"><i style="width:70%"></i></div><em>70%</em></div>
+            <div class="dim"><span>應用力</span><div class="bar"><i style="width:67%"></i></div><em>67%</em></div>
+            <div class="dim"><span>創新力</span><div class="bar"><i style="width:67%"></i></div><em>67%</em></div>
+            <div class="dim"><span>安全思維</span><div class="bar"><i style="width:65%;background:var(--sun-600)"></i></div><em>65%</em></div>
+          </div>
+        </div>
+        <div class="nav" style="padding:10px 16px 24px;gap:10px"><button class="btn btn-primary" style="flex:1">查看完整分析 <svg class="i"><use href="#arrow"/></svg></button></div>
+      </div></div>
+
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>3. 教練桌機：班級總覽</h2>
+    <p class="sub">教練與講師在桌機上工作：左側固定導覽（取代頂部分頁列，之後加功能不會擠）、頂部班級切換、第一排是「班級現在怎麼樣」的四個數字，下面是構面落點與成員清單。</p>
+    <div class="desk">
+      <aside class="side">
+        <div class="logo"><span class="mark"><svg class="i" style="width:18px;height:18px"><use href="#leaf"/></svg></span>經贏評測</div>
+        <div class="lbl">學習者</div>
+        <a><svg class="i"><use href="#list"/></svg>我的評量</a><a><svg class="i"><use href="#chart"/></svg>我的分析</a><a><svg class="i"><use href="#book"/></svg>我的學習</a>
+        <div class="lbl">教練</div>
+        <a class="on"><svg class="i"><use href="#users"/></svg>班級總覽</a><a><svg class="i"><use href="#qr"/></svg>報到與成員</a><a><svg class="i"><use href="#target"/></svg>360° 進度</a>
+      </aside>
+      <div class="main">
+        <div class="topbar"><div><div class="crumb">教練後台 / 班級</div><h2 class="pg">AI 職能實戰班 第 1 梯</h2></div>
+          <div class="row"><div class="sel">示範股份有限公司 ・ 5 人<svg class="i" style="width:16px;height:16px"><use href="#chev"/></svg></div><button class="btn btn-secondary">批次匯出個人報告</button><button class="btn btn-primary">班級專業分析報告</button></div></div>
+        <div class="kpis">
+          <div class="kpi pri"><small>課前完成率</small><b>80%</b><div class="bar"><i style="width:80%"></i></div></div>
+          <div class="kpi"><small>已作答／應作答</small><b>4 / 5</b></div>
+          <div class="kpi"><small>平均總分</small><b>165</b></div>
+          <div class="kpi"><small>尚未完成</small><b style="color:var(--clay)">1 人</b></div>
+        </div>
+        <div class="grid2">
+          <div class="panel"><h3 style="font-size:17px;margin-bottom:14px">各構面班級平均</h3>
+            <div class="dim"><span>基礎力</span><div class="bar"><i style="width:74%"></i></div><em>74%</em></div>
+            <div class="dim"><span>溝通力</span><div class="bar"><i style="width:70%"></i></div><em>70%</em></div>
+            <div class="dim"><span>應用力</span><div class="bar"><i style="width:67%"></i></div><em>67%</em></div>
+            <div class="dim"><span>創新力</span><div class="bar"><i style="width:63%"></i></div><em>63%</em></div>
+            <div class="dim"><span>安全思維</span><div class="bar"><i style="width:58%;background:var(--sun-600)"></i></div><em>58%</em></div>
+            <div class="note">本班最需要加強：<b>安全思維力</b>（58%），建議課程加入風險案例演練。</div></div>
+          <div class="panel"><h3 style="font-size:17px;margin-bottom:6px">成員</h3>
+            <table><tr><th>姓名</th><th>總分</th><th>達成率</th><th>階段</th><th>評語</th></tr>
+              <tr><td class="n">李志豪</td><td>212</td><td><span class="sparkbar"><i style="width:88%"></i></span>88%</td><td><span class="chip chip-tree">精熟期</span></td><td style="color:var(--sage);font-weight:600">已寫</td></tr>
+              <tr><td class="n">王大明</td><td>180</td><td><span class="sparkbar"><i style="width:75%"></i></span>75%</td><td><span class="chip chip-sprout">發展期</span></td><td style="color:var(--clay);font-weight:600">未寫</td></tr>
+              <tr><td class="n">張雅婷</td><td>150</td><td><span class="sparkbar"><i style="width:63%"></i></span>63%</td><td><span class="chip chip-sprout">發展期</span></td><td style="color:var(--clay);font-weight:600">未寫</td></tr>
+              <tr><td class="n">林小美</td><td>118</td><td><span class="sparkbar"><i style="width:49%"></i></span>49%</td><td><span class="chip chip-seed">探索期</span></td><td style="color:var(--clay);font-weight:600">未寫</td></tr>
+              <tr><td class="n" style="color:var(--muted)">黃怡君</td><td colspan="4"><span class="chip chip-warn">尚未作答</span> <span style="color:var(--muted);font-size:13px">　寄送提醒信</span></td></tr></table></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>
