@@ -95,6 +95,12 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - **L9D 九大構面（90 題，高階／接班）**＝核心 7 ＋ 思辨與決策 ＋ 接班成熟度；**八大構面（70 題，`leadership-360-70`，目前為客戶專案專用）**＝核心 7 ＋ 應變與創新。沒有任何一套是十大構面，兩邊名稱都維持。
 - 核心 7 構面（溝通力、協作關係、任務管理、執行力、領導影響力、人才發展、自我成長）在 `utils/coreDimensions.js`；兩套總分範圍不同（90–450／70–350）不能比總分，跨評量比較一律用核心構面平均。管理後台「各評量統計」底下有 `CoreCompareSection`。教練端刻意不做跨評量比較：教練不應看到學員在別的班或別的評量的結果。
 
+## 手機 App 化（PWA）
+
+- 方向：不上架、不重寫，走 PWA 並把手機介面打磨到位。**計畫、問題清單、各 Sprint 的驗收條件在 `docs/MOBILE_APP_PLAN.md`**（M0 已完成，M1 起待執行）。
+- 安裝引導在 `src/survey/pwa/`（`installPrompt.js` 判斷平台與是否提示、`InstallPrompt.jsx`）。
+- `npm run audit:mobile`：手機尺寸走查 29 個畫面並量測（輸出到 `mobile-audit-out/`，不進版控、不擋部署）。手機樣式只加在 `sm` 以下，桌機版面不變。
+
 ## 360° 報告的圖表
 
 - `utils/report360.js` 算出 `subRanking`、各子能力的各類評分者平均與群組間差距；`components/threesixty/GroupCharts.jsx` 畫圖（自有配色，群組用中文名稱）。參考區間帶 `REF_BAND` ＝ 子能力語句的「中」段（3.5–4.5）；群組間差距旗標：構面 ≥ 1.0、子能力 ≥ 1.5。改門檻改 `report360.js` 的常數即可。

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../auth/useAuth';
+import InstallPrompt from '../pwa/InstallPrompt.jsx';
 
 function Card({ title, desc, children }) {
   return (
@@ -117,6 +118,8 @@ export default function ProfilePage() {
         <p className="mt-2 text-sm text-slate-400">Email：{user.email}（不可變更）</p>
         {nameMsg && <p className="mt-1 text-sm text-brass-600">{nameMsg}</p>}
       </Card>
+
+      <InstallPrompt variant="card" />
 
       <Card title="介面偏好">
         <Toggle

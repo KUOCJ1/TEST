@@ -37,3 +37,6 @@ server/.env
 
 # deploy.sh 在 VPS 上寫入的版本資訊（Sprint 7），不進版控
 /server/build-info.json
+
+# 手機介面走查的輸出（npm run audit:mobile）
+mobile-audit-out/

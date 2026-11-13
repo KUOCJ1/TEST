@@ -31,6 +31,7 @@ import UserMenu from './components/UserMenu';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingState from './components/LoadingState';
 import FollowUpBanner from './course/FollowUpBanner.jsx';
+import InstallPrompt from './pwa/InstallPrompt.jsx';
 
 const CoachDashboard = lazy(() => import('./coach/CoachDashboard'));
 
@@ -138,6 +139,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
       {/* 已加入班級的學員，下面的「下一步」卡片與班級狀態已經在講該做什麼，再疊一個新手引導
           只是重複（Sprint 11 走查：掃 QR 加入的新學員首頁同時出現三個橫幅）。 */}
       <OnboardingBanner role="user" show={mySubmissions.length === 0 && myGroups.length === 0} />
+      <InstallPrompt />
       <FollowUpBanner />
       <GroupInvites invites={groupInvites} onChanged={() => { setLoading(true); setReloadTick((t) => t + 1); }} />
       <RedeemInviteBox onJoined={() => { setLoading(true); setReloadTick((t) => t + 1); }} />

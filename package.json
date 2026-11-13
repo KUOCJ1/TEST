@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "generate-manual": "node scripts/generate-manual-pdf.js",
-    "manual:screenshots": "playwright test -c playwright.screenshots.config.js"
+    "manual:screenshots": "playwright test -c playwright.screenshots.config.js",
+    "audit:mobile": "playwright test -c playwright.mobile-audit.config.js"
   },
   "dependencies": {
     "@fontsource/newsreader": "^5.3.0",
