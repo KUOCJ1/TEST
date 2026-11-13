@@ -1,5 +1,6 @@
 import { formatDate } from '../utils/format';
 import { badgeBg } from '../utils/color';
+import { badgeText } from '../utils/levelBadge';
 
 /**
  * 「我的歷程」：敘事段落 + 垂直時間軸。取代原本純數字的「作答歷史記錄」表格——
@@ -62,7 +63,7 @@ export default function JourneyTimeline({ narrative, submissions, onSelect, prof
                         className="rounded-full px-2 py-0.5 text-xs font-semibold text-white"
                         style={{ background: badgeBg(s.result.level.color) }}
                       >
-                        {s.result.level.badge}
+                        {badgeText(s.result.level.badge)}
                       </span>
                       {!profileMode && delta !== null && delta !== 0 && (
                         <span className={`text-xs font-semibold ${delta > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -71,7 +72,7 @@ export default function JourneyTimeline({ narrative, submissions, onSelect, prof
                       )}
                       {profileMode && prev && prev.result.level.badge !== s.result.level.badge && (
                         <span className="text-xs font-semibold text-slate-400">
-                          ← {prev.result.level.badge}
+                          ← {badgeText(prev.result.level.badge)}
                         </span>
                       )}
                     </div>

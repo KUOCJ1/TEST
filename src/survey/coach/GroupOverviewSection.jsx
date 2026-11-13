@@ -15,6 +15,7 @@ import CourseSurveyPanel from './CourseSurveyPanel';
 import { badgeBg } from '../utils/color';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { dimLabel } from '../utils/dimensionLabel';
+import { badgeText } from '../utils/levelBadge';
 
 // 「總覽」分頁內容：KPI 卡、班級雷達圖、能力熱力圖、成員比較表、班級敘事報告、
 // 學習成效面板、班級整體評語表單。從 GroupWorkspace 拆出（Sprint 5.6）——
@@ -60,7 +61,7 @@ function MemberCards({ memberRows, groupStats, has360, sortBy, setSortBy, onOpen
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white" style={{ background: badgeBg(r.level.color) }}>
-                  {r.level.badge}
+                  {badgeText(r.level.badge)}
                 </span>
               </div>
               {has360 && (
@@ -294,7 +295,7 @@ export default function GroupOverviewSection({
                             className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
                             style={{ background: badgeBg(r.level.color) }}
                           >
-                            {r.level.badge}
+                            {badgeText(r.level.badge)}
                           </span>
                         </td>
                         {has360 && (

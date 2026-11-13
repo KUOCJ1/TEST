@@ -371,12 +371,18 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
           {dimensionsToRender.map(({ dim, di }) => (
             <section key={dim.id} className="mt-7 first:mt-2">
-              <h2
-                className="rounded-lg px-4 py-2.5 text-[15px] font-bold text-white"
-                style={{ background: badgeBg(dim.color) }}
-              >
-                {ORDINALS[di] || di + 1}、{dim.name}
-                <span className="ml-1 font-normal">（{dim.subtitle}）</span>
+              <h2 className="flex items-center gap-3 border-b border-slate-200 pb-3">
+                <span className="font-serif flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brass-200 text-base font-bold text-slate-900" aria-hidden="true">
+                  {ORDINALS[di] || di + 1}
+                </span>
+                <span className="min-w-0">
+                  <span className="sr-only">{ORDINALS[di] || di + 1}、</span>
+                  <span className="font-serif block text-lg font-semibold leading-snug text-slate-900">{dim.name}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-sm font-normal text-slate-500">
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: dim.color }} aria-hidden="true" />
+                    {dim.subtitle}・{dim.questions.length} 題
+                  </span>
+                </span>
               </h2>
               <div className="mt-3 space-y-3">
                 {dim.questions.map((q, qi) => (
@@ -573,7 +579,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
         <button
           type="button"
           onClick={() => focusQuestion(scoring.unansweredQuestionIds(answers, config)[0])}
-          className="fixed bottom-4 left-1/2 z-30 -translate-x-1/2 rounded-full bg-ink-700 px-4 text-sm font-semibold text-white shadow-lg ring-2 ring-brass-300/70 sm:hidden print:hidden"
+          className="fixed bottom-4 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink-700 px-5 text-sm font-semibold text-white shadow-cta ring-2 ring-brass-300/70 sm:hidden print:hidden"
         >
           還有 {TOTAL_QUESTIONS - answered} 題未作答 · 跳到下一題
         </button>

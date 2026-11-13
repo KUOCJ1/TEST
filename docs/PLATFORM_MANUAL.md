@@ -478,10 +478,18 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   `MARKETING_TITLES`（行銷頁／未登入）把 `document.title` 設成
   `頁面名稱｜全方位職能評測`；新增路由時兩邊要一起補。切頁時捲回頂端（網址帶
   `#錨點` 時除外），並有 `animate-page-in` 淡入。
-- **色票與對比（WCAG AA 4.5:1）**：在 `tailwind.config.js` 的 token 層處理，
-  不在個別元件補丁——`slate-400/500`、`ink-50`、`brass-500`、`emerald-600`、
-  `amber-600` 都已調深到在白底／米色底過 AA。**不要**再用 `opacity-*`、
-  `text-white/70` 之類把文字調淡，axe 會算進對比。
+- **色票與對比（WCAG AA 4.5:1）**：「榕光 Banyan Glow」視覺系統（`docs/design/UI_UX_REFRESH_PROPOSAL.md`）。
+  在 `tailwind.config.js` 的 token 層處理，**沿用原本的 token 名稱、只重新對映色值**，既有元件不用改 class：
+  `ink` ＝ 榕綠色階（`ink-700` ＝ 主色 `#1f5d4a`，`bg-ink-700` 是主要按鈕／選取狀態；`ink-50/100` 是次要文字灰）、
+  `brass` ＝ 暖陽金色階（`brass-200` ＝ 暖陽 `#f2b544` 當填色，`brass-500/600` 當文字，已過 AA）、
+  `paper` ＝ 暖紙（`paper-50` 卡片白、`paper-100` 頁面底 `#fbf7ef`）、`slate` ＝ 偏綠暖灰。
+  **不要**再用 `opacity-*`、`text-white/70` 之類把文字調淡，axe 會算進對比。新增顏色要驗算對比再加進 token。
+  語意：綠＝已具備／主要行動；金＝成長機會／重點；陶土（`red-600`）只用在真正的錯誤。
+- **落點徽章**（`components/LevelBadge.jsx`、`utils/levelBadge.js`）：螢幕上有等級列表的題庫用「成長階段」四種樣式
+  （探索／發展／精熟／卓越，SVG 葉片圖示），風格型題庫（DISC）維持題庫顏色；題庫設定的 emoji 只在 A4 列印報告保留，
+  螢幕上一律經 `badgeText()` 去掉。
+- **品牌色塊**（結果頁主視覺、首頁「下一步」卡）用**行內顏色**而不是 `bg-ink-700`：深色模式的全域規則會把
+  `bg-ink-700` 反轉成淺色，品牌色塊兩種模式都要維持深綠。
 - **題庫設定裡的顏色**（構面、落點的 hex 色）不保證對比，一律經
   `src/survey/utils/color.js`：
   - 當徽章底色配白字 → `style={{ backgroundColor: badgeBg(hex) }}`（自動加深到

@@ -56,25 +56,27 @@ export default function NextStepCard({ nextStep, onStartSurvey, onGoTo360, onVie
   };
 
   return (
-    <section className="mb-6 overflow-hidden rounded-2xl bg-ink-700 px-5 py-6 text-paper-50 shadow-lg shadow-slate-200/60 sm:px-7">
+    <section className="relative mb-6 overflow-hidden rounded-2xl px-5 py-6 shadow-card sm:px-7" style={{ background: '#1f5d4a', color: '#ffffff' }}>
+      {/* 品牌色塊：行內顏色，深色模式不被全域規則反轉。右上角的金色年輪是「榕」的意象。 */}
+      <span aria-hidden="true" className="pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full border-2" style={{ borderColor: 'rgba(242,181,68,.45)', boxShadow: '0 0 0 18px rgba(242,181,68,.10), 0 0 0 40px rgba(242,181,68,.06)' }} />
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-paper-50/15">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,.16)' }}>
             <cfg.Icon className="h-5 w-5" />
           </span>
           <div>
             {/* 深色模式下 index.css 只覆寫了 text-paper-50/75、/80 這兩個透明度變體
                 （見該檔案「墨色實心區塊」段落的說明），/70 沒被涵蓋到會變成淺色字配
                 反轉後的淺色底、實質看不見——這裡刻意用 /75 而不是隨手挑一個透明度。 */}
-            <p className="text-xs font-semibold uppercase tracking-wide text-paper-50/75">接下來</p>
-            <h3 className="mt-0.5 text-lg font-bold">{cfg.title(nextStep)}</h3>
-            <p className="mt-1 text-sm text-paper-50/80">{cfg.desc(nextStep)}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#cfe5d6' }}>接下來</p>
+            <h3 className="font-serif mt-0.5 text-xl font-semibold leading-snug">{cfg.title(nextStep)}</h3>
+            <p className="mt-1 text-sm" style={{ color: '#dcefe3' }}>{cfg.desc(nextStep)}</p>
           </div>
         </div>
         <button
           type="button"
           onClick={handleClick}
-          className="btn shrink-0 bg-paper-50 text-ink-700 hover:bg-paper-200 sm:w-auto"
+          className="btn-sun relative shrink-0 sm:w-auto"
         >
           {cfg.cta} →
         </button>

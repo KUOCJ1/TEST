@@ -5,6 +5,7 @@ import UserDashboard from '../survey/dashboard/UserDashboard';
 import { ConfirmProvider } from '../survey/components/ConfirmDialog';
 import { getAssessment } from '../survey/data/assessments/index.js';
 import { buildResult } from '../survey/utils/scoring';
+import { badgeText } from '../survey/utils/levelBadge.js'; // 畫面上的徽章文字去掉 emoji（榕光視覺系統）
 
 // PROFILE_MODE 題庫（DISC）沒有「進步／退步」這種事，「我的分析」頁必須用
 // 中性的「風格變化」呈現，而不是像一般題庫那樣顯示總分增益／總分趨勢圖。
@@ -64,8 +65,8 @@ describe('UserDashboard × PROFILE_MODE 題庫（DISC）', () => {
     expect(screen.queryByText('學習增益')).not.toBeInTheDocument();
     expect(screen.queryByText('歷次總分趨勢')).not.toBeInTheDocument();
     // 兩次作答真正算出來的風格徽章都應該出現在畫面上。
-    expect(screen.getAllByText(preResult.level.badge).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(postResult.level.badge).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(badgeText(preResult.level.badge)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(badgeText(postResult.level.badge)).length).toBeGreaterThan(0);
   });
 
   it('構面表格標題改為「構面位移追蹤」，變化用中性符號呈現、不用紅綠色', async () => {

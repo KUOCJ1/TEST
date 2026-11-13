@@ -36,14 +36,14 @@ function QuestionCard({ number, question, text, scale, naLabel, naValue, value, 
       ref={inputRef}
       data-question-id={question.id}
       onKeyDown={handleKeyDown}
-      className={`question-card scroll-mt-28 rounded-xl border px-4 py-4 transition-colors ${
-        invalid ? 'border-red-300 bg-red-50' : answered ? 'border-slate-100 bg-white' : 'border-slate-200 bg-slate-50/60'
+      className={`question-card scroll-mt-28 rounded-xl border px-4 py-4 shadow-card transition-colors ${
+        invalid ? 'border-red-300 bg-red-50' : answered ? 'border-transparent bg-white' : 'border-ink-700/10 bg-paper-50'
       }`}
     >
       {/* legend 預設會「坐在」fieldset 的上邊框線上、文字被邊框切過；float + w-full 讓它
           回到卡片內容區（下方選項用 clear-both 接在它後面）。 */}
-      <legend className="float-left mb-3 w-full p-0 text-[15px] font-medium leading-relaxed text-slate-800">
-        <span className="mr-1.5 font-semibold text-brass-600">{number}.</span>
+      <legend className="float-left mb-4 w-full p-0 text-base font-medium leading-relaxed text-slate-900">
+        <span className="font-serif mr-1.5 font-bold text-ink-700">{number}.</span>
         {text ?? question.text}
         {invalid && <span className="ml-2 text-sm font-medium text-red-600">（尚未作答）</span>}
       </legend>
@@ -54,10 +54,10 @@ function QuestionCard({ number, question, text, scale, naLabel, naValue, value, 
           return (
             <label
               key={opt.value}
-              className={`flex min-h-[48px] cursor-pointer flex-col items-center justify-center rounded-lg border px-1 py-2 text-center transition-all duration-150 focus-within:ring-2 focus-within:ring-brass-400 focus-within:ring-offset-1 active:scale-[0.97] ${
+              className={`flex min-h-[52px] cursor-pointer flex-col items-center justify-center rounded-xl border-[1.5px] px-1 py-2 text-center transition-all duration-150 focus-within:ring-2 focus-within:ring-ink-700 focus-within:ring-offset-2 active:scale-[0.96] ${
                 selected
-                  ? 'border-brass-500 bg-ink-700 text-white shadow-sm'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-brass-300 hover:bg-brass-50'
+                  ? 'border-ink-700 bg-ink-700 text-white shadow-cta'
+                  : 'border-slate-300 bg-paper-100 text-slate-700 hover:border-ink-700/50 hover:bg-ink-700/5'
               }`}
             >
               <input
@@ -68,8 +68,8 @@ function QuestionCard({ number, question, text, scale, naLabel, naValue, value, 
                 onChange={() => choose(opt.value)}
                 className="sr-only"
               />
-              <span className="text-base font-bold leading-none">{opt.value}</span>
-              <span className={`sr-only mt-1 text-xs leading-tight sm:not-sr-only sm:text-[11px] sm:whitespace-nowrap ${selected ? 'text-brass-50' : 'text-slate-500'}`}>
+              <span className="text-lg font-bold leading-none">{opt.value}</span>
+              <span className={`sr-only mt-1 text-xs leading-tight sm:not-sr-only sm:text-[11px] sm:whitespace-nowrap ${selected ? 'text-white/90' : 'text-slate-500'}`}>
                 {opt.label}
               </span>
             </label>
@@ -83,9 +83,9 @@ function QuestionCard({ number, question, text, scale, naLabel, naValue, value, 
       {naLabel && (
         // 他評版中較難觀察的題目才提供「無法判斷」：不計分、不算缺漏。
         <label
-          className={`mt-2 flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-brass-400 ${
+          className={`mt-2 flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-ink-700 ${
             value === naValue
-              ? 'border-brass-500 bg-ink-700 font-semibold text-white'
+              ? 'border-ink-700 bg-ink-700 font-semibold text-white'
               : 'border-dashed border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
           }`}
         >

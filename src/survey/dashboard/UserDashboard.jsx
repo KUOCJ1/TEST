@@ -15,6 +15,7 @@ import { resultSummaryText, copyToClipboard, formatDateShort } from '../utils/fo
 import InfoTip from '../components/InfoTip';
 import LoadingState from '../components/LoadingState';
 import { badgeBg, dimTextStyle } from '../utils/color';
+import { badgeText } from '../utils/levelBadge';
 
 export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey, onResultLoad }) {
   const navigate = useNavigate();
@@ -290,14 +291,14 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
                   className="rounded-full px-4 py-1.5 text-sm font-bold text-white"
                   style={{ background: badgeBg(preSub.result.level.color) }}
                 >
-                  {preSub.result.level.badge}
+                  {badgeText(preSub.result.level.badge)}
                 </span>
                 <span className="text-xl font-bold text-slate-300">→</span>
                 <span
                   className="rounded-full px-4 py-1.5 text-sm font-bold text-white"
                   style={{ background: badgeBg(postSub.result.level.color) }}
                 >
-                  {postSub.result.level.badge}
+                  {badgeText(postSub.result.level.badge)}
                 </span>
               </div>
               <p className="mt-4 text-center text-sm text-slate-500">

@@ -5,21 +5,26 @@
 @layer components {
   /* 表單輸入 */
   .input {
-    @apply w-full rounded-md border border-paper-300 bg-paper-50 px-3.5 py-2.5 text-ink-700 outline-none transition;
-    @apply placeholder:text-ink-50 focus:border-brass-400 focus:ring-4 focus:ring-brass-50;
+    @apply w-full rounded-md border border-paper-300 bg-paper-50 px-3.5 py-2.5 text-slate-900 outline-none transition;
+    @apply placeholder:text-ink-50 focus:border-ink-700 focus:ring-4 focus:ring-ink-700/15;
   }
 
   /* 按鈕系統 */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-sm font-medium transition-all;
-    @apply focus:outline-none focus-visible:ring-4 focus-visible:ring-brass-100 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-all;
+    @apply focus:outline-none focus-visible:ring-4 focus-visible:ring-ink-700/25 disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-primary {
-    @apply btn bg-ink-700 text-paper-50;
-    @apply hover:bg-ink-900 active:scale-[.99];
+    @apply btn bg-ink-700 text-paper-50 shadow-cta;
+    @apply hover:bg-ink-800 active:scale-[.98];
+  }
+  /* 重點行動（如「開始複測」）：暖陽金，文字用墨色（8:1）。 */
+  .btn-sun {
+    @apply btn bg-brass-200 text-slate-900;
+    @apply hover:bg-brass-300 active:scale-[.98];
   }
   .btn-secondary {
-    @apply btn border border-paper-300 bg-paper-50 text-ink-700 hover:bg-paper-200;
+    @apply btn border border-ink-700/25 bg-paper-50 text-ink-700 hover:bg-ink-700/5;
   }
   .btn-ghost {
     @apply btn text-ink-50 hover:bg-paper-200 hover:text-ink-700;
@@ -35,12 +40,12 @@
   }
   .btn-icon {
     @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-ink-50 transition-colors;
-    @apply hover:bg-paper-200 hover:text-ink-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-brass-100;
+    @apply hover:bg-paper-200 hover:text-ink-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-ink-700/25;
   }
 
   /* 卡片 */
   .card {
-    @apply rounded-md bg-paper-50 p-6 shadow-card ring-1 ring-paper-300;
+    @apply rounded-xl bg-paper-50 p-6 shadow-card ring-1 ring-paper-300;
   }
 
   /* 三層表面：取代「每個區塊都是一樣的白色卡片」——頁首級數字用 panel-primary
@@ -75,127 +80,129 @@ body {
   font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  color: #241f18;
-  /* 暖白紙感的實色背景，取代原本的紫色漸層光暈 */
-  background-color: #f6f1e7;
+  color: #1f2924;
+  /* 暖紙底色（榕光視覺系統） */
+  background-color: #fbf7ef;
 }
 
 /* ── 深色模式（以全域覆寫常用工具類，避免逐元件加 dark:）── */
 .dark body {
-  color: #f3ece0;
-  background-color: #17130e;
+  color: #eef3ee;
+  background-color: #14201b;
 }
-.dark .bg-white { background-color: #231d15 !important; }
+.dark .bg-white { background-color: #1b2a24 !important; }
+/* 響應式變體（教練後台外層：手機無底色、sm 以上白卡）不在上面的 .bg-white 規則裡，要另外對應。 */
+@media (min-width: 640px) { .dark .sm\:bg-white { background-color: #1b2a24 !important; } }
 .dark .bg-white\/95,
-.dark .bg-white\/90 { background-color: rgba(35, 29, 21, 0.92) !important; }
+.dark .bg-white\/90 { background-color: rgba(27, 42, 36, 0.92) !important; }
 .dark .bg-slate-50,
-.dark .bg-slate-100 { background-color: #1c1610 !important; }
+.dark .bg-slate-100 { background-color: #17241f !important; }
 .dark .bg-slate-200,
-.dark .bg-slate-300 { background-color: #4a4335 !important; }
+.dark .bg-slate-300 { background-color: #3a4d44 !important; }
 .dark .text-slate-900,
 .dark .text-slate-800,
 .dark .text-slate-700,
-.dark .text-slate-600 { color: #f3ece0 !important; }
+.dark .text-slate-600 { color: #eef3ee !important; }
 .dark .text-slate-500,
-.dark .text-slate-400 { color: #b8a892 !important; }
+.dark .text-slate-400 { color: #a9b8af !important; }
 .dark .border-slate-200,
 .dark .border-slate-300,
-.dark .border-slate-100 { border-color: #3a2f22 !important; }
+.dark .border-slate-100 { border-color: #2b3d35 !important; }
 .dark .ring-slate-100,
-.dark .ring-slate-200 { --tw-ring-color: #3a2f22 !important; }
-.dark .input { background: #1c1610; color: #f3ece0; border-color: #3a2f22; }
-.dark .card { background: #231d15; --tw-ring-color: #3a2f22; }
+.dark .ring-slate-200 { --tw-ring-color: #2b3d35 !important; }
+.dark .input { background: #17241f; color: #eef3ee; border-color: #2b3d35; }
+.dark .card { background: #1b2a24; --tw-ring-color: #2b3d35; }
 .dark .panel,
-.dark .panel-primary { background-color: #231d15; --tw-ring-color: #3a2f22; }
-.dark .panel-secondary { background-color: #1c1610; --tw-ring-color: #3a2f22; }
+.dark .panel-primary { background-color: #1b2a24; --tw-ring-color: #2b3d35; }
+.dark .panel-secondary { background-color: #17241f; --tw-ring-color: #2b3d35; }
 /* .btn-primary／.btn-secondary／.btn-ghost／.btn-icon 是 @apply 出來的複合
    class，class 屬性上不會留下 bg-ink-700 這類字面 class，下面幾條全站共用的
    工具類覆寫吃不到它們，所以要另外直接覆寫。 */
-.dark .btn-primary { background-color: #f3ece0; color: #17130e; }
-.dark .btn-primary:hover { background-color: #e3d5b8; }
-.dark .btn-secondary { background-color: #231d15; color: #f3ece0; border-color: #3a2f22; }
-.dark .btn-secondary:hover { background-color: #1c1610; }
+.dark .btn-primary { background-color: #eef3ee; color: #14201b; }
+.dark .btn-primary:hover { background-color: #cfe5d6; }
+.dark .btn-secondary { background-color: #1b2a24; color: #eef3ee; border-color: #2b3d35; }
+.dark .btn-secondary:hover { background-color: #17241f; }
 .dark .btn-ghost,
-.dark .btn-icon { color: #b8a892; }
+.dark .btn-icon { color: #a9b8af; }
 .dark .btn-ghost:hover,
-.dark .btn-icon:hover { background-color: #1c1610; color: #f3ece0; }
+.dark .btn-icon:hover { background-color: #17241f; color: #eef3ee; }
 
 /* 「顧問報告」視覺系統（paper / ink / brass）的深色模式覆寫——目前用在
    Landing／Login／JoinClassBanner，以及 AppShell 頁首少數幾處。 */
 .dark .bg-paper-50,
 .dark .bg-paper-100,
-.dark .bg-paper-100\/95 { background-color: #231d15 !important; }
-.dark .bg-paper-200 { background-color: #1c1610 !important; }
+.dark .bg-paper-100\/95 { background-color: #1b2a24 !important; }
+.dark .bg-paper-200 { background-color: #17241f !important; }
 .dark .text-ink-700,
 .dark .text-ink-600,
-.dark .text-ink-400 { color: #f3ece0 !important; }
+.dark .text-ink-400 { color: #eef3ee !important; }
 .dark .text-ink-100,
-.dark .text-ink-50 { color: #b8a892 !important; }
+.dark .text-ink-50 { color: #a9b8af !important; }
 .dark .border-ink-700,
 .dark .border-ink-700\/10,
 .dark .border-ink-700\/40,
 .dark .border-ink-700\/50,
-.dark .divide-ink-700\/10 { border-color: #3a2f22 !important; }
-.dark .ring-paper-300 { --tw-ring-color: #3a2f22 !important; }
+.dark .divide-ink-700\/10 { border-color: #2b3d35 !important; }
+.dark .ring-paper-300 { --tw-ring-color: #2b3d35 !important; }
 /* 墨色實心區塊（CTA 色塊）在深色模式下反轉為淺色，維持對比。 */
-.dark .bg-ink-700 { background-color: #f3ece0 !important; }
-.dark .text-paper-50 { color: #17130e !important; }
+.dark .bg-ink-700 { background-color: #cfe5d6 !important; }
+.dark .text-paper-50 { color: #14201b !important; }
 /* 上面兩條各自成立時沒問題，但全站有 15＋ 處把 bg-ink-700 當「選取狀態」的
    底色、配著寫死的 text-white（不是 text-paper-50）使用——分頁選取、答案
    選取、步驟編號徽章、聊天視窗標題列等。bg-ink-700 反轉成淺色後，這些地方
    的白字完全沒被上面任何一條規則涵蓋到，變成白字配淺底、實質看不見。用複合
    選擇器（兩個 class 同時命中同一元素）一次補齊，不必逐檔案把 text-white
    改成 text-paper-50。 */
-.dark .bg-ink-700.text-white { color: #17130e !important; }
+.dark .bg-ink-700.text-white { color: #14201b !important; }
 /* 同一個問題的另一種寫法：ChatBot 標題列的「清除對話」「關閉」用 text-brass-200
    在深色底上當低調次要文字，bg-ink-700 反轉成淺色後這個本來就偏亮的金色幾乎融進
    底色。這兩顆按鈕跟 bg-ink-700 底色是父子兩個不同元素（子孫選擇器，非複合），
    hover 時的 text-white 維持不動，因為 hover:bg-ink-900 沒有被反轉、深底配白字
    本來就還是對比夠的組合。 */
-.dark .bg-ink-700 .text-brass-200 { color: #6b5a3a !important; }
+.dark .bg-ink-700 .text-brass-200 { color: #10352a !important; }
 /* 分頁列的「選取中」膠囊統一寫成 bg-white text-brass-600（管理後台、教練後台、
    班級工作台、跨梯次比較的課前/課後切換）。bg-white 在深色模式轉成深底，但
    text-brass-600 沒有覆寫，深棕金字配深底對比只有約 2:1，選取中的分頁反而比
    未選取（text-slate-500 已提亮）還暗，強調方向整個顛倒。只用複合選擇器處理
    「同一個元素同時有這兩個 class」的情況——text-brass-600 用在淺米色
    bg-brass-50 區塊（深色模式維持淺底）時本來就清楚，不能一起提亮。 */
-.dark .bg-white.text-brass-600 { color: #dbbb72 !important; }
+.dark .bg-white.text-brass-600 { color: #f2b544 !important; }
 .dark .text-paper-50\/75,
-.dark .text-paper-50\/80 { color: #4a4335 !important; }
+.dark .text-paper-50\/80 { color: #3a4d44 !important; }
 /* ── Sprint 8：深色模式對比補強（全站 axe color-contrast 稽核的結果）────────
    1. 米色提示框（bg-brass-50：新手引導、摘要、班級評語…）與半透明的淺色敘事框、
       題卡（*-50/60）以前在深色模式維持亮底，但框內文字已被上面的規則提亮，
       變成淺字配淺底（約 2:1）。改成暖深色版本，跟其他區塊一致。 */
 .dark .bg-brass-50,
 .dark .bg-brass-50\/50,
-.dark .bg-brass-50\/60 { background-color: #2a2217 !important; }
+.dark .bg-brass-50\/60 { background-color: #1f3029 !important; }
 .dark .bg-sky-50\/60 { background-color: #182127 !important; }
 /* 淺黃銅底的 chip／按鈕（bg-brass-100、hover 的 bg-brass-200，例如用戶管理的「教練」
    角色徽章、「設為教練」按鈕）：配合上面「黃銅色文字在深色模式一律提亮」，底色要
    一起轉深，否則是亮金字配淺金底（1.25:1）。 */
-.dark .bg-brass-100 { background-color: #3a2e1d !important; }
+.dark .bg-brass-100 { background-color: #3a3118 !important; }
 .dark .hover\:bg-brass-200:hover,
-.dark .bg-brass-200 { background-color: #4a3b24 !important; }
-.dark .bg-slate-50\/60 { background-color: #1c1610 !important; }
-.dark .bg-paper-50\/95 { background-color: rgba(28, 22, 16, 0.95) !important; }
-.dark .border-paper-300 { border-color: #3a2f22 !important; }
+.dark .bg-brass-200 { background-color: #4a3e1f !important; }
+.dark .bg-slate-50\/60 { background-color: #17241f !important; }
+.dark .bg-paper-50\/95 { background-color: rgba(23, 36, 31, 0.95) !important; }
+.dark .border-paper-300 { border-color: #2b3d35 !important; }
 .dark .border-brass-100,
 .dark .border-brass-200,
-.dark .border-brass-300 { border-color: #4a3b24 !important; }
+.dark .border-brass-300 { border-color: #4a3e1f !important; }
 .dark .ring-brass-100,
-.dark .ring-sky-100 { --tw-ring-color: #4a3b24 !important; }
+.dark .ring-sky-100 { --tw-ring-color: #4a3e1f !important; }
 /* 2. 黃銅色文字在深色底上一律改用亮金色（原本的深棕金在深底只有 2–3:1）。
       唯一例外是 bg-ink-700 反轉成淺底的區塊（CTA、選取中的選項），裡面改回深色。 */
 .dark .text-brass-400,
 .dark .text-brass-500,
 .dark .text-brass-600,
-.dark .text-brass-700 { color: #dbbb72 !important; }
+.dark .text-brass-700 { color: #f2b544 !important; }
 .dark .bg-ink-700 .text-brass-50,
 .dark .bg-ink-700 .text-brass-100,
 .dark .bg-ink-700 .text-brass-300,
 .dark .bg-ink-700 .text-brass-400,
 .dark .bg-ink-700 .text-brass-500,
-.dark .bg-ink-700 .text-brass-600 { color: #6b5a3a !important; }
+.dark .bg-ink-700 .text-brass-600 { color: #10352a !important; }
 /* 3. 狀態色文字的深色模式提亮放在 src/styles/dark-status.css（見該檔說明）。 */
 /* 4. 構面顏色（題庫設定裡寫死的 inline style）改由 utils/color.js 的 dimTextStyle()
       算出亮色／深色兩組達標的文字色，透過 CSS 變數 --dim-light／--dim-dark 套用。 */
@@ -250,9 +257,9 @@ body {
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #ddd0ba; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #a9752e; }
-.dark ::-webkit-scrollbar-thumb { background: #3a2f22; }
+::-webkit-scrollbar-thumb { background: #d6ccb6; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #e39a2d; }
+.dark ::-webkit-scrollbar-thumb { background: #2b3d35; }
 
 /* Hide scrollbar but keep scrollable */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -326,7 +333,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 24px;
-  background: #17130e;
+  background: #14201b;
   color: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }

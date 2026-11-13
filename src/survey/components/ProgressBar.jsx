@@ -15,7 +15,7 @@ export default function ProgressBar({ answered, total }) {
         </span>
       </div>
       <div
-        className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100"
+        className="h-3 w-full overflow-hidden rounded-full bg-slate-200"
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
@@ -24,7 +24,7 @@ export default function ProgressBar({ answered, total }) {
       >
         <div
           className={`h-full rounded-full transition-all duration-500 ${
-            done ? 'bg-ink-700' : 'bg-brass-400'
+            done ? 'bg-ink-700' : 'bg-brass-200'
           }`}
           style={{ width: `${percent}%` }}
         />

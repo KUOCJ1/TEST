@@ -4,6 +4,7 @@ import GroupNarrativeReport from './GroupNarrativeReport';
 import { formatDate } from '../utils/format';
 import { badgeBg, dimTextStyle } from '../utils/color';
 import { dimLabel } from '../utils/dimensionLabel';
+import { badgeText } from '../utils/levelBadge';
 
 // 手機上的「閱讀版」報告（手機 App 化 M6）。
 // 手機螢幕上把整份 A4 報告縮到 390px 寬，字級只剩一半，要雙指放大才讀得到（M3 的縮放預覽）。
@@ -127,7 +128,7 @@ export function GroupReadView({ group, stats, rows, results, config, date }) {
                   <span className="ml-2 text-sm text-slate-500">{r.total} 分</span>
                 </span>
                 <span className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white" style={{ background: badgeBg(r.level.color) }}>
-                  {r.level.badge}
+                  {badgeText(r.level.badge)}
                 </span>
               </li>
             ))}

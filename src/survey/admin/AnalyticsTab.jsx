@@ -15,6 +15,7 @@ import DevelopmentFunnelPanel from './DevelopmentFunnelPanel';
 import CohortTrendSection from './CohortTrendSection';
 import CoreCompareSection from './CoreCompareSection';
 import { badgeBg } from '../utils/color';
+import { badgeText } from '../utils/levelBadge';
 
 function Kpi({ label, value, suffix, tip }) {
   return (
@@ -247,7 +248,7 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
                           className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
                           style={{ background: badgeBg(r.level.color) }}
                         >
-                          {r.level.badge}
+                          {badgeText(r.level.badge)}
                         </span>
                       </td>
                       <td className="py-2.5 pr-3 text-slate-600">{r.attempts}</td>

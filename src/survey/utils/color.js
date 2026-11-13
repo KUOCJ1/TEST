@@ -43,8 +43,10 @@ export function badgeBg(hex) {
 // 有些太深（深棕 2.0:1）。算出兩組各自達到 4.5:1 的版本，透過 CSS 變數交給
 // index.css 的 .dim-text 依模式切換——色相不變，只調明暗。
 
-const LIGHT_SURFACES = ['#ffffff', '#fefdfb', '#f6f1e7', '#f6ecd7'];
-const DARK_SURFACES = ['#231d15', '#1c1610', '#17130e', '#2a2217'];
+// 榕光視覺系統的底色：卡片白、紙白、頁面暖紙、暖陽淡底（與 tailwind.config.js 的 paper／brass 色票同步）。
+const LIGHT_SURFACES = ['#ffffff', '#fbf7ef', '#f3ecdd', '#fcefd3'];
+// 深色模式底色（index.css 的 .dark：卡片、淺底、頁面、淡金提示框）。
+const DARK_SURFACES = ['#1b2a24', '#17241f', '#14201b', '#1f3029'];
 
 function ratio(a, b) {
   const [x, y] = [luminance(channels(a)), luminance(channels(b))].sort((p, q) => q - p);

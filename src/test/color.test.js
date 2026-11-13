@@ -27,8 +27,8 @@ describe('dimTextStyle', () => {
   it('亮色版在白／紙色／米色底都 ≥4.5:1，深色版在深色面板上都 ≥4.5:1', () => {
     for (const c of ['#38a169', '#d69e2e', '#319795', '#744210', '#805ad5', '#2b6cb0']) {
       const s = dimTextStyle(c);
-      for (const bg of ['#ffffff', '#fefdfb', '#f6f1e7', '#f6ecd7']) expect(ratio(s['--dim-light'], bg)).toBeGreaterThanOrEqual(4.5);
-      for (const bg of ['#231d15', '#1c1610', '#17130e', '#2a2217']) expect(ratio(s['--dim-dark'], bg)).toBeGreaterThanOrEqual(4.5);
+      for (const bg of ['#ffffff', '#fbf7ef', '#f3ecdd', '#fcefd3']) expect(ratio(s['--dim-light'], bg)).toBeGreaterThanOrEqual(4.5);
+      for (const bg of ['#1b2a24', '#17241f', '#14201b', '#1f3029']) expect(ratio(s['--dim-dark'], bg)).toBeGreaterThanOrEqual(4.5);
     }
   });
   it('非 hex 值（例如 inherit）當一般 color 回傳', () => {
