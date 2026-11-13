@@ -61,3 +61,27 @@ describe('列印工具列', () => {
     expect(document.title).toBe('原本的標題'); // 還原成報告開啟前的標題
   });
 });
+
+describe('iPhone 主畫面版的列印提示（手機 M3-3）', () => {
+  it('standalone 的 iOS 不呼叫 window.print，改顯示說明；其他情況照常列印', async () => {
+    const { renderHook } = await import('@testing-library/react');
+    const { useReportFilename, IOS_STANDALONE_PRINT_HINT } = await import('../survey/hooks/useReportFilename.js');
+    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
+    printSpy.mockClear(); // 前面的測試沒還原同一個 spy，先清掉累積的呼叫次數
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const uaSpy = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1');
+    const mm = vi.fn().mockReturnValue({ matches: true });
+    const original = window.matchMedia;
+    window.matchMedia = mm;
+    const { result } = renderHook(() => useReportFilename('x'));
+    result.current();
+    expect(alertSpy).toHaveBeenCalledWith(IOS_STANDALONE_PRINT_HINT);
+    expect(printSpy).not.toHaveBeenCalled();
+    // 不是 standalone：照常列印
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+    result.current();
+    expect(printSpy).toHaveBeenCalledTimes(1);
+    window.matchMedia = original;
+    uaSpy.mockRestore(); printSpy.mockRestore(); alertSpy.mockRestore();
+  });
+});

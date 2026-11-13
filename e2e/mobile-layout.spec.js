@@ -8,6 +8,7 @@ import { getAssessment } from '../src/survey/data/assessments/index.js';
 
 const API = 'http://localhost:3001';
 const ai = getAssessment('ai-competency');
+const l9d = getAssessment('leadership-9d');
 const resultOf = (v) => buildResult(Object.fromEntries(ai.ALL_QUESTIONS.map((q) => [q.id, v])), ai);
 const MIN_TAP = 44;
 
@@ -181,5 +182,41 @@ test('教練總覽：整頁不水平溢出、底部導覽在、按鈕夠大', as
   await expectNoHorizontalOverflow(page, '教練總覽');
   await expect(page.getByRole('navigation', { name: '主要導覽' })).toBeVisible();
   await expectMinHeight(page.getByRole('button', { name: /的帳號選單/ }), '帳號選單按鈕');
+  await context.close();
+});
+
+test('報告預覽：工具列兩列、按鈕 ≥44px 單行、內容縮放到符合寬度；列印頁數不變', async ({ browser }) => {
+  const suffix = `${Date.now()}`;
+  const api = await pwRequest.newContext({ baseURL: API });
+  await ok(await api.post('/api/auth/register', { data: { acceptPolicy: true, name: '手機報告學員', email: `e2e-mobile-report-${suffix}@example.com`, password: 'abcdef12' } }), 'register');
+  const result = buildResult(Object.fromEntries(l9d.ALL_QUESTIONS.map((q) => [q.id, 4])), l9d);
+  await ok(await api.post('/api/submissions', { data: { assessmentId: 'leadership-9d', phase: 'pre', result, answers: {} } }), 'submit');
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, storageState: await api.storageState() });
+  const page = await context.newPage();
+  await page.goto('/analysis/leadership-9d');
+  await page.getByRole('button', { name: /產出 PDF 報告/ }).click({ timeout: 20000 });
+  const toolbar = page.locator('#report-portal .report-toolbar');
+  await expect(toolbar).toBeVisible();
+
+  const printBtn = toolbar.getByRole('button', { name: /列印/ });
+  const closeBtn = toolbar.getByRole('button', { name: /關閉/ });
+  for (const [btn, label] of [[printBtn, '列印／存為 PDF'], [closeBtn, '關閉']]) {
+    await expectMinHeight(btn, `報告工具列「${label}」`);
+    const box = await btn.boundingBox();
+    expect(box.height, `「${label}」文字被擠成多行（高 ${box.height}px）`).toBeLessThan(60);
+  }
+  // 報告名稱單行（沒有被擠成一字一行）。
+  const title = toolbar.getByText('個人評測報告');
+  expect((await title.boundingBox()).height).toBeLessThan(30);
+  // 報告本體寬度＝螢幕寬度（等比縮放，不是 820px 塞進 390px 或橫向溢出）。
+  const w = await page.evaluate(() => document.querySelector('#report-portal > .report-toolbar + div').getBoundingClientRect().width);
+  expect(w, `報告本體寬 ${w}px，應約等於螢幕寬 390px`).toBeGreaterThan(380);
+  expect(w).toBeLessThanOrEqual(392);
+
+  // 列印結果不能變：這份資料（L9D 全 4 分、Chromium A4）的個人報告轉成 PDF 是 11 頁——
+  // 這個數字是在改版前（還原 M3 的程式後）用同樣方式量到的基準，不是計畫書的 10 頁（資料與量法不同）。
+  const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '12mm', bottom: '12mm', left: '15mm', right: '15mm' } });
+  const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
+  expect(pages, `個人報告（L9D）列印頁數 ${pages}，改版前基準是 11 頁`).toBe(11);
   await context.close();
 });

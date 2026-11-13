@@ -336,6 +336,42 @@ body {
   box-shadow: 0 8px 40px rgba(0,0,0,0.3);
 }
 
+/* ── 手機看報告（docs/MOBILE_APP_PLAN.md M3）──────────────────────────────────
+   只在螢幕且寬度 < 820px 時生效，列印（@media print）完全不受影響。
+   1. 工具列：兩列——第一列報告名稱（單行、過長截斷；檔名等細節收起），第二列按鈕（不換行、≥44px）。
+   2. 報告本體維持原本版面（固定 820px 寬），用 zoom 等比縮到符合螢幕寬度，可雙指放大；
+      縮放比例由 AppShell 依視窗寬度寫入 --report-zoom。不為手機另寫一套報告版面。 */
+@media screen and (max-width: 819px) {
+  .report-toolbar {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  .report-toolbar > div:first-child {
+    flex: 1 1 100%;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .report-toolbar > div:first-child > span:nth-child(n + 3) { display: none; }
+  .report-toolbar > div:last-child {
+    flex: 1 1 100%;
+    display: flex;
+    gap: 8px;
+  }
+  .report-toolbar > div:last-child > button {
+    flex: 1 1 0;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+  #report-portal:not(:empty) > .report-toolbar + div {
+    width: 820px;
+    max-width: none;
+    zoom: var(--report-zoom, 1);
+  }
+}
+
 /* 360° 完整報告：連續排版。螢幕預覽有內距；列印時頁面邊界（@page）已經留白，內距縮小以填滿頁面。 */
 .report-flow { padding: 28px 40px 36px; }
 @media print { .report-flow { padding: 0 2px; } }

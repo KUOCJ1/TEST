@@ -337,6 +337,14 @@ function AppShellInner() {
   const isTabActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
   const showBottomNav = !isSurveyOrRaterSetup;
 
+  // 報告預覽（手機）：報告本體固定 820px 寬，依視窗寬度等比縮小（index.css 的 --report-zoom）。
+  useEffect(() => {
+    const apply = () => document.documentElement.style.setProperty('--report-zoom', String(Math.min(1, window.innerWidth / 820)));
+    apply();
+    window.addEventListener('resize', apply);
+    return () => window.removeEventListener('resize', apply);
+  }, []);
+
   // 頁首是 sticky top-0 z-30。頁面裡其他要「貼在頁首下方」的元素（作答進度列、預覽橫幅）
   // 需要知道頁首實際高度——手機上觸控目標撐高後，高度不再是固定值，所以量出來寫成 CSS 變數。
   const headerRef = useRef(null);
