@@ -233,6 +233,16 @@ test('教練：切換班級、總覽第一屏、成員卡片、QR 置頂、刪�
   await page.getByRole('button', { name: /全螢幕投影/ }).click();
   await expect(page.getByRole('button', { name: '關閉全螢幕' })).toBeVisible();
   await page.getByRole('button', { name: '關閉全螢幕' }).click();
+
+  // 班級報告：手機閱讀版（關鍵數字、成員排名），不水平溢出。
+  await page.getByRole('button', { name: '總覽' }).click();
+  await page.getByRole('button', { name: /產出班級專業分析報告/ }).click();
+  const gread = page.locator('#report-portal .report-read');
+  await expect(gread).toBeVisible();
+  await expect(gread.getByText('班級整體分析報告')).toBeVisible();
+  await expect(gread.getByRole('region', { name: '班級關鍵數字' }).or(gread.locator('dl[aria-label="班級關鍵數字"]'))).toBeVisible();
+  await expect(gread.getByRole('region', { name: '成員排名' }).or(gread.locator('section[aria-label="成員排名"]'))).toBeVisible();
+  await expectNoHorizontalOverflow(page, '班級報告閱讀版');
   await context.close();
 });
 
@@ -264,11 +274,32 @@ test('報告預覽：工具列兩列、按鈕 ≥44px 單行、內容縮放到�
   expect(w, `報告本體寬 ${w}px，應約等於螢幕寬 390px`).toBeGreaterThan(380);
   expect(w).toBeLessThanOrEqual(392);
 
+  // 手機閱讀版（M6）：預設是單欄、正常字級的閱讀版，不是縮小的 A4。
+  const read = page.locator('#report-portal .report-read');
+  await expect(read).toBeVisible();
+  await expect(page.locator('#report-portal .report-a4')).toBeHidden();
+  const fs = await read.locator('p').first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  expect(fs, `閱讀版文字 ${fs}px 太小`).toBeGreaterThanOrEqual(12);
+  const bodyFs = await read.getByText('不確定怎麼讀這份結果').or(read.locator('p.leading-relaxed').first()).first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  expect(bodyFs, `閱讀版內文 ${bodyFs}px，應為正常字級（≥14px），不是縮到一半的 A4`).toBeGreaterThanOrEqual(14);
+  await expectNoHorizontalOverflow(page, '報告閱讀版');
+  await expect(read.getByText('指導教練回饋')).toHaveCount(0);
+
   // 列印結果不能變：這份資料（L9D 全 4 分、Chromium A4）的個人報告轉成 PDF 是 11 頁——
   // 這個數字是在改版前（還原 M3 的程式後）用同樣方式量到的基準，不是計畫書的 10 頁（資料與量法不同）。
   const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '12mm', bottom: '12mm', left: '15mm', right: '15mm' } });
   const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
-  expect(pages, `個人報告（L9D）列印頁數 ${pages}，改版前基準是 11 頁`).toBe(11);
+  expect(pages, `個人報告（L9D）列印頁數 ${pages}，改版前基準是 11 頁（閱讀版開著時也一樣印 A4 原版）`).toBe(11);
+
+  // 切到 A4 原版：縮放到螢幕寬（M3 的行為），再切回閱讀版。
+  await toolbar.getByRole('button', { name: '看 A4 原版' }).click();
+  await expect(page.locator('#report-portal .report-a4')).toBeVisible();
+  await expect(read).toBeHidden();
+  const a4w = await page.evaluate(() => document.querySelector('#report-portal > .report-a4').getBoundingClientRect().width);
+  expect(a4w).toBeGreaterThan(380);
+  expect(a4w).toBeLessThanOrEqual(392);
+  await toolbar.getByRole('button', { name: '看閱讀版' }).click();
+  await expect(read).toBeVisible();
   await context.close();
 });
 

@@ -1,7 +1,9 @@
 import { createPortal } from 'react-dom';
 import { reportFilename, REPORT_KIND } from '../utils/reportFilename.js';
 import { useReportFilename } from '../hooks/useReportFilename.js';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useIsMobile } from '../hooks/useIsMobile.js';
+import { GroupReadView } from './MobileReportViews.jsx';
 import RadarChart from './RadarChart';
 import { getAssessment } from '../data/assessments/index.js';
 import { aggregateStats, latestPerUser } from '../utils/analytics';
@@ -368,6 +370,8 @@ function MemberSummaryPage({ group, row, stats, config, date, rank, total }) {
 export default function GroupPrintableReport({ group, submissions, users, onClose }) {
   const filename = reportFilename({ kind: REPORT_KIND.group, assessmentId: group.assessmentId, groupName: group.name });
   const print = useReportFilename(filename);
+  const mobile = useIsMobile();
+  const [showA4, setShowA4] = useState(false); // 手機：預設閱讀版，可切到 A4 原版（縮放預覽）
   const config = getAssessment(group.assessmentId);
   const date = formatDate(new Date().toISOString());
 
@@ -412,6 +416,14 @@ export default function GroupPrintableReport({ group, submissions, users, onClos
           >
             🖨️ 列印 / 存為 PDF
           </button>
+          {mobile && (
+            <button
+              onClick={() => setShowA4((v) => !v)}
+              style={{ background: 'transparent', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+            >
+              {showA4 ? '看閱讀版' : '看 A4 原版'}
+            </button>
+          )}
           <button
             onClick={onClose}
             style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
@@ -421,6 +433,13 @@ export default function GroupPrintableReport({ group, submissions, users, onClos
         </div>
       </div>
 
+      {mobile ? (
+        <>
+          {/* 手機：閱讀版（螢幕）＋A4 原版（可切換；列印一律印 A4 原版，見 index.css）。 */}
+          <div className={`report-read ${showA4 ? 'report-read-hidden' : ''}`}>
+            <GroupReadView group={group} stats={stats} rows={rows} results={results} config={config} date={date} />
+          </div>
+          <div className={`report-a4 ${showA4 ? '' : 'report-a4-hidden'}`}>
       <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
         <CoverPage group={group} stats={stats} config={config} memberCount={group.memberIds?.length ?? rows.length} />
         {stats.respondents > 0 && <OverviewPage group={group} stats={stats} date={date} />}
@@ -439,6 +458,28 @@ export default function GroupPrintableReport({ group, submissions, users, onClos
           />
         ))}
       </div>
+          </div>
+        </>
+      ) : (
+      <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
+        <CoverPage group={group} stats={stats} config={config} memberCount={group.memberIds?.length ?? rows.length} />
+        {stats.respondents > 0 && <OverviewPage group={group} stats={stats} date={date} />}
+        {results.length >= 2 && <NarrativePage group={group} results={results} config={config} date={date} />}
+        {rows.length > 0 && <RankingPage group={group} rows={rows} date={date} />}
+        {rows.map((row, i) => (
+          <MemberSummaryPage
+            key={row.userId}
+            group={group}
+            row={row}
+            stats={stats}
+            config={config}
+            date={date}
+            rank={i + 1}
+            total={rows.length}
+          />
+        ))}
+      </div>
+      )}
     </>,
     portal,
   );

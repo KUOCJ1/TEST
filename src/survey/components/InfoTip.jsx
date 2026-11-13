@@ -10,7 +10,7 @@ export default function InfoTip({ text, className = '' }) {
         aria-label="說明"
         onClick={() => setOpen((v) => !v)}
         onBlur={() => setOpen(false)}
-        className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 bg-white text-[10px] font-bold text-slate-400 hover:border-brass-400 hover:text-brass-600 focus:outline-none focus:ring-2 focus:ring-brass-300"
+        className="relative ml-1 inline-flex h-4 min-h-0 w-4 min-w-0 items-center justify-center after:absolute after:-inset-[14px] after:content-[''] rounded-full border border-slate-300 bg-white text-[10px] font-bold text-slate-400 hover:border-brass-400 hover:text-brass-600 focus:outline-none focus:ring-2 focus:ring-brass-300"
       >
         i
       </button>

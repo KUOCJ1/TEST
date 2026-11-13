@@ -368,11 +368,35 @@ body {
     min-height: 44px;
     white-space: nowrap;
   }
-  #report-portal:not(:empty) > .report-toolbar + div {
+  #report-portal:not(:empty) > .report-toolbar + div:not(.report-read),
+  #report-portal:not(:empty) > .report-a4 {
     width: 820px;
     max-width: none;
     zoom: var(--report-zoom, 1);
   }
+  /* 手機閱讀版（M6）：單欄、正常字級、寬度用滿；章節跳轉列在這裡不需要（工具列已佔頂部）。 */
+  #report-portal:not(:empty) > .report-read {
+    width: 100%;
+    max-width: none;
+  }
+  .report-read nav[aria-label='報告章節導覽'] { display: none; }
+}
+
+/* 手機閱讀版 / A4 原版切換：螢幕上只顯示其中一個；列印一律印 A4 原版（閱讀版不印）。 */
+#report-portal:not(:empty) > .report-a4 {
+  width: 100%;
+  max-width: 820px;
+  background: #fff;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+}
+@media screen {
+  .report-read-hidden,
+  .report-a4-hidden { display: none; }
+}
+@media print {
+  .report-read { display: none !important; }
+  .report-a4-hidden { display: block !important; }
+  #report-portal > .report-a4 { max-width: none !important; box-shadow: none !important; }
 }
 
 /* 360° 完整報告：連續排版。螢幕預覽有內距；列印時頁面邊界（@page）已經留白，內距縮小以填滿頁面。 */

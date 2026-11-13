@@ -522,7 +522,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   結果頁章節跳轉列、斷線提示條）用 `top-[var(--app-header-h,…)]`，不要寫死數字或 `top-0`（會被頁首蓋住）。
 - **報告預覽**（五種）：螢幕上、寬度 < 820px 時，工具列換成兩列、報告本體用 `zoom: var(--report-zoom)` 縮到螢幕寬
   （`--report-zoom` 由 `AppShell` 依視窗寬度寫入）；全是 screen 限定的 CSS，列印不受影響。iPhone 主畫面版
-  `window.print()` 不一定可用，`useReportFilename` 會改顯示說明。**這是縮放預覽，不是手機閱讀版**（閱讀版是計畫的 M6）。
+  `window.print()` 不一定可用，`useReportFilename` 會改顯示說明。手機上個人報告與班級報告預設是**閱讀版**（`MobileReportViews.jsx`：單欄、正常字級；工具列「看 A4 原版」切回縮放預覽；列印一律印 A4 原版，`.report-read` 不印）；其他三種報告仍是縮放預覽。
 - **雷達圖**：`RadarChart` 的 `friendly` 屬性（中文標籤、較大字、較小留白）只給螢幕版用；列印報告不要開。
   表格／圖表的構面名稱用 `utils/dimensionLabel.js` 的 `dimLabel()`（英文副標改中文）。
 - **斷線提示**：`OfflineBanner`（頁首下方）依 `navigator.onLine`；作答草稿本來就存在瀏覽器，提示文字說「連線後再送出」。

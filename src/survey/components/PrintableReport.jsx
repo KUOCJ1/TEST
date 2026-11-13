@@ -1,10 +1,12 @@
 import { createPortal } from 'react-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { getAssessment } from '../data/assessments/index.js';
 import { computePercentile } from '../utils/analytics';
 import { formatDate } from '../utils/format';
 import { reportFilename, REPORT_KIND } from '../utils/reportFilename.js';
 import { useReportFilename } from '../hooks/useReportFilename.js';
+import { useIsMobile } from '../hooks/useIsMobile.js';
+import { PersonalReadView } from './MobileReportViews.jsx';
 
 // PrintableReport 的每一頁都是各自獨立、可單獨測試的子元件（見
 // components/printable-report/），這支檔案只負責依題庫設定組裝頁面順序，以及
@@ -64,6 +66,8 @@ export function ReportPages({ result, benchmark, user, submittedAt, comments = [
 export default function PrintableReport({ result, benchmark, user, submittedAt, onClose, comments = [], groupName }) {
   const filename = reportFilename({ kind: REPORT_KIND.personal, assessmentId: result.assessmentId, groupName, subject: user?.name ?? '受測者' });
   const print = useReportFilename(filename);
+  const mobile = useIsMobile();
+  const [showA4, setShowA4] = useState(false); // 手機：預設閱讀版，可切到 A4 原版（縮放預覽）
   const isCompass = ['compass', 'succession'].includes(getAssessment(result.assessmentId)?.REPORT);
   const percentile = !isCompass && benchmark?.totals?.length >= 2
     ? computePercentile(result.total, benchmark.totals)
@@ -98,6 +102,14 @@ export default function PrintableReport({ result, benchmark, user, submittedAt, 
           >
             🖨️ 列印 / 存為 PDF
           </button>
+          {mobile && (
+            <button
+              onClick={() => setShowA4((v) => !v)}
+              style={{ background: 'transparent', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+            >
+              {showA4 ? '看閱讀版' : '看 A4 原版'}
+            </button>
+          )}
           <button
             onClick={onClose}
             style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
@@ -107,7 +119,19 @@ export default function PrintableReport({ result, benchmark, user, submittedAt, 
         </div>
       </div>
 
-      <ReportPages result={result} benchmark={benchmark} user={user} submittedAt={submittedAt} comments={comments} />
+      {mobile ? (
+        <>
+          {/* 手機：閱讀版（螢幕）＋A4 原版（可切換；列印一律印 A4 原版，見 index.css）。 */}
+          <div className={`report-read ${showA4 ? 'report-read-hidden' : ''}`}>
+            <PersonalReadView result={result} benchmark={benchmark} percentile={percentile} user={user} submittedAt={submittedAt} comments={comments} />
+          </div>
+          <div className={`report-a4 ${showA4 ? '' : 'report-a4-hidden'}`}>
+            <ReportPages result={result} benchmark={benchmark} user={user} submittedAt={submittedAt} comments={comments} />
+          </div>
+        </>
+      ) : (
+        <ReportPages result={result} benchmark={benchmark} user={user} submittedAt={submittedAt} comments={comments} />
+      )}
     </>,
     portal,
   );
