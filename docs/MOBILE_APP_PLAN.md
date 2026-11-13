@@ -168,7 +168,7 @@
 | Sprint | 狀態 | 訪客＋學員過小目標 | 教練過小目標 | 管理過小目標 | 全站合計 | 備註 |
 |---|---|---|---|---|---|---|
 | 基準（M0） | 完成 2026-11-13（commit a5c067e） | 135 | 104 | 253 | 516 | 另有報告預覽 24 |
-| M1 | 已推上，等 CI | 7（目標 ≤ 20） | 教練過小 3＋小字 16（尚未處理 M4） | 管理過小 3 | 13（audit 圖 01–48）；報告預覽 24：3→0 | 見第 10 節 |
+| M1 | 完成（CI 綠，a816740） | 7（目標 ≤ 20） | 教練過小 3＋小字 16（尚未處理 M4） | 管理過小 3 | 13（audit 圖 01–48）；報告預覽 24：3→0 | 見第 10 節 |
 | M2 | 待執行 | 目標 ≤ 5 | — | — | — | |
 | M3 | 待執行 | — | — | — | — | 報告預覽不壞版 |
 | M4 | 待執行 | — | 目標 ≤ 10 | — | — | |
@@ -224,7 +224,18 @@
 | 時間 | 事項 | 狀態 |
 |---|---|---|
 | 2026-11-13 | M0 完成並推上（commit a5c067e）；計畫定稿，D1–D5 照預設 | 完成 |
-| 2026-11-13 | M1 實作完成並推上（cc3a42f）：lint 0、前端 735 測試、後端 338 測試、build、完整 e2e 28 條（含新增 mobile-layout 5 條）全過；audit 01–23 過小目標 135→7。已訂閱 PR #7，等 CI 結果 | **等待 CI**（CI 綠後：第 7 節改「完成（CI 綠）」，補部署指令與實機清單，再開始 M2） |
+| 2026-11-13 | M1 實作完成並推上（cc3a42f）：lint 0、前端 735 測試、後端 338 測試、build、完整 e2e 28 條（含新增 mobile-layout 5 條）全過；audit 01–23 過小目標 135→7。已訂閱 PR #7，等 CI 結果 | 完成（CI 綠） |
+
+**M1 部署與實機確認（等待使用者，不阻擋後續 Sprint）**
+
+部署（在 VPS 上執行，M1 只動前端）：
+```bash
+cd /opt/ai-assessment/app
+git fetch origin claude/ai-assessment-survey-4vhjun && git checkout claude/ai-assessment-survey-4vhjun && git pull origin claude/ai-assessment-survey-4vhjun
+git log -1 --format=%h   # 應為本 Sprint 之後的最新 commit
+bash deploy/deploy.sh
+```
+實機清單：iPhone Safari、iPhone 主畫面安裝版、Android Chrome、LINE 內建瀏覽器各走一次：首頁、作答（捲到第 10 題看進度列）、結果頁、個人設定開關、教練總覽；確認 AI 小幫手不蓋文字、按鈕好點、沒有被撐壞的畫面。
 
 **M1 紀錄與需要使用者知道的事**
 
