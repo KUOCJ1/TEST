@@ -217,7 +217,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
         {baseConfig.REPORT === 'compass' && !result && <CompassIntro rater={rater} />}
         {baseConfig.REPORT !== 'compass' && GUIDES[assessmentId] && !result && (
           <p className="mt-4 text-center text-sm text-slate-500">
-            第一次作答？<a href={guidePathFor(assessmentId, baseConfig)} target="_blank" rel="noreferrer" className="font-semibold text-brass-600 underline">先看這份評測在看什麼、結果怎麼讀</a>（新分頁開啟）
+            第一次作答？<a href={guidePathFor(assessmentId, baseConfig)} target="_blank" rel="noreferrer" className="tap font-semibold text-brass-600 underline">先看這份評測在看什麼、結果怎麼讀</a>（新分頁開啟）
           </p>
         )}
 

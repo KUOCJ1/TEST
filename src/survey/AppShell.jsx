@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Routes, Route, Navigate, Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -337,6 +337,20 @@ function AppShellInner() {
   const isTabActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
   const showBottomNav = !isSurveyOrRaterSetup;
 
+  // 頁首是 sticky top-0 z-30。頁面裡其他要「貼在頁首下方」的元素（作答進度列、預覽橫幅）
+  // 需要知道頁首實際高度——手機上觸控目標撐高後，高度不再是固定值，所以量出來寫成 CSS 變數。
+  const headerRef = useRef(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return undefined;
+    const apply = () => document.documentElement.style.setProperty('--app-header-h', `${Math.round(el.getBoundingClientRect().height)}px`);
+    apply();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // 換頁時（Sprint 8 驗收條件 8.8、8.9）：分頁標題改成「頁面名稱｜全方位職能評測」，
   // 多開分頁或看瀏覽紀錄時才分得出來；捲回頁首（React Router 預設保留上一頁的捲動
   // 位置，常常一進新頁面就停在半中間）。網址帶 #錨點時例外，讓錨點自己定位。
@@ -350,10 +364,10 @@ function AppShellInner() {
     // 底部導覽與 AI 小幫手浮動按鈕都是 fixed：保留足夠的底部內距，捲到最底時最後一段
     // 內容才不會被它們蓋住（Sprint 8 驗收條件 8.6）。
     <div className={`min-h-screen ${showBottomNav ? 'pb-[calc(8rem+env(safe-area-inset-bottom))] sm:pb-20' : ''}`}>
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur print:hidden">
-        <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-2.5 sm:px-6">
+      <header ref={headerRef} className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur print:hidden">
+        <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-1 sm:px-6 sm:py-2.5">
           {/* 點名稱回到「我的評量」。作答進度會自動儲存在瀏覽器，離開不會遺失。 */}
-          <Link to="/home" aria-label="回到我的評量" title="回到我的評量" className="flex shrink-0 items-center gap-2 rounded text-base font-extrabold tracking-tight text-slate-800 hover:text-brass-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-400">
+          <Link to="/home" aria-label="回到我的評量" title="回到我的評量" className="tap flex shrink-0 items-center gap-2 rounded text-base font-extrabold tracking-tight text-slate-800 hover:text-brass-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-400">
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
             <span className="hidden lg:inline">全方位職能評測</span>
             <span className="lg:hidden">職能評測</span>
@@ -405,7 +419,7 @@ function AppShellInner() {
       </header>
 
       {previewing && (
-        <div role="status" className="sticky top-[57px] z-20 border-b border-amber-300 bg-amber-100 px-4 py-2 text-center text-sm text-amber-900 print:hidden">
+        <div role="status" className="sticky top-[var(--app-header-h,57px)] z-20 border-b border-amber-300 bg-amber-100 px-4 py-2 text-center text-sm text-amber-900 print:hidden">
           預覽草稿中——只有你看得到，重新整理頁面或
           <button type="button" onClick={stopPreview} className="mx-1 font-semibold underline underline-offset-2">結束預覽</button>
           即恢復已發佈的內容。
@@ -513,7 +527,7 @@ function AppShellInner() {
                   aria-label={t.label}
                   title={t.hint}
                   onClick={() => navigate(t.path)}
-                  className={`flex min-h-[48px] flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-semibold transition-colors ${
+                  className={`flex min-h-[48px] flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-semibold transition-colors ${
                     active ? 'text-ink-700' : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >

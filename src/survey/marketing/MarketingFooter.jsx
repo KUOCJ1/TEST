@@ -10,14 +10,14 @@ export default function MarketingFooter() {
     <footer className="border-t border-ink-700/10 bg-paper-100 px-6 py-10 text-center text-sm text-ink-50">
       <nav aria-label="頁尾導覽" className="mb-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 md:hidden">
         {MARKETING_LINKS.map((l) => (
-          <Link key={l.to} to={l.to} className="text-ink-100 hover:text-ink-700">
+          <Link key={l.to} to={l.to} className="tap text-ink-100 hover:text-ink-700">
             {l.label}
           </Link>
         ))}
       </nav>
       <p className="mb-2 flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
-        <Link to="/privacy" className="text-ink-100 hover:text-ink-700">隱私權政策</Link>
-        <Link to="/terms" className="text-ink-100 hover:text-ink-700">服務條款</Link>
+        <Link to="/privacy" className="tap text-ink-100 hover:text-ink-700">隱私權政策</Link>
+        <Link to="/terms" className="tap text-ink-100 hover:text-ink-700">服務條款</Link>
       </p>
       <p>© {new Date().getFullYear()} 全方位職能評測平台．All rights reserved.</p>
     </footer>

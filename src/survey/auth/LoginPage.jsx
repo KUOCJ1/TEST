@@ -167,9 +167,9 @@ export default function LoginPage({ onBack, joinCode, joinInfo, inviteCode, invi
                 />
                 <span>
                   我已閱讀並同意
-                  <a href={`${import.meta.env.BASE_URL}privacy`} target="_blank" rel="noopener noreferrer" className="mx-0.5 font-semibold text-ink-700 underline underline-offset-2">隱私權政策</a>
+                  <a href={`${import.meta.env.BASE_URL}privacy`} target="_blank" rel="noopener noreferrer" className="tap mx-0.5 font-semibold text-ink-700 underline underline-offset-2">隱私權政策</a>
                   與
-                  <a href={`${import.meta.env.BASE_URL}terms`} target="_blank" rel="noopener noreferrer" className="mx-0.5 font-semibold text-ink-700 underline underline-offset-2">服務條款</a>
+                  <a href={`${import.meta.env.BASE_URL}terms`} target="_blank" rel="noopener noreferrer" className="tap mx-0.5 font-semibold text-ink-700 underline underline-offset-2">服務條款</a>
                 </span>
               </label>
             )}

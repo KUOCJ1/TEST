@@ -166,7 +166,7 @@ export default function LandingPage({ onEnter, loggedIn = false }) {
                     <dd className="font-serif text-2xl font-semibold text-ink-700">{a.items}</dd>
                   </div>
                 </dl>
-                <Link to={a.guidePath ?? `/guide/${a.id}`} className="mb-4 text-sm font-semibold text-brass-500 underline">了解這份評測 →</Link>
+                <Link to={a.guidePath ?? `/guide/${a.id}`} className="tap mb-4 text-sm font-semibold text-brass-500 underline">了解這份評測 →</Link>
                 <ul className="mt-auto space-y-2">
                   {a.features.map((f) => (
                     <li key={f} className="flex items-start gap-2.5 text-sm text-ink-400">
@@ -206,7 +206,7 @@ export default function LandingPage({ onEnter, loggedIn = false }) {
           <div className="mt-10">
             <Link
               to="/showcase"
-              className="border-b border-ink-700/40 pb-0.5 text-[15px] font-medium text-ink-700 transition-colors hover:border-ink-700"
+              className="tap border-b border-ink-700/40 pb-0.5 text-[15px] font-medium text-ink-700 transition-colors hover:border-ink-700"
             >
               看看報告與歷程長什麼樣子 →
             </Link>

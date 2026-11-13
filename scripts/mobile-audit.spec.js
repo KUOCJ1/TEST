@@ -41,7 +41,7 @@ async function audit(page, name, role) {
     return {
       vw, docWidth: document.documentElement.scrollWidth, pageOverflowPx: Math.max(0, document.documentElement.scrollWidth - vw),
       pageHeight: document.documentElement.scrollHeight,
-      scrollers, interactiveCount: interactive.length, smallTargets: small.length, smallSamples: small.slice(0, 8),
+      scrollers, interactiveCount: interactive.length, smallTargets: small.length, smallSamples: small.slice(0, 40),
       tinyText: tiny.length, tinySamples: tiny.slice(0, 6), hasBottomNav: fixedBottom > 0,
     };
   });

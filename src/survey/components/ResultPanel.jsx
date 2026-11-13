@@ -93,7 +93,7 @@ const ResultPanel = forwardRef(function ResultPanel(
             <a
               key={s.id}
               href={`#${s.id}`}
-              className="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-600 transition-colors hover:border-brass-300 hover:text-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+              className="tap shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-600 transition-colors hover:border-brass-300 hover:text-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
             >
               {s.label}
             </a>
@@ -105,7 +105,7 @@ const ResultPanel = forwardRef(function ResultPanel(
         {GUIDES[result.assessmentId] && (
           <p className="mb-4 text-sm text-slate-500">
             不確定怎麼讀這份結果？
-            <a href={guidePathFor(result.assessmentId, config)} target="_blank" rel="noreferrer" className="ml-1 font-semibold text-brass-600 underline">看這份評測怎麼讀</a>（新分頁開啟）
+            <a href={guidePathFor(result.assessmentId, config)} target="_blank" rel="noreferrer" className="tap ml-1 font-semibold text-brass-600 underline">看這份評測怎麼讀</a>（新分頁開啟）
           </p>
         )}
         <div id="section-radar" className="scroll-mt-14 flex flex-col items-center">

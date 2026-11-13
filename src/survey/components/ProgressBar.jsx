@@ -1,12 +1,13 @@
 /**
- * 置頂的作答進度條，隨捲動固定於頂端。
+ * 置頂的作答進度條，隨捲動固定在頁首下方（頁首也是 sticky top-0 且 z-30，
+ * 若進度列同樣貼在 top-0 就會被頁首蓋住；頁首實際高度由 AppShell 寫進 --app-header-h）。
  */
 export default function ProgressBar({ answered, total }) {
   const percent = total > 0 ? Math.round((answered / total) * 100) : 0;
   const done = answered === total;
 
   return (
-    <div className="sticky top-0 z-20 -mx-6 mb-6 border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur sm:rounded-t-2xl">
+    <div className="sticky top-[var(--app-header-h,49px)] z-20 -mx-6 mb-6 border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur sm:rounded-t-2xl">
       <div className="mb-1.5 flex items-center justify-between text-sm font-medium text-slate-600">
         <span>作答進度</span>
         <span className={done ? 'text-ink-700' : 'text-slate-500'}>

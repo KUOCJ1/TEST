@@ -137,9 +137,9 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
 
   return (
     <div
-      className={`fixed right-4 z-40 flex flex-col items-end print:hidden ${
+      className={`fixed right-3 z-40 flex flex-col sm:right-4 items-end print:hidden ${
         liftForBottomNav
-          ? 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] sm:bottom-4'
+          ? 'bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:bottom-4'
           : 'bottom-4'
       }`}
     >
@@ -238,11 +238,11 @@ export default function ChatBot({ context = null, liftForBottomNav = false }) {
         type="button"
         aria-label={open ? '關閉 AI 助手' : '開啟 AI 助手'}
         onClick={() => setOpen((v) => !v)}
-        className={`flex h-14 w-14 items-center justify-center rounded-full bg-ink-700 text-white shadow-lg ring-2 ring-brass-300/70 transition-transform hover:bg-ink-900 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brass-400 focus:ring-offset-2 ${
+        className={`flex h-11 w-11 items-center justify-center rounded-full bg-ink-700 sm:h-14 sm:w-14 text-white shadow-lg ring-2 ring-brass-300/70 transition-transform hover:bg-ink-900 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brass-400 focus:ring-offset-2 ${
           open ? '' : 'animate-assistant-greet'
         }`}
       >
-        {open ? <X className="h-6 w-6" /> : <AssistantMascot className="h-9 w-9" />}
+        {open ? <X className="h-6 w-6" /> : <AssistantMascot className="h-7 w-7 sm:h-9 sm:w-9" />}
       </button>
     </div>
   );

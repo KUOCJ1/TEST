@@ -211,6 +211,43 @@ body {
   min-height: 100vh;
 }
 
+/* ── 手機觸控目標（docs/MOBILE_APP_PLAN.md M1-2）──────────────────────────
+   只在 sm 以下生效，桌機版面不變。按鈕、分頁、選單項、下拉選單的可點範圍至少
+   44px（min-height／min-width 勝過 h-8／w-8 這類固定尺寸；個別元素確實不能撐高時，
+   加 Tailwind 的 min-h-0 min-w-0 即可覆寫）。文字連結不能全站一律撐高（會破壞
+   段落裡的行內連結），要用 .tap 這個 helper 明確標示：獨立成行的連結才加。 */
+@media (max-width: 639px) {
+  button,
+  [role='tab'],
+  [role='menuitem'],
+  summary,
+  select {
+    min-height: 44px;
+  }
+  button,
+  [role='tab'],
+  [role='menuitem'] {
+    min-width: 44px;
+  }
+  .tap {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  /* 開關（switch）本體要維持膠囊外觀，用偽元素把可點範圍撐到 44px；
+     外層 <label> 也包住整列，點整列同樣會切換。 */
+  [role='switch'] {
+    position: relative;
+    min-height: 0;
+    min-width: 0;
+  }
+  [role='switch']::after {
+    content: '';
+    position: absolute;
+    inset: -10px -4px;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }

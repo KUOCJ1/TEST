@@ -47,7 +47,7 @@ export default function AssessmentCard({
         {(config?.FRAMEWORK_PATH || GUIDES[assessment.id]) && (
           // 用一般連結並在新分頁開啟：說明頁不需要路由情境，也不會中斷目前頁面的狀態。
           <p className="mt-2 text-sm">
-            <a href={guidePathFor(assessment.id, config)} target="_blank" rel="noreferrer" className="font-semibold text-brass-600 underline">
+            <a href={guidePathFor(assessment.id, config)} target="_blank" rel="noreferrer" className="tap font-semibold text-brass-600 underline">
               {config?.FRAMEWORK_PATH ? '先了解這份評測的框架' : '先了解這份評測'}
             </a>
           </p>

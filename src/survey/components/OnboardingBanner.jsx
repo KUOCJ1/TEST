@@ -59,7 +59,7 @@ export default function OnboardingBanner({ role = 'user', show = true }) {
               <p className="text-xs font-semibold text-brass-600">{s.title}</p>
               <p className="text-xs text-slate-500">{s.desc}</p>
               {s.action && (
-                <a href={s.action.href} className="mt-1 inline-block text-xs font-semibold text-brass-600 underline">{s.action.label}</a>
+                <a href={s.action.href} className="tap mt-1 text-xs font-semibold text-brass-600 underline">{s.action.label}</a>
               )}
             </div>
           </li>

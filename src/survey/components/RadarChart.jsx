@@ -94,7 +94,7 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
       {compare && (
         <g>
           <line x1={12} y1={size - 14} x2={32} y2={size - 14} stroke="#475569" strokeWidth="2" strokeDasharray="5 4" />
-          <text x={36} y={size - 10} fontSize="11" fill="#475569" fontWeight="600">{compareLabel}</text>
+          <text x={36} y={size - 10} fontSize="12" fill="#475569" fontWeight="600">{compareLabel}</text>
         </g>
       )}
 
@@ -122,7 +122,7 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
             >
               {d.subtitle}
             </text>
-            <text x={lx} y={ly + 11} textAnchor={anchor} fontSize="11" fill={d.color} fontWeight="700">
+            <text x={lx} y={ly + 11} textAnchor={anchor} fontSize="12" fill={d.color} fontWeight="700">
               {d.percent}%
             </text>
           </g>

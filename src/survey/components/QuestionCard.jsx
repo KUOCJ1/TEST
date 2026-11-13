@@ -69,14 +69,14 @@ function QuestionCard({ number, question, text, scale, naLabel, naValue, value, 
                 className="sr-only"
               />
               <span className="text-base font-bold leading-none">{opt.value}</span>
-              <span className={`sr-only mt-1 text-[11px] leading-tight sm:not-sr-only sm:whitespace-nowrap ${selected ? 'text-brass-50' : 'text-slate-500'}`}>
+              <span className={`sr-only mt-1 text-xs leading-tight sm:not-sr-only sm:text-[11px] sm:whitespace-nowrap ${selected ? 'text-brass-50' : 'text-slate-500'}`}>
                 {opt.label}
               </span>
             </label>
           );
         })}
       </div>
-      <div className="mt-1.5 flex justify-between text-[11px] text-slate-500 sm:hidden" aria-hidden="true">
+      <div className="mt-1.5 flex justify-between text-xs text-slate-500 sm:hidden" aria-hidden="true">
         <span>{first.label}</span>
         <span>{last.label}</span>
       </div>
