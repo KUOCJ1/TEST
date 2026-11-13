@@ -198,7 +198,7 @@ export default function QuickAnalysisTab({ users }) {
                   <h4 className="mb-2 text-center font-semibold text-slate-700">班級整體能力雷達</h4>
                   <p className="mb-3 text-center text-xs text-slate-400">{groupStats.respondents} 人作答平均</p>
                   <div className="flex justify-center">
-                    <RadarChart dimensions={groupStats.dimensionAverages} />
+                    <RadarChart dimensions={groupStats.dimensionAverages} friendly />
                   </div>
                 </div>
 

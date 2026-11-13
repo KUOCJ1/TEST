@@ -126,11 +126,33 @@ test('作答：無底部導覽、捲到第 10 題進度列仍看得到、送出�
   expect(state.covered, '進度列被其他元素（頁首）蓋住').toBe(false);
   expect(state.barTop, '進度列貼在頁首上方或被頁首吃掉').toBeGreaterThanOrEqual(state.headerBottom - 1);
 
+  // 作答到一半：「還有 N 題未作答」捷徑出現，點了捲到第一題沒答的（第 10 題）。
   const n = await sets.count();
+  const pill = page.getByRole('button', { name: new RegExp(`還有 ${n - 9} 題未作答`) });
+  await expect(pill).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await pill.click();
+  await expect(sets.nth(9)).toBeInViewport({ timeout: 5000 });
+
   for (let i = 9; i < n; i++) await sets.nth(i).locator('label').nth(i % 2 ? 3 : 2).click();
+  await expect(pill).toHaveCount(0);
   await page.getByRole('button', { name: /送出評測/ }).click();
   await expect(page.getByText('您的總得分')).toBeVisible({ timeout: 15000 });
   await expectNoHorizontalOverflow(page, '結果頁');
+  // 結果頁不再接著整份題目：題目收在「查看我的作答」裡，整頁高度 < 6000px。
+  await expect(page.getByText(/查看我的作答/)).toBeVisible();
+  await expect(sets.first()).toBeHidden();
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  expect(height, `結果頁高度 ${height}px 應小於 6000px`).toBeLessThan(6000);
+  // 區段跳轉列固定在頁首下方：捲到下面後仍看得到，且沒被頁首蓋住。
+  await page.evaluate(() => window.scrollTo(0, 1500));
+  const jump = page.getByRole('navigation', { name: '報告章節導覽' });
+  await expect(jump).toBeInViewport();
+  const jumpState = await page.evaluate(() => {
+    const r = document.querySelector('nav[aria-label="報告章節導覽"]').getBoundingClientRect();
+    return { top: r.top, headerBottom: document.querySelector('header').getBoundingClientRect().bottom };
+  });
+  expect(jumpState.top).toBeGreaterThanOrEqual(jumpState.headerBottom - 1);
   await context.close();
 });
 

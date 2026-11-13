@@ -6,8 +6,10 @@ import { Fragment, useId } from 'react';
  * @param {number} size 畫布邊長 (px)
  * @param {Array<{id,percent}>} [compare] 對照數列（如全體 / 班級平均），以虛線疊加
  * @param {string} [compareLabel] 對照數列的圖例文字
+ * @param {boolean} [friendly] 螢幕（手機）友善版：標籤優先用中文、較小的左右留白、較大的字。列印報告不要開，
+ *   維持原本的版面。
  */
-export default function RadarChart({ dimensions, size = 340, compare = null, compareLabel = '全體平均' }) {
+export default function RadarChart({ dimensions, size = 340, compare = null, compareLabel = '全體平均', friendly = false }) {
   const gradientId = useId();
   const cx = size / 2;
   const cy = size / 2;
@@ -17,7 +19,10 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
   const rings = [0.25, 0.5, 0.75, 1];
   // 標籤（如 "Succession Readiness"）以 start/end 錨點向外延伸，
   // 這段寬度不在畫布邊界內，需另外留白避免被 SVG 邊界裁切。
-  const padX = 130;
+  const padX = friendly ? 74 : 130;
+  const labelFont = friendly ? 14 : 11;
+  // 英文構面名稱（如 Communication）又長又不直覺：友善版改用中文名稱；本來就是中文副標的維持原樣。
+  const labelOf = (d) => (friendly && /^[\x20-\x7e]+$/.test(d.subtitle ?? '') && d.name ? d.name : d.subtitle);
   const padY = 40;
   const viewBox = `${-padX} ${-padY} ${size + padX * 2} ${size + padY * 2}`;
 
@@ -116,13 +121,13 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
               x={lx}
               y={ly - 4}
               textAnchor={anchor}
-              fontSize="12"
+              fontSize={labelFont}
               fontWeight="600"
               fill="#2d3748"
             >
-              {d.subtitle}
+              {labelOf(d)}
             </text>
-            <text x={lx} y={ly + 11} textAnchor={anchor} fontSize="12" fill={d.color} fontWeight="700">
+            <text x={lx} y={ly + labelFont} textAnchor={anchor} fontSize={labelFont} fill={d.color} fontWeight="700">
               {d.percent}%
             </text>
           </g>

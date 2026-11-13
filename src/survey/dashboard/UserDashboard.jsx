@@ -79,7 +79,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
     return () => { active = false; };
   }, [selectedId, subs]);
 
-  if (subs === null && !error) return <LoadingState />;
+  if (subs === null && !error) return <LoadingState skeleton />;
 
   if (subs === null && error) {
     return (
@@ -221,7 +221,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
       </header>
 
       {assessmentIds.length > 1 && (
-        <div role="tablist" aria-label="選擇評量" className="mb-5 flex flex-wrap gap-2 print:hidden">
+        <div role="tablist" aria-label="選擇評量" className="mb-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap print:hidden">
           {assessmentIds.map((id) => (
             <button
               key={id}
@@ -229,7 +229,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
               role="tab"
               aria-selected={activeId === id}
               onClick={() => setSelectedId(id)}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition-colors sm:text-center ${
                 activeId === id
                   ? 'bg-ink-700 text-white'
                   : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'

@@ -52,7 +52,7 @@ const ResultPanel = forwardRef(function ResultPanel(
     <section
       ref={ref}
       aria-live="polite"
-      className="mt-8 scroll-mt-20 overflow-hidden rounded-md ring-1 ring-paper-300 bg-paper-50 shadow-card"
+      className="mt-8 scroll-mt-20 overflow-clip rounded-md ring-1 ring-paper-300 bg-paper-50 shadow-card"
     >
       <div className="bg-ink-700 px-6 py-7 text-center text-paper-50">
         <p className="text-sm font-medium text-paper-50/75">
@@ -87,7 +87,7 @@ const ResultPanel = forwardRef(function ResultPanel(
       {sections.length > 1 && (
         <nav
           aria-label="報告章節導覽"
-          className="sticky top-0 z-10 flex gap-1 overflow-x-auto border-b border-paper-300 bg-paper-50/95 px-5 py-2 text-xs backdrop-blur sm:px-7 print:hidden"
+          className="sticky top-[var(--app-header-h,49px)] z-10 flex gap-1 overflow-x-auto border-b border-paper-300 bg-paper-50/95 px-5 py-2 text-xs backdrop-blur sm:px-7 print:hidden"
         >
           {sections.map((s) => (
             <a
@@ -114,6 +114,7 @@ const ResultPanel = forwardRef(function ResultPanel(
             dimensions={dimensions}
             compare={benchmarkDims}
             compareLabel="全體平均"
+            friendly
           />
         </div>
 

@@ -106,7 +106,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
     return m;
   }, {});
 
-  if (loading) return <LoadingState />;
+  if (loading) return <LoadingState skeleton />;
 
   if (loadError) {
     return (

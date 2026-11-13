@@ -71,6 +71,7 @@ function RadarPanel({ selfDims, othersDims }) {
           dimensions={selfDims}
           compare={compare.length ? compare : null}
           compareLabel="他評綜合平均"
+          friendly
         />
       </div>
     </div>

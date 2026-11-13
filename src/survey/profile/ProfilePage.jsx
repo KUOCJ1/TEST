@@ -20,15 +20,18 @@ function Toggle({ checked, onChange, label, hint }) {
         <span className="block text-sm font-medium text-slate-700">{label}</span>
         {hint && <span className="block text-xs text-slate-400">{hint}</span>}
       </span>
+      {/* 按鈕本體是 44px 的觸控區（手機），裡面的膠囊維持原本外觀；桌機按鈕就是膠囊大小。 */}
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         aria-label={label}
         onClick={() => onChange(!checked)}
-        className={`relative mt-0.5 h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-brass-500' : 'bg-slate-300'}`}
+        className="flex h-11 w-12 flex-shrink-0 items-center justify-center sm:mt-0.5 sm:h-6 sm:w-11"
       >
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
+        <span className={`relative h-6 w-11 rounded-full transition-colors ${checked ? 'bg-brass-500' : 'bg-slate-300'}`}>
+          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
+        </span>
       </button>
     </label>
   );
@@ -111,7 +114,7 @@ export default function ProfilePage() {
         <div className="mt-1.5 flex gap-2">
           <input id="profile-name" className="input" value={name} onChange={(e) => setName(e.target.value)} />
           <button type="button" onClick={saveName} disabled={savingName}
-            className="btn-primary">
+            className="btn-primary shrink-0 whitespace-nowrap">
             {savingName ? '儲存中…' : '儲存'}
           </button>
         </div>

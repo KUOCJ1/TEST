@@ -233,18 +233,14 @@ body {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
+    min-width: 44px;
   }
-  /* 開關（switch）本體要維持膠囊外觀，用偽元素把可點範圍撐到 44px；
-     外層 <label> 也包住整列，點整列同樣會切換。 */
-  [role='switch'] {
-    position: relative;
-    min-height: 0;
-    min-width: 0;
-  }
-  [role='switch']::after {
-    content: '';
-    position: absolute;
-    inset: -10px -4px;
+  /* 手機鍵盤彈出時，聚焦的欄位捲到可見區後上下留一段空間，不貼著鍵盤或頁首。 */
+  input,
+  textarea,
+  select {
+    scroll-margin-top: 96px;
+    scroll-margin-bottom: 40vh;
   }
 }
 

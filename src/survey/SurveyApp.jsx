@@ -206,6 +206,23 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const resultBlock = result && (
+          <>
+            <ResultPanel
+              ref={resultRef}
+              result={result}
+              onRetake={handleRetake}
+              onCopy={handleCopy}
+              copied={copied}
+            />
+            <div className="mt-6 flex justify-center">
+              <button type="button" onClick={handleContinue} className="btn-primary px-7 py-3 text-base">
+                {isRatingOthers ? '返回 360° 評測 →' : '查看完整分析 →'}
+              </button>
+            </div>
+          </>
+  );
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="rounded-2xl bg-white px-5 py-7 shadow-lg shadow-slate-200/60 sm:px-8">
@@ -305,7 +322,9 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           </div>
         )}
 
-        <ProgressBar answered={answered} total={TOTAL_QUESTIONS} />
+        {/* 結果出來後，結果放最上面、題目收進「查看我的作答」（手機上結果頁不再接著整份題目）。 */}
+        {resultBlock}
+        {!result && <ProgressBar answered={answered} total={TOTAL_QUESTIONS} />}
         {!result && (
           <p className="mt-1 flex items-center justify-end gap-1 text-xs text-slate-400">
             <Check className="h-3 w-3" />
@@ -313,7 +332,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           </p>
         )}
 
-        {paginated && (
+        {paginated && !result && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 px-4 py-2.5">
             <span className="text-sm font-semibold text-slate-600">
               第 {pageIndex + 1} / {DIMENSIONS.length} 段：{DIMENSIONS[pageIndex].subtitle}
@@ -345,6 +364,10 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           </div>
         )}
 
+        {result ? (
+          <details className="mt-6 rounded-xl border border-slate-200 bg-white px-4 py-1">
+            <summary className="tap cursor-pointer text-sm font-semibold text-slate-600">查看我的作答（{answered} 題）</summary>
+            <div className="pb-4">
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
           {dimensionsToRender.map(({ dim, di }) => (
             <section key={dim.id} className="mt-7 first:mt-2">
@@ -441,24 +464,120 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
             </button>
           )}
         </form>
-
-        {result && (
-          <>
-            <ResultPanel
-              ref={resultRef}
-              result={result}
-              onRetake={handleRetake}
-              onCopy={handleCopy}
-              copied={copied}
-            />
-            <div className="mt-6 flex justify-center">
-              <button type="button" onClick={handleContinue} className="btn-primary px-7 py-3 text-base">
-                {isRatingOthers ? '返回 360° 評測 →' : '查看完整分析 →'}
-              </button>
             </div>
-          </>
+          </details>
+        ) : (
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+          {dimensionsToRender.map(({ dim, di }) => (
+            <section key={dim.id} className="mt-7 first:mt-2">
+              <h2
+                className="rounded-lg px-4 py-2.5 text-[15px] font-bold text-white"
+                style={{ background: badgeBg(dim.color) }}
+              >
+                {ORDINALS[di] || di + 1}、{dim.name}
+                <span className="ml-1 font-normal">（{dim.subtitle}）</span>
+              </h2>
+              <div className="mt-3 space-y-3">
+                {dim.questions.map((q, qi) => (
+                  <QuestionCard
+                    key={q.id}
+                    number={DIMENSIONS.slice(0, di).reduce((s, d) => s + d.questions.length, 0) + qi + 1}
+                    question={q}
+                    text={rater === 'other' ? q.textOther : undefined}
+                    scale={baseConfig.SCALE_LABELS}
+                    naLabel={(rater === 'other' && q.observability === 'low') || q.optional ? baseConfig.NA_LABEL : undefined}
+                    naValue={baseConfig.NA_VALUE}
+                    value={answers[q.id]}
+                    onChange={handleChange}
+                    onAdvance={handleAdvance}
+                    invalid={invalidIds.includes(q.id)}
+                    inputRef={(el) => (questionRefs.current[q.id] = el)}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+
+          {invalidIds.length > 0 && (
+            <p role="alert" className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+              還有 {invalidIds.length} 題尚未作答，已為您標示並捲動至第一題，請補齊後再送出。
+            </p>
+          )}
+          {submitError && (
+            <p role="alert" className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+              {submitError}
+            </p>
+          )}
+
+          {isLastPage && (
+            <p className="mt-4 text-center text-xs text-slate-400">
+              {autoPhase
+                ? `將以「${phase === 'post' ? '課後複測' : '課前評測'}」身份送出。`
+                : `將以「${phase === 'post' ? '課後複測' : '課前評測'}」身份送出，如需變更請至上方調整。`}
+            </p>
+          )}
+
+          {paginated ? (
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => goToPage(pageIndex - 1)}
+                disabled={pageIndex === 0}
+                className="btn-secondary disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" /> 上一段
+              </button>
+              {isLastPage ? (
+                // 刻意用 type="button" + 直接呼叫 handleSubmit，不用 type="submit" 交給表單
+                // 原生送出：這顆按鈕跟上面的「下一段」共用同一個 DOM 位置，只有 type 不同——
+                // 點「下一段」切到最後一段那一下，React 會在同一次點擊事件內把這顆按鈕的
+                // type 從 button 同步改成 submit，瀏覽器原生的表單送出判定抓到的是「事件
+                // 處理當下」的 type，於是同一下點擊反而立刻誤觸送出（用還沒切換過去的舊
+                // answers 送出，導致假的「還有 90 題未答」）。改成 type="button" 完全避開
+                // 這個瀏覽器原生表單行為與 React 同步重渲染之間的競態。
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="btn-primary flex-1 py-3.5 text-lg"
+                >
+                  {submitting ? '送出中…' : '送出評測，立即查看落點分析'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => goToPage(pageIndex + 1)}
+                  className="btn-primary flex-1"
+                >
+                  下一段：{DIMENSIONS[pageIndex + 1].subtitle} <ChevronRight className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn-primary mt-2 w-full py-3.5 text-lg"
+            >
+              {submitting ? '送出中…' : '送出評測，立即查看落點分析'}
+            </button>
+          )}
+        </form>
         )}
+
       </div>
+
+      {/* 手機上題目很長：作答到一半時，固定一顆「還有 N 題未作答」捷徑，點了捲到第一題沒答的。
+          分頁的長問卷不放（未答題可能在別頁）；桌機不顯示。 */}
+      {!result && !paginated && config && answered > 0 && answered < TOTAL_QUESTIONS && (
+        <button
+          type="button"
+          onClick={() => focusQuestion(scoring.unansweredQuestionIds(answers, config)[0])}
+          className="fixed bottom-4 left-1/2 z-30 -translate-x-1/2 rounded-full bg-ink-700 px-4 text-sm font-semibold text-white shadow-lg ring-2 ring-brass-300/70 sm:hidden print:hidden"
+        >
+          還有 {TOTAL_QUESTIONS - answered} 題未作答 · 跳到下一題
+        </button>
+      )}
 
       <footer className="mt-6 text-center text-xs text-slate-400">本評測結果僅供自我檢視與學習路徑參考。</footer>
     </main>
