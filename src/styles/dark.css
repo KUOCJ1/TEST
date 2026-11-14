@@ -156,3 +156,14 @@
 .dark .shadow-sm,
 .dark .shadow-card { --tw-shadow-color: rgba(0, 0, 0, 0.6); }
 
+
+/* 手機報告閱讀版（螢幕）：底色跟著深色模式；A4 原版與列印維持白底（列印時閱讀版不顯示）。 */
+@media screen {
+  .dark #report-portal:not(:empty) > .report-read { background: var(--d-bg); }
+}
+
+/* 手機閱讀版（360°）的四種提示卡：深色模式下改用深底，文字沿用變數色。 */
+.dark .read-card-ok { background-color: #1c3a2e; border-color: #2f7a55; }
+.dark .read-card-dev { background-color: var(--d-gold-bg); border-color: var(--d-gold-bg-3); }
+.dark .read-card-blind { background-color: #3a1f1c; border-color: #7a3a30; }
+.dark .read-card-hidden { background-color: #17303d; border-color: #2f5f78; }

@@ -193,12 +193,12 @@ export function ThreeSixtyReadView({ report: r, name, date }) {
       {r.summaryText && <p className="mt-5 text-sm leading-relaxed text-slate-700">{r.summaryText}</p>}
 
       <div className="mt-4 space-y-3">
-        <ListCard title={r.basis === 'others' ? '他人眼中的三大強項' : '三大強項（自評）'} tone="border-emerald-200 bg-emerald-50" items={r.strengths} valueKey={basisKey} empty="資料不足" />
-        <ListCard title="優先發展的三個構面" tone="border-brass-200 bg-brass-50" items={r.develop} valueKey={basisKey} empty="資料不足" />
+        <ListCard title={r.basis === 'others' ? '他人眼中的三大強項' : '三大強項（自評）'} tone="border-emerald-200 bg-emerald-50 read-card-ok" items={r.strengths} valueKey={basisKey} empty="資料不足" />
+        <ListCard title="優先發展的三個構面" tone="border-brass-200 bg-brass-50 read-card-dev" items={r.develop} valueKey={basisKey} empty="資料不足" />
         {r.hasSelf && r.hasOthers && (
           <>
-            <ListCard title="可能的盲點（自評高於他評）" tone="border-red-200 bg-red-50" items={r.blind} valueKey="gap" empty="沒有明顯高估的構面" />
-            <ListCard title="被低估的優勢（他評高於自評）" tone="border-sky-200 bg-sky-50" items={r.hidden} valueKey="gap" empty="沒有明顯低估的構面" />
+            <ListCard title="可能的盲點（自評高於他評）" tone="border-red-200 bg-red-50 read-card-blind" items={r.blind} valueKey="gap" empty="沒有明顯高估的構面" />
+            <ListCard title="被低估的優勢（他評高於自評）" tone="border-sky-200 bg-sky-50 read-card-hidden" items={r.hidden} valueKey="gap" empty="沒有明顯低估的構面" />
           </>
         )}
       </div>
