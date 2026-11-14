@@ -390,8 +390,7 @@ function AppShellInner() {
           {/* 點名稱回到「我的評量」。作答進度會自動儲存在瀏覽器，離開不會遺失。 */}
           <Link to="/home" aria-label="回到我的評量" title="回到我的評量" className={`tap ${showBottomNav ? 'lg:hidden' : ''} flex shrink-0 items-center gap-2 rounded text-base font-extrabold tracking-tight text-slate-800 hover:text-brass-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-400`}>
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
-            <span className="hidden lg:inline">榕光評測</span>
-            <span className="lg:hidden">榕光</span>
+            <span>榕光評測</span>
           </Link>
 
           {isSurveyOrRaterSetup ? (
