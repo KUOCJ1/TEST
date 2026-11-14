@@ -19,7 +19,7 @@ export default function SideNav({ tabs, isTabActive, onNavigate, logoSrc }) {
     >
       <Link to="/home" aria-label="回到我的評量" title="回到我的評量" className="mb-5 flex items-center gap-2.5 rounded-md px-2 py-1 font-serif text-lg font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-200">
         <img src={logoSrc} alt="" className="h-8 w-8" />
-        全方位職能評測
+        榕光評測
       </Link>
       <nav aria-label="側邊導覽" className="flex flex-1 flex-col gap-1 overflow-y-auto">
         {GROUPS.map((g) => {

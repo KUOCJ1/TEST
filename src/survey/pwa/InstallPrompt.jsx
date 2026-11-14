@@ -68,7 +68,7 @@ export default function InstallPrompt({ variant = 'banner' }) {
   return (
     <div role="region" aria-label="安裝到手機" className="mb-4 rounded-2xl border border-brass-200 bg-brass-50/60 px-4 py-3 sm:hidden">
       <div className="mb-1 flex items-start justify-between gap-3">
-        <p className="flex items-center gap-2 text-sm font-bold text-slate-700"><Smartphone className="h-4 w-4 text-brass-600" aria-hidden="true" />把職能評測加到手機主畫面</p>
+        <p className="flex items-center gap-2 text-sm font-bold text-slate-700"><Smartphone className="h-4 w-4 text-brass-600" aria-hidden="true" />把榕光加到手機主畫面</p>
         <button type="button" onClick={dismiss} aria-label="關閉安裝提示" className="-mr-2 -mt-2 flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
       </div>
       {body}

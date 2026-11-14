@@ -206,7 +206,7 @@ describe('App 流程', () => {
     const toApp = await screen.findAllByRole('link', { name: '前往我的評量' });
     expect(toApp.length).toBeGreaterThan(1); // 導覽列、首頁主按鈕、頁尾橫幅
     toApp.forEach((l) => expect(l).toHaveAttribute('href', '/home'));
-    expect(screen.getAllByRole('link', { name: /全方位職能評測/ })[0]).toHaveAttribute('href', '/home');
+    expect(screen.getAllByRole('link', { name: /榕光評測/ })[0]).toHaveAttribute('href', '/home');
   });
 
   it('沒有同意紀錄的既有用戶登入後先看到同意畫面，同意後才進入首頁', async () => {

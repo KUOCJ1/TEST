@@ -174,7 +174,7 @@ function AppRoutes() {
   useEffect(() => {
     if (user && !isMarketing) return;
     const name = MARKETING_TITLES[location.pathname] ?? (location.pathname.startsWith('/guide/') ? '評測說明' : null) ?? (!user && view === 'auth' ? '登入／註冊' : null);
-    document.title = name ? `${name}｜全方位職能評測` : '全方位職能評測｜職能評量與發展平台';
+    document.title = name ? `${name}｜榕光評測` : '榕光評測｜職能評量與發展平台';
   }, [user, isMarketing, location.pathname, view]);
 
   // 行銷／說明頁（理念、功能總覽、範例報告、常見問題）不論登入與否都能直接用

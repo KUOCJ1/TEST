@@ -8,7 +8,7 @@ export default function CtaBanner({
   onEnter,
   kicker = 'Get Started',
   title = '立即開始使用',
-  desc = '加入已使用職能評測平台的組織，以科學數據驅動人才發展。',
+  desc = '加入已使用榕光評測平台的組織，以科學數據驅動人才發展。',
   buttonLabel,
 }) {
   return (

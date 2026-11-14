@@ -86,7 +86,7 @@ export default function UserMenu({ user, roleLabel, onProfile, onHelp, manualHre
           <button type="button" role="menuitem" className={itemCls} onClick={() => choose(onHelp)}>
             <CircleHelp aria-hidden="true" className="h-4 w-4 text-slate-500" /> 使用說明
           </button>
-          <a role="menuitem" className={itemCls} href={manualHref} download="職能評測平台使用手冊.pdf" onClick={() => close(false)}>
+          <a role="menuitem" className={itemCls} href={manualHref} download="榕光評測平台使用手冊.pdf" onClick={() => close(false)}>
             <Download aria-hidden="true" className="h-4 w-4 text-slate-500" /> 手冊下載（PDF）
           </a>
           <a role="menuitem" className={itemCls} href={`${import.meta.env.BASE_URL}privacy`} target="_blank" rel="noopener noreferrer" onClick={() => close(false)}>

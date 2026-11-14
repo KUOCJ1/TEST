@@ -13,7 +13,7 @@ export default function MarketingNav({ loggedIn = false, onEnter }) {
         <Link to={loggedIn ? '/home' : '/'} className="tap flex shrink-0 items-center gap-3">
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
           <span className="font-serif text-lg font-semibold tracking-tight text-ink-700">
-            全方位職能評測
+            榕光評測
           </span>
         </Link>
 

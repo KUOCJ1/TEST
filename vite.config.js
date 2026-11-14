@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons.svg'],
       manifest: {
-        name: '全方位職能評測',
-        short_name: '職能評測',
+        name: '榕光評測',
+        short_name: '榕光',
         description: '線上自動計分與多構面落點分析',
         lang: 'zh-TW',
         theme_color: '#1f5d4a',

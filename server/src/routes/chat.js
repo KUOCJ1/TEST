@@ -24,7 +24,7 @@ export function validateChatMessages(messages) {
 }
 
 function buildChatSystemPrompt(user, context) {
-  const base = '你是「評測小幫手」，為職能評測平台提供智慧助理服務。以繁體中文回應，語氣親切專業，回答簡潔有重點。';
+  const base = '你是「評測小幫手」，為榕光評測平台提供智慧助理服務。以繁體中文回應，語氣親切專業，回答簡潔有重點。';
   const roleCtx = {
     admin: '你正在服務管理員，可解釋整體統計、分析填答趨勢。',
     coach: '你正在服務教練，協助撰寫學員評語與精進建議，以學員資料為依據。',

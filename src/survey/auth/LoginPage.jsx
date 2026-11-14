@@ -79,7 +79,7 @@ export default function LoginPage({ onBack, joinCode, joinInfo, inviteCode, invi
             className="mx-auto mb-4 h-14 w-14"
           />
           <h1 className="font-serif text-2xl font-bold tracking-tight text-ink-700 sm:text-3xl">
-            全方位職能評測
+            榕光評測
           </h1>
           <p className="mt-2 text-sm text-ink-100">登入後即可作答並查看您的專屬能力分析</p>
         </header>

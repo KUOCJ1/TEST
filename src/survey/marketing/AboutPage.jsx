@@ -51,7 +51,7 @@ export default function AboutPage({ loggedIn = false, onEnter }) {
           </h1>
           <p className="mt-7 max-w-xl text-[17px] leading-relaxed text-ink-100">
             大多數評量工具做完一次就結束了——你拿到一份報告，然後呢？
-            我們把「全方位職能評測」設計成一個能陪你走過整段學習歷程的追蹤系統：
+            我們把「榕光評測」設計成一個能陪你走過整段學習歷程的追蹤系統：
             不只是 AI 評測、不只是領導力評測，而是把每一次作答、每一次教練回饋、
             每一次課前課後的比較，都留下來、串起來，變成你自己的成長軌跡。
           </p>

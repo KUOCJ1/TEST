@@ -19,7 +19,7 @@ export default function MarketingFooter() {
         <Link to="/privacy" className="tap text-ink-100 hover:text-ink-700">隱私權政策</Link>
         <Link to="/terms" className="tap text-ink-100 hover:text-ink-700">服務條款</Link>
       </p>
-      <p>© {new Date().getFullYear()} 全方位職能評測平台．All rights reserved.</p>
+      <p>© {new Date().getFullYear()} 榕光評測平台．All rights reserved.</p>
     </footer>
   );
 }

@@ -38,7 +38,7 @@ export default function OnboardingBanner({ role = 'user', show = true }) {
     <div className="mb-6 rounded-2xl border border-brass-200 bg-brass-50 px-5 py-4">
       <div className="flex items-start justify-between gap-4">
         <p className="text-sm font-semibold text-brass-600">
-          {role === 'coach' ? '歡迎使用教練後台！以下是快速上手步驟：' : '歡迎使用全方位職能評測！以下是開始使用的步驟：'}
+          {role === 'coach' ? '歡迎使用教練後台！以下是快速上手步驟：' : '歡迎使用榕光評測！以下是開始使用的步驟：'}
         </p>
         <button
           type="button"

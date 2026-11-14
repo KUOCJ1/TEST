@@ -370,12 +370,12 @@ function AppShellInner() {
     return () => ro.disconnect();
   }, []);
 
-  // 換頁時（Sprint 8 驗收條件 8.8、8.9）：分頁標題改成「頁面名稱｜全方位職能評測」，
+  // 換頁時（Sprint 8 驗收條件 8.8、8.9）：分頁標題改成「頁面名稱｜榕光評測」，
   // 多開分頁或看瀏覽紀錄時才分得出來；捲回頁首（React Router 預設保留上一頁的捲動
   // 位置，常常一進新頁面就停在半中間）。網址帶 #錨點時例外，讓錨點自己定位。
   useEffect(() => {
     const name = PAGE_TITLES.find(([prefix]) => location.pathname.startsWith(prefix))?.[1];
-    document.title = name ? `${name}｜全方位職能評測` : '全方位職能評測';
+    document.title = name ? `${name}｜榕光評測` : '榕光評測';
     if (!location.hash) window.scrollTo(0, 0);
   }, [location.pathname, location.hash]);
 
@@ -390,8 +390,8 @@ function AppShellInner() {
           {/* 點名稱回到「我的評量」。作答進度會自動儲存在瀏覽器，離開不會遺失。 */}
           <Link to="/home" aria-label="回到我的評量" title="回到我的評量" className={`tap ${showBottomNav ? 'lg:hidden' : ''} flex shrink-0 items-center gap-2 rounded text-base font-extrabold tracking-tight text-slate-800 hover:text-brass-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-400`}>
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
-            <span className="hidden lg:inline">全方位職能評測</span>
-            <span className="lg:hidden">職能評測</span>
+            <span className="hidden lg:inline">榕光評測</span>
+            <span className="lg:hidden">榕光</span>
           </Link>
 
           {isSurveyOrRaterSetup ? (
