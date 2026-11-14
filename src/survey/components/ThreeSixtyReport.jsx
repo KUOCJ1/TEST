@@ -13,6 +13,8 @@ import InsightBlock from './printable-report/InsightBlock.jsx';
 import { SubRanking, DimGroupBars, SubGroupBars, Contents } from './threesixty/GroupCharts.jsx';
 import { reportFilename, REPORT_KIND } from '../utils/reportFilename.js';
 import { useReportFilename } from '../hooks/useReportFilename.js';
+import { useIsMobile } from '../hooks/useIsMobile.js';
+import { ThreeSixtyReadView } from './MobileReportViews.jsx';
 
 // 360° 完整報告（列印／存為 PDF）：封面、整體評價、自評 vs 他評、各構面與子能力、發展建議與討論。
 // 資料整理在 utils/report360.js；這裡只負責版面。評分者只以「類別」呈現（主管／同儕／部屬），不列姓名。
@@ -54,7 +56,7 @@ function DimList({ items, valueKey, empty }) {
 function Cover({ r, name, date }) {
   return (
     <div>
-      <div style={{ background: '#241f18', padding: '34px 40px 30px', color: '#fff', borderRadius: 10 }}>
+      <div style={{ background: '#1a4a3b', padding: '34px 40px 30px', color: '#fff', borderRadius: 10 }}>
         <div style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.12em', marginBottom: 10 }}>CONFIDENTIAL · 360° FEEDBACK REPORT</div>
         <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.25 }}>{r.assessmentName}<br /><span style={{ fontSize: 20, fontWeight: 600, opacity: 0.85 }}>360° 完整回饋報告</span></div>
         <div style={{ marginTop: 16, fontSize: 11, opacity: 0.65 }}>報告日期 {date}</div>
@@ -263,7 +265,7 @@ function DimensionDetails({ r }) {
 function PlanCard({ p }) {
   return (
     <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 16px', pageBreakInside: 'avoid' }}>
-      <div style={{ fontSize: 9, fontWeight: 700, color: '#8a6a2f', marginBottom: 3 }}>{p.horizon}</div>
+      <div style={{ fontSize: 9, fontWeight: 700, color: '#8a5200', marginBottom: 3 }}>{p.horizon}</div>
       <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>{p.title}</div>
       <ul style={{ margin: 0, paddingLeft: 18, listStyle: 'disc', fontSize: 11, lineHeight: 1.75, color: '#334155' }}>{p.actions.map((a) => <li key={a}>{a}</li>)}</ul>
     </div>
@@ -309,6 +311,8 @@ export default function ThreeSixtyReport({ rateeId, rateeName, assessmentId, onC
   const print = useReportFilename(filename);
   const [subs, setSubs] = useState(null);
   const [error, setError] = useState('');
+  const mobile = useIsMobile();
+  const [showA4, setShowA4] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -336,11 +340,19 @@ export default function ThreeSixtyReport({ rateeId, rateeName, assessmentId, onC
           <span style={{ fontSize: 11, opacity: 0.5, marginLeft: 10 }}>存檔檔名：{filename}.pdf</span>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={print} disabled={!report} style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: report ? 1 : 0.5 }}>🖨️ 列印 / 存為 PDF</button>
+          <button onClick={print} disabled={!report} style={{ background: '#1f5d4a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: report ? 1 : 0.5 }}>🖨️ 列印 / 存為 PDF</button>
+          {mobile && report && (
+            <button onClick={() => setShowA4((v) => !v)} style={{ background: 'transparent', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>{showA4 ? '看閱讀版' : '看 A4 原版'}</button>
+          )}
           <button onClick={onClose} style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>✕ 關閉</button>
         </div>
       </div>
-      <div className="report-flow" style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
+      {mobile && report && (
+        <div className={`report-read ${showA4 ? 'report-read-hidden' : ''}`}>
+          <ThreeSixtyReadView report={report} name={rateeName} date={date} />
+        </div>
+      )}
+      <div className={`report-flow ${mobile && report ? 'report-a4' : ''} ${mobile && report && !showA4 ? 'report-a4-hidden' : ''}`} style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
         {error && <p style={{ padding: 40, color: '#dc2626' }}>{error}</p>}
         {!error && subs === null && <p style={{ padding: 40, color: '#64748b' }}>載入 360° 資料中…</p>}
         {subs !== null && !report && <p style={{ padding: 40, color: '#64748b' }}>這位受評者還沒有可用的評測資料。</p>}

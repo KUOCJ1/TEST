@@ -49,9 +49,9 @@ export default function DevPlanPage({ result, config, user, date, startsPage = t
 
       {/* Closing message */}
       <div style={{
-        background: 'linear-gradient(135deg, #f6ecd7, #eff6ff)',
-        border: '1px solid #e9d3a0', borderRadius: 10, padding: '14px 18px',
-        fontSize: 11, color: '#584419', lineHeight: 1.8,
+        background: 'linear-gradient(135deg, #fbf7ef, #eff6ff)',
+        border: '1px solid #e6dcc8', borderRadius: 10, padding: '14px 18px',
+        fontSize: 11, color: '#4a3a12', lineHeight: 1.8,
       }}>
         <div style={{ fontWeight: 700, marginBottom: 4 }}>✦ 發展建議使用說明</div>
         本計畫由系統依您的構面得分自動生成，建議與您的直屬主管或教練共同討論，

@@ -19,7 +19,7 @@ function Cover({ result, user, submittedAt, date }) {
   const balance = loopBalanceText(loops);
   return (
     <div style={{ pageBreakAfter: 'always' }}>
-      <div style={{ background: '#241f18', padding: '44px 52px 38px', color: '#fff' }}>
+      <div style={{ background: '#1a4a3b', padding: '44px 52px 38px', color: '#fff' }}>
         <div style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.12em', marginBottom: 10 }}>Confidential · 個人評測報告</div>
         <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.25 }}>
           {assessmentName ?? '領導力羅盤八向評測'}
@@ -44,11 +44,11 @@ function Cover({ result, user, submittedAt, date }) {
                 <span>{l.name}<span style={{ fontSize: 9, marginLeft: 6, color: '#64748b' }}>{l.id === 'fast' ? 'FAST' : 'LAST'}</span></span>
                 <span>{l.average.toFixed(1)}</span>
               </div>
-              <div style={{ marginTop: 8 }}><HBar userPct={pct(l.average)} color="#2c5282" /></div>
+              <div style={{ marginTop: 8 }}><HBar userPct={pct(l.average)} color="#1f5d4a" /></div>
             </Card>
           ))}
         </div>
-        {balance && <div style={{ background: '#f6ecd7', border: '1px solid #e9d3a0', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 11, color: '#584419', lineHeight: 1.8 }}>{balance}</div>}
+        {balance && <div style={{ background: '#fbf7ef', border: '1px solid #e6dcc8', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 11, color: '#4a3a12', lineHeight: 1.8 }}>{balance}</div>}
 
         <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', marginBottom: 8 }}>怎麼讀這份報告</div>
         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 11, color: '#334155', lineHeight: 1.9 }}>
@@ -103,14 +103,14 @@ function TensionsPage({ result, user, date }) {
           <Card key={t.id} style={{ breakInside: 'avoid', background: '#fff' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 12, color: '#0f172a' }}>
               <span>{t.nameA} ↔ {t.nameB}</span>
-              {t.available && <span style={{ fontSize: 10, color: '#584419' }}>{tensionLabel(t)}</span>}
+              {t.available && <span style={{ fontSize: 10, color: '#4a3a12' }}>{tensionLabel(t)}</span>}
             </div>
             {t.available ? (
               <>
                 {[[t.nameA, t.a], [t.nameB, t.b]].map(([name, v]) => (
                   <div key={name} style={{ marginTop: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#475569' }}><span>{name}</span><span>{v.toFixed(1)}</span></div>
-                    <HBar userPct={pct(v)} color="#2c5282" height={8} />
+                    <HBar userPct={pct(v)} color="#1f5d4a" height={8} />
                   </div>
                 ))}
                 <div style={{ fontSize: 9, color: '#64748b', marginTop: 6 }}>平衡度 {Math.round(t.balance * 100)}%{t.lowConfidence ? '　（題目較少，僅供參考）' : ''}</div>
@@ -127,7 +127,7 @@ function TensionsPage({ result, user, date }) {
           <SectionTitle sub={`散布在各構面、與 AI 及自動化工具協作相關的題目（共 ${aiProfile.count} 題）`}>人機協作剖面</SectionTitle>
           <Card>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 12 }}><span>整體平均</span><span>{aiProfile.average.toFixed(1)}</span></div>
-            <div style={{ marginTop: 6 }}><HBar userPct={pct(aiProfile.average)} color="#2c5282" height={8} /></div>
+            <div style={{ marginTop: 6 }}><HBar userPct={pct(aiProfile.average)} color="#1f5d4a" height={8} /></div>
             <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 8, lineHeight: 1.7 }}>
               {aiProfile.byDimension.map((b) => `${b.name} ${b.average.toFixed(1)}（${b.count} 題）`).join('　')}
             </div>
@@ -154,7 +154,7 @@ function NarrativePages({ result, user, date }) {
           {chunk.map((n) => (
             <div key={n.id} style={{ marginBottom: 16, breakInside: 'avoid' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 800, color: '#0f172a' }}>
-                <span>{n.name}</span><span style={{ fontSize: 9, color: '#584419' }}>{BAND_LABEL[n.band]}</span>
+                <span>{n.name}</span><span style={{ fontSize: 9, color: '#4a3a12' }}>{BAND_LABEL[n.band]}</span>
               </div>
               <div style={{ fontSize: 10.5, color: '#334155', lineHeight: 1.85, marginTop: 4 }}>{n.intro}</div>
               {n.subs.map((s) => (

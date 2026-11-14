@@ -22,7 +22,7 @@ const TABS = [
   { id: 'quickAnalysis', label: '班級分析', hint: '選一個班級，看這一班的分數、強弱項與每位成員。' },
   { id: 'analytics', label: '各評量統計', hint: '選一份評量，看所有填答者的整體分佈、趨勢與明細（可匯出 CSV）。' },
   { id: 'users', label: '用戶管理', hint: '調整角色、停用帳號、產生重設密碼連結。' },
-  { id: 'groups', label: '班別與發佈', hint: '管理所有班別的負責教練、施測期間，並發佈成果。（評量要不要對學員開放，在頁面最上方的「題庫啟用狀態」。）' },
+  { id: 'groups', label: '班別與發佈', hint: '管理所有班別的負責教練、施測期間，並發佈成果。（評量要不要對學員開放，在「題庫啟用狀態」區塊。）' },
   { id: 'templates', label: '專案範本', hint: '客戶專案開班用的固定組合（評量、附加課後問卷、專屬班級）。教練開班選範本，評量就鎖定，不會選錯。' },
   { id: 'content', label: '題庫內容', hint: '修改題目、構面與評語的文字（草稿、預覽、發佈、還原）；不影響計分。' },
   { id: 'import', label: '批次上傳', hint: '用 CSV 匯入既有的作答與 360° 評分資料。' },
@@ -93,6 +93,37 @@ export default function AdminDashboard() {
     return <LoadingState />;
   }
 
+  const enabledCount = adminAssessments.filter((a) => a.enabled).length;
+  const togglePanel = adminAssessments.length > 0 && (
+    <section className="mb-5 rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-100 sm:px-5">
+      <h3 className="mb-1 text-sm font-semibold text-slate-500">題庫啟用狀態</h3>
+      <p className="mb-3 text-xs text-slate-400">
+        停用後，學員將無法在「選擇評量」看到並開始作答此題庫；既有作答紀錄與報告不受影響。
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+        {adminAssessments.map((a) => (
+          <div key={a.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-1.5 sm:justify-start">
+            <span className="text-sm font-medium text-slate-700">{a.name}</span>
+            <button
+              type="button"
+              disabled={toggling}
+              onClick={() => handleToggleAssessment(a)}
+              title={a.enabled ? '點擊停用此題庫' : '點擊啟用此題庫'}
+              className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                a.enabled
+                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {a.enabled ? '啟用中' : '已停用'}
+            </button>
+          </div>
+        ))}
+      </div>
+      {toggleError && <p className="mt-2 text-xs text-red-600">{toggleError}</p>}
+    </section>
+  );
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <header className="mb-5">
@@ -115,35 +146,7 @@ export default function AdminDashboard() {
         </p>
       )}
 
-      {adminAssessments.length > 0 && (
-        <section className="mb-5 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-100">
-          <h3 className="mb-1 text-sm font-semibold text-slate-500">題庫啟用狀態</h3>
-          <p className="mb-3 text-xs text-slate-400">
-            停用後，學員將無法在「選擇評量」看到並開始作答此題庫；既有作答紀錄與報告不受影響。
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {adminAssessments.map((a) => (
-              <div key={a.id} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5">
-                <span className="text-sm font-medium text-slate-700">{a.name}</span>
-                <button
-                  type="button"
-                  disabled={toggling}
-                  onClick={() => handleToggleAssessment(a)}
-                  title={a.enabled ? '點擊停用此題庫' : '點擊啟用此題庫'}
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
-                    a.enabled
-                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                  }`}
-                >
-                  {a.enabled ? '啟用中' : '已停用'}
-                </button>
-              </div>
-            ))}
-          </div>
-          {toggleError && <p className="mt-2 text-xs text-red-600">{toggleError}</p>}
-        </section>
-      )}
+      {!mobile && togglePanel}
 
       {mobile ? (
         /* 手機：10 個分頁橫向捲動看不出後面還有，改成下拉選單，任何分頁一步就能切到。 */
@@ -179,6 +182,17 @@ export default function AdminDashboard() {
       )}
 
       <p className="mb-4 text-sm text-slate-500">{TABS.find((t) => t.id === tab)?.hint}</p>
+
+      {/* 手機：題庫啟用狀態很長，放在分頁選單與說明之後、預設收合，避免把真正的內容擠到畫面外。 */}
+      {mobile && adminAssessments.length > 0 && (
+        <details className="mb-4 rounded-xl bg-white ring-1 ring-slate-100">
+          <summary className="flex min-h-[44px] cursor-pointer items-center justify-between gap-2 px-4 py-2 text-sm font-semibold text-slate-600">
+            <span>題庫啟用狀態</span>
+            <span className="text-xs font-medium text-slate-400">{enabledCount}／{adminAssessments.length} 啟用中</span>
+          </summary>
+          <div className="px-1 pb-1">{togglePanel}</div>
+        </details>
+      )}
 
       {/* 手機：這幾頁（大表格、長文字編輯、需要仔細核對的操作）建議用電腦，仍可進入。 */}
       {mobile && DESKTOP_RECOMMENDED.includes(tab) && (

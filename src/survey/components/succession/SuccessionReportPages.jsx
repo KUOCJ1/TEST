@@ -16,7 +16,7 @@ export default function SuccessionReportPages({ result, user, submittedAt }) {
         <div key={d.id} style={{ marginBottom: 14, breakInside: 'avoid' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 800, color: '#0f172a' }}>
             <span>{d.name}<span style={{ fontSize: 9, fontWeight: 400, color: '#64748b', marginLeft: 6 }}>{d.subtitle}</span></span>
-            {d.answered > 0 && <span style={{ fontSize: 10, color: '#584419' }}>傾向{d.rating.label}</span>}
+            {d.answered > 0 && <span style={{ fontSize: 10, color: '#4a3a12' }}>傾向{d.rating.label}</span>}
           </div>
           {d.answered > 0 ? (
             <>

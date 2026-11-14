@@ -3,6 +3,9 @@ import { useEffect } from 'react';
 import { ReportPages } from './PrintableReport';
 import { reportFilename, REPORT_KIND } from '../utils/reportFilename.js';
 import { useReportFilename } from '../hooks/useReportFilename.js';
+import { useIsMobile } from '../hooks/useIsMobile.js';
+import { BatchReadView } from './MobileReportViews.jsx';
+import { useState } from 'react';
 
 /**
  * 整班批次匯出：把每位成員的個人報告接續排版成同一份文件，一次列印／存為 PDF，
@@ -12,6 +15,8 @@ import { useReportFilename } from '../hooks/useReportFilename.js';
 export default function BatchPrintableReport({ members, benchmark, onClose, groupName }) {
   const filename = reportFilename({ kind: REPORT_KIND.batch, assessmentId: members[0]?.submission?.result?.assessmentId, groupName, detail: `${members.length}人` });
   const print = useReportFilename(filename);
+  const mobile = useIsMobile();
+  const [showA4, setShowA4] = useState(false);
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -31,10 +36,18 @@ export default function BatchPrintableReport({ members, benchmark, onClose, grou
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={print}
-            style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+            style={{ background: '#1f5d4a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
           >
             🖨️ 全部列印 / 存為 PDF
           </button>
+          {mobile && (
+            <button
+              onClick={() => setShowA4((v) => !v)}
+              style={{ background: 'transparent', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+            >
+              {showA4 ? '看閱讀版' : '看 A4 原版'}
+            </button>
+          )}
           <button
             onClick={onClose}
             style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
@@ -44,6 +57,12 @@ export default function BatchPrintableReport({ members, benchmark, onClose, grou
         </div>
       </div>
 
+      {mobile && (
+        <div className={`report-read ${showA4 ? 'report-read-hidden' : ''}`}>
+          <BatchReadView members={members} benchmark={benchmark} />
+        </div>
+      )}
+      <div className={mobile ? `report-a4 ${showA4 ? '' : 'report-a4-hidden'}` : undefined}>
       {members.map((m, i) => (
         <div key={m.submission.id} style={{ pageBreakBefore: i === 0 ? 'auto' : 'always' }}>
           <ReportPages
@@ -55,6 +74,7 @@ export default function BatchPrintableReport({ members, benchmark, onClose, grou
           />
         </div>
       ))}
+      </div>
     </>,
     portal,
   );

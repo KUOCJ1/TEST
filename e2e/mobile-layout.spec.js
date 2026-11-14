@@ -334,6 +334,11 @@ test('管理者：任何分頁一步切得到、後台入口合併、電腦限�
     await page.waitForTimeout(150);
     await expectNoHorizontalOverflow(page, `管理後台「${label}」`);
   }
+  // 題庫啟用狀態預設收合在分頁選單之後；展開後每個題庫一列，開關可點（手機不被長清單擠到畫面外）。
+  const toggleBox = page.locator('details', { has: page.getByText('題庫啟用狀態') });
+  await expect(toggleBox).toBeVisible();
+  expect(await toggleBox.evaluate((el) => el.open)).toBe(false);
+  expect((await toggleBox.boundingBox()).y).toBeLessThan(500);
   // 電腦限定的分頁有提示。
   await page.getByRole('combobox', { name: '管理分頁' }).selectOption({ label: '批次上傳' });
   await expect(page.getByRole('note').filter({ hasText: '建議用電腦操作' })).toBeVisible();

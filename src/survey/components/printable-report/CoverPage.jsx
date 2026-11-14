@@ -13,7 +13,7 @@ export default function CoverPage({ result, user, submittedAt, benchmark, percen
     <div style={{ pageBreakAfter: 'always' }}>
       {/* Header */}
       <div style={{
-        background: '#241f18',
+        background: '#1a4a3b',
         padding: '44px 52px 38px', color: '#fff',
       }}>
         <div style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>
@@ -67,7 +67,7 @@ export default function CoverPage({ result, user, submittedAt, benchmark, percen
         </div>
 
         {/* Level desc */}
-        <div style={{ background: '#f6ecd7', border: '1px solid #e9d3a0', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 11, color: '#584419', lineHeight: 1.7 }}>
+        <div style={{ background: '#fbf7ef', border: '1px solid #e6dcc8', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 11, color: '#4a3a12', lineHeight: 1.7 }}>
           {level.desc}
         </div>
 

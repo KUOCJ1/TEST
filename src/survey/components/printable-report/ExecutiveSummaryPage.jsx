@@ -23,10 +23,10 @@ export default function ExecutiveSummaryPage({ result, benchmark, config, user, 
       {/* Overall summary */}
       {overall && (
         <div style={{
-          background: 'linear-gradient(135deg, #f6ecd7, #eff6ff)',
-          border: '1px solid #e9d3a0', borderRadius: 10,
+          background: 'linear-gradient(135deg, #fbf7ef, #eff6ff)',
+          border: '1px solid #e6dcc8', borderRadius: 10,
           padding: '14px 18px', marginBottom: 20,
-          fontSize: 12, color: '#584419', lineHeight: 1.8, fontStyle: 'italic',
+          fontSize: 12, color: '#4a3a12', lineHeight: 1.8, fontStyle: 'italic',
         }}>
           {overall}
         </div>

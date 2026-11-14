@@ -5,6 +5,8 @@ import { formatDate } from '../utils/format';
 import { badgeBg, dimTextStyle } from '../utils/color';
 import { dimLabel } from '../utils/dimensionLabel';
 import { badgeText } from '../utils/levelBadge';
+import { useState } from 'react';
+import { RATER_LABELS } from '../constants/raterTypes';
 
 // 手機上的「閱讀版」報告（手機 App 化 M6）。
 // 手機螢幕上把整份 A4 報告縮到 390px 寬，字級只剩一半，要雙指放大才讀得到（M3 的縮放預覽）。
@@ -135,6 +137,141 @@ export function GroupReadView({ group, stats, rows, results, config, date }) {
           </ol>
         </section>
       )}
+    </div>
+  );
+}
+
+const f1 = (n) => (typeof n === 'number' ? n.toFixed(1) : '—');
+const signed = (n) => (n > 0 ? `+${n.toFixed(1)}` : n.toFixed(1));
+const KIND_LABEL = { blind: '自評高於他評', hidden: '他評高於自評' };
+
+function ListCard({ title, tone, items, valueKey, empty }) {
+  return (
+    <section className={`rounded-xl border px-4 py-3 ${tone}`}>
+      <h4 className="mb-2 text-sm font-bold text-slate-800">{title}</h4>
+      {items.length === 0 ? <p className="text-xs text-slate-500">{empty}</p> : (
+        <ul className="space-y-1.5 text-sm">
+          {items.map((d) => (
+            <li key={d.id} className="flex items-baseline justify-between gap-3">
+              <span className="font-semibold text-slate-700">{d.name}</span>
+              <span className="shrink-0 text-slate-600">
+                {valueKey === 'gap' ? `自 ${f1(d.self)}／他 ${f1(d.others)}（${signed(d.gap)}）` : f1(d[valueKey])}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// 360° 閱讀版：整體評價、自評 vs 他評、各構面、發展建議、討論題。圖表細節（各群組橫條、子能力排名）請看 A4 原版。
+export function ThreeSixtyReadView({ report: r, name, date }) {
+  const basisKey = r.basis === 'others' ? 'others' : 'self';
+  const dims = r.dimensions ?? [];
+  const pct = (v) => (typeof v === 'number' ? Math.round((v / 5) * 100) : 0);
+  const radarSelf = dims.map((d) => ({ id: d.id, name: d.name, subtitle: d.subtitle, color: d.color, percent: pct(d.self ?? d.others) }));
+  const radarCompare = r.hasSelf && r.hasOthers ? dims.map((d) => ({ id: d.id, percent: pct(d.others) })) : null;
+  const counts = ['manager', 'peer', 'subordinate'].filter((t) => r.counts[t]).map((t) => `${RATER_LABELS[t]} ${r.counts[t]} 位`);
+  return (
+    <div className="px-4 pb-8 pt-5">
+      <Header kind="360° 完整回饋報告" title={name} sub={`${r.assessmentName} · ${date}`} />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl bg-white px-4 py-3 ring-1 ring-slate-100">
+          <p className="text-xs text-slate-400">自評</p>
+          <p className="text-lg font-extrabold text-slate-800">{r.self ? r.self.total : '—'}</p>
+          <p className="text-xs text-slate-500">{r.self ? badgeText(r.self.level?.badge ?? '') : '尚無自評'}</p>
+        </div>
+        <div className="rounded-xl bg-white px-4 py-3 ring-1 ring-slate-100">
+          <p className="text-xs text-slate-400">他評（平均）</p>
+          <p className="text-lg font-extrabold text-slate-800">{r.othersSummary ? r.othersSummary.total : '—'}</p>
+          <p className="text-xs text-slate-500">{r.othersSummary ? badgeText(r.othersSummary.level?.badge ?? '') : '尚無他評'}</p>
+        </div>
+      </div>
+      <p className="mt-2 text-xs text-slate-500">評分者：{r.hasSelf ? '自評 1 份' : '無自評'}{counts.map((c) => `、${c}`).join('')}</p>
+
+      {r.summaryText && <p className="mt-5 text-sm leading-relaxed text-slate-700">{r.summaryText}</p>}
+
+      <div className="mt-4 space-y-3">
+        <ListCard title={r.basis === 'others' ? '他人眼中的三大強項' : '三大強項（自評）'} tone="border-emerald-200 bg-emerald-50" items={r.strengths} valueKey={basisKey} empty="資料不足" />
+        <ListCard title="優先發展的三個構面" tone="border-brass-200 bg-brass-50" items={r.develop} valueKey={basisKey} empty="資料不足" />
+        {r.hasSelf && r.hasOthers && (
+          <>
+            <ListCard title="可能的盲點（自評高於他評）" tone="border-red-200 bg-red-50" items={r.blind} valueKey="gap" empty="沒有明顯高估的構面" />
+            <ListCard title="被低估的優勢（他評高於自評）" tone="border-sky-200 bg-sky-50" items={r.hidden} valueKey="gap" empty="沒有明顯低估的構面" />
+          </>
+        )}
+      </div>
+
+      <section className="mt-6" aria-label="各構面雷達">
+        <h3 className="mb-2 text-center font-bold text-slate-700">各構面：自評與他評</h3>
+        <div className="flex justify-center"><RadarChart dimensions={radarSelf} compare={radarCompare} compareLabel="他評" friendly /></div>
+      </section>
+
+      <section className="mt-6 space-y-3" aria-label="構面詳述">
+        <h3 className="font-bold text-slate-700">各構面詳述</h3>
+        {dims.map((d) => (
+          <article key={d.id} className="rounded-xl border border-slate-100 bg-white px-4 py-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <h4 className="font-bold text-slate-800"><span className="mr-2 inline-block h-2 w-2 rounded-full" style={{ background: d.color }} />{d.name}</h4>
+              <span className="shrink-0 text-sm text-slate-600">自 {f1(d.self)}／他 {f1(d.others)}</span>
+            </div>
+            {d.gap != null && KIND_LABEL[d.kind] && <p className="mt-1 text-xs font-semibold text-slate-500">{KIND_LABEL[d.kind]} {signed(d.gap)}</p>}
+            {r.dimTexts?.[d.id] && <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-800">{r.dimTexts[d.id]}</p>}
+            {r.narratives?.[d.id] && <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{r.narratives[d.id]}</p>}
+          </article>
+        ))}
+      </section>
+
+      {r.plan?.length > 0 && (
+        <section className="mt-6 space-y-3" aria-label="發展建議">
+          <h3 className="font-bold text-slate-700">發展建議</h3>
+          {r.plan.map((p) => (
+            <article key={p.id} className="rounded-xl border border-slate-100 bg-white px-4 py-3">
+              <p className="text-xs font-semibold text-brass-600">{p.horizon}</p>
+              <h4 className="mb-1 font-bold text-slate-800">{p.title}</h4>
+              <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">{p.actions.map((a) => <li key={a}>{a}</li>)}</ul>
+            </article>
+          ))}
+        </section>
+      )}
+      <p className="mt-6 text-xs leading-relaxed text-slate-400">
+        360° 回饋反映「他人觀察到的行為頻率與感受」，不是能力的絕對評定；評分者以類別呈現，不列姓名。各群組橫條與子能力排名請看「A4 原版」。
+      </p>
+    </div>
+  );
+}
+
+function BatchMember({ m, benchmark }) {
+  const [open, setOpen] = useState(false);
+  const res = m.submission.result;
+  return (
+    <li className="rounded-xl border border-slate-100 bg-white">
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
+        <span className="min-w-0">
+          <span className="font-semibold text-slate-800">{m.name}</span>
+          <span className="ml-2 text-sm text-slate-500">{res.total} 分</span>
+        </span>
+        <span className="shrink-0 text-xs font-semibold text-ink-700">{open ? '收合' : '展開'}</span>
+      </button>
+      {open && (
+        <div className="border-t border-slate-100">
+          <PersonalReadView result={res} benchmark={benchmark} user={{ name: m.name, email: m.email }} submittedAt={m.submission.createdAt} comments={m.submission.comments} />
+        </div>
+      )}
+    </li>
+  );
+}
+
+// 批次報告閱讀版：成員清單，點開才載入該員個人閱讀版（避免一次渲染整班）。
+export function BatchReadView({ members, benchmark }) {
+  return (
+    <div className="px-4 pb-8 pt-5">
+      <Header kind="整班個人報告（批次）" title={`共 ${members.length} 份`} sub="點選成員展開個人報告；要整批列印請用上方按鈕（印出的是 A4 版）。" />
+      <ol className="space-y-2">
+        {members.map((m) => <BatchMember key={m.submission.id} m={m} benchmark={benchmark} />)}
+      </ol>
     </div>
   );
 }

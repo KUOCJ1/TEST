@@ -29,7 +29,7 @@ export default function CompassGroupPrintable({ report, group, phaseLabel, onClo
       <div className="report-toolbar">
         <div><span style={{ fontWeight: 700, fontSize: 14 }}>班級組織診斷報告</span><span style={{ fontSize: 12, opacity: 0.55, marginLeft: 10 }}>{group.name}</span><span style={{ fontSize: 11, opacity: 0.5, marginLeft: 10 }}>存檔檔名：{filename}.pdf</span></div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={print} style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>🖨️ 列印 / 存為 PDF</button>
+          <button onClick={print} style={{ background: '#1f5d4a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>🖨️ 列印 / 存為 PDF</button>
           <button onClick={onClose} style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>✕ 關閉</button>
         </div>
       </div>
@@ -47,12 +47,12 @@ export default function CompassGroupPrintable({ report, group, phaseLabel, onClo
 
         {report.tier !== 'hidden' && (
           <>
-            {report.tier === 'basic' && <p style={{ fontSize: 10, color: '#584419', background: '#f6ecd7', padding: '6px 10px', borderRadius: 6 }}>樣本少，僅供參考；完成人數達 {FULL_MIN} 位才會顯示分布與張力。</p>}
+            {report.tier === 'basic' && <p style={{ fontSize: 10, color: '#4a3a12', background: '#fbf7ef', padding: '6px 10px', borderRadius: 6 }}>樣本少，僅供參考；完成人數達 {FULL_MIN} 位才會顯示分布與張力。</p>}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, margin: '12px 0 18px' }}>
               {report.loops.map((l) => (
                 <div key={l.id} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 12 }}><span>{l.name}平均</span><span>{l.average.toFixed(1)}</span></div>
-                  <div style={{ marginTop: 6 }}><HBar userPct={pct(l.average)} color="#2c5282" height={8} /></div>
+                  <div style={{ marginTop: 6 }}><HBar userPct={pct(l.average)} color="#1f5d4a" height={8} /></div>
                 </div>
               ))}
             </div>
@@ -72,7 +72,7 @@ export default function CompassGroupPrintable({ report, group, phaseLabel, onClo
           <>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
               {[['這群人最常展現', report.extremes.top], ['這群人相對較少展現', report.extremes.bottom]].map(([title, list]) => (
-                <div key={title} style={{ background: '#f6ecd7', border: '1px solid #e9d3a0', borderRadius: 10, padding: '10px 14px', fontSize: 11, color: '#584419' }}>
+                <div key={title} style={{ background: '#fbf7ef', border: '1px solid #e6dcc8', borderRadius: 10, padding: '10px 14px', fontSize: 11, color: '#4a3a12' }}>
                   <div style={{ fontSize: 9, fontWeight: 700, marginBottom: 4 }}>{title}</div>
                   {list.map((d) => <div key={d.id} style={{ fontWeight: 800 }}>{d.name} {d.average.toFixed(1)}</div>)}
                 </div>

@@ -98,7 +98,7 @@ export default function PrintableReport({ result, benchmark, user, submittedAt, 
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={print}
-            style={{ background: '#8a6a2f', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+            style={{ background: '#1f5d4a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
           >
             🖨️ 列印 / 存為 PDF
           </button>

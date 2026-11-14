@@ -17,10 +17,10 @@ export function CoachFeedbackBlock({ comments }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {comments.map((c) => (
           <div key={c.id} style={{
-            background: '#f6ecd7', border: '1px solid #e9d3a0', borderRadius: 10,
-            padding: '14px 16px', fontSize: 11.5, color: '#584419', lineHeight: 1.85,
+            background: '#fbf7ef', border: '1px solid #e6dcc8', borderRadius: 10,
+            padding: '14px 16px', fontSize: 11.5, color: '#4a3a12', lineHeight: 1.85,
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 9, color: '#8a6a2f', fontWeight: 700 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 9, color: '#8a5200', fontWeight: 700 }}>
               <span>{c.coachName ?? '教練'}</span>
               {c.updatedAt && <span style={{ opacity: 0.7 }}>{formatDate(c.updatedAt)}</span>}
             </div>
@@ -29,7 +29,7 @@ export function CoachFeedbackBlock({ comments }) {
               <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {c.tips.map((t, i) => (
                   <li key={i} style={{ display: 'flex', gap: 6, fontSize: 10.5 }}>
-                    <span style={{ color: '#8a6a2f' }}>・</span>{t}
+                    <span style={{ color: '#8a5200' }}>・</span>{t}
                   </li>
                 ))}
               </ul>
