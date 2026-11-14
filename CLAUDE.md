@@ -101,7 +101,7 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 
 ## 手機 App 化（PWA）
 
-- 方向：不上架、不重寫，走 PWA 並把手機介面打磨到位。**計畫、問題清單、各 Sprint 的驗收條件在 `docs/MOBILE_APP_PLAN.md`**（M0–M5 已完成；M6 手機版報告閱讀版進行中）。改手機介面的規範見 `docs/PLATFORM_MANUAL.md`「手機與安裝」：手機樣式只加在 `sm` 以下、手機／桌機不同元件用 `useIsMobile()`、頁首下方的元素用 `--app-header-h`。`e2e/mobile-layout.spec.js` 會擋 CI。
+- 方向：不上架、不重寫，走 PWA 並把手機介面打磨到位。**計畫、問題清單、各 Sprint 的驗收條件在 `docs/MOBILE_APP_PLAN.md`**（M0–M6 已完成：含手機版報告閱讀版；之後的字級加大、圖表、後台卡片化見 CHANGELOG）。改手機介面的規範見 `docs/PLATFORM_MANUAL.md`「手機與安裝」：手機樣式只加在 `sm` 以下、手機／桌機不同元件用 `useIsMobile()`、頁首下方的元素用 `--app-header-h`。`e2e/mobile-layout.spec.js` 會擋 CI。
 - 安裝引導在 `src/survey/pwa/`（`installPrompt.js` 判斷平台與是否提示、`InstallPrompt.jsx`）。
 - `npm run audit:mobile`：手機尺寸走查 29 個畫面並量測（輸出到 `mobile-audit-out/`，不進版控、不擋部署）。手機樣式只加在 `sm` 以下，桌機版面不變。
 

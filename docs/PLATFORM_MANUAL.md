@@ -41,7 +41,7 @@
 
 ## 1. 系統目的與商業脈絡
 
-「全方位職能評測」是**榕耀管理顧問**（RongRise Consulting，正式站
+「榕光評測」是**榕耀管理顧問**（RongRise Consulting，正式站
 `https://assess.rong-rise.com`）用來支撐企業培訓與顧問業務的線上評測平台。
 它不是一個通用問卷工具，而是圍繞著顧問公司實際的教學流程設計的：
 
@@ -480,7 +480,7 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   ↑↓ 移動、Esc 關閉並還焦點、點外面關閉），別再加回頁首——分頁一多就會折成兩行。
 - **頁面標題**：`AppShell.jsx` 的 `PAGE_TITLES`（登入後）與 `App.jsx` 的
   `MARKETING_TITLES`（行銷頁／未登入）把 `document.title` 設成
-  `頁面名稱｜全方位職能評測`；新增路由時兩邊要一起補。切頁時捲回頂端（網址帶
+  `頁面名稱｜榕光評測`；新增路由時兩邊要一起補。切頁時捲回頂端（網址帶
   `#錨點` 時除外），並有 `animate-page-in` 淡入。
 - **色票與對比（WCAG AA 4.5:1）**：「榕光 Banyan Glow」視覺系統（`docs/design/UI_UX_REFRESH_PROPOSAL.md`）。
   在 `tailwind.config.js` 的 token 層處理，**沿用原本的 token 名稱、只重新對映色值**，既有元件不用改 class：

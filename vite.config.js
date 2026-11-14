@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons.svg'],
+      includeAssets: ['favicon.svg', 'icons.svg', 'logo-mark.svg', 'logo-mark-reverse.svg'],
       manifest: {
         name: '榕光評測',
         short_name: '榕光',

@@ -20,15 +20,19 @@ export function recordActivity(db, user, now = Date.now()) {
   return true;
 }
 
-const activeMembers = (db, group) => (group.memberIds ?? [])
+const groupMembers = (db, group) => (group.memberIds ?? [])
   .map((id) => db.data.users.find((u) => u.id === id))
-  .filter((u) => u && !u.disabled && !(group.excludedUserIds ?? []).includes(u.id));
+  .filter((u) => u && !u.disabled);
+const activeMembers = (db, group) => groupMembers(db, group).filter((u) => !(group.excludedUserIds ?? []).includes(u.id));
 
 const sameAssessment = (g, group) => (g.assessmentId ?? 'ai-competency') === (group.assessmentId ?? 'ai-competency');
 
 /** 班級行動概況：已設定目標、近 14 天有回報、完全沒設定目標的人數。 */
+// 注意：這裡「不」套用班級的「不列入統計」排除名單。否則教練可以把某位成員排除再重新查詢，用前後差回推
+// 他有沒有設定目標（差分攻擊，與課後問卷彙總同一個問題）。殘留風險：教練把人移出班級也會改變人數，
+// 這是班級管理本來就有的權限，靠「少於 3 位不顯示」與審慎的政策文字限制。
 export function goalSummaryForGroup(db, group, now = Date.now()) {
-  const members = activeMembers(db, group);
+  const members = groupMembers(db, group);
   if (members.length < MIN_N) return { hidden: true, minN: MIN_N };
   const since = now - RECENT_CHECKIN_DAYS * DAY_MS;
   let withGoal = 0;

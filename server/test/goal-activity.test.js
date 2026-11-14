@@ -41,10 +41,17 @@ describe('goalSummaryForGroup()', () => {
     assert.deepEqual({ ...s }, { hidden: false, members: 4, withGoal: 2, recentCheckin: 1, noGoal: 2, recentDays: 14 });
     assert.equal(membersWithoutGoal(db, group).length, 2);
   });
-  test('成員少於門檻：不顯示；被排除與停用的人不計', () => {
+  test('成員少於門檻：不顯示；停用的人不計', () => {
     const { db, users, group } = world(MIN_N);
-    group.excludedUserIds = [users[0].id];
+    users[0].disabled = true;
     assert.equal(goalSummaryForGroup(db, group, NOW).hidden, true);
+  });
+  test('排除（不列入統計）不改變數字：教練不能靠排除某人前後比對回推他有沒有目標', () => {
+    const { db, users, group } = world(5);
+    db.data.goals.push(goal(users[0].id));
+    const before = goalSummaryForGroup(db, group, NOW);
+    group.excludedUserIds = [users[0].id];
+    assert.deepEqual(goalSummaryForGroup(db, group, NOW), before);
   });
 });
 
