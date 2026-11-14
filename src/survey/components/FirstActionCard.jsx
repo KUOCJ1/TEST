@@ -35,7 +35,9 @@ export default function FirstActionCard({ result }) {
     return () => { active = false; };
   }, [result.assessmentId]);
 
-  if (!dim || goals === null) return null;
+  if (!dim) return null;
+  // 載入目標清單的這一瞬間先佔位，避免卡片突然出現把下面的內容往下推（版面跳動）。
+  if (goals === null) return <div aria-hidden="true" className="mx-5 mt-5 min-h-[14rem] print:hidden sm:mx-7" />;
   const active = goals.find((g) => !g.achievedAt);
   const starters = startersFor(result.assessmentId, dim.id).slice(0, 3);
 

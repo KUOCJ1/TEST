@@ -1,0 +1,82 @@
+name: Deploy to VPS (production)
+
+# 手動觸發的正式站部署（不會在 push 時自動執行）。
+# 設定方式與安全注意事項見 docs/AUTO_DEPLOY.md；金鑰由你放進 GitHub Secrets，不在程式碼或對話中出現。
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: '要部署的分支（預設功能分支）'
+        required: false
+        default: claude/ai-assessment-survey-4vhjun
+
+permissions:
+  contents: read
+  checks: read
+
+# 同一時間只能有一個部署在跑；不取消進行中的部署（中途取消會留下半套檔案）。
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    # 在 GitHub Settings → Environments 建立 production，並勾選 Required reviewers：
+    # 按下 Run 之後還要有人核准才會真的連到 VPS。
+    environment: production
+    steps:
+      - name: Resolve commit
+        id: sha
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ inputs.ref }}
+        run: |
+          sha=$(gh api "repos/${{ github.repository }}/commits/${REF}" --jq .sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Deploying $sha"
+
+      # 只部署 CI（verify）已經通過的 commit。
+      - name: Require green CI for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ok=$(gh api "repos/${{ github.repository }}/commits/${{ steps.sha.outputs.sha }}/check-runs" \
+            --jq '[.check_runs[] | select(.name=="verify")] | length > 0 and all(.conclusion=="success")')
+          if [ "$ok" != "true" ]; then
+            echo "::error::這個 commit 的 verify 還沒有全部通過，不部署。"
+            exit 1
+          fi
+
+      - name: Prepare SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # 釘住主機金鑰（VPS_KNOWN_HOSTS），不使用 StrictHostKeyChecking=no。
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Deploy on VPS
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER_NAME: ${{ secrets.VPS_USER }}
+          REF: ${{ inputs.ref }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes "$USER_NAME@$HOST" bash -s -- "$REF" "$SHA" <<'REMOTE'
+          set -euo pipefail
+          REF="$1"; SHA="$2"
+          cd /opt/ai-assessment/app
+          git fetch origin "$REF"
+          git checkout "$REF"
+          git reset --hard "$SHA"        # 精確部署通過 CI 的那個 commit
+          bash deploy/deploy.sh          # 內含備份、建前端、同步後端、重啟，結尾跑 verify.sh
+          curl -fsS localhost:3101/api/health
+          REMOTE
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/id_deploy

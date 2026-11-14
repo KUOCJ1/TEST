@@ -9,18 +9,21 @@ import { Fragment, useId } from 'react';
  * @param {boolean} [friendly] 螢幕（手機）友善版：標籤優先用中文、較小的左右留白、較大的字。列印報告不要開，
  *   維持原本的版面。
  */
-export default function RadarChart({ dimensions, size = 340, compare = null, compareLabel = '全體平均', friendly = false }) {
+export default function RadarChart({ dimensions, size: sizeProp = 340, compare = null, compareLabel = '全體平均', friendly = false }) {
+  // 手機友善版：畫布縮小、標籤留白加寬、字放大——viewBox 縮到約 360px 寬時，標籤實際字級才會有 14px 左右。
+  const size = friendly ? Math.min(sizeProp, 280) : sizeProp;
   const gradientId = useId();
   const cx = size / 2;
   const cy = size / 2;
   const radius = size * 0.36;
-  const labelRadius = radius + 26;
+  const labelRadius = radius + (friendly ? 22 : 26);
   const n = dimensions.length;
   const rings = [0.25, 0.5, 0.75, 1];
   // 標籤（如 "Succession Readiness"）以 start/end 錨點向外延伸，
   // 這段寬度不在畫布邊界內，需另外留白避免被 SVG 邊界裁切。
-  const padX = friendly ? 74 : 130;
-  const labelFont = friendly ? 14 : 11;
+  // 手機友善版：圖上只標「百分比」（大字），構面名稱改放圖下方的圖例（HTML 文字，可換行、字級正常）。
+  const padX = friendly ? 52 : 130;
+  const labelFont = friendly ? 24 : 11;
   // 英文構面名稱（如 Communication）又長又不直覺：友善版改用中文名稱；本來就是中文副標的維持原樣。
   const labelOf = (d) => (friendly && /^[\x20-\x7e]+$/.test(d.subtitle ?? '') && d.name ? d.name : d.subtitle);
   const padY = 40;
@@ -99,7 +102,7 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
       {compare && (
         <g>
           <line x1={12} y1={size - 14} x2={32} y2={size - 14} stroke="#475569" strokeWidth="2" strokeDasharray="5 4" />
-          <text x={36} y={size - 10} fontSize="12" fill="#475569" fontWeight="600">{compareLabel}</text>
+          <text x={36} y={size - 10} fontSize={friendly ? 18 : 12} fill="#475569" fontWeight="600">{compareLabel}</text>
         </g>
       )}
 
@@ -117,24 +120,35 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
         const anchor = Math.abs(Math.cos(a)) < 0.3 ? 'middle' : Math.cos(a) > 0 ? 'start' : 'end';
         return (
           <g key={i}>
-            <text
-              x={lx}
-              y={ly - 4}
-              textAnchor={anchor}
-              fontSize={labelFont}
-              fontWeight="600"
-              fill={friendly ? 'currentColor' : '#2d3748'}
-              className={friendly ? 'text-slate-700' : undefined}
-            >
-              {labelOf(d)}
-            </text>
-            <text x={lx} y={ly + labelFont} textAnchor={anchor} fontSize={labelFont} fill={d.color} fontWeight="700">
-              {d.percent}%
-            </text>
+            {friendly ? (
+              <text x={lx} y={ly + labelFont * 0.35} textAnchor={anchor} fontSize={labelFont} fill={d.color} fontWeight="800">
+                {d.percent}%
+              </text>
+            ) : (
+              <>
+                <text x={lx} y={ly - 4} textAnchor={anchor} fontSize={labelFont} fontWeight="600" fill="#2d3748">
+                  {labelOf(d)}
+                </text>
+                <text x={lx} y={ly + labelFont} textAnchor={anchor} fontSize={labelFont} fill={d.color} fontWeight="700">
+                  {d.percent}%
+                </text>
+              </>
+            )}
           </g>
         );
       })}
     </svg>
+
+    {friendly && (
+      <ul className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1 px-2 text-sm text-slate-700" aria-hidden="true">
+        {dimensions.map((d, i) => (
+          <li key={d.id ?? i} className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
+            {labelOf(d)}
+          </li>
+        ))}
+      </ul>
+    )}
 
     {/* 圖表本身是純視覺 SVG，螢幕閱讀器讀不到座標與色塊代表的數值——用視覺隱藏
         的表格提供同一份資料的文字版本，讓輔助科技使用者也能取得雷達圖傳達的

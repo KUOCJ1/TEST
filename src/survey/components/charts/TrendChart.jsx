@@ -7,10 +7,10 @@
 export default function TrendChart({ points, min = 31, max = 155 }) {
   const width = 560;
   const height = 200;
-  const padL = 40;
+  const padL = 46;
   const padR = 16;
   const padT = 16;
-  const padB = 28;
+  const padB = 32;
   const plotW = width - padL - padR;
   const plotH = height - padT - padB;
 
@@ -34,7 +34,7 @@ export default function TrendChart({ points, min = 31, max = 155 }) {
       {gridVals.map((v) => (
         <g key={v}>
           <line x1={padL} y1={y(v)} x2={width - padR} y2={y(v)} stroke="#e2e8f0" strokeWidth="1" />
-          <text x={padL - 6} y={y(v) + 4} textAnchor="end" fontSize="11" fill="#94a3b8">
+          <text x={padL - 6} y={y(v) + 4} textAnchor="end" fontSize="14" fill="#94a3b8">
             {v}
           </text>
         </g>
@@ -45,10 +45,10 @@ export default function TrendChart({ points, min = 31, max = 155 }) {
       {points.map((p, i) => (
         <g key={i}>
           <circle cx={x(i)} cy={y(p.value)} r="4" fill="#8a6a2f" stroke="#fff" strokeWidth="1.5" />
-          <text x={x(i)} y={y(p.value) - 10} textAnchor="middle" fontSize="11" fontWeight="700" fill="#6f5424">
+          <text x={x(i)} y={y(p.value) - 10} textAnchor="middle" fontSize="14" fontWeight="700" fill="#6f5424">
             {p.value}
           </text>
-          <text x={x(i)} y={height - 9} textAnchor="middle" fontSize="10" fill="#94a3b8">
+          <text x={x(i)} y={height - 9} textAnchor="middle" fontSize="13" fill="#94a3b8">
             {p.label}
           </text>
         </g>

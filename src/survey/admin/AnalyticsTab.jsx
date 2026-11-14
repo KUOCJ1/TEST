@@ -16,6 +16,7 @@ import CohortTrendSection from './CohortTrendSection';
 import CoreCompareSection from './CoreCompareSection';
 import { badgeBg } from '../utils/color';
 import { badgeText } from '../utils/levelBadge';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 function Kpi({ label, value, suffix, tip }) {
   return (
@@ -44,6 +45,7 @@ function compareRows(a, b, key, dir) {
 }
 
 export default function AnalyticsTab({ submissions, users, adminAssessments, groups = [] }) {
+  const mobile = useIsMobile();
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState('total');
   const [sortDir, setSortDir] = useState('desc');
@@ -219,7 +221,45 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
                 className="input py-1.5 pl-8 text-sm"
               />
             </div>
-            <p className="mb-2 text-xs text-slate-400 sm:hidden">← 左右滑動可查看完整欄位</p>
+            {mobile ? (
+              /* 手機：每位填答者一張卡片（姓名、落點、分數、次數與最近作答），排序改用下拉選單，不必左右滑。 */
+              <div>
+                <label className="mb-2 flex items-center gap-2 text-sm text-slate-600">
+                  排序
+                  <select
+                    aria-label="排序方式"
+                    value={`${effectiveSortKey}:${sortDir}`}
+                    onChange={(e) => { const [k, d] = e.target.value.split(':'); setSortKey(k); setSortDir(d); }}
+                    className="input flex-1 py-1.5"
+                  >
+                    {columns.flatMap(({ key, label }) => [
+                      <option key={`${key}:desc`} value={`${key}:desc`}>{label}（高→低）</option>,
+                      <option key={`${key}:asc`} value={`${key}:asc`}>{label}（低→高）</option>,
+                    ])}
+                  </select>
+                </label>
+                {displayRows.length === 0 && <p className="py-6 text-center text-sm text-slate-400">查無符合的填答者，請調整搜尋或篩選條件</p>}
+                <ul className="space-y-2">
+                  {displayRows.map((r) => (
+                    <li key={r.id} className="rounded-xl border border-slate-100 px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-800">{r.name}</p>
+                          <p className="break-all text-xs text-slate-500">{r.email}</p>
+                        </div>
+                        <span className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white" style={{ background: badgeBg(r.level.color) }}>
+                          {badgeText(r.level.badge)}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-sm text-slate-600">
+                        {!profileMode && <>總分 <strong>{r.total}</strong>（{r.percent}%）· </>}作答 {r.attempts} 次 · {formatDate(r.when)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -258,6 +298,8 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
                 </tbody>
               </table>
             </div>
+              </>
+            )}
           </section>
         </>
       )}

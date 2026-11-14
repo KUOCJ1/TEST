@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { formatDate } from '../utils/format';
 import LoadingState from '../components/LoadingState';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 // 動作代碼對照白話名稱；沒列到的直接顯示代碼（新增動作時不用先改這裡才看得到）。
 const ACTION_LABELS = {
@@ -38,6 +39,7 @@ function detailText(entry) {
  * 不會隨系統日誌輪替消失。
  */
 export default function AuditLogTab() {
+  const mobile = useIsMobile();
   const [entries, setEntries] = useState([]);
   const [actions, setActions] = useState([]);
   const [action, setAction] = useState('');
@@ -93,7 +95,21 @@ export default function AuditLogTab() {
       {loading && entries.length === 0 && <LoadingState />}
       {!loading && entries.length === 0 && !error && <p className="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">還沒有紀錄。</p>}
 
-      {entries.length > 0 && (
+      {entries.length > 0 && mobile && (
+        <ul className="space-y-2" aria-label="稽核紀錄列表">
+          {entries.map((e) => (
+            <li key={e.id} className="rounded-xl border border-slate-100 bg-white px-4 py-3">
+              <p className="flex items-baseline justify-between gap-2">
+                <span className="font-semibold text-slate-800">{ACTION_LABELS[e.action] ?? e.action}</span>
+                <span className="shrink-0 text-xs text-slate-500">{formatDate(e.ts)} {String(e.ts).slice(11, 16)}</span>
+              </p>
+              <p className="mt-0.5 break-all text-sm text-slate-600">{e.actorEmail ?? e.actor ?? '—'}</p>
+              {detailText(e) && <p className="mt-1 break-all text-xs text-slate-500">{detailText(e)}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {entries.length > 0 && !mobile && (
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs text-slate-500">
