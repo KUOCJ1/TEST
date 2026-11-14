@@ -227,7 +227,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="rounded-2xl bg-white px-5 py-7 shadow-lg shadow-slate-200/60 sm:px-8">
         <header className="text-center">
-          <h1 className="text-2xl font-extrabold text-slate-800 sm:text-3xl">{config.NAME}</h1>
+          <h1 className="font-serif text-2xl font-bold text-slate-900 sm:text-3xl">{config.NAME}</h1>
           <p className="mt-2 text-sm text-slate-400">{config.DESCRIPTION}</p>
         </header>
 

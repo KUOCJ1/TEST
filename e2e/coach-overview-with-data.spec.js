@@ -61,7 +61,7 @@ test('教練打開有作答資料的班級：作答進度、KPI、成員比較�
   await expect(page.getByRole('button', { name: /寄送提醒信/ })).toBeVisible();
 
   // KPI 與成員比較表。
-  const kpi = page.locator('.panel-primary');
+  const kpi = page.getByRole('group', { name: '班級統計' });
   await expect(kpi).toContainText('已填答');
   await expect(kpi).toContainText('2');
   await expect(page.getByRole('heading', { name: '成員比較' })).toBeVisible();

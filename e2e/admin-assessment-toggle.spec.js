@@ -10,7 +10,7 @@ test('管理者停用題庫後，學員看不到該評量；重新啟用後恢�
 
   await page.goto('/');
   await login(page, 'admin@e2e.test', 'E2eTest1234');
-  await expect(page.getByText('管理後台')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: '管理後台' })).toBeVisible({ timeout: 15000 });
   await page.getByRole('button', { name: '管理後台' }).click();
   await page.waitForSelector('text=題庫啟用狀態', { timeout: 10000 });
 

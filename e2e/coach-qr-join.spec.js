@@ -21,7 +21,7 @@ test('教練建立班級、產生報到連結，學員可透過連結直接加�
   // 上面才剛登出過，同一頁的 App.jsx view 狀態已經停在登入表單，不會再看到
   // 「登入平台」這顆進入鈕（見 helpers.js 開頭的說明）。
   await login(page, 'admin@e2e.test', 'E2eTest1234', { fromLanding: false });
-  await expect(page.getByText('管理後台')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: '管理後台' })).toBeVisible({ timeout: 15000 });
   await page.getByRole('button', { name: '管理後台' }).click();
   await page.getByRole('button', { name: '用戶管理', exact: true }).click();
   // 角色改成下拉選單＋確認對話框（Sprint 11）：改角色會讓對方被登出，所以先說明再確認。
@@ -34,7 +34,7 @@ test('教練建立班級、產生報到連結，學員可透過連結直接加�
 
   // 3) 教練登入、建班、產生報到 QR / 連結。
   await login(page, coachEmail, 'abcdef12', { fromLanding: false });
-  await expect(page.getByText('教練後台')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: '教練後台', exact: true })).toBeVisible({ timeout: 15000 });
   await page.getByRole('button', { name: '教練後台', exact: true }).click();
   await page.getByRole('button', { name: '建立班別' }).click();
   // 第一次建班（還沒有任何班別）也要能選到所有題庫，不只 AI 職能。

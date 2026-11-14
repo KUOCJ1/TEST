@@ -82,7 +82,7 @@ export default function MultiRaterHome({ user, initialAssessmentId, onRateOthers
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <header className="mb-6">
-        <h2 className="text-2xl font-extrabold text-slate-800">360° 評測</h2>
+        <h2 className="font-serif text-2xl font-bold text-slate-900">360° 評測</h2>
         <p className="mt-1 text-sm text-slate-500">
           除了自己填答，也可以評測您的主管、同儕或部屬，並在下方查看整合多方回饋的分析報告。
         </p>

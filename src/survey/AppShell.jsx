@@ -29,6 +29,7 @@ import OnboardingBanner from './components/OnboardingBanner';
 import ChatBot from './components/ChatBot';
 import UserMenu from './components/UserMenu';
 import OfflineBanner from './components/OfflineBanner';
+import SideNav from './components/SideNav';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingState from './components/LoadingState';
 import FollowUpBanner from './course/FollowUpBanner.jsx';
@@ -381,11 +382,13 @@ function AppShellInner() {
   return (
     // 底部導覽與 AI 小幫手浮動按鈕都是 fixed：保留足夠的底部內距，捲到最底時最後一段
     // 內容才不會被它們蓋住（Sprint 8 驗收條件 8.6）。
-    <div className={`min-h-screen ${showBottomNav ? 'pb-[calc(8rem+env(safe-area-inset-bottom))] sm:pb-20' : ''}`}>
+    <div className={`min-h-screen ${showBottomNav ? 'pb-[calc(8rem+env(safe-area-inset-bottom))] sm:pb-20' : ''} ${showBottomNav ? 'lg:pl-60' : ''}`}>
+      {/* 桌機左側導覽（lg 以上）；作答／選擇受評者時不顯示，讓使用者專心填答。 */}
+      {showBottomNav && <SideNav tabs={tabs} isTabActive={isTabActive} onNavigate={navigate} logoSrc={`${import.meta.env.BASE_URL}favicon.svg`} />}
       <header ref={headerRef} className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-1 sm:px-6 sm:py-2.5">
           {/* 點名稱回到「我的評量」。作答進度會自動儲存在瀏覽器，離開不會遺失。 */}
-          <Link to="/home" aria-label="回到我的評量" title="回到我的評量" className="tap flex shrink-0 items-center gap-2 rounded text-base font-extrabold tracking-tight text-slate-800 hover:text-brass-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-400">
+          <Link to="/home" aria-label="回到我的評量" title="回到我的評量" className={`tap ${showBottomNav ? 'lg:hidden' : ''} flex shrink-0 items-center gap-2 rounded text-base font-extrabold tracking-tight text-slate-800 hover:text-brass-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-400`}>
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
             <span className="hidden lg:inline">全方位職能評測</span>
             <span className="lg:hidden">職能評測</span>
@@ -403,7 +406,7 @@ function AppShellInner() {
           ) : (
             /* 手機改用畫面底部的 tab bar（見下方 <nav>），這裡只在 sm 以上顯示。
                不換行：寬度真的不夠（sm～lg 之間的平板）時橫向捲動，而不是折成兩行。 */
-            <nav aria-label="功能分頁" className="no-scrollbar hidden min-w-0 flex-1 gap-1 overflow-x-auto sm:flex">
+            <nav aria-label="功能分頁" className="no-scrollbar hidden min-w-0 flex-1 gap-1 overflow-x-auto sm:flex lg:hidden">
               {tabs.map((t) => (
                 <button
                   key={t.id}
@@ -411,7 +414,7 @@ function AppShellInner() {
                   aria-current={isTabActive(t.path) ? 'page' : undefined}
                   title={t.hint}
                   onClick={() => navigate(t.path)}
-                  className={`shrink-0 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
                     isTabActive(t.path)
                       ? 'bg-ink-700 text-paper-50'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'

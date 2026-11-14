@@ -30,7 +30,7 @@ export default function CoachDashboard() {
     <main className="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-8">
       <OnboardingBanner role="coach" show={(overview?.users?.length ?? 0) === 0} />
       <header className="mb-5">
-        <h2 className="text-2xl font-extrabold text-slate-800">教練後台</h2>
+        <h2 className="font-serif text-2xl font-bold text-slate-900">教練後台</h2>
         <p className="mt-1 text-sm text-slate-500">
           為學員撰寫評語與精進建議，並管理班別整體評量。
         </p>
@@ -44,7 +44,7 @@ export default function CoachDashboard() {
             aria-current={tab === id ? 'page' : undefined}
             onClick={() => setTab(id)}
             className={`rounded-md px-4 py-1.5 transition-colors ${
-              tab === id ? 'bg-white text-brass-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              tab === id ? 'bg-white text-ink-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             {label}

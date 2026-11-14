@@ -123,7 +123,8 @@ export default function RadarChart({ dimensions, size = 340, compare = null, com
               textAnchor={anchor}
               fontSize={labelFont}
               fontWeight="600"
-              fill="#2d3748"
+              fill={friendly ? 'currentColor' : '#2d3748'}
+              className={friendly ? 'text-slate-700' : undefined}
             >
               {labelOf(d)}
             </text>

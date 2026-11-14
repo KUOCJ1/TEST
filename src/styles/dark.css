@@ -1,0 +1,158 @@
+/*
+ * 深色模式（榕光 D5）——所有 `.dark` 覆寫集中在這一個檔案。
+ *
+ * 設計：
+ *  1. 調色盤全部是 `.dark` 底下的 CSS 變數（--d-*），改深色配色只動下面這一段。
+ *  2. 規則是「兩個 class」（.dark .xxx，優先權 0,2,0），贏過 Tailwind 工具類（0,1,0），所以**不需要 !important**
+ *     （舊版整份都是 !important，彼此蓋來蓋去很難除錯）。只有同樣是 0,2,0 的 hover:／sm: 變體靠「檔案順序在後」取勝，
+ *     所以本檔必須在 index.css 之後匯入（main.jsx）。
+ *  3. 為什麼獨立成一個檔案、不放 index.css：Tailwind 處理 index.css 時會改寫「選擇器裡提到、同檔又被 @apply 的 utility class」
+ *     （見 dark-status.css 的說明），放同一檔會壞。
+ *  4. 品牌色塊（結果頁主視覺、首頁「下一步」卡、.surface-hero、左側導覽）用行內顏色，不吃這裡的反轉規則。
+ *  新增顏色時：先在 tailwind.config.js 加 token，再回來看深色版是否要補一條；補完請跑 axe（e2e 的深色掃描）。
+ */
+.dark {
+  --d-bg: #14201b;          /* 頁面底色 */
+  --d-surface: #1b2a24;     /* 卡片、白底區塊 */
+  --d-surface-2: #17241f;   /* 淺底（slate-50/100、paper-200） */
+  --d-line: #2b3d35;        /* 邊框、分隔線 */
+  --d-line-2: #3a4d44;      /* 較深的底（slate-200/300） */
+  --d-text: #eef3ee;        /* 主要文字 */
+  --d-muted: #a9b8af;       /* 次要文字 */
+  --d-sun: #f2b544;         /* 暖陽金：文字用 */
+  --d-mint: #cfe5d6;        /* 主要按鈕反轉後的淺底 */
+  --d-on-mint: #10352a;     /* 淺底上的深綠文字 */
+  --d-gold-bg: #1f3029;     /* 提示框（brass-50）深色版 */
+  --d-gold-bg-2: #3a3118;   /* brass-100 深色版 */
+  --d-gold-bg-3: #4a3e1f;   /* brass-200／金色邊框深色版 */
+  --d-sky-bg: #182127;
+  --d-surface-a92: rgba(27, 42, 36, 0.92);
+  --d-surface-2-a95: rgba(23, 36, 31, 0.95);
+}
+.dark ::-webkit-scrollbar-thumb { background: var(--d-line); }
+.dark .surface, .dark .card, .dark .panel, .dark .panel-primary { background-color: var(--d-surface); --tw-ring-color: var(--d-line); }
+
+.dark body {
+  color: var(--d-text);
+  background-color: var(--d-bg);
+}
+.dark .bg-white { background-color: var(--d-surface); }
+/* 響應式變體（教練後台外層：手機無底色、sm 以上白卡）不在上面的 .bg-white 規則裡，要另外對應。 */
+@media (min-width: 640px) { .dark .sm\:bg-white { background-color: var(--d-surface); } }
+.dark .bg-white\/95,
+.dark .bg-white\/90 { background-color: var(--d-surface-a92); }
+.dark .bg-slate-50,
+.dark .bg-slate-100 { background-color: var(--d-surface-2); }
+.dark .bg-slate-200,
+.dark .bg-slate-300 { background-color: var(--d-line-2); }
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700,
+.dark .text-slate-600 { color: var(--d-text); }
+.dark .text-slate-500,
+.dark .text-slate-400 { color: var(--d-muted); }
+.dark .border-slate-200,
+.dark .border-slate-300,
+.dark .border-slate-100 { border-color: var(--d-line); }
+.dark .ring-slate-100,
+.dark .ring-slate-200 { --tw-ring-color: var(--d-line); }
+.dark .input { background: var(--d-surface-2); color: var(--d-text); border-color: var(--d-line); }
+.dark .panel-secondary { background-color: var(--d-surface-2); --tw-ring-color: var(--d-line); }
+/* .btn-primary／.btn-secondary／.btn-ghost／.btn-icon 是 @apply 出來的複合
+   class，class 屬性上不會留下 bg-ink-700 這類字面 class，下面幾條全站共用的
+   工具類覆寫吃不到它們，所以要另外直接覆寫。 */
+.dark .btn-primary { background-color: var(--d-text); color: var(--d-bg); }
+.dark .btn-primary:hover { background-color: var(--d-mint); }
+.dark .btn-secondary { background-color: var(--d-surface); color: var(--d-text); border-color: var(--d-line); }
+.dark .btn-secondary:hover { background-color: var(--d-surface-2); }
+.dark .btn-ghost,
+.dark .btn-icon { color: var(--d-muted); }
+.dark .btn-ghost:hover,
+.dark .btn-icon:hover { background-color: var(--d-surface-2); color: var(--d-text); }
+
+/* 「顧問報告」視覺系統（paper / ink / brass）的深色模式覆寫——目前用在
+   Landing／Login／JoinClassBanner，以及 AppShell 頁首少數幾處。 */
+.dark .bg-paper-50,
+.dark .bg-paper-100,
+.dark .bg-paper-100\/95 { background-color: var(--d-surface); }
+.dark .bg-paper-200 { background-color: var(--d-surface-2); }
+.dark .text-ink-700,
+.dark .text-ink-600,
+.dark .text-ink-400 { color: var(--d-text); }
+.dark .text-ink-100,
+.dark .text-ink-50 { color: var(--d-muted); }
+.dark .border-ink-700,
+.dark .border-ink-700\/10,
+.dark .border-ink-700\/40,
+.dark .border-ink-700\/50,
+.dark .divide-ink-700\/10 { border-color: var(--d-line); }
+.dark .ring-paper-300 { --tw-ring-color: var(--d-line); }
+/* 墨色實心區塊（CTA 色塊）在深色模式下反轉為淺色，維持對比。 */
+.dark .bg-ink-700 { background-color: var(--d-mint); }
+.dark .text-paper-50 { color: var(--d-bg); }
+/* 上面兩條各自成立時沒問題，但全站有 15＋ 處把 bg-ink-700 當「選取狀態」的
+   底色、配著寫死的 text-white（不是 text-paper-50）使用——分頁選取、答案
+   選取、步驟編號徽章、聊天視窗標題列等。bg-ink-700 反轉成淺色後，這些地方
+   的白字完全沒被上面任何一條規則涵蓋到，變成白字配淺底、實質看不見。用複合
+   選擇器（兩個 class 同時命中同一元素）一次補齊，不必逐檔案把 text-white
+   改成 text-paper-50。 */
+.dark .bg-ink-700.text-white { color: var(--d-bg); }
+/* 同一個問題的另一種寫法：ChatBot 標題列的「清除對話」「關閉」用 text-brass-200
+   在深色底上當低調次要文字，bg-ink-700 反轉成淺色後這個本來就偏亮的金色幾乎融進
+   底色。這兩顆按鈕跟 bg-ink-700 底色是父子兩個不同元素（子孫選擇器，非複合），
+   hover 時的 text-white 維持不動，因為 hover:bg-ink-900 沒有被反轉、深底配白字
+   本來就還是對比夠的組合。 */
+.dark .bg-ink-700 .text-brass-200 { color: var(--d-on-mint); }
+/* 分頁列的「選取中」膠囊統一寫成 bg-white text-brass-600（管理後台、教練後台、
+   班級工作台、跨梯次比較的課前/課後切換）。bg-white 在深色模式轉成深底，但
+   text-brass-600 沒有覆寫，深棕金字配深底對比只有約 2:1，選取中的分頁反而比
+   未選取（text-slate-500 已提亮）還暗，強調方向整個顛倒。只用複合選擇器處理
+   「同一個元素同時有這兩個 class」的情況——text-brass-600 用在淺米色
+   bg-brass-50 區塊（深色模式維持淺底）時本來就清楚，不能一起提亮。 */
+.dark .text-paper-50\/75,
+.dark .text-paper-50\/80 { color: var(--d-line-2); }
+/* ── Sprint 8：深色模式對比補強（全站 axe color-contrast 稽核的結果）────────
+   1. 米色提示框（bg-brass-50：新手引導、摘要、班級評語…）與半透明的淺色敘事框、
+      題卡（*-50/60）以前在深色模式維持亮底，但框內文字已被上面的規則提亮，
+      變成淺字配淺底（約 2:1）。改成暖深色版本，跟其他區塊一致。 */
+.dark .bg-brass-50,
+.dark .bg-brass-50\/50,
+.dark .bg-brass-50\/60 { background-color: var(--d-gold-bg); }
+.dark .bg-sky-50\/60 { background-color: var(--d-sky-bg); }
+/* 淺黃銅底的 chip／按鈕（bg-brass-100、hover 的 bg-brass-200，例如用戶管理的「教練」
+   角色徽章、「設為教練」按鈕）：配合上面「黃銅色文字在深色模式一律提亮」，底色要
+   一起轉深，否則是亮金字配淺金底（1.25:1）。 */
+.dark .bg-brass-100 { background-color: var(--d-gold-bg-2); }
+.dark .hover\:bg-brass-200:hover,
+.dark .bg-brass-200 { background-color: var(--d-gold-bg-3); }
+.dark .bg-slate-50\/60 { background-color: var(--d-surface-2); }
+.dark .bg-paper-50\/95 { background-color: var(--d-surface-2-a95); }
+.dark .border-paper-300 { border-color: var(--d-line); }
+.dark .border-brass-100,
+.dark .border-brass-200,
+.dark .border-brass-300 { border-color: var(--d-gold-bg-3); }
+.dark .ring-brass-100,
+.dark .ring-sky-100 { --tw-ring-color: var(--d-gold-bg-3); }
+/* 2. 黃銅色文字在深色底上一律改用亮金色（原本的深棕金在深底只有 2–3:1）。
+      唯一例外是 bg-ink-700 反轉成淺底的區塊（CTA、選取中的選項），裡面改回深色。 */
+.dark .text-brass-400,
+.dark .text-brass-500,
+.dark .text-brass-600,
+.dark .text-brass-700 { color: var(--d-sun); }
+.dark .bg-ink-700 .text-brass-50,
+.dark .bg-ink-700 .text-brass-100,
+.dark .bg-ink-700 .text-brass-300,
+.dark .bg-ink-700 .text-brass-400,
+.dark .bg-ink-700 .text-brass-500,
+.dark .bg-ink-700 .text-brass-600 { color: var(--d-on-mint); }
+/* 3. 狀態色文字的深色模式提亮放在 src/styles/dark-status.css（見該檔說明）。 */
+/* 4. 構面顏色（題庫設定裡寫死的 inline style）改由 utils/color.js 的 dimTextStyle()
+      算出亮色／深色兩組達標的文字色，透過 CSS 變數 --dim-light／--dim-dark 套用。 */
+.dim-text { color: var(--dim-light); }
+.dark .dim-text { color: var(--dim-dark); }
+
+.dark .shadow-lg,
+.dark .shadow-md,
+.dark .shadow-sm,
+.dark .shadow-card { --tw-shadow-color: rgba(0, 0, 0, 0.6); }
+

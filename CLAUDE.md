@@ -95,6 +95,10 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - **L9D 九大構面（90 題，高階／接班）**＝核心 7 ＋ 思辨與決策 ＋ 接班成熟度；**八大構面（70 題，`leadership-360-70`，目前為客戶專案專用）**＝核心 7 ＋ 應變與創新。沒有任何一套是十大構面，兩邊名稱都維持。
 - 核心 7 構面（溝通力、協作關係、任務管理、執行力、領導影響力、人才發展、自我成長）在 `utils/coreDimensions.js`；兩套總分範圍不同（90–450／70–350）不能比總分，跨評量比較一律用核心構面平均。管理後台「各評量統計」底下有 `CoreCompareSection`。教練端刻意不做跨評量比較：教練不應看到學員在別的班或別的評量的結果。
 
+## 榕光視覺系統（2026-11）
+
+- 品牌色榕綠＋暖陽金＋暖紙，設計說明與樣張在 `docs/design/`；token 在 `tailwind.config.js`（沿用 `ink`／`brass`／`paper`／`slate` 名稱、只改色值：`ink-700`＝榕綠主色、`brass-200`＝暖陽）。深色模式在 `src/styles/dark.css`（CSS 變數、無 `!important`）。卡片用 `.surface`／`.surface-hero`，落點徽章用 `LevelBadge`（螢幕去 emoji，A4 列印報告不動）。桌機 lg 以上是左側導覽 `SideNav`。細節見 `docs/PLATFORM_MANUAL.md`「共用介面規範」。
+
 ## 手機 App 化（PWA）
 
 - 方向：不上架、不重寫，走 PWA 並把手機介面打磨到位。**計畫、問題清單、各 Sprint 的驗收條件在 `docs/MOBILE_APP_PLAN.md`**（M0–M5 已完成；M6 手機版報告閱讀版進行中）。改手機介面的規範見 `docs/PLATFORM_MANUAL.md`「手機與安裝」：手機樣式只加在 `sm` 以下、手機／桌機不同元件用 `useIsMobile()`、頁首下方的元素用 `--app-header-h`。`e2e/mobile-layout.spec.js` 會擋 CI。

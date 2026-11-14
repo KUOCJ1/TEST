@@ -194,7 +194,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
       {/* Screen header */}
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-800">我的能力分析</h2>
+          <h2 className="font-serif text-2xl font-bold text-slate-900">我的能力分析</h2>
           <p className="mt-0.5 text-sm text-slate-500">
             {user.name}，共完成 {subs.length} 次評測
           </p>

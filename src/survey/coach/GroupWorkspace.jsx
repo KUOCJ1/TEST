@@ -43,7 +43,7 @@ function GroupHeader({ group, memberCount }) {
   return (
     <div className="mb-4 border-b border-slate-100 pb-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-lg font-bold text-slate-800">{group.name}</h3>
+        <h3 className="font-serif text-xl font-bold text-slate-900">{group.name}</h3>
         <PhaseBadge phase={group.phase} />
         {group.templateId && <span className="chip bg-ink-700 text-white" title="這個班使用專案範本，評量已鎖定">專案範本・評量已鎖定</span>}
       </div>
@@ -246,7 +246,7 @@ export default function GroupWorkspace({ users, currentUserId }) {
                     aria-current={section === s.id ? 'page' : undefined}
                     onClick={() => setSection(s.id)}
                     className={`rounded-md px-4 py-1.5 transition-colors ${
-                      section === s.id ? 'bg-white text-brass-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      section === s.id ? 'bg-white text-ink-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
                     {s.label}

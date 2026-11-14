@@ -153,7 +153,7 @@ export default function CoursePostSurvey({ user = { id: 'guest', name: '訪客' 
       <ProgressBar answered={answered} total={keys.length} />
       {closedNotice && <p role="status" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{closedNotice}</p>}
       <header className="mb-6">
-        <h1 className="text-2xl font-extrabold text-slate-800">{NAME}</h1>
+        <h1 className="font-serif text-2xl font-bold text-slate-900">{NAME}</h1>
         <p lang="en" className="text-xs text-slate-400">{NAME_EN}</p>
         <p className="mt-2 text-sm text-slate-500">
           這不是考試。請依實際感受作答，約 12–15 分鐘。主辦單位只會看到完成人數與整體彙總，看不到個人答案。

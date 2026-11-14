@@ -55,7 +55,7 @@ export default function CohortTrendSection({ groups, submissions, config }) {
               aria-pressed={phase === p.id}
               onClick={() => setPhase(p.id)}
               className={`rounded-md px-3 py-1 transition-colors ${
-                phase === p.id ? 'bg-white text-brass-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                phase === p.id ? 'bg-white text-ink-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               {p.label}

@@ -105,7 +105,7 @@ export default function ProfilePage() {
   return (
     <main className="mx-auto max-w-2xl space-y-5 px-4 py-8 sm:px-6">
       <header className="mb-1">
-        <h2 className="text-2xl font-extrabold text-slate-800">個人設定</h2>
+        <h2 className="font-serif text-2xl font-bold text-slate-900">個人設定</h2>
         <p className="mt-1 text-sm text-slate-500">管理您的個人資料、密碼與偏好。</p>
       </header>
 

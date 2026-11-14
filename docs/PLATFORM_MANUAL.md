@@ -497,11 +497,15 @@ return config.PROFILES[key] ?? config.PROFILES.default;
   - 當文字顏色 → `style={dimTextStyle(hex)}` 加 `className="dim-text"`（算出
     淺色／深色模式各一個過 AA 的色，透過 `--dim-light`／`--dim-dark` CSS 變數
     切換；不用 CSS `filter`，因為 axe 不把 filter 算進對比）
-- **深色模式**：全域覆寫在 `src/index.css` 的 `.dark` 區塊。狀態色文字（綠／琥珀／
-  藍／紅）的提亮規則放在獨立的 `src/styles/dark-status.css`（`main.jsx` 在
-  `index.css` 之後匯入）——那些規則用 `:not(:is(.bg-amber-50 …))` 排除淺色小
-  標籤裡的文字，而 Tailwind 處理 `index.css` 時會把「選擇器裡提到、同檔又被
-  `@apply` 的 utility class」改寫掉，放同一檔就壞了。
+- **深色模式**：所有覆寫集中在 `src/styles/dark.css`（`main.jsx` 在 `index.css` 之後匯入），調色盤是 `.dark` 底下的一組
+  CSS 變數（`--d-*`），規則是 `.dark .xxx`（優先權高於 Tailwind 工具類，**不使用 `!important`**）。改深色配色只動變數；
+  新增顏色先加 tailwind token，再看深色版要不要補一條。狀態色（綠／琥珀／藍／紅）的提亮放 `src/styles/dark-status.css`。
+  為什麼獨立成檔：Tailwind 處理 `index.css` 時會改寫「選擇器裡提到、同檔又被 `@apply` 的 utility class」，放同檔會壞。
+  **品牌色塊**（結果頁主視覺、首頁下一步卡、`.surface-hero`、左側導覽、手機 KPI 主卡）用行內顏色，不吃反轉規則。
+  改完要跑 axe 的深色掃描（可參考 `e2e/` 內各 spec 的 AxeBuilder 用法，加上 `document.documentElement.classList.add('dark')`）。
+- **表面與導覽**：卡片／面板只有兩種——`.surface`（預設）與 `.surface-hero`（品牌色塊）；舊 `.card`／`.panel*` 是別名。
+  桌機（lg）左側導覽是 `components/SideNav.jsx`（作答時不顯示），平板是頁首分頁列，手機是底部導覽；三者的項目都來自
+  `AppShell` 的 `tabs`，名稱一致（e2e 用 `getByRole('button', { name: '教練後台', exact: true })`）。
 - **不斷字**：按鈕、`.chip`、表格欄位都 `whitespace-nowrap`；手機上要隱藏的按鈕
   文字用 `sr-only sm:not-sr-only`（**不要**用 `hidden sm:inline`，那會讓按鈕在
   手機上沒有無障礙名稱）。會水平捲動的表格容器要 `tabIndex={0}`＋`role="region"`＋

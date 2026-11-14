@@ -12,17 +12,16 @@ import { getAssessment } from '../data/assessments/index.js';
 import ProgressPanel from './ProgressPanel';
 import SharedGoalsPanel from './SharedGoalsPanel';
 import CourseSurveyPanel from './CourseSurveyPanel';
-import { badgeBg } from '../utils/color';
 import { useIsMobile } from '../hooks/useIsMobile';
+import LevelBadge from '../components/LevelBadge';
 import { dimLabel } from '../utils/dimensionLabel';
-import { badgeText } from '../utils/levelBadge';
 
 // 「總覽」分頁內容：KPI 卡、班級雷達圖、能力熱力圖、成員比較表、班級敘事報告、
 // 學習成效面板、班級整體評語表單。從 GroupWorkspace 拆出（Sprint 5.6）——
 // 班級整體評語的編輯狀態（groupComment/groupTips）只有這裡用得到，故整段隨表單
 // 一起搬過來；父層在切換班別時用 key={group.id} 讓這裡的表單狀態自動重置，
 // 沿用本檔案原本 GroupTimelineCard／QrCodeCard 已經在用的作法。
-function MemberCards({ memberRows, groupStats, has360, sortBy, setSortBy, onOpenMember, onReport360 }) {
+function MemberCards({ memberRows, groupStats, has360, sortBy, setSortBy, onOpenMember, onReport360, config }) {
   // 排序只改顯示順序；onOpenMember 要用原本在 memberRows 的索引（抽屜靠它定位成員）。
   const items = memberRows.map((r, i) => ({ r, i }));
   if (sortBy === 'name') items.sort((a, b) => a.r.name.localeCompare(b.r.name, 'zh-Hant'));
@@ -37,7 +36,7 @@ function MemberCards({ memberRows, groupStats, has360, sortBy, setSortBy, onOpen
               type="button"
               aria-pressed={sortBy === id}
               onClick={() => setSortBy(id)}
-              className={`rounded-md px-3 ${sortBy === id ? 'bg-white text-brass-600 shadow-sm' : 'text-slate-500'}`}
+              className={`rounded-md px-3 ${sortBy === id ? 'bg-white text-ink-700 shadow-sm' : 'text-slate-500'}`}
             >
               {label}
             </button>
@@ -60,9 +59,7 @@ function MemberCards({ memberRows, groupStats, has360, sortBy, setSortBy, onOpen
                     <span className="ml-2 text-xs text-slate-400">達成率 {r.percent}%</span>
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white" style={{ background: badgeBg(r.level.color) }}>
-                  {badgeText(r.level.badge)}
-                </span>
+                <LevelBadge level={r.level} config={config} className="shrink-0" />
               </div>
               {has360 && (
                 <p className="mt-1 text-xs text-slate-500">
@@ -105,9 +102,9 @@ function MobileKpis({ group, members, groupStats }) {
   return (
     <dl className="grid grid-cols-2 gap-2" aria-label="班級關鍵數字">
       {tiles.map((t) => (
-        <div key={t.label} className={`rounded-xl px-4 py-3 ring-1 ${t.strong ? 'bg-ink-700 ring-ink-700' : 'bg-white ring-slate-100'}`}>
-          <dt className={`text-xs ${t.strong ? 'text-white/80' : 'text-slate-400'}`}>{t.label}</dt>
-          <dd className={`mt-0.5 text-2xl font-extrabold ${t.strong ? 'text-white' : t.warn ? 'text-amber-600' : 'text-slate-800'}`}>{t.value}</dd>
+        <div key={t.label} className={`rounded-xl px-4 py-3 ring-1 ${t.strong ? 'ring-transparent' : 'bg-white ring-slate-100'}`} style={t.strong ? { background: '#1f5d4a', color: '#ffffff' } : undefined}>
+          <dt className={`text-xs ${t.strong ? '' : 'text-slate-500'}`} style={t.strong ? { color: '#cfe5d6' } : undefined}>{t.label}</dt>
+          <dd className={`font-serif mt-0.5 text-2xl font-bold tabular-nums ${t.strong ? '' : t.warn ? 'text-amber-600' : 'text-slate-900'}`}>{t.value}</dd>
         </div>
       ))}
     </dl>
@@ -178,40 +175,41 @@ export default function GroupOverviewSection({
         </div>
       ) : groupStats && (
         <>
-          {/* KPI row：完成度是主數字，其餘為支撐數字，避免四格全部等重。
-              panel-primary 讓這一列在視覺上明確比下面的圖表／表格更重。 */}
-          <div className="panel-primary">
-            <div className="flex flex-wrap items-baseline gap-x-8 gap-y-3">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">已填答</p>
-                <p className="mt-1 text-3xl font-extrabold text-slate-800">
-                  {groupStats.respondents}
-                  <span className="ml-1 text-base font-semibold text-slate-400">/{group.memberIds.length} 人</span>
-                </p>
+          {/* KPI 列（榕光 D4）：「已填答」是主數字（品牌深綠色塊），其餘為支撐數字。
+              宋體大數字＋等寬數字，一眼先看到「這班現在怎麼樣」。 */}
+          <div role="group" aria-label="班級統計" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <div className="surface-hero col-span-2 lg:col-span-1">
+              <p className="text-xs font-medium" style={{ color: '#cfe5d6' }}>已填答</p>
+              <p className="font-serif mt-1 text-4xl font-bold leading-none tabular-nums">
+                {groupStats.respondents}
+                <span className="ml-1 text-base font-semibold" style={{ color: '#cfe5d6' }}>/{group.memberIds.length} 人</span>
+              </p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,.2)' }} aria-hidden="true">
+                <div className="h-full rounded-full" style={{ width: `${group.memberIds.length ? Math.min(100, Math.round((groupStats.respondents / group.memberIds.length) * 100)) : 0}%`, background: '#f2b544' }} />
               </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">已寫評語</p>
-                <p className="mt-1 text-3xl font-extrabold text-brass-600">
-                  {commentedCount}
-                  <span className="ml-1 text-base font-semibold text-slate-400">/{memberRows.length} 人</span>
-                </p>
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">平均總分</p>
-                <p className="mt-1 text-xl font-bold text-slate-700">{groupStats.avgTotal}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">平均達成率</p>
-                <p className="mt-1 text-xl font-bold text-slate-700">{groupStats.avgPercent}%</p>
-              </div>
-              {strongestWeakest && (
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">最強／待強化</p>
-                  <p className="mt-1 text-sm font-bold text-emerald-600">{dimLabel(strongestWeakest.strongest)}</p>
-                  <p className="text-sm font-bold text-amber-600">{dimLabel(strongestWeakest.weakest)}</p>
-                </div>
-              )}
             </div>
+            <div className="surface">
+              <p className="text-xs font-medium text-slate-500">已寫評語</p>
+              <p className="font-serif mt-1 text-3xl font-bold tabular-nums text-brass-500">
+                {commentedCount}
+                <span className="ml-1 text-sm font-semibold text-slate-500">/{memberRows.length} 人</span>
+              </p>
+            </div>
+            <div className="surface">
+              <p className="text-xs font-medium text-slate-500">平均總分</p>
+              <p className="font-serif mt-1 text-3xl font-bold tabular-nums text-slate-900">{groupStats.avgTotal}</p>
+            </div>
+            <div className="surface">
+              <p className="text-xs font-medium text-slate-500">平均達成率</p>
+              <p className="font-serif mt-1 text-3xl font-bold tabular-nums text-slate-900">{groupStats.avgPercent}%</p>
+            </div>
+            {strongestWeakest && (
+              <div className="surface col-span-2 lg:col-span-1">
+                <p className="text-xs font-medium text-slate-500">最強／待強化</p>
+                <p className="mt-1 text-sm font-bold text-ink-700">{dimLabel(strongestWeakest.strongest)}</p>
+                <p className="text-sm font-bold text-brass-500">{dimLabel(strongestWeakest.weakest)}</p>
+              </div>
+            )}
           </div>
 
           <div className="panel">
@@ -242,6 +240,7 @@ export default function GroupOverviewSection({
               setSortBy={setSortBy}
               onOpenMember={onOpenMember}
               onReport360={(r) => setReport360({ id: r.userId, name: r.name })}
+              config={getAssessment(group.assessmentId)}
             />
           ) : (
           <div className="panel">
@@ -291,12 +290,7 @@ export default function GroupOverviewSection({
                           </div>
                         </td>
                         <td className="py-2.5 pr-3">
-                          <span
-                            className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
-                            style={{ background: badgeBg(r.level.color) }}
-                          >
-                            {badgeText(r.level.badge)}
-                          </span>
+                          <LevelBadge level={r.level} config={getAssessment(group.assessmentId)} />
                         </td>
                         {has360 && (
                           <td className="py-2.5 pr-3">

@@ -96,7 +96,7 @@ export default function AdminDashboard() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <header className="mb-5">
-        <h2 className="text-2xl font-extrabold text-slate-800">管理後台</h2>
+        <h2 className="font-serif text-2xl font-bold text-slate-900">管理後台</h2>
         <p className="mt-1 text-sm text-slate-500">
           以每位填答者「最新一筆」作答為母體，依題庫分別彙整能力落點。
         </p>
@@ -166,7 +166,7 @@ export default function AdminDashboard() {
               aria-current={tab === id ? 'page' : undefined}
               onClick={() => setTab(id)}
               className={`shrink-0 rounded-md px-4 py-1.5 transition-colors ${
-                tab === id ? 'bg-white text-brass-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                tab === id ? 'bg-white text-ink-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               {label}

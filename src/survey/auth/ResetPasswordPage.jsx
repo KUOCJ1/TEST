@@ -27,7 +27,7 @@ export default function ResetPasswordPage({ token, onDone }) {
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <header className="mb-6 text-center">
-          <h1 className="text-2xl font-extrabold text-slate-800 sm:text-3xl">重設密碼</h1>
+          <h1 className="font-serif text-2xl font-bold text-slate-900 sm:text-3xl">重設密碼</h1>
           <p className="mt-2 text-sm text-slate-400">設定您的新密碼以重新登入</p>
         </header>
 
