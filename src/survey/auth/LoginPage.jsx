@@ -81,7 +81,8 @@ export default function LoginPage({ onBack, joinCode, joinInfo, inviteCode, invi
           <h1 className="font-serif text-2xl font-bold tracking-tight text-ink-700 sm:text-3xl">
             榕光評測
           </h1>
-          <p className="mt-2 text-sm text-ink-100">登入後即可作答並查看您的專屬能力分析</p>
+          <p className="mt-2 font-serif text-base tracking-[0.08em] text-brass-500">看清落點，走好下一步。</p>
+          <p className="mt-1 text-sm text-ink-100">登入後即可作答並查看您的專屬能力分析</p>
         </header>
 
         {inviteCode ? (

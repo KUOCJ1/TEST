@@ -19,6 +19,7 @@ export default function MarketingFooter() {
         <Link to="/privacy" className="tap text-ink-100 hover:text-ink-700">隱私權政策</Link>
         <Link to="/terms" className="tap text-ink-100 hover:text-ink-700">服務條款</Link>
       </p>
+      <p className="mb-1 font-serif tracking-[0.08em] text-ink-700">看清落點，走好下一步。</p>
       <p>© {new Date().getFullYear()} 榕光評測平台．All rights reserved.</p>
     </footer>
   );

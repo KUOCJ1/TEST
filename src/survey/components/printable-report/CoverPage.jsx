@@ -16,6 +16,7 @@ export default function CoverPage({ result, user, submittedAt, benchmark, percen
         background: '#1a4a3b',
         padding: '44px 52px 38px', color: '#fff',
       }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}><img src={`${import.meta.env.BASE_URL}logo-mark-reverse.svg`} alt="" style={{ width: 40, height: 40 }} /><span style={{ fontFamily: '"Noto Serif TC", serif', fontWeight: 900, fontSize: 20, letterSpacing: '0.02em' }}>榕光評測</span></div>
         <div style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>
           Confidential · 個人評測報告
         </div>

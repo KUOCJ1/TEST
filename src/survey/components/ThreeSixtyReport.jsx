@@ -57,6 +57,7 @@ function Cover({ r, name, date }) {
   return (
     <div>
       <div style={{ background: '#1a4a3b', padding: '34px 40px 30px', color: '#fff', borderRadius: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}><img src={`${import.meta.env.BASE_URL}logo-mark-reverse.svg`} alt="" style={{ width: 40, height: 40 }} /><span style={{ fontFamily: '"Noto Serif TC", serif', fontWeight: 900, fontSize: 20, letterSpacing: '0.02em' }}>榕光評測</span></div>
         <div style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.12em', marginBottom: 10 }}>CONFIDENTIAL · 360° FEEDBACK REPORT</div>
         <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.25 }}>{r.assessmentName}<br /><span style={{ fontSize: 20, fontWeight: 600, opacity: 0.85 }}>360° 完整回饋報告</span></div>
         <div style={{ marginTop: 16, fontSize: 11, opacity: 0.65 }}>報告日期 {date}</div>

@@ -86,8 +86,8 @@ export default function LandingPage({ onEnter, loggedIn = false }) {
       <section className="px-6 pt-20 pb-4">
         <div className="mx-auto flex max-w-6xl flex-col gap-16 lg:flex-row lg:items-start">
           <div className="flex flex-1 flex-col gap-7 lg:max-w-xl">
-            <div className="font-display text-[15px] italic tracking-wide text-brass-500">
-              榕光評測：職能評量與發展學習平臺
+            <div className="font-serif text-base tracking-[0.08em] text-brass-500">
+              看清落點，走好下一步。
             </div>
             <h1 className="font-serif text-4xl font-bold leading-[1.2] tracking-tight text-ink-700 sm:text-5xl">
               先看清楚現在，
