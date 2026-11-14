@@ -1,4 +1,5 @@
 import { signToken, verifyToken } from '../auth.js';
+import { recordActivity } from './goalActivity.js';
 
 const COOKIE_NAME = 'aiassess_token';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 天
@@ -37,6 +38,8 @@ export function createAuthContext({ db, jwtSecret, secureCookies = false }) {
     const user = currentUser(req);
     if (!user) return res.status(401).json({ code: 'UNAUTHORIZED', error: '尚未登入' });
     req.user = user;
+    // 回訪紀錄（Sprint 26）：只記「今天有來過」，一天最多寫一次。
+    try { recordActivity(db, user); } catch { /* 紀錄失敗不影響請求 */ }
     next();
   }
 

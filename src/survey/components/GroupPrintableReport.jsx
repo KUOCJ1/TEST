@@ -400,6 +400,11 @@ function ExecutiveSummaryPage({ group, summary, date }) {
         <div style={{ ...box, background: '#f0fdf4', borderColor: '#bbf7d0' }}><div style={{ fontSize: 10, fontWeight: 800, color: '#065f46', marginBottom: 8 }}>三個優勢構面</div>{list(s.strengths, '#14532d')}</div>
         <div style={{ ...box, background: '#fffbeb', borderColor: '#fde68a' }}><div style={{ fontSize: 10, fontWeight: 800, color: '#92400e', marginBottom: 8 }}>三個優先發展構面</div>{list(s.priorities, '#78350f')}</div>
       </div>
+      {s.goals && (
+        <div style={{ ...box, marginBottom: 14, fontSize: 11, color: '#334155' }}>
+          <strong>行動成果：</strong>{s.goals.members} 位成員中，{s.goals.withGoal} 位（{Math.round((s.goals.withGoal / s.goals.members) * 100)}%）已設定發展目標，近 {s.goals.recentDays} 天有 {s.goals.recentCheckin} 位回報進度。
+        </div>
+      )}
       {s.nextSteps.length > 0 && (
         <div style={{ ...box, background: '#fbf7ef', borderColor: '#e6dcc8' }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: '#8a5200', marginBottom: 8 }}>建議的下一步</div>
@@ -474,7 +479,7 @@ function CourseSurveyPage({ group, summary, date }) {
 }
 
 // ─── Main export ───────────────────────────────────────────────
-export default function GroupPrintableReport({ group, submissions, users, onClose }) {
+export default function GroupPrintableReport({ group, submissions, users, goalSummary = null, onClose }) {
   // 客戶版：給 HR／老闆，不含個人排名與成員個別頁；教練版：保留排名與成員頁。預設客戶版。
   const [variant, setVariant] = useState('client');
   const isClient = variant === 'client';
@@ -520,7 +525,7 @@ export default function GroupPrintableReport({ group, submissions, users, onClos
     .sort((a, b) => b.total - a.total);
   const results = latest.map((s) => s.result);
   const memberCount = group.memberIds?.length ?? rows.length;
-  const summary = buildExecutiveSummary({ stats, memberCount, prepost });
+  const summary = { ...buildExecutiveSummary({ stats, memberCount, prepost }), goals: goalSummary && !goalSummary.hidden ? goalSummary : null };
   const prePostChapter = buildPrePostChapter(prepost);
 
   const pages = (

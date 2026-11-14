@@ -155,6 +155,8 @@ export const api = {
   publishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'POST' }).then((d) => d.group),
   unpublishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'DELETE' }).then((d) => d.group),
   // 回傳 { phase, sent, failed:[email], group }；群組帶新的 lastReminderSentAt（冷卻用）。
+  remindGroupGoals: (id) => request(`/coach/groups/${id}/remind-goals`, { method: 'POST' }),
+  adminRetention: () => request('/admin/retention'),
   sendGroupReminders: (id) => request(`/coach/groups/${id}/remind`, { method: 'POST' }),
 
   upsertComment: (submissionId, payload) =>

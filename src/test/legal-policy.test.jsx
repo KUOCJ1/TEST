@@ -56,7 +56,7 @@ describe('政策內容與實際行為一致（關鍵揭露都在）', () => {
     const terms = textOf(TERMS_SECTIONS);
     expect(terms).toContain('領導力羅盤');
     expect(terms).toContain('接班準備度評測');
-    expect(POLICY_VERSION).toBe('2026-10-18.2');
+    expect(POLICY_VERSION).toBe('2026-11-14.1');
   });
 
   it('隱私權政策揭露第三方（OpenRouter、第二大腦、SMTP）與傳送內容，且不送姓名與 Email', () => {

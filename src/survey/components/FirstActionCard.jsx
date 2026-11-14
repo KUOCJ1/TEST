@@ -24,6 +24,7 @@ export default function FirstActionCard({ result }) {
   const [goals, setGoals] = useState(null);
   const [picked, setPicked] = useState(0);
   const [note, setNote] = useState('');
+  const [share, setShare] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
@@ -49,7 +50,10 @@ export default function FirstActionCard({ result }) {
         actions: [{ text: starters[picked] }],
         baselineAverage: dim.average,
       });
-      setGoals([g, ...goals]);
+      // 預設只有本人看得到；勾選才分享給教練（教練只看得到目標本身，看不到追蹤筆記）。
+      let saved = g;
+      if (share) saved = await api.updateGoal(g.id, { sharedWithCoach: true }).catch(() => g);
+      setGoals([saved, ...goals]);
       setMsg('已記下你的第一步。幾天後我們會輕輕提醒你回來回報。');
     } catch (e) { setError(e.message || '建立失敗，請稍後再試'); } finally { setBusy(false); }
   };
@@ -92,8 +96,11 @@ export default function FirstActionCard({ result }) {
               </label>
             ))}
           </fieldset>
+          <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+            <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} className="mt-1" />
+            <span>讓我的教練看到這個目標<span className="block text-xs text-slate-500">教練只會看到目標與起手行動，看不到你的追蹤筆記；沒勾選就只有你自己看得到，之後可以在「我的學習」改。</span></span>
+          </label>
           <button type="button" disabled={busy} onClick={create} className="btn-primary mt-3">就做這件事</button>
-          <p className="mt-1 text-xs text-slate-500">只有你自己看得到；之後在「我的學習」可以修改。</p>
         </>
       )}
       {error && <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>}

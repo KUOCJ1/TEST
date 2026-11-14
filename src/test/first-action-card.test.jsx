@@ -5,7 +5,7 @@ import { api } from '../survey/api/client';
 import { getAssessment } from '../survey/data/assessments/index.js';
 import { buildResult } from '../survey/utils/scoring.js';
 
-vi.mock('../survey/api/client', () => ({ api: { myGoals: vi.fn(), createGoal: vi.fn(), addGoalCheckin: vi.fn() } }));
+vi.mock('../survey/api/client', () => ({ api: { myGoals: vi.fn(), createGoal: vi.fn(), addGoalCheckin: vi.fn(), updateGoal: vi.fn() } }));
 
 const cfg = getAssessment('leadership-9d');
 // 讓「溝通」構面最低：該構面題目給 1，其餘給 4。
@@ -30,6 +30,23 @@ describe('結果頁「選一件事」', () => {
     expect(body.dimensionId).toBe(result.dimensions.slice().sort((a, b) => a.average - b.average)[0].id);
     expect(body.actions).toHaveLength(1);
     await screen.findByRole('status');
+  });
+
+  it('預設不分享給教練；勾選「讓我的教練看到」才會更新 sharedWithCoach', async () => {
+    api.myGoals.mockResolvedValue([]);
+    api.createGoal.mockImplementation(async (b) => ({ id: 'g1', ...b, checkins: [] }));
+    api.updateGoal.mockResolvedValue({ id: 'g1', sharedWithCoach: true, checkins: [] });
+    const first = render(<FirstActionCard result={result} />);
+    await screen.findByText('先選一件事開始');
+    fireEvent.click(screen.getByRole('button', { name: '就做這件事' }));
+    await screen.findByRole('status');
+    expect(api.updateGoal).not.toHaveBeenCalled();
+    first.unmount();
+    render(<FirstActionCard result={result} />);
+    await screen.findByText('先選一件事開始');
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: '就做這件事' }));
+    await waitFor(() => expect(api.updateGoal).toHaveBeenCalledWith('g1', { sharedWithCoach: true }));
   });
 
   it('已有進行中的目標：改成回報進度，一鍵送出評分與心得', async () => {

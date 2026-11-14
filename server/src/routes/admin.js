@@ -9,6 +9,7 @@ import { getBuildInfo } from '../lib/buildInfo.js';
 import { deepHealthCheck } from '../lib/health.js';
 import { isMailConfigured } from '../lib/mailer.js';
 import { stripRaterDetails } from '../lib/compassPrivacy.js';
+import { retentionForGroup } from '../lib/goalActivity.js';
 import { sanitizeTemplate, publicTemplate } from '../lib/projectTemplates.js';
 import {
   sanitizeOverrides, sanitizeNote, getContentRecord, publishOverrides, isEmptyOverrides,
@@ -203,6 +204,17 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
       goalsShared: goals.filter((g) => g.sharedWithCoach === true).length,
       goalsSnoozed: goals.filter((g) => (g.snoozeCount ?? 0) > 0).length,
     });
+  });
+
+  // 報告後回訪比例（Sprint 26）：各班「最新一次自評之後 7／30 天內有回來」的比例；
+  // 只有彙總，視窗走完且符合條件的人少於 3 位時不顯示。回訪只記「哪一天有登入活動」，不記頁面。
+  router.get('/retention', (_req, res) => {
+    const groups = (db.data.groups ?? []).map((g) => ({
+      id: g.id, name: g.name, companyName: g.companyName ?? '',
+      d7: retentionForGroup(db, g, 7),
+      d30: retentionForGroup(db, g, 30),
+    }));
+    res.json({ groups });
   });
 
   // 稽核紀錄（只讀、只增不改）：新的在前。可用 ?action=、?limit=（最多 200）、?before=（上一頁最後一筆的 ts）。

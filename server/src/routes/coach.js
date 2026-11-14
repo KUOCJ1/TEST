@@ -23,6 +23,7 @@ import { COURSE_SURVEY_ID, summarizeCourseSurvey } from '../lib/courseSurvey.js'
 import { groupWarnings } from '../lib/groupConsistency.js';
 import { publicTemplate } from '../lib/projectTemplates.js';
 import { followUpProgress } from '../lib/courseFollowUp.js';
+import { goalSummaryForGroup, membersWithoutGoal, MIN_N as GOAL_MIN_N } from '../lib/goalActivity.js';
 
 // 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
 export const REMINDER_COOLDOWN_MS = 60 * 60 * 1000;
@@ -270,6 +271,8 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       invites,
       memberInvites: listMemberInvites(group.id),
       mailConfigured: isMailConfigured(),
+      // 班級行動概況（Sprint 26）：只有人數；少於 3 位成員時不顯示。
+      goalSummary: goalSummaryForGroup(db, group),
       // 學員「選擇分享給教練」的發展目標（預設私密）；只含本班評量、本班成員，且不含追蹤筆記。
       sharedGoals: (db.data.goals ?? [])
         .filter((g) => g.sharedWithCoach === true
@@ -570,6 +573,51 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     }
     auditLog(req, 'send_reminders', { groupId: group.id, phase, sent, failed: failed.length });
     res.json({ phase, sent, failed, group: { ...group, phase: getGroupPhase(group) } });
+  }));
+
+  // 提醒「還沒設定發展目標」的成員（Sprint 26）。教練看不到是哪幾位沒設定，只能對全體未設定者發送；
+  // 尊重成員的「評測提醒」通知偏好；同班 1 小時冷卻；成員少於 3 位時不開放（等於點名）。
+  router.post('/groups/:id/remind-goals', asyncHandler(async (req, res) => {
+    const group = (db.data.groups ?? []).find((g) => g.id === req.params.id);
+    if (!group) return res.status(404).json({ error: '班別不存在' });
+    if (group.coachId !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: '無權限' });
+    if (!isMailConfigured()) {
+      return res.status(503).json({ code: 'CONFIG_ERROR', error: '尚未設定寄信服務，請聯絡管理員設定 SMTP。' });
+    }
+    const summary = goalSummaryForGroup(db, group);
+    if (summary.hidden) {
+      return res.status(409).json({ code: 'TOO_FEW', error: `班級成員少於 ${GOAL_MIN_N} 位，不開放這項提醒（避免等於點名個人）。` });
+    }
+    const last = group.lastGoalReminderSentAt ? new Date(group.lastGoalReminderSentAt).getTime() : 0;
+    const waitMs = last + REMINDER_COOLDOWN_MS - Date.now();
+    if (waitMs > 0) {
+      return res.status(429).json({ code: 'REMINDER_COOLDOWN', error: `這個班 1 小時內已寄過提醒信，請 ${Math.ceil(waitMs / 60000)} 分鐘後再試。`, retryAfterSeconds: Math.ceil(waitMs / 1000) });
+    }
+    const recipients = membersWithoutGoal(db, group).filter((m) => m.email && m.preferences?.notifyAssessment !== false);
+    let sent = 0;
+    for (const m of recipients) {
+      const r = await sendMail({
+        to: m.email,
+        subject: `【${group.name}】選一件事，開始你的第一步`,
+        text: [
+          `${m.name || '同學'} 您好：`,
+          '',
+          `您在「${group.name}」的評測報告已經有了，下一步是從結果裡選一件這兩週做得到的事。`,
+          '登入平台、打開您的報告，按「就做這件事」就完成設定，只有您自己看得到。',
+          '',
+          `前往平台：${appBaseUrl()}/`,
+          '',
+          `（此信由評測平台代 ${group.coachName || '授課教練'} 寄出；已設定目標的人不會收到。不想收到這類信，可到「個人設定 → 通知偏好」關閉「評測提醒」。）`,
+        ].join('\n'),
+      });
+      if (r.ok) sent += 1;
+    }
+    if (sent > 0) {
+      group.lastGoalReminderSentAt = new Date().toISOString();
+      db.persist();
+    }
+    auditLog(req, 'send_goal_reminders', { groupId: group.id, sent });
+    res.json({ sent });
   }));
 
   // 批量匯入名單。

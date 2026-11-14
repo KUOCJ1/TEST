@@ -11,6 +11,7 @@ import { supportsPrePost } from '../utils/prePost.js';
 import { getAssessment } from '../data/assessments/index.js';
 import ProgressPanel from './ProgressPanel';
 import SharedGoalsPanel from './SharedGoalsPanel';
+import GoalActivityPanel from './GoalActivityPanel';
 import CourseSurveyPanel from './CourseSurveyPanel';
 import { useIsMobile } from '../hooks/useIsMobile';
 import LevelBadge from '../components/LevelBadge';
@@ -113,7 +114,7 @@ function MobileKpis({ group, members, groupStats }) {
 
 export default function GroupOverviewSection({
   group, members, groupStats, memberRows, strongestWeakest, commentedCount,
-  submissions, onGroupUpdated, showToast, confirm, onOpenMember, pendingInviteCount = 0, sharedGoals = [], warnings = [],
+  submissions, onGroupUpdated, showToast, confirm, onOpenMember, pendingInviteCount = 0, sharedGoals = [], goalSummary = null, mailConfigured = false, warnings = [],
 }) {
   const has360 = memberRows.some((r) => r.others);
   const mobile = useIsMobile();
@@ -359,6 +360,7 @@ export default function GroupOverviewSection({
       <PrePostAnalysis group={group} submissions={submissions} members={members} />
       {!supportsPrePost(getAssessment(group.assessmentId)) && <GroupGainReport group={group} submissions={submissions} />}
 
+      <GoalActivityPanel group={group} summary={goalSummary} mailConfigured={mailConfigured} showToast={showToast} />
       <SharedGoalsPanel goals={sharedGoals} />
 
       {/* 班級整體評語（教練撰寫，學員在分析頁看得到） */}
