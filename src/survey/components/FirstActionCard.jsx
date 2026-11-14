@@ -90,14 +90,14 @@ export default function FirstActionCard({ result }) {
           <fieldset className="mt-2 space-y-2">
             <legend className="sr-only">起手行動</legend>
             {starters.map((s, i) => (
-              <label key={s} className="flex cursor-pointer items-start gap-2 rounded-lg bg-white px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-100">
-                <input type="radio" name="first-action" checked={picked === i} onChange={() => setPicked(i)} className="mt-1" />
+              <label key={s} className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg bg-white px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-100">
+                <input type="radio" name="first-action" checked={picked === i} onChange={() => setPicked(i)} className="h-5 w-5 shrink-0" />
                 <span>{s}</span>
               </label>
             ))}
           </fieldset>
-          <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-slate-700">
-            <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} className="mt-1" />
+          <label className="mt-3 flex min-h-[44px] cursor-pointer items-start gap-3 text-sm text-slate-700">
+            <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0" />
             <span>讓我的教練看到這個目標<span className="block text-xs text-slate-500">教練只會看到目標與起手行動，看不到你的追蹤筆記；沒勾選就只有你自己看得到，之後可以在「我的學習」改。</span></span>
           </label>
           <button type="button" disabled={busy} onClick={create} className="btn-primary mt-3">就做這件事</button>
