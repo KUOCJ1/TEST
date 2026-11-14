@@ -1,7 +1,11 @@
 import { createPortal } from 'react-dom';
 import { reportFilename, REPORT_KIND } from '../utils/reportFilename.js';
 import { useReportFilename } from '../hooks/useReportFilename.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { api } from '../api/client';
+import { buildPrePost } from '../utils/prePost.js';
+import { buildExecutiveSummary, buildPrePostChapter } from '../utils/groupSummary.js';
+import { dimLabel } from '../utils/dimensionLabel';
 import { useIsMobile } from '../hooks/useIsMobile.js';
 import { GroupReadView } from './MobileReportViews.jsx';
 import RadarChart from './RadarChart';
@@ -366,14 +370,129 @@ function MemberSummaryPage({ group, row, stats, config, date, rank, total }) {
   );
 }
 
+// ─── 給管理者的一頁摘要（Sprint 24）─────────────────────────────
+function ExecutiveSummaryPage({ group, summary, date }) {
+  const s = summary;
+  const box = { border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 16px' };
+  const list = (items, tone) => items.map((d) => (
+    <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginBottom: 5 }}>
+      <span style={{ fontWeight: 700, color: tone }}>{dimLabel(d)}</span><span style={{ color: '#475569' }}>{d.percent}%</span>
+    </div>
+  ));
+  return (
+    <div style={{ pageBreakBefore: 'always', padding: '32px 52px' }}>
+      <PageMeta groupName={group.name} section="管理者摘要" date={date} />
+      <SectionTitle sub="一頁看完：參與、整體狀態、優勢、優先發展、建議下一步">給管理者的一頁摘要</SectionTitle>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+        <div style={box}><div style={{ fontSize: 9, color: '#64748b', fontWeight: 700 }}>參與率</div><div style={{ fontSize: 20, fontWeight: 800 }}>{s.participation}%</div><div style={{ fontSize: 10, color: '#64748b' }}>{s.respondents} / {s.memberCount} 人完成</div></div>
+        <div style={box}><div style={{ fontSize: 9, color: '#64748b', fontWeight: 700 }}>平均達成率</div><div style={{ fontSize: 20, fontWeight: 800 }}>{s.avgPercent}%</div><div style={{ fontSize: 10, color: '#64748b' }}>最新一次作答</div></div>
+        <div style={box}><div style={{ fontSize: 9, color: '#64748b', fontWeight: 700 }}>課前課後變化</div>
+          {s.change ? (<><div style={{ fontSize: 20, fontWeight: 800, color: s.change.meanDelta >= 0 ? '#059669' : '#b91c1c' }}>{s.change.meanDelta > 0 ? '+' : ''}{s.change.meanDelta} 分</div><div style={{ fontSize: 10, color: '#64748b' }}>{s.change.n} 人配對，{s.change.improved} 人進步</div></>) : <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>尚無足夠的前後測配對資料</div>}
+        </div>
+      </div>
+      <div style={{ ...box, marginBottom: 14 }}>
+        <div style={{ fontSize: 10, fontWeight: 800, marginBottom: 8 }}>整體落點分布</div>
+        {s.levelDistribution.map((l) => (
+          <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 3 }}><span>{l.badge}</span><strong>{l.count} 人</strong></div>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+        <div style={{ ...box, background: '#f0fdf4', borderColor: '#bbf7d0' }}><div style={{ fontSize: 10, fontWeight: 800, color: '#065f46', marginBottom: 8 }}>三個優勢構面</div>{list(s.strengths, '#14532d')}</div>
+        <div style={{ ...box, background: '#fffbeb', borderColor: '#fde68a' }}><div style={{ fontSize: 10, fontWeight: 800, color: '#92400e', marginBottom: 8 }}>三個優先發展構面</div>{list(s.priorities, '#78350f')}</div>
+      </div>
+      {s.nextSteps.length > 0 && (
+        <div style={{ ...box, background: '#fbf7ef', borderColor: '#e6dcc8' }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: '#8a5200', marginBottom: 8 }}>建議的下一步</div>
+          {s.nextSteps.map((x) => <div key={x.dim} style={{ fontSize: 11, lineHeight: 1.7, color: '#4a3a12', marginBottom: 5 }}><strong>{x.dim}：</strong>{x.action}</div>)}
+        </div>
+      )}
+      <PageFooter />
+    </div>
+  );
+}
+
+// ─── 課前課後比較（Sprint 24）：只比兩次都有作答的人，描述性比較 ─────
+function PrePostPage({ group, chapter, date }) {
+  const c = chapter;
+  const sg = (n) => (n > 0 ? `+${n}` : String(n));
+  return (
+    <div style={{ pageBreakBefore: 'always', padding: '32px 52px' }}>
+      <PageMeta groupName={group.name} section="課前課後比較" date={date} />
+      <SectionTitle sub={`只比較課前、課後都有作答的 ${c.n} 位成員（描述性比較，不做統計檢定）`}>課前課後比較</SectionTitle>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
+        {[['課前平均總分', c.preTotal], ['課後平均總分', c.postTotal], ['平均變化', `${sg(c.delta)} 分`], ['進步／持平／退步', `${c.improved}／${c.same}／${c.declined}`]].map(([l, v]) => (
+          <div key={l} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px' }}><div style={{ fontSize: 9, color: '#64748b', fontWeight: 700 }}>{l}</div><div style={{ fontSize: 17, fontWeight: 800 }}>{v}</div></div>
+        ))}
+      </div>
+      <div style={{ fontSize: 11, fontWeight: 800, marginBottom: 8 }}>各構面平均（1–5 分），依進步幅度排序</div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, marginBottom: 14 }}>
+        <thead><tr style={{ color: '#64748b', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}><th style={{ padding: '5px 6px' }}>構面</th><th style={{ padding: '5px 6px' }}>課前</th><th style={{ padding: '5px 6px' }}>課後</th><th style={{ padding: '5px 6px' }}>變化</th><th style={{ padding: '5px 6px' }}>進步／持平／退步（人）</th></tr></thead>
+        <tbody>
+          {c.dimensions.map((d) => (
+            <tr key={d.id} style={{ borderBottom: '0.5px solid #f1f5f9' }}>
+              <td style={{ padding: '5px 6px', fontWeight: 700 }}>{dimLabel(d)}</td>
+              <td style={{ padding: '5px 6px' }}>{d.pre.toFixed(1)}</td><td style={{ padding: '5px 6px' }}>{d.post.toFixed(1)}</td>
+              <td style={{ padding: '5px 6px', fontWeight: 800, color: d.delta > 0 ? '#059669' : d.delta < 0 ? '#b91c1c' : '#64748b' }}>{sg(d.delta)}</td>
+              <td style={{ padding: '5px 6px', color: '#475569' }}>{d.improved}／{d.same}／{d.declined}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{ fontSize: 10, color: '#475569', lineHeight: 1.8 }}>
+        落點等級上升 {c.levelUp} 人、下降 {c.levelDown} 人。
+        {(c.unpaired?.preOnly > 0 || c.unpaired?.postOnly > 0) && `另有 ${c.unpaired.preOnly} 人只有課前、${c.unpaired.postOnly} 人只有課後作答，未納入比較。`}
+        自評分數可能因為課程後對標準的理解改變而下降，退步不一定代表能力變差，建議搭配教練的觀察一起解讀。
+      </div>
+      <PageFooter />
+    </div>
+  );
+}
+
+// ─── 課後問卷與追蹤彙總（Sprint 24）：只有伺服器已去識別化的彙總 ──────
+function CourseSurveyPage({ group, summary, date }) {
+  const sm = summary;
+  const sat = Object.values(sm.satisfaction ?? {}).map((x) => x?.mean).filter((v) => typeof v === 'number');
+  const satAvg = sat.length ? (sat.reduce((a, b) => a + b, 0) / sat.length).toFixed(1) : '—';
+  return (
+    <div style={{ pageBreakBefore: 'always', padding: '32px 52px' }}>
+      <PageMeta groupName={group.name} section="課後問卷" date={date} />
+      <SectionTitle sub={`已完成 ${sm.completed} / ${sm.expected} 人（${sm.completionRate}%）；少於 3 人的項目不顯示`}>課後學習成效問卷</SectionTitle>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px' }}><div style={{ fontSize: 9, color: '#64748b', fontWeight: 700 }}>滿意度平均（1–5）</div><div style={{ fontSize: 20, fontWeight: 800 }}>{satAvg}</div></div>
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px' }}><div style={{ fontSize: 9, color: '#64748b', fontWeight: 700 }}>推薦指數 NPS</div><div style={{ fontSize: 20, fontWeight: 800 }}>{sm.nps?.score ?? '—'}</div></div>
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px' }}><div style={{ fontSize: 9, color: '#64748b', fontWeight: 700 }}>30／60 天追蹤完成</div><div style={{ fontSize: 12, fontWeight: 800, lineHeight: 1.6 }}>{['stage30', 'stage60'].map((k) => { const f = sm.followUp?.[k]; return <div key={k}>{k === 'stage30' ? '30 天' : '60 天'}：{f && !f.hidden ? `${f.completed}/${f.due} 人（${f.rate}%）` : '未到期或人數不足'}</div>; })}</div></div>
+      </div>
+      <div style={{ fontSize: 11, fontWeight: 800, marginBottom: 8 }}>能力自評：課前 vs 現在（1–5）</div>
+      {(sm.dimensions ?? []).map((d) => (
+        <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
+          <span style={{ fontWeight: 700 }}>{d.name}</span><span>{d.before} → {d.now}（{d.gain > 0 ? '+' : ''}{d.gain}）</span>
+        </div>
+      ))}
+      <PageFooter />
+    </div>
+  );
+}
+
 // ─── Main export ───────────────────────────────────────────────
 export default function GroupPrintableReport({ group, submissions, users, onClose }) {
-  const filename = reportFilename({ kind: REPORT_KIND.group, assessmentId: group.assessmentId, groupName: group.name });
+  // 客戶版：給 HR／老闆，不含個人排名與成員個別頁；教練版：保留排名與成員頁。預設客戶版。
+  const [variant, setVariant] = useState('client');
+  const isClient = variant === 'client';
+  const filename = reportFilename({ kind: REPORT_KIND.group, assessmentId: group.assessmentId, groupName: group.name, detail: isClient ? '客戶版' : '教練版' });
   const print = useReportFilename(filename);
   const mobile = useIsMobile();
   const [showA4, setShowA4] = useState(false); // 手機：預設閱讀版，可切到 A4 原版（縮放預覽）
   const config = getAssessment(group.assessmentId);
   const date = formatDate(new Date().toISOString());
+  const [courseSummary, setCourseSummary] = useState(null);
+  const hasCourse = (group.extraAssessmentIds ?? []).length > 0;
+  useEffect(() => {
+    if (!hasCourse) return undefined;
+    let active = true;
+    api.getCourseSurveySummary(group.id).then((r) => active && setCourseSummary(r?.attached && !r.hidden ? r : null)).catch(() => {});
+    return () => { active = false; };
+  }, [group.id, hasCourse]);
+  const prepost = useMemo(() => buildPrePost(submissions, config, users), [submissions, config, users]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -400,6 +519,24 @@ export default function GroupPrintableReport({ group, submissions, users, onClos
     })
     .sort((a, b) => b.total - a.total);
   const results = latest.map((s) => s.result);
+  const memberCount = group.memberIds?.length ?? rows.length;
+  const summary = buildExecutiveSummary({ stats, memberCount, prepost });
+  const prePostChapter = buildPrePostChapter(prepost);
+
+  const pages = (
+    <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
+      <CoverPage group={group} stats={stats} config={config} memberCount={memberCount} />
+      {stats.respondents > 0 && <ExecutiveSummaryPage group={group} summary={summary} date={date} />}
+      {stats.respondents > 0 && <OverviewPage group={group} stats={stats} date={date} />}
+      {prePostChapter && <PrePostPage group={group} chapter={prePostChapter} date={date} />}
+      {results.length >= 2 && <NarrativePage group={group} results={results} config={config} date={date} />}
+      {courseSummary && <CourseSurveyPage group={group} summary={courseSummary} date={date} />}
+      {!isClient && rows.length > 0 && <RankingPage group={group} rows={rows} date={date} />}
+      {!isClient && rows.map((row, i) => (
+        <MemberSummaryPage key={row.userId} group={group} row={row} stats={stats} config={config} date={date} rank={i + 1} total={rows.length} />
+      ))}
+    </div>
+  );
 
   return createPortal(
     <>
@@ -415,6 +552,13 @@ export default function GroupPrintableReport({ group, submissions, users, onClos
             style={{ background: '#1f5d4a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
           >
             🖨️ 列印 / 存為 PDF
+          </button>
+          <button
+            onClick={() => setVariant(isClient ? 'coach' : 'client')}
+            title="客戶版：不含個人排名與成員個別頁；教練版：含排名與成員頁"
+            style={{ background: 'transparent', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+          >
+            {isClient ? '目前：客戶版（切到教練版）' : '目前：教練版（切到客戶版）'}
           </button>
           {mobile && (
             <button
@@ -437,49 +581,11 @@ export default function GroupPrintableReport({ group, submissions, users, onClos
         <>
           {/* 手機：閱讀版（螢幕）＋A4 原版（可切換；列印一律印 A4 原版，見 index.css）。 */}
           <div className={`report-read ${showA4 ? 'report-read-hidden' : ''}`}>
-            <GroupReadView group={group} stats={stats} rows={rows} results={results} config={config} date={date} />
+            <GroupReadView group={group} stats={stats} rows={rows} results={results} config={config} date={date} summary={summary} prePostChapter={prePostChapter} courseSummary={courseSummary} showRanking={!isClient} />
           </div>
-          <div className={`report-a4 ${showA4 ? '' : 'report-a4-hidden'}`}>
-      <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
-        <CoverPage group={group} stats={stats} config={config} memberCount={group.memberIds?.length ?? rows.length} />
-        {stats.respondents > 0 && <OverviewPage group={group} stats={stats} date={date} />}
-        {results.length >= 2 && <NarrativePage group={group} results={results} config={config} date={date} />}
-        {rows.length > 0 && <RankingPage group={group} rows={rows} date={date} />}
-        {rows.map((row, i) => (
-          <MemberSummaryPage
-            key={row.userId}
-            group={group}
-            row={row}
-            stats={stats}
-            config={config}
-            date={date}
-            rank={i + 1}
-            total={rows.length}
-          />
-        ))}
-      </div>
-          </div>
+          <div className={`report-a4 ${showA4 ? '' : 'report-a4-hidden'}`}>{pages}</div>
         </>
-      ) : (
-      <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif' }}>
-        <CoverPage group={group} stats={stats} config={config} memberCount={group.memberIds?.length ?? rows.length} />
-        {stats.respondents > 0 && <OverviewPage group={group} stats={stats} date={date} />}
-        {results.length >= 2 && <NarrativePage group={group} results={results} config={config} date={date} />}
-        {rows.length > 0 && <RankingPage group={group} rows={rows} date={date} />}
-        {rows.map((row, i) => (
-          <MemberSummaryPage
-            key={row.userId}
-            group={group}
-            row={row}
-            stats={stats}
-            config={config}
-            date={date}
-            rank={i + 1}
-            total={rows.length}
-          />
-        ))}
-      </div>
-      )}
+      ) : pages}
     </>,
     portal,
   );

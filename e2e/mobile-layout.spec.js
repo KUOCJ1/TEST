@@ -241,7 +241,11 @@ test('教練：切換班級、總覽第一屏、成員卡片、QR 置頂、刪�
   await expect(gread).toBeVisible();
   await expect(gread.getByText('班級整體分析報告')).toBeVisible();
   await expect(gread.getByRole('region', { name: '班級關鍵數字' }).or(gread.locator('dl[aria-label="班級關鍵數字"]'))).toBeVisible();
-  await expect(gread.getByRole('region', { name: '成員排名' }).or(gread.locator('section[aria-label="成員排名"]'))).toBeVisible();
+  // 預設是客戶版：有管理者摘要、沒有個人排名；切到教練版才有成員排名（Sprint 24）。
+  await expect(gread.locator('section[aria-label="管理者摘要"]')).toBeVisible();
+  await expect(gread.locator('section[aria-label="成員排名"]')).toHaveCount(0);
+  await page.locator('#report-portal .report-toolbar').getByRole('button', { name: /切到教練版/ }).click();
+  await expect(gread.locator('section[aria-label="成員排名"]')).toBeVisible();
   await expectNoHorizontalOverflow(page, '班級報告閱讀版');
   await context.close();
 });

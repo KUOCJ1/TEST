@@ -63,7 +63,7 @@ export function PersonalReadView({ result, benchmark, percentile, user, submitte
   );
 }
 
-export function GroupReadView({ group, stats, rows, results, config, date }) {
+export function GroupReadView({ group, stats, rows, results, config, date, summary = null, prePostChapter = null, courseSummary = null, showRanking = true }) {
   const dims = stats?.dimensionAverages ?? [];
   const sorted = [...dims].sort((a, b) => b.percent - a.percent);
   return (
@@ -112,13 +112,55 @@ export function GroupReadView({ group, stats, rows, results, config, date }) {
         </>
       )}
 
+      {summary && stats.respondents > 0 && (
+        <section className="mt-6 space-y-3" aria-label="管理者摘要">
+          <h3 className="font-bold text-slate-700">給管理者的一頁摘要</h3>
+          <p className="text-sm text-slate-600">參與率 {summary.participation}%（{summary.respondents}／{summary.memberCount} 人）{summary.change ? `；課前課後平均變化 ${summary.change.meanDelta > 0 ? '+' : ''}${summary.change.meanDelta} 分（${summary.change.n} 人配對）` : ''}</p>
+          <ListCard title="三個優勢構面" tone="border-emerald-200 bg-emerald-50 read-card-ok" items={summary.strengths.map((d) => ({ id: d.id, name: dimLabel(d), v: `${d.percent}%` }))} valueKey="v" empty="資料不足" />
+          <ListCard title="三個優先發展構面" tone="border-brass-200 bg-brass-50 read-card-dev" items={summary.priorities.map((d) => ({ id: d.id, name: dimLabel(d), v: `${d.percent}%` }))} valueKey="v" empty="資料不足" />
+          {summary.nextSteps.length > 0 && (
+            <div className="rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm leading-relaxed text-slate-600">
+              <p className="mb-1 font-bold text-slate-800">建議的下一步</p>
+              {summary.nextSteps.map((x) => <p key={x.dim} className="mt-1"><strong>{x.dim}：</strong>{x.action}</p>)}
+            </div>
+          )}
+        </section>
+      )}
+
+      {prePostChapter && (
+        <section className="mt-6" aria-label="課前課後比較">
+          <h3 className="mb-1 font-bold text-slate-700">課前課後比較</h3>
+          <p className="mb-2 text-xs text-slate-500">只比較兩次都有作答的 {prePostChapter.n} 人（描述性比較）。平均 {prePostChapter.preTotal} → {prePostChapter.postTotal}（{prePostChapter.delta > 0 ? '+' : ''}{prePostChapter.delta} 分）；進步 {prePostChapter.improved}、持平 {prePostChapter.same}、退步 {prePostChapter.declined} 人。</p>
+          <ul className="space-y-1.5 text-sm">
+            {prePostChapter.dimensions.map((d) => (
+              <li key={d.id} className="flex items-baseline justify-between gap-3">
+                <span className="font-semibold text-slate-700">{dimLabel(d)}</span>
+                <span className="shrink-0 text-slate-600">{d.pre.toFixed(1)} → {d.post.toFixed(1)}（{d.delta > 0 ? '+' : ''}{d.delta}）</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {results.length >= 2 && (
         <section className="mt-6">
           <GroupNarrativeReport results={results} assessmentId={group.assessmentId} focusDimensionIds={group.focusDimensionIds ?? []} />
         </section>
       )}
 
-      {rows.length > 0 && (
+      {courseSummary && (
+        <section className="mt-6" aria-label="課後問卷">
+          <h3 className="mb-1 font-bold text-slate-700">課後學習成效問卷</h3>
+          <p className="text-sm text-slate-600">已完成 {courseSummary.completed}／{courseSummary.expected} 人（{courseSummary.completionRate}%）；推薦指數 NPS {courseSummary.nps?.score ?? '—'}。</p>
+          <ul className="mt-2 space-y-1.5 text-sm">
+            {(courseSummary.dimensions ?? []).map((d) => (
+              <li key={d.id} className="flex items-baseline justify-between gap-3"><span className="font-semibold text-slate-700">{d.name}</span><span className="shrink-0 text-slate-600">{d.before} → {d.now}（{d.gain > 0 ? '+' : ''}{d.gain}）</span></li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {showRanking && rows.length > 0 && (
         <section className="mt-6" aria-label="成員排名">
           <h3 className="mb-2 font-bold text-slate-700">成員排名</h3>
           <ol className="space-y-2">
