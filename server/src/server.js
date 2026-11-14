@@ -4,7 +4,7 @@ import { createDb } from './db.js';
 import { hashPassword } from './auth.js';
 import { checkAndAlert } from './lib/health.js';
 import { isMailConfigured } from './lib/mailer.js';
-import { sendDueRetestReminders } from './lib/notifications.js';
+import { sendDueRetestReminders, sendGoalNudges } from './lib/notifications.js';
 import { sendDueCourseFollowUps } from './lib/courseFollowUp.js';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -102,9 +102,18 @@ if (NOTIFY_INTERVAL_MINUTES > 0) {
       })
       .catch((err) => console.error('[notify] 課後追蹤信失敗', err?.message ?? err));
   };
+  // 設定目標後第 3、10、24 天的回報提醒（見 lib/notifications.js sendGoalNudges）。
+  const runGoalNudges = () => {
+    sendGoalNudges(db)
+      .then(({ sent, failed }) => {
+        if (sent || failed) console.log(`[notify] 目標回報提醒：寄出 ${sent} 封、失敗 ${failed} 封`);
+      })
+      .catch((err) => console.error('[notify] 目標回報提醒失敗', err?.message ?? err));
+  };
   runRetestReminders();
   runCourseFollowUps();
-  setInterval(() => { runRetestReminders(); runCourseFollowUps(); }, NOTIFY_INTERVAL_MINUTES * 60 * 1000).unref();
+  runGoalNudges();
+  setInterval(() => { runRetestReminders(); runCourseFollowUps(); runGoalNudges(); }, NOTIFY_INTERVAL_MINUTES * 60 * 1000).unref();
 }
 
 if (!isMailConfigured()) {

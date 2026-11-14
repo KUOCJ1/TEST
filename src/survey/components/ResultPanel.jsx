@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { Lightbulb, Target, Copy, Check, RotateCcw } from 'lucide-react';
 import RadarChart from './RadarChart';
 import NarrativeReport from './NarrativeReport';
+import FirstActionCard from './FirstActionCard';
 import LearningResources from './LearningResources';
 import { getAssessment } from '../data/assessments/index.js';
 import { buildSuggestions } from '../utils/suggestions';
@@ -112,6 +113,8 @@ const ResultPanel = forwardRef(function ResultPanel(
           </div>
         )}
       </div>
+
+      {!readOnly && !profileMode && <FirstActionCard result={result} />}
 
       {sections.length > 1 && (
         <nav

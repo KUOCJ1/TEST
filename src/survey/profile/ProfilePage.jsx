@@ -157,7 +157,7 @@ export default function ProfilePage() {
       >
         <Toggle
           label="評測提醒"
-          hint="發展目標的「預計檢視日」到了時，寄信提醒我回來複測"
+          hint="發展目標設定後第 3、10、24 天提醒我回報進度，預計檢視日到了時提醒我回來複測"
           checked={prefs.notifyAssessment !== false}
           onChange={(v) => savePref({ notifyAssessment: v })}
         />

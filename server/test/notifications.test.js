@@ -6,7 +6,7 @@ import nodemailer from 'nodemailer';
 import { createApp } from '../src/app.js';
 import { createDb } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
-import { sendDueRetestReminders, notifyNewComment, COMMENT_NOTIFY_COOLDOWN_MS } from '../src/lib/notifications.js';
+import { sendDueRetestReminders, sendGoalNudges, notifyNewComment, COMMENT_NOTIFY_COOLDOWN_MS } from '../src/lib/notifications.js';
 import { sanitizePreferences } from '../src/routes/auth.js';
 
 // 學員通知信（Sprint 7 驗收條件 7.5、7.6、7.7）。
@@ -169,5 +169,55 @@ describe('sanitizePreferences()（偏好設定白名單）', () => {
     const res = await agent.patch('/api/auth/profile').send({ preferences: { notifyComment: false, junk: 1 } });
     assert.equal(res.status, 200);
     assert.deepEqual(res.body.user.preferences, { notifyComment: false });
+  });
+});
+
+
+describe('sendGoalNudges()（Sprint 25：第 3、10、24 天回報提醒）', () => {
+  const fresh = (userId, ageDays, extra = {}) => ({
+    id: randomUUID(), userId, assessmentId: 'leadership-9d', text: '每週一對一', actions: [{ text: '先約一次' }],
+    createdAt: new Date(NOW - ageDays * DAY).toISOString(), reviewDate: new Date(NOW + 20 * DAY).toISOString(), checkins: [], ...extra,
+  });
+
+  test('第 3 天寄一封；同節點不重寄；第 10 天再寄下一封', async () => {
+    const { db, learner, sent, send } = world();
+    const g = fresh(learner.id, 3.1);
+    db.data.goals.push(g);
+    assert.deepEqual(await sendGoalNudges(db, { now: NOW, send, configured: true }), { sent: 1, failed: 0 });
+    assert.match(sent[0].subject, /3 天/);
+    assert.deepEqual(await sendGoalNudges(db, { now: NOW + 1000, send, configured: true }), { sent: 0, failed: 0 });
+    assert.deepEqual(await sendGoalNudges(db, { now: NOW + 7 * DAY, send, configured: true }), { sent: 1, failed: 0 });
+    assert.match(sent[1].subject, /10 天/);
+  });
+
+  test('停機很久後恢復：只寄最新節點一封，不補寄舊的', async () => {
+    const { db, learner, sent, send } = world();
+    db.data.goals.push(fresh(learner.id, 12));
+    assert.equal((await sendGoalNudges(db, { now: NOW, send, configured: true })).sent, 1);
+    assert.match(sent[0].subject, /10 天/);
+    assert.equal((await sendGoalNudges(db, { now: NOW, send, configured: true })).sent, 0);
+  });
+
+  test('區間內已有追蹤紀錄、已達成、已過檢視日、關閉通知、未設定 SMTP：都不寄', async () => {
+    const { db, learner, sent, send } = world();
+    db.data.goals.push(fresh(learner.id, 4, { checkins: [{ id: 'c', at: new Date(NOW - DAY).toISOString(), rating: 3 }] }));
+    db.data.goals.push(fresh(learner.id, 4, { achievedAt: new Date(NOW).toISOString() }));
+    db.data.goals.push(fresh(learner.id, 4, { reviewDate: new Date(NOW - DAY).toISOString() }));
+    assert.equal((await sendGoalNudges(db, { now: NOW, send, configured: true })).sent, 0);
+    learner.preferences = { notifyAssessment: false };
+    db.data.goals.push(fresh(learner.id, 4));
+    assert.equal((await sendGoalNudges(db, { now: NOW, send, configured: true })).sent, 0);
+    learner.preferences = {};
+    assert.deepEqual(await sendGoalNudges(db, { now: NOW, send, configured: false }), { sent: 0, failed: 0 });
+    assert.equal(sent.length, 0);
+  });
+
+  test('寄送失敗：該節點保留，下次排程重試', async () => {
+    const { db, learner } = world();
+    db.data.goals.push(fresh(learner.id, 4));
+    const bad = async () => ({ ok: false });
+    assert.deepEqual(await sendGoalNudges(db, { now: NOW, send: bad, configured: true }), { sent: 0, failed: 1 });
+    const ok = async () => ({ ok: true });
+    assert.equal((await sendGoalNudges(db, { now: NOW + 1000, send: ok, configured: true })).sent, 1);
   });
 });
