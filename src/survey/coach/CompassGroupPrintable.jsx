@@ -1,7 +1,10 @@
 import { createPortal } from 'react-dom';
 import { reportFilename, REPORT_KIND } from '../utils/reportFilename.js';
 import { useReportFilename } from '../hooks/useReportFilename.js';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { ShieldCheck } from 'lucide-react';
+import { useIsMobile } from '../hooks/useIsMobile.js';
+import { CompassGroupBody } from './CompassGroupReport.jsx';
 import { formatDate } from '../utils/format';
 import { FULL_MIN, BASIC_MIN } from '../utils/compassGroup.js';
 import { TENSION_TYPE_LABEL } from '../utils/compassText.js';
@@ -16,6 +19,8 @@ const pct = (avg) => Math.round((avg / 5) * 100);
 export default function CompassGroupPrintable({ report, group, phaseLabel, onClose }) {
   const filename = reportFilename({ kind: REPORT_KIND.groupDiagnosis, assessmentId: group.assessmentId, groupName: group.name, detail: phaseLabel });
   const print = useReportFilename(filename);
+  const mobile = useIsMobile();
+  const [showA4, setShowA4] = useState(false);
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -30,10 +35,27 @@ export default function CompassGroupPrintable({ report, group, phaseLabel, onClo
         <div><span style={{ fontWeight: 700, fontSize: 14 }}>班級組織診斷報告</span><span style={{ fontSize: 12, opacity: 0.55, marginLeft: 10 }}>{group.name}</span><span style={{ fontSize: 11, opacity: 0.5, marginLeft: 10 }}>存檔檔名：{filename}.pdf</span></div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={print} style={{ background: '#1f5d4a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>🖨️ 列印 / 存為 PDF</button>
+          {mobile && (
+            <button onClick={() => setShowA4((v) => !v)} style={{ background: 'transparent', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>{showA4 ? '看閱讀版' : '看 A4 原版'}</button>
+          )}
           <button onClick={onClose} style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.25)', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>✕ 關閉</button>
         </div>
       </div>
-      <div style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif', padding: '32px 52px' }}>
+      {mobile && (
+        <div className={`report-read ${showA4 ? 'report-read-hidden' : ''}`}>
+          <div className="px-4 pb-8 pt-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">班級組織診斷報告</p>
+            <h2 className="mt-0.5 text-xl font-extrabold text-slate-800">{group.name}</h2>
+            <p className="mb-4 mt-1 text-sm text-slate-500">領導力羅盤八向評測 · {phaseLabel} · {date}</p>
+            <p className="mb-4 flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>這份報告描述的是「這群人的行為模式」，不是組織文化的診斷結論，也不會顯示任何個人的分數。完成人數不足 {FULL_MIN} 位時只顯示平均（{BASIC_MIN}–{FULL_MIN - 1} 位）或完成率（少於 {BASIC_MIN} 位）。</span>
+            </p>
+            <CompassGroupBody report={report} />
+          </div>
+        </div>
+      )}
+      <div className={mobile ? `report-a4 ${showA4 ? '' : 'report-a4-hidden'}` : undefined} style={{ background: '#fff', fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif', padding: '32px 52px' }}>
         <PageMeta name={group.name} section="組織診斷" date={date} assessmentName="領導力羅盤八向評測" />
         <SectionTitle sub={`${phaseLabel}，已完成自評 ${report.n} / ${report.memberCount} 人（${Math.round(report.completion * 100)}%）`}>班級組織診斷</SectionTitle>
         <p style={{ fontSize: 10, color: '#475569', lineHeight: 1.8, marginBottom: 16 }}>
