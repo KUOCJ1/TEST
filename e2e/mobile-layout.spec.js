@@ -366,3 +366,23 @@ test('斷線：作答頁出現提示，恢復連線後消失，作答進度還�
   await expect(page.getByText(/1 \/ \d+ 題/)).toBeVisible();
   await context.close();
 });
+
+
+test('字級：個人設定可切到特大，基準字放大且首頁不溢出；重新整理後仍保留', async ({ browser }) => {
+  const { context, page } = await newLearner(browser, '手機字級學員', { submit: false });
+  await page.goto('/profile');
+  const group = page.getByRole('radiogroup', { name: '字級' });
+  await expect(group).toBeVisible({ timeout: 20000 });
+  const size = () => page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
+  expect(await size()).toBe(18);
+  await group.getByRole('radio', { name: '特大' }).click();
+  await expect.poll(size).toBe(22);
+  await page.goto('/home');
+  await expect(page.getByRole('navigation', { name: '主要導覽' })).toBeVisible({ timeout: 20000 });
+  expect(await size()).toBe(22);
+  await expectNoHorizontalOverflow(page, '特大字級的首頁');
+  await page.goto('/profile');
+  await page.getByRole('radiogroup', { name: '字級' }).getByRole('radio', { name: '標準' }).click();
+  await expect.poll(size).toBe(18);
+  await context.close();
+});

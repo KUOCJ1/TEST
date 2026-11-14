@@ -390,16 +390,17 @@ function AppShellInner() {
           {/* 點名稱回到「我的評量」。作答進度會自動儲存在瀏覽器，離開不會遺失。 */}
           <Link to="/home" aria-label="回到我的評量" title="回到我的評量" className={`tap ${showBottomNav ? 'lg:hidden' : ''} flex shrink-0 items-center gap-2 rounded text-base font-extrabold tracking-tight text-slate-800 hover:text-brass-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-400`}>
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
-            <span>榕光評測</span>
+            {/* 作答／結果頁的頁首要留位置給「返回」，手機上只留標誌；其他頁顯示完整名稱。 */}
+            <span className={isSurveyOrRaterSetup ? 'hidden sm:inline' : undefined}>榕光評測</span>
           </Link>
 
           {isSurveyOrRaterSetup ? (
             <button
               type="button"
               onClick={() => navigate(backTarget)}
-              className="btn-ghost btn-sm"
+              className="btn-ghost btn-sm whitespace-nowrap"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 shrink-0" />
               {backTarget === '/360' ? '返回 360° 評測' : '返回評量列表'}
             </button>
           ) : (

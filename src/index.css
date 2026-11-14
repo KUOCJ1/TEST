@@ -102,17 +102,25 @@ body {
   min-height: 100vh;
 }
 
-/* ── 手機字級加大（2026-11）──────────────────────────────────────────────
-   手機上全站偏小：基準字 16→17px（rem 單位的字與間距一起放大約 6%），再把最小的幾種字級
-   墊高——text-xs 12→13.5px、text-[11px]／[10px]／[9px] 一律 ≥12.5px。只在 sm 以下生效，
-   桌機版面與列印（A4 用內嵌 px，不受影響）不變。SVG 圖表內的文字另有各自的字級。 */
+/* ── 字級（2026-11）──────────────────────────────────────────────────────
+   手機（sm 以下）預設基準字 18px（桌機 16px）；rem 單位的字與間距一起放大。最小的幾種字級再墊高——
+   text-xs 12→約 14.8px、text-sm 14→約 16.6px、text-[11px]／[10px]／[9px] 一律 ≥ 14px。
+   使用者可在「個人設定 → 字級」選標準／大／特大（<html data-font-scale>）。
+   桌機版面（預設字級）與列印（A4 用內嵌 px，不受影響）不變。SVG 圖表內的文字另有各自的字級。 */
 @media screen and (max-width: 639px) {
-  html { font-size: 17px; }
-  .text-xs { font-size: 0.8rem; line-height: 1.25rem; }
-  .text-\[11px\], .text-\[10px\], .text-\[9px\] { font-size: 0.75rem; line-height: 1.1rem; }
-  .text-sm { font-size: 0.9rem; line-height: 1.4rem; }
+  html { font-size: 18px; }
+  .text-xs { font-size: 0.82rem; line-height: 1.3rem; }
+  .text-\[11px\], .text-\[10px\], .text-\[9px\] { font-size: 0.78rem; line-height: 1.2rem; }
+  .text-sm { font-size: 0.92rem; line-height: 1.45rem; }
 }
-
+@media screen {
+  html[data-font-scale='large'] { font-size: 18.5px; }
+  html[data-font-scale='xl'] { font-size: 21px; }
+}
+@media screen and (max-width: 639px) {
+  html[data-font-scale='large'] { font-size: 20px; }
+  html[data-font-scale='xl'] { font-size: 22px; }
+}
 /* ── 手機觸控目標（docs/MOBILE_APP_PLAN.md M1-2）──────────────────────────
    只在 sm 以下生效，桌機版面不變。按鈕、分頁、選單項、下拉選單的可點範圍至少
    44px（min-height／min-width 勝過 h-8／w-8 這類固定尺寸；個別元素確實不能撐高時，

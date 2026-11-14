@@ -31,6 +31,8 @@ export function sanitizePreferences(input) {
   for (const key of BOOLEAN_PREFS) {
     if (typeof input[key] === 'boolean') out[key] = input[key];
   }
+  // 字級偏好（2026-11）：只接受固定的三個值，其他一律忽略。
+  if (['normal', 'large', 'xl'].includes(input.fontScale)) out.fontScale = input.fontScale;
   if (input.defaultAssessmentId === null) out.defaultAssessmentId = null;
   else if (typeof input.defaultAssessmentId === 'string') out.defaultAssessmentId = input.defaultAssessmentId.slice(0, 64);
   return out;

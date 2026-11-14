@@ -221,3 +221,14 @@ describe('sendGoalNudges()（Sprint 25：第 3、10、24 天回報提醒）', ()
     assert.equal((await sendGoalNudges(db, { now: NOW + 1000, send: ok, configured: true })).sent, 1);
   });
 });
+
+
+describe('sanitizePreferences() 字級', () => {
+  test('只接受 normal／large／xl，其他值忽略', () => {
+    assert.equal(sanitizePreferences({ fontScale: 'large' }).fontScale, 'large');
+    assert.equal(sanitizePreferences({ fontScale: 'xl' }).fontScale, 'xl');
+    assert.equal(sanitizePreferences({ fontScale: 'normal' }).fontScale, 'normal');
+    assert.equal('fontScale' in sanitizePreferences({ fontScale: 'huge' }), false);
+    assert.equal('fontScale' in sanitizePreferences({ fontScale: 5 }), false);
+  });
+});

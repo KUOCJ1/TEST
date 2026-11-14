@@ -131,6 +131,24 @@ export default function ProfilePage() {
           checked={Boolean(prefs.darkMode)}
           onChange={(v) => savePref({ darkMode: v })}
         />
+        <fieldset className="mt-3">
+          <legend className="block text-sm font-medium text-slate-600">字級</legend>
+          <p className="mt-0.5 text-sm text-slate-400">覺得字太小，可以調大；整個平台的字與間距會一起放大。</p>
+          <div role="radiogroup" aria-label="字級" className="mt-2 grid grid-cols-3 gap-2">
+            {[['normal', '標準', 'text-sm'], ['large', '大', 'text-base'], ['xl', '特大', 'text-lg']].map(([id, label, cls]) => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={(prefs.fontScale ?? 'normal') === id}
+                onClick={() => savePref({ fontScale: id })}
+                className={`rounded-xl border px-3 py-2 font-semibold transition-colors ${cls} ${(prefs.fontScale ?? 'normal') === id ? 'border-ink-700 bg-ink-700 text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-ink-700'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
         <div className="mt-3">
           <label htmlFor="profile-default-assessment" className="block text-sm font-medium text-slate-600">預設進入的評量</label>
           <select id="profile-default-assessment"

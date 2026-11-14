@@ -68,6 +68,14 @@ export function AuthProvider({ children }) {
     if (user) writeJSON('aiassess_dark', dark ? '1' : '0');
   }, [user]);
 
+  // 字級偏好：標準／大／特大。未登入時沿用上次設定；寫在 <html data-font-scale>，index.css 依此放大 rem 基準。
+  useEffect(() => {
+    const pref = user?.preferences?.fontScale ?? readJSON('aiassess_font_scale', 'normal');
+    const scale = ['normal', 'large', 'xl'].includes(pref) ? pref : 'normal';
+    document.documentElement.dataset.fontScale = scale;
+    if (user) writeJSON('aiassess_font_scale', scale);
+  }, [user]);
+
   const value = useMemo(
     () => ({
       user,
