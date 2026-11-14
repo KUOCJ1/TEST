@@ -140,6 +140,12 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - 目標（`routes/goals.js`）：預設只有本人看得到；單一目標可 `sharedWithCoach`，教練在 `GET /coach/groups/:id` 的 `sharedGoals` 看到（不含追蹤筆記，見 `sharedGoalForCoach`）。追蹤紀錄 `checkins`、延後 `snooze`、檢視日可改。前端 `components/GoalItem.jsx` 為共用元件；站內提醒 `utils/goalReminders.js`；起手行動 `data/goal-starters.js`（新增構面要補，有測試）。
 - 專屬班級：班級欄位 `exclusive`，`GET /assessments` 對一般學員只回本班評量；客戶專案流程見 `docs/CUSTOMER_PROJECT_PLAYBOOK.md`。
 
+## 客戶版報告與報告後行動（Sprint 24–26）
+
+- 班級報告 PDF 有客戶版（預設，無排名與個別頁）與教練版；管理者摘要、課前課後比較、課後問卷章節在 `GroupPrintableReport.jsx`，資料整理在 `utils/groupSummary.js`；手機閱讀版（`MobileReportViews.jsx`）要同步。計畫與決策見 `docs/IMPROVEMENT_PLAN_2026-11.md`。
+- 結果頁 `FirstActionCard`（選一件事／一鍵回報）、第 3/10/24 天回報提醒（`notifications.js` `sendGoalNudges`）、教練的班級行動概況（只有人數，`lib/goalActivity.js`）。教練不得看到「誰沒設定目標」的名單。
+- 回訪紀錄只記登入日期（`user.activeDays`，不進 `publicUser`），管理端 `GET /admin/retention` 彙總；政策已列。手動部署流程 `.github/workflows/deploy-vps.yml`（說明 `docs/AUTO_DEPLOY.md`，需自行設定 Secrets）。手機字級加大在 `index.css`（639px 以下基準 17px），雷達圖手機版只標百分比＋圖例。
+
 ## 課後學習成效問卷（ai-course-post，班級限定）
 
 - 客戶工作坊的課後問卷（韋能《AI 深度整合工作坊》）：滿意度、課前 vs 現在的能力自評、情境檢核、30 天承諾。設計稿 `docs/post-course-survey-design.md`；說明見 `docs/PLATFORM_MANUAL.md` 5.1。

@@ -345,6 +345,10 @@ return config.PROFILES[key] ?? config.PROFILES.default;
 
 `utils/report360.js`（純函式 `build360Report`）整理資料、`components/ThreeSixtyReport.jsx` 負責版面（沿用 `#report-portal` 與列印樣式）。入口：班級總覽成員表的「360° 報告」（該成員有他評時）、`MultiRaterDashboard` 的「產出 360° 完整報告（PDF）」。適用非嚴格隱私的 360° 題庫（`SUPPORTS_360` 且非 `STRICT_RATER_PRIVACY`；領導力羅盤有專屬匿名報告）。規則：自評取最新一筆；每位評分者（類別＋填答者）取最新一筆；「他評合計」是所有他評評分者的等權重平均；差距＝自評 − 他評合計，≥ 0.5 為盲點、≤ −0.5 為被低估的優勢；他評落點用題庫的 `LEVELS` 門檻；沒有他評時報告以自評為依據。目前不含逐題層級（教練端 API 不回傳 `answers`）。
 
+### 5.0000a 客戶版成效報告（Sprint 24）
+
+`components/GroupPrintableReport.jsx`：班級報告有「客戶版／教練版」（工具列切換，預設客戶版，檔名 `detail` 帶版本）。客戶版不含 `RankingPage` 與 `MemberSummaryPage`（不出現個人姓名與排名）。新增章節：`ExecutiveSummaryPage`（`utils/groupSummary.js` 的 `buildExecutiveSummary`：參與率、優勢／發展各 3 個構面、建議下一步沿用 `DIM_DEVELOPMENT`、前後變化、行動成果）、`PrePostPage`（`buildPrePostChapter`，資料來自 `utils/prePost.js` 的 `buildPrePost`，只比配對樣本，`MIN_PAIRED = 3`，不足不出現）、`CourseSurveyPage`（呼叫 `GET /coach/groups/:id/course-survey`，沿用伺服器彙總與少於 3 人不顯示）。手機閱讀版（`GroupReadView`）同步；改報告內容要 A4 與閱讀版兩邊一起改。
+
 ### 5.0 班級前測分布與前後測比較
 
 `utils/prePost.js`（純函式）＋ `coach/PrePostAnalysis.jsx`，顯示在教練「總覽」。每人每階段取最新一筆自評（沒有 phase 的舊資料視為前測）；比較只用配對樣本；構面用 `result.dimensions[].average`（1–5）才能跨題數比較。適用條件 `supportsPrePost(config)`：有 `LEVELS`，且不是 `PROFILE_MODE`／`SCORING`／`REPORT` 專屬計分的題庫；不適用的題庫仍用 `GroupGainReport`。人數少（一班十幾人）所以只提供描述統計與效果量 dz，不做顯著性檢定；dz 需 ≥5 人且差有變異才提供。
@@ -746,6 +750,13 @@ URL」的邏輯，那是脆弱且已被證明會壞的做法。
 依 `assessmentId + dimensionId` 彙總這張表的點擊數，加上 `readingList` 的
 筆數當「加入清單數」——刻意只回傳彙總數字，不回傳是誰點的/存的，個人的
 學習清單本身（第 10.3 節）設計上只有本人看得到。
+
+### 10.3a 報告後的行動與回訪（Sprint 25–26）
+
+- **選一件事**：`components/FirstActionCard.jsx`（`ResultPanel` 非唯讀、非 PROFILE_MODE 時顯示）。最弱構面的 `startersFor()` 起手行動 → `POST /goals`（可選分享給教練，之後 `PATCH sharedWithCoach`）；已有進行中目標時一鍵 `POST /goals/:id/checkins`（rating 5／3／1）。
+- **回報提醒**：`lib/notifications.js` 的 `sendGoalNudges`，第 3、10、24 天；只寄最新到期節點、區間內有追蹤紀錄或已達成或已過檢視日不寄；`goal.nudgesSent` 記錄；沿用 `notifyAssessment` 偏好；`server.js` 與複測提醒同一個排程。
+- **班級行動概況**：`lib/goalActivity.js` 的 `goalSummaryForGroup`（只有人數、少於 3 位 `hidden`），`GET /coach/groups/:id` 回 `goalSummary`；`POST /coach/groups/:id/remind-goals` 對全體未設定目標者寄信（教練看不到名單、1 小時冷卻、需 SMTP、`auditLog send_goal_reminders`）。前端 `coach/GoalActivityPanel.jsx`。
+- **回訪紀錄**：`requireAuth` 呼叫 `recordActivity`，`user.activeDays` 只記日期（YYYY-MM-DD，最多 120 天），**不會**出現在 `publicUser`；`GET /admin/retention` 回各班 7／30 天回訪比例（視窗走完且符合人數 ≥ 3 才顯示）。隱私權政策已列「回訪紀錄」（`POLICY_VERSION` `2026-11-14.1`）；改這項的蒐集方式要同步改政策。
 
 ### 10.3 學習閉環：目標 × 延伸閱讀 × 複測
 
