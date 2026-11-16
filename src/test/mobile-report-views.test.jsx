@@ -19,6 +19,15 @@ describe('手機閱讀版：360° 與批次', () => {
     expect(screen.getByLabelText('發展建議')).toBeInTheDocument();
   });
 
+  it('360° 閱讀版：各構面把主管／同儕／部屬分開列出（與 A4 版一致），沒有該類評分者的不列', () => {
+    const report = build360Report([sub('self', 'r', 5), sub('manager', 'm', 3), sub('peer', 'p1', 4), sub('peer', 'p2', 4), sub('peer', 'p3', 4)], cfg);
+    render(<ThreeSixtyReadView report={report} name="受評者" date="2026/11/14" />);
+    const first = screen.getByLabelText('構面詳述').querySelector('article');
+    const terms = [...first.querySelectorAll('dt')].map((x) => x.textContent);
+    expect(terms).toEqual(['自評', '主管', '同儕']);
+    expect([...first.querySelectorAll('dd')].map((x) => x.textContent)).toEqual(['5.0', '3.0', '4.0']);
+  });
+
   it('360° 閱讀版：只有自評時不出現盲點區塊', () => {
     const report = build360Report([sub('self', 'r', 4)], cfg);
     render(<ThreeSixtyReadView report={report} name="受評者" date="2026/11/14" />);

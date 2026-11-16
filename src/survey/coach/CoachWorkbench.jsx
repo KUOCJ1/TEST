@@ -44,8 +44,9 @@ export default function CoachWorkbench({ onOpenGroup }) {
   );
 
   const body = (
-    <section aria-label="今天要做什麼" className="mb-5 rounded-2xl border border-brass-200 bg-brass-50 px-4 py-4 sm:px-5">
-      <h3 className="flex items-center gap-1.5 font-serif text-lg font-bold text-ink-700"><ListChecks className="h-5 w-5" /> 今天要做什麼</h3>
+    <section aria-label="今天要做什麼" className={mobile ? 'px-3 pb-3' : 'mb-5 rounded-2xl border border-brass-200 bg-brass-50 px-4 py-4 sm:px-5'}>
+      {/* 手機：外層 <details> 的標題列已經寫了「今天要做什麼」，這裡不重複標題與外框。 */}
+      {!mobile && <h3 className="flex items-center gap-1.5 font-serif text-lg font-bold text-ink-700"><ListChecks className="h-5 w-5" /> 今天要做什麼</h3>}
       <p className="mb-3 mt-0.5 text-xs text-slate-500">
         每個班目前的待辦人數（只有人數，沒有名單）。要看名單或處理，進入該班；一鍵提醒對全體符合條件的人寄信，各自有 1 小時冷卻{!data.mailConfigured ? '（尚未設定寄信服務，無法寄送）' : ''}。
       </p>
@@ -57,7 +58,7 @@ export default function CoachWorkbench({ onOpenGroup }) {
             <li key={g.id} className="rounded-xl bg-white px-4 py-3 ring-1 ring-paper-300">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <button type="button" onClick={() => onOpenGroup(g.id)} className="min-h-0 min-w-0 text-left font-serif font-bold text-slate-900 hover:text-ink-700">{g.name}</button>
+                  <button type="button" onClick={() => onOpenGroup(g.id)} className="text-left font-serif font-bold text-slate-900 hover:text-ink-700">{g.name}</button>
                   <PhaseBadge phase={g.phase} />
                   {g.companyName && <span className="text-xs text-slate-400">{g.companyName}</span>}
                 </div>

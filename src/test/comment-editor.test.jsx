@@ -47,6 +47,14 @@ describe('CommentEditor', () => {
     expect(box()).toHaveValue('「溝通力」「執行力」');
   });
 
+  it('構面副標是英文時，快速插入用中文名稱', () => {
+    const sub = { ...submission, result: { ...submission.result, strongest: { id: 'a', name: '任務管理', subtitle: 'Task Management' }, weakest: { id: 'b', name: '應變與創新', subtitle: 'Adaptability & Innovation' } } };
+    render(<CommentEditor submission={sub} onSaved={vi.fn()} onCancel={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /最強：任務管理/ }));
+    fireEvent.click(screen.getByRole('button', { name: /待強化：應變與創新/ }));
+    expect(box()).toHaveValue('「任務管理」「應變與創新」');
+  });
+
   it('範本存到伺服器（帳號），下一次掛載時載入', async () => {
     const { unmount } = render(<CommentEditor submission={submission} onSaved={vi.fn()} onCancel={vi.fn()} />);
     fireEvent.change(box(), { target: { value: '固定開場白：整體表現穩健。' } });

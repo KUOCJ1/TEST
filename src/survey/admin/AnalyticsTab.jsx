@@ -172,8 +172,8 @@ export default function AnalyticsTab({ submissions, users, adminAssessments, gro
               <h3 className="mb-2 text-center text-base font-bold text-slate-700">
                 整體 {dimCount} 大構面平均落點
               </h3>
-              <div className="flex justify-center">
-                <RadarChart dimensions={stats.dimensionAverages} />
+              <div className="flex flex-col items-center">
+                <RadarChart dimensions={stats.dimensionAverages} friendly={mobile} />
               </div>
             </section>
 

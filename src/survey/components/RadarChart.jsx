@@ -55,8 +55,11 @@ export default function RadarChart({ dimensions, size: sizeProp = 340, compare =
   };
   const comparePath = compare ? toPath((i) => comparePct(i) ?? 0) : null;
 
+  // 友善版多了一排 HTML 圖例：自己包一層直向排列，不論外層是不是橫向 flex，圖都不會被擠到圖例旁邊變小。
+  const Wrap = friendly ? 'div' : Fragment;
+  const wrapProps = friendly ? { className: 'flex w-full flex-col items-center' } : {};
   return (
-    <Fragment>
+    <Wrap {...wrapProps}>
     <svg
       viewBox={viewBox}
       width="100%"
@@ -185,6 +188,6 @@ export default function RadarChart({ dimensions, size: sizeProp = 340, compare =
         ))}
       </tbody>
     </table>
-    </Fragment>
+    </Wrap>
   );
 }

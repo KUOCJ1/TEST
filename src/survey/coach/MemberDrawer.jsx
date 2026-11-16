@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X, FileText, Pencil } from 'lucide-react';
 import ResultPanel from '../components/ResultPanel';
 import TrendChart from '../components/charts/TrendChart';
@@ -25,6 +25,7 @@ export default function MemberDrawer({
 }) {
   const member = members[selectedIndex] ?? null;
   const [editing, setEditing] = useState(false);
+  const commentRef = useRef(null);
 
   // 換人時，評語編輯狀態重置，不要把上一位的「編輯中」狀態帶到下一位。渲染中直接
   // 調整狀態（React 建議的做法），而不是用 effect——避免多一次不必要的重渲染。
@@ -120,6 +121,18 @@ export default function MemberDrawer({
           </button>
         </div>
 
+        {/* 窄螢幕：報告與評語上下堆疊，評語在整份報告之後，要捲很久才到——給一顆直接跳過去的按鈕。 */}
+        <div className="flex items-center justify-between gap-2 border-b border-paper-300 bg-paper-50 px-5 py-1.5 lg:hidden">
+          <span className="text-xs text-slate-500">{myComment ? '已寫評語' : '尚未寫評語'}</span>
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            onClick={() => commentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          >
+            <Pencil className="h-3.5 w-3.5" /> {myComment ? '看我的評語' : '寫評語'}
+          </button>
+        </div>
+
         {/* 抽屜內容：左報告、右評語（窄螢幕上下堆疊）*/}
         <div className="flex-1 overflow-y-auto">
           <div className="grid gap-6 px-5 py-6 sm:px-7 lg:grid-cols-[1fr_360px]">
@@ -152,7 +165,7 @@ export default function MemberDrawer({
               <CoachCommentPanel comments={otherComments} />
             </div>
 
-            <div className="lg:sticky lg:top-0">
+            <div ref={commentRef} className="scroll-mt-3 lg:sticky lg:top-0">
               {editing || !myComment ? (
                 <CommentEditor
                   submission={member.submission}

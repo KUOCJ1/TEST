@@ -121,9 +121,12 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
   };
 
   // 一鍵插入這位學員的最強／待強化構面名稱，不必自己回頭翻報告找怎麼稱呼。
+  // 構面的稱呼：副標是英文（如 Task Management）而有中文名稱時用中文——學員看得懂的是中文（與雷達圖手機版同一條規則）。
+  const dimLabel = (dim) => (/^[\x20-\x7e]+$/.test(dim?.subtitle ?? '') && dim?.name ? dim.name : dim?.subtitle);
   const insertDimension = (dim) => {
-    if (!dim?.subtitle) return;
-    setText((prev) => (prev ? `${prev}「${dim.subtitle}」` : `「${dim.subtitle}」`));
+    const label = dimLabel(dim);
+    if (!label) return;
+    setText((prev) => (prev ? `${prev}「${label}」` : `「${label}」`));
   };
 
   const handleSave = async () => {
@@ -227,12 +230,12 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
           <span className="text-slate-400">快速插入：</span>
           {strongest && (
             <button type="button" onClick={() => insertDimension(strongest)} className="chip bg-emerald-50 text-emerald-600 hover:bg-emerald-100">
-              最強：{strongest.subtitle}
+              最強：{dimLabel(strongest)}
             </button>
           )}
           {weakest && (
             <button type="button" onClick={() => insertDimension(weakest)} className="chip bg-amber-50 text-amber-600 hover:bg-amber-100">
-              待強化：{weakest.subtitle}
+              待強化：{dimLabel(weakest)}
             </button>
           )}
         </div>
@@ -243,7 +246,7 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
         onChange={(e) => setText(e.target.value)}
         rows={4}
         placeholder="針對此學員的整體觀察與評語…"
-        className="input"
+        className="input min-h-[11rem] sm:min-h-0"
       />
 
       <p className="mt-3 mb-1.5 text-xs font-semibold text-brass-600 uppercase tracking-wide">精進建議（最多 5 條）</p>

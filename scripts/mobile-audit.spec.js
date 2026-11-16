@@ -26,7 +26,7 @@ async function audit(page, name, role) {
   await page.waitForTimeout(500);
   const m = await page.evaluate(() => {
     const vw = window.innerWidth;
-    const vis = (el) => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return r.width > 4 && r.height > 4 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+    const vis = (el) => { const d = el.closest('details:not([open])'); if (d && !el.closest('summary')) return false; const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return r.width > 4 && r.height > 4 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
     const desc = (el) => (el.getAttribute('aria-label') || el.innerText || el.getAttribute('placeholder') || el.getAttribute('title') || el.tagName).trim().replace(/\s+/g, ' ').slice(0, 28);
     const inPortal = (el) => !!el.closest('#report-portal');
     const all = [...document.querySelectorAll('body *')].filter((el) => vis(el));
@@ -50,6 +50,22 @@ async function audit(page, name, role) {
   findings.push({ name, role, url: new URL(page.url()).pathname, ...m });
   fs.writeFileSync(`${OUT}/findings.json`, JSON.stringify(findings, null, 1));
 }
+// 報告浮層是固定定位、內部捲動，整頁截圖看不到後面的內容：另外逐屏截圖（最多 n 張）。
+async function portalShots(page, name, n = 8) {
+  for (let i = 0; i < n; i += 1) {
+    const more = await page.evaluate((k) => {
+      const els = [document.querySelector('#report-portal'), ...document.querySelectorAll('#report-portal *')].filter(Boolean);
+      const sc = els.find((el) => ['auto', 'scroll'].includes(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight + 20);
+      if (!sc) return false;
+      sc.scrollTop = k * (sc.clientHeight - 80);
+      return sc.scrollTop + sc.clientHeight < sc.scrollHeight - 4;
+    }, i);
+    await page.waitForTimeout(250);
+    await page.screenshot({ path: `${OUT}/shots/${name}.p${i + 1}.jpg`, type: 'jpeg', quality: 60 });
+    if (!more) break;
+  }
+}
+
 const step = async (label, fn) => { try { await fn(); } catch (e) { findings.push({ name: label, error: String(e.message).split('\n')[0].slice(0, 200) }); fs.writeFileSync(`${OUT}/findings.json`, JSON.stringify(findings, null, 1)); } };
 
 test('手機介面走查', async ({ browser }) => {
@@ -144,5 +160,36 @@ test('手機介面走查', async ({ browser }) => {
     await step(`admin-${tab}`, async () => { await adp.getByRole('combobox', { name: '管理分頁' }).selectOption({ label: tab }); await adp.waitForTimeout(1200); await audit(adp, `4${i + 1}-admin-${tab}`, '管理者'); });
   }
   await ac.close();
+
+  // ── 360°（70 題）：覆蓋率、新版 360° 報告、批次報告、評語草稿、今天要做什麼 ──
+  const c360 = getAssessment('leadership-360-70');
+  const ans = (base, j = 0) => Object.fromEntries(c360.ALL_QUESTIONS.map((q, i) => [q.id, Math.max(1, Math.min(5, base + ((i + j) % 3 === 0 ? -1 : 0)))]));
+  const em = (n) => `audit-360-${n}@placeholder.invalid`;
+  const row = (r, rn, type, rater, raterName, base, j) => { const a = ans(base, j); return { rateeEmail: em(r), rateeName: rn, raterType: type, raterEmail: rater ? em(rater) : '', raterName, answers: a, result: buildResult(a, c360) }; };
+  const rows = [
+    row('a', '受評者甲', 'self', '', '', 5, 0), row('a', '受評者甲', 'manager', 'm', '主管乙', 3, 1),
+    row('a', '受評者甲', 'peer', 'p1', '同儕一', 4, 0), row('a', '受評者甲', 'peer', 'p2', '同儕二', 3, 2), row('a', '受評者甲', 'peer', 'p3', '同儕三', 4, 1),
+    row('a', '受評者甲', 'subordinate', 's1', '部屬一', 4, 2), row('a', '受評者甲', 'subordinate', 's2', '部屬二', 4, 0), row('a', '受評者甲', 'subordinate', 's3', '部屬三', 3, 1),
+    row('b', '受評者丙', 'self', '', '', 4, 1), row('b', '受評者丙', 'peer', 'p1', '同儕一', 3, 0),
+  ];
+  await ok(await admin.post('/api/admin/batch-import', { data: { assessmentId: 'leadership-360-70', rows } }), 'import 360');
+  const { group: g360 } = await ok(await admin.post('/api/coach/groups', { data: { name: '高階教練 360 班', companyName: '示範股份有限公司', assessmentId: 'leadership-360-70' } }), 'group 360');
+  const allUsers = (await ok(await admin.get('/api/admin/overview'), 'overview')).users ?? [];
+  await ok(await admin.put(`/api/coach/groups/${g360.id}`, { data: { memberIds: allUsers.filter((u) => u.email.startsWith('audit-360-')).map((u) => u.id) } }), 'members 360');
+  const tc = await browser.newContext({ viewport: MOBILE, hasTouch: true, isMobile: true, storageState: await admin.storageState() });
+  const tp = await tc.newPage();
+  const open360 = async () => {
+    await tp.goto('/coach');
+    const bench = tp.locator('details', { hasText: '今天要做什麼' }).first();
+    await bench.locator('summary').click({ timeout: 25000 });
+    await bench.getByRole('button', { name: '高階教練 360 班', exact: true }).click({ timeout: 10000 });
+    await expect(tp.getByRole('heading', { name: '高階教練 360 班' })).toBeVisible({ timeout: 20000 });
+  };
+  await step('t360-workbench', async () => { await tp.goto('/coach'); await tp.locator('details', { hasText: '今天要做什麼' }).first().locator('summary').click({ timeout: 25000 }); await audit(tp, '50-coach-workbench-open', '教練'); });
+  await step('t360-overview', async () => { await open360(); await tp.getByRole('region', { name: '360° 他評收齊狀況' }).scrollIntoViewIfNeeded({ timeout: 15000 }); await audit(tp, '51-coach-360-coverage', '教練'); await tp.screenshot({ path: `${OUT}/shots/51-coach-360-coverage.view.jpg`, type: 'jpeg', quality: 60 }); });
+  await step('t360-report', async () => { await tp.getByRole('button', { name: '產出 受評者甲 的 360° 完整報告' }).click({ timeout: 10000 }); await tp.locator('#report-portal .report-toolbar').waitFor({ timeout: 15000 }); await tp.waitForTimeout(1500); await audit(tp, '52-360-report-read', '教練'); await portalShots(tp, '52-360-report-read', 14); await tp.getByRole('button', { name: /關閉/ }).first().click(); });
+  await step('t360-batch', async () => { await tp.getByRole('region', { name: '360° 他評收齊狀況' }).getByRole('button', { name: '批次產出 360° 報告' }).click({ timeout: 10000 }); await tp.locator('#report-portal .report-toolbar').waitFor({ timeout: 15000 }); await tp.waitForTimeout(3000); await audit(tp, '53-360-batch-report', '教練'); await portalShots(tp, '53-360-batch-report', 4); await tp.getByRole('button', { name: /關閉/ }).first().click(); });
+  await step('t360-comment', async () => { await tp.getByRole('button', { name: /查看 .* 的報告/ }).first().click({ timeout: 8000 }); const dlg = tp.getByRole('dialog'); await dlg.getByRole('button', { name: '寫評語' }).click({ timeout: 10000 }); await dlg.getByRole('button', { name: '帶入草稿' }).click({ timeout: 10000 }); await tp.waitForTimeout(900); await audit(tp, '54-comment-draft', '教練'); await tp.screenshot({ path: `${OUT}/shots/54-comment-draft.view.jpg`, type: 'jpeg', quality: 60 }); });
+  await tc.close();
   await Promise.all([admin.dispose(), coach.dispose(), ...ctxs.map((c) => c.dispose())]);
 });

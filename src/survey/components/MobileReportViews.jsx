@@ -93,7 +93,7 @@ export function GroupReadView({ group, stats, rows, results, config, date, summa
         <>
           <section className="mt-6" aria-label="班級整體能力雷達">
             <h3 className="mb-2 text-center font-bold text-slate-700">班級整體能力雷達</h3>
-            <div className="flex justify-center"><RadarChart dimensions={dims} friendly /></div>
+            <div className="flex flex-col items-center"><RadarChart dimensions={dims} friendly /></div>
           </section>
 
           <section className="mt-6 space-y-3" aria-label="各構面平均">
@@ -216,6 +216,7 @@ export function ThreeSixtyReadView({ report: r, name, date }) {
   const pct = (v) => (typeof v === 'number' ? Math.round((v / 5) * 100) : 0);
   const radarSelf = dims.map((d) => ({ id: d.id, name: d.name, subtitle: d.subtitle, color: d.color, percent: pct(d.self ?? d.others) }));
   const extraSeries = ['manager', 'peer', 'subordinate'].filter((t) => r.counts[t] > 0).map((t) => ({ id: t, label: RATER_LABELS[t], color: GROUPS[t].color, values: dims.filter((d) => typeof d[t] === 'number').map((d) => ({ id: d.id, percent: pct(d[t]) })) }));
+  const groupTypes = ['manager', 'peer', 'subordinate'].filter((t) => r.counts[t] > 0);
   const counts = ['manager', 'peer', 'subordinate'].filter((t) => r.counts[t]).map((t) => `${RATER_LABELS[t]} ${r.counts[t]} 位`);
   return (
     <div className="px-4 pb-8 pt-5">
@@ -251,9 +252,9 @@ export function ThreeSixtyReadView({ report: r, name, date }) {
 
       <section className="mt-6" aria-label="各構面雷達">
         <h3 className="mb-2 text-center font-bold text-slate-700">各構面：自評與各類評分者</h3>
-        <div className="flex justify-center"><RadarChart dimensions={radarSelf} extraSeries={extraSeries} friendly /></div>
+        <div className="flex flex-col items-center"><RadarChart dimensions={radarSelf} extraSeries={extraSeries} friendly /></div>
         {extraSeries.length > 0 && (
-          <p className="mt-1 flex flex-wrap justify-center gap-x-3 text-xs text-slate-600">
+          <p className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
             <span>■ 自評（色塊）</span>
             {extraSeries.map((x) => <span key={x.id} style={{ color: x.color }} className="font-bold">━ {x.label}</span>)}
           </p>
@@ -266,8 +267,19 @@ export function ThreeSixtyReadView({ report: r, name, date }) {
           <article key={d.id} className="rounded-xl border border-slate-100 bg-white px-4 py-3">
             <div className="flex items-baseline justify-between gap-3">
               <h4 className="font-bold text-slate-800"><span className="mr-2 inline-block h-2 w-2 rounded-full" style={{ background: d.color }} />{d.name}</h4>
-              <span className="shrink-0 text-sm text-slate-600">自 {f1(d.self)}／他 {f1(d.others)}</span>
+              {groupTypes.length === 0 && <span className="shrink-0 text-sm text-slate-600">自 {f1(d.self)}／他 {f1(d.others)}</span>}
             </div>
+            {/* 主管／同儕／部屬分開呈現（與 A4 版一致）；沒有該類評分者的不列。 */}
+            {groupTypes.length > 0 && (
+              <dl className="mt-2 grid gap-1.5 text-center" style={{ gridTemplateColumns: `repeat(${groupTypes.length + 1}, minmax(0, 1fr))` }}>
+                {[['self', '自評', d.self], ...groupTypes.map((t) => [t, RATER_LABELS[t], d[t]])].map(([t, label, v]) => (
+                  <div key={t} className="rounded-lg bg-slate-50 px-1 py-1.5" style={{ borderTop: `3px solid ${GROUPS[t].color}` }}>
+                    <dt className="text-xs text-slate-500">{label}</dt>
+                    <dd className="text-base font-extrabold text-slate-800">{f1(v)}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
             {d.gap != null && KIND_LABEL[d.kind] && <p className="mt-1 text-xs font-semibold text-slate-500">{KIND_LABEL[d.kind]} {signed(d.gap)}</p>}
             {r.dimTexts?.[d.id] && <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-800">{r.dimTexts[d.id]}</p>}
             {r.narratives?.[d.id] && <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{r.narratives[d.id]}</p>}
