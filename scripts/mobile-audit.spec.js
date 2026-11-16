@@ -13,7 +13,10 @@ import { register } from '../e2e/helpers.js';
 const API = 'http://localhost:3001';
 const OUT = process.env.AUDIT_OUT || 'mobile-audit-out';
 fs.mkdirSync(`${OUT}/shots`, { recursive: true });
-const MOBILE = { width: 390, height: 844 };
+// AUDIT_DESKTOP=1：改用桌機尺寸（1280×800、非觸控）跑同一套畫面（輸出目錄請另外指定 AUDIT_OUT）。
+const DESKTOP = process.env.AUDIT_DESKTOP === '1';
+const MOBILE = DESKTOP ? { width: 1280, height: 800 } : { width: 390, height: 844 };
+const TOUCH = DESKTOP ? { hasTouch: false, isMobile: false } : { hasTouch: true, isMobile: true };
 const ai = getAssessment('ai-competency');
 const l9d = getAssessment('leadership-9d');
 const JITTER = [0, 1, -1, 0, 1, 0, -1, 1];
@@ -95,7 +98,7 @@ test('手機介面走查', async ({ browser }) => {
   await ok(await ctxs[1].post('/api/goals', { data: { text: '每週一次跨部門 check-in', assessmentId: 'leadership-9d', dimensionId: 'collaboration', dimensionName: '協作關係', reviewDate: '2027-01-15' } }), 'goal').catch(() => {});
 
   // ── 公開頁與登入 ──
-  const anon = await browser.newContext({ viewport: MOBILE, hasTouch: true, isMobile: true });
+  const anon = await browser.newContext({ viewport: MOBILE, ...TOUCH });
   const ap = await anon.newPage();
   await step('public-landing', async () => { await ap.goto('/welcome'); await ap.waitForLoadState('networkidle'); await audit(ap, '01-public-landing', '訪客'); });
   await step('public-login', async () => { await ap.getByRole('button', { name: '登入平台' }).first().click({ timeout: 15000 }); await ap.getByPlaceholder('you@example.com').waitFor(); await audit(ap, '02-login', '訪客'); });
@@ -103,7 +106,7 @@ test('手機介面走查', async ({ browser }) => {
   await anon.close();
 
   // ── 學員：已有資料的人（王大明）──
-  const lc = await browser.newContext({ viewport: MOBILE, hasTouch: true, isMobile: true, storageState: await ctxs[1].storageState() });
+  const lc = await browser.newContext({ viewport: MOBILE, ...TOUCH, storageState: await ctxs[1].storageState() });
   const lp = await lc.newPage();
   await step('learner-home', async () => { await lp.goto('/home'); await expect(lp.getByRole('heading', { name: '選擇評量' })).toBeVisible({ timeout: 20000 }); await audit(lp, '10-learner-home', '學員'); });
   await step('learner-analysis', async () => { await lp.goto('/analysis'); await lp.waitForLoadState('networkidle'); await audit(lp, '11-learner-analysis', '學員'); });
@@ -111,10 +114,30 @@ test('手機介面走查', async ({ browser }) => {
   await step('learner-learning', async () => { await lp.goto('/learning'); await lp.waitForLoadState('networkidle'); await audit(lp, '13-learner-learning', '學員'); });
   await step('learner-profile', async () => { await lp.goto('/profile'); await lp.waitForLoadState('networkidle'); await audit(lp, '14-learner-profile', '學員'); });
   await step('learner-menu', async () => { await lp.goto('/home'); await lp.getByRole('button', { name: /的帳號選單/ }).click({ timeout: 15000 }); await expect(lp.getByRole('menu')).toBeVisible(); await audit(lp, '15-learner-account-menu', '學員'); });
+  // Sprint 31：目標回報、課後問卷、邀請入班（連結帶 ?invite=）
+  await step('learner-goal-checkin', async () => {
+    await lp.goto('/learning'); await lp.waitForLoadState('networkidle');
+    await lp.getByRole('button', { name: /回報|進度/ }).first().click({ timeout: 8000 });
+    await lp.waitForTimeout(600); await audit(lp, '60-goal-checkin', '學員');
+  });
+  await step('learner-post-survey', async () => {
+    await ok(await coach.put(`/api/coach/groups/${group.id}`, { data: { extraAssessmentIds: ['ai-course-post'] } }), 'attach post survey');
+    await lp.goto('/home'); await lp.waitForLoadState('networkidle'); await audit(lp, '61-home-with-post-survey', '學員');
+    await lp.goto('/survey/ai-course-post'); await lp.waitForLoadState('networkidle'); await lp.waitForTimeout(800); await audit(lp, '62-post-survey', '學員');
+  });
+  await step('invite-link', async () => {
+    const r = await ok(await coach.post(`/api/coach/groups/${group.id}/roster`, { data: { entries: [{ email: 'invitee@example.com', name: '受邀同學' }] } }), 'roster');
+    const code = (r.memberInvites ?? []).find((m) => m.email === 'invitee@example.com')?.code;
+    expect(code, 'invite code').toBeTruthy();
+    const ic = await browser.newContext({ viewport: MOBILE, ...TOUCH });
+    const ip = await ic.newPage();
+    await ip.goto(`/?invite=${code}`); await ip.getByPlaceholder('you@example.com').waitFor({ timeout: 15000 });
+    await audit(ip, '63-invite-link', '訪客'); await ic.close();
+  });
   await lc.close();
 
   // ── 學員：新註冊 → 作答 → 結果 → 列印報告 ──
-  const nc = await browser.newContext({ viewport: MOBILE, hasTouch: true, isMobile: true });
+  const nc = await browser.newContext({ viewport: MOBILE, ...TOUCH });
   const np = await nc.newPage();
   await step('survey', async () => {
     await np.goto('/');
@@ -142,7 +165,7 @@ test('手機介面走查', async ({ browser }) => {
   await nc.close();
 
   // ── 教練 ──
-  const cc = await browser.newContext({ viewport: MOBILE, hasTouch: true, isMobile: true, storageState: await coach.storageState() });
+  const cc = await browser.newContext({ viewport: MOBILE, ...TOUCH, storageState: await coach.storageState() });
   const cp = await cc.newPage();
   await step('coach-overview', async () => { await cp.goto('/coach'); await expect(cp.getByText('作答進度')).toBeVisible({ timeout: 25000 }); await audit(cp, '30-coach-overview', '教練'); });
   await step('coach-members', async () => { await cp.getByRole('heading', { name: '成員比較' }).scrollIntoViewIfNeeded(); await audit(cp, '31-coach-members-table', '教練'); });
@@ -153,11 +176,12 @@ test('手機介面走查', async ({ browser }) => {
   await cc.close();
 
   // ── 管理者 ──
-  const ac = await browser.newContext({ viewport: MOBILE, hasTouch: true, isMobile: true, storageState: await admin.storageState() });
+  const ac = await browser.newContext({ viewport: MOBILE, ...TOUCH, storageState: await admin.storageState() });
   const adp = await ac.newPage();
-  await step('admin-home', async () => { await adp.goto('/admin'); await expect(adp.getByRole('combobox', { name: '管理分頁' })).toBeVisible({ timeout: 25000 }); await audit(adp, '40-admin-overview', '管理者'); });
+  const adminTab = async (label) => (DESKTOP ? adp.getByRole('button', { name: label, exact: true }).click() : adp.getByRole('combobox', { name: '管理分頁' }).selectOption({ label }));
+  await step('admin-home', async () => { await adp.goto('/admin'); await expect(DESKTOP ? adp.getByRole('button', { name: '班級分析', exact: true }) : adp.getByRole('combobox', { name: '管理分頁' })).toBeVisible({ timeout: 25000 }); await audit(adp, '40-admin-overview', '管理者'); });
   for (const [i, tab] of ['班級分析', '用戶管理', '班別與發佈', '專案範本', '題庫內容', '批次上傳', '稽核紀錄', '系統狀態'].entries()) {
-    await step(`admin-${tab}`, async () => { await adp.getByRole('combobox', { name: '管理分頁' }).selectOption({ label: tab }); await adp.waitForTimeout(1200); await audit(adp, `4${i + 1}-admin-${tab}`, '管理者'); });
+    await step(`admin-${tab}`, async () => { await adminTab(tab); await adp.waitForTimeout(1200); await audit(adp, `4${i + 1}-admin-${tab}`, '管理者'); });
   }
   await ac.close();
 
@@ -176,20 +200,24 @@ test('手機介面走查', async ({ browser }) => {
   const { group: g360 } = await ok(await admin.post('/api/coach/groups', { data: { name: '高階教練 360 班', companyName: '示範股份有限公司', assessmentId: 'leadership-360-70' } }), 'group 360');
   const allUsers = (await ok(await admin.get('/api/admin/overview'), 'overview')).users ?? [];
   await ok(await admin.put(`/api/coach/groups/${g360.id}`, { data: { memberIds: allUsers.filter((u) => u.email.startsWith('audit-360-')).map((u) => u.id) } }), 'members 360');
-  const tc = await browser.newContext({ viewport: MOBILE, hasTouch: true, isMobile: true, storageState: await admin.storageState() });
+  const tc = await browser.newContext({ viewport: MOBILE, ...TOUCH, storageState: await admin.storageState() });
   const tp = await tc.newPage();
   const open360 = async () => {
     await tp.goto('/coach');
-    const bench = tp.locator('details', { hasText: '今天要做什麼' }).first();
-    await bench.locator('summary').click({ timeout: 25000 });
-    await bench.getByRole('button', { name: '高階教練 360 班', exact: true }).click({ timeout: 10000 });
+    if (DESKTOP) {
+      await tp.getByRole('region', { name: '今天要做什麼' }).getByRole('button', { name: '高階教練 360 班', exact: true }).click({ timeout: 25000 });
+    } else {
+      const bench = tp.locator('details', { hasText: '今天要做什麼' }).first();
+      await bench.locator('summary').click({ timeout: 25000 });
+      await bench.getByRole('button', { name: '高階教練 360 班', exact: true }).click({ timeout: 10000 });
+    }
     await expect(tp.getByRole('heading', { name: '高階教練 360 班' })).toBeVisible({ timeout: 20000 });
   };
-  await step('t360-workbench', async () => { await tp.goto('/coach'); await tp.locator('details', { hasText: '今天要做什麼' }).first().locator('summary').click({ timeout: 25000 }); await audit(tp, '50-coach-workbench-open', '教練'); });
+  await step('t360-workbench', async () => { await tp.goto('/coach'); if (DESKTOP) await tp.getByRole('region', { name: '今天要做什麼' }).waitFor({ timeout: 25000 }); else await tp.locator('details', { hasText: '今天要做什麼' }).first().locator('summary').click({ timeout: 25000 }); await audit(tp, '50-coach-workbench-open', '教練'); });
   await step('t360-overview', async () => { await open360(); await tp.getByRole('region', { name: '360° 他評收齊狀況' }).scrollIntoViewIfNeeded({ timeout: 15000 }); await audit(tp, '51-coach-360-coverage', '教練'); await tp.screenshot({ path: `${OUT}/shots/51-coach-360-coverage.view.jpg`, type: 'jpeg', quality: 60 }); });
   await step('t360-report', async () => { await tp.getByRole('button', { name: '產出 受評者甲 的 360° 完整報告' }).click({ timeout: 10000 }); await tp.locator('#report-portal .report-toolbar').waitFor({ timeout: 15000 }); await tp.waitForTimeout(1500); await audit(tp, '52-360-report-read', '教練'); await portalShots(tp, '52-360-report-read', 14); await tp.getByRole('button', { name: /關閉/ }).first().click(); });
   await step('t360-batch', async () => { await tp.getByRole('region', { name: '360° 他評收齊狀況' }).getByRole('button', { name: '批次產出 360° 報告' }).click({ timeout: 10000 }); await tp.locator('#report-portal .report-toolbar').waitFor({ timeout: 15000 }); await tp.waitForTimeout(3000); await audit(tp, '53-360-batch-report', '教練'); await portalShots(tp, '53-360-batch-report', 4); await tp.getByRole('button', { name: /關閉/ }).first().click(); });
-  await step('t360-comment', async () => { await tp.getByRole('button', { name: /查看 .* 的報告/ }).first().click({ timeout: 8000 }); const dlg = tp.getByRole('dialog'); await dlg.getByRole('button', { name: '寫評語' }).click({ timeout: 10000 }); await dlg.getByRole('button', { name: '帶入草稿' }).click({ timeout: 10000 }); await tp.waitForTimeout(900); await audit(tp, '54-comment-draft', '教練'); await tp.screenshot({ path: `${OUT}/shots/54-comment-draft.view.jpg`, type: 'jpeg', quality: 60 }); });
+  await step('t360-comment', async () => { await tp.getByRole('button', { name: /查看 .* 的報告/ }).first().click({ timeout: 8000 }); const dlg = tp.getByRole('dialog'); if (!DESKTOP) await dlg.getByRole('button', { name: '寫評語' }).click({ timeout: 10000 }); await dlg.getByRole('button', { name: '帶入草稿' }).click({ timeout: 10000 }); await tp.waitForTimeout(900); await audit(tp, '54-comment-draft', '教練'); await tp.screenshot({ path: `${OUT}/shots/54-comment-draft.view.jpg`, type: 'jpeg', quality: 60 }); });
   await tc.close();
   await Promise.all([admin.dispose(), coach.dispose(), ...ctxs.map((c) => c.dispose())]);
 });

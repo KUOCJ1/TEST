@@ -84,7 +84,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
 
   if (subs === null && error) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+      <main className="mx-auto max-w-2xl px-4 py-16 text-center">
         <div className="rounded-2xl bg-white px-6 py-12 shadow-lg shadow-slate-200/60">
           <AlertCircle className="mx-auto h-12 w-12 text-red-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-800">載入失敗</h2>
@@ -93,13 +93,13 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
             重試
           </button>
         </div>
-      </div>
+      </main>
     );
   }
 
   if (!subs?.length) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+      <main className="mx-auto max-w-2xl px-4 py-16 text-center">
         <div className="rounded-2xl bg-white px-6 py-12 shadow-lg shadow-slate-200/60">
           <BarChart3 className="mx-auto h-12 w-12 text-brass-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-800">尚無評測紀錄</h2>
@@ -108,7 +108,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
             前往選擇評量
           </button>
         </div>
-      </div>
+      </main>
     );
   }
 

@@ -29,7 +29,7 @@ export default function CoachDashboard() {
   ];
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-8">
+    <main className="mx-auto max-w-5xl xl:max-w-7xl px-4 py-5 sm:px-6 sm:py-8">
       <OnboardingBanner role="coach" show={(overview?.users?.length ?? 0) === 0} />
       <header className="mb-5">
         <h2 className="font-serif text-2xl font-bold text-slate-900">教練後台</h2>

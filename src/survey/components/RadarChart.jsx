@@ -117,8 +117,9 @@ export default function RadarChart({ dimensions, size: sizeProp = 340, compare =
       {/* 圖例 */}
       {compare && (
         <g>
-          <line x1={12} y1={size - 14} x2={32} y2={size - 14} stroke="#475569" strokeWidth="2" strokeDasharray="5 4" />
-          <text x={36} y={size - 10} fontSize={friendly ? 18 : 12} fill="#475569" fontWeight="600">{compareLabel}</text>
+          {/* 放在左上角空白處：下方、左右都有構面百分比標籤，放在圖底會疊到底部的標籤。 */}
+          <line x1={-padX + 6} y1={-padY + 14} x2={-padX + 26} y2={-padY + 14} stroke="#475569" strokeWidth="2" strokeDasharray="5 4" />
+          <text x={-padX + 30} y={-padY + 18} fontSize={friendly ? 18 : 12} fill="#475569" fontWeight="600">{compareLabel}</text>
         </g>
       )}
 

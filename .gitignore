@@ -40,3 +40,4 @@ server/.env
 
 # 手機介面走查的輸出（npm run audit:mobile）
 mobile-audit-out/
+desktop-audit-out/
