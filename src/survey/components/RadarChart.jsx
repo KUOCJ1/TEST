@@ -6,10 +6,11 @@ import { Fragment, useId } from 'react';
  * @param {number} size 畫布邊長 (px)
  * @param {Array<{id,percent}>} [compare] 對照數列（如全體 / 班級平均），以虛線疊加
  * @param {string} [compareLabel] 對照數列的圖例文字
+ * @param {Array<{id,label,color,values:Array<{id,percent}>}>} [extraSeries] 其他數列（如主管／同儕／部屬各一條實線），圖例請自行放在圖外
  * @param {boolean} [friendly] 螢幕（手機）友善版：標籤優先用中文、較小的左右留白、較大的字。列印報告不要開，
  *   維持原本的版面。
  */
-export default function RadarChart({ dimensions, size: sizeProp = 340, compare = null, compareLabel = '全體平均', friendly = false }) {
+export default function RadarChart({ dimensions, size: sizeProp = 340, compare = null, compareLabel = '全體平均', friendly = false, extraSeries = null }) {
   // 手機友善版：畫布縮小、標籤留白加寬、字放大——viewBox 縮到約 360px 寬時，標籤實際字級才會有 14px 左右。
   const size = friendly ? Math.min(sizeProp, 280) : sizeProp;
   const gradientId = useId();
@@ -97,6 +98,18 @@ export default function RadarChart({ dimensions, size: sizeProp = 340, compare =
       {comparePath && (
         <path d={comparePath} fill="none" stroke="#475569" strokeWidth="2" strokeDasharray="5 4" />
       )}
+
+      {/* 其他數列：各自一條細實線（顏色由呼叫端指定） */}
+      {extraSeries?.map((ser) => (
+        <path
+          key={ser.id}
+          d={toPath((i) => {
+            const m = ser.values.find((v) => v.id === dimensions[i].id);
+            return m ? Math.max(0, Math.min(1, m.percent / 100)) : 0;
+          })}
+          fill="none" stroke={ser.color} strokeWidth="2" strokeLinejoin="round"
+        />
+      ))}
 
       {/* 圖例 */}
       {compare && (

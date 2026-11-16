@@ -199,3 +199,10 @@ export const DIMENSION_DEFINITIONS = {
   'adaptive-innovation': '靈活因應環境的變動與壓力，並以開放的態度鼓勵新想法、推動創新與改善。',
 };
 
+// 子能力說明：沿用 L9D，另加「應變與創新」底下的兩個子能力。
+export const SUB_DEFINITIONS = {
+  ...clone(L9D.SUB_DEFINITIONS),
+  adapting: '面對環境變動與壓力時保持彈性，快速調整做法並穩住團隊。',
+  innovating: '以開放的態度鼓勵新想法，嘗試新做法並推動改善與創新。',
+};
+

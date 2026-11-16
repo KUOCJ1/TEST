@@ -121,10 +121,13 @@ export function SubGroupBars({ dim, labels }) {
   if (!dim.subs.length) return null;
   return (
     <div id={`sub-groups-${dim.id}`} style={{ marginTop: 4 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr 18px', gap: 8 }}><div /><Axis labels={labels} offset={52} /><div /></div>
+      <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 18px', gap: 8 }}><div /><Axis labels={labels} offset={52} /><div /></div>
       {dim.subs.map((s) => (
-        <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 18px', gap: 8, padding: '5px 0', borderTop: '0.5px solid #f1f5f9', breakInside: 'avoid' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#334155', lineHeight: 1.3 }}>{s.name}</div>
+        <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr 18px', gap: 8, padding: '5px 0', borderTop: '0.5px solid #f1f5f9', breakInside: 'avoid' }}>
+          <div style={{ lineHeight: 1.3 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#334155' }}>{s.name}</div>
+            {s.definition && <div style={{ fontSize: 8, color: '#64748b', marginTop: 2, lineHeight: 1.4 }}>{s.definition}</div>}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {GROUP_ORDER.filter((g) => typeof (g === 'others' ? s.others : s[g]) === 'number').map((g) => (
               <div key={g} style={{ display: 'grid', gridTemplateColumns: '48px 1fr', alignItems: 'center', gap: 4 }}>

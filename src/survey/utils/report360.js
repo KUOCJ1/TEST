@@ -78,6 +78,7 @@ function buildFramework(config, dimensions) {
     id: d.id, name: d.name, subtitle: d.subtitle, color: d.color,
     definition: config.DIMENSION_DEFINITIONS?.[d.id] ?? '',
     subs: (d.subDimensions ?? []).map((s) => s.name),
+    subDefs: (d.subDimensions ?? []).map((s) => ({ name: s.name, definition: config.SUB_DEFINITIONS?.[s.id] ?? '' })),
     items: d.questions.length,
   }));
   return {
@@ -132,7 +133,7 @@ export function build360Report(submissions, config) {
         const byType = Object.fromEntries(OTHER_TYPES.map((t) => [t, typeDims[t].get(cd.id)?.subs.find((x) => x.id === sd.id)?.average ?? null]));
         const spread = spreadOf([s, byType.manager, byType.peer, byType.subordinate]);
         return {
-          id: sd.id, name: sd.name, self: s, others: o, gap: s != null && o != null ? round2(s - o) : null,
+          id: sd.id, name: sd.name, definition: config.SUB_DEFINITIONS?.[sd.id] ?? '', self: s, others: o, gap: s != null && o != null ? round2(s - o) : null,
           manager: byType.manager, peer: byType.peer, subordinate: byType.subordinate,
           spread, wideSpread: spread != null && spread >= GROUP_GAP_SUB,
         };
@@ -184,6 +185,11 @@ export function build360Report(submissions, config) {
     counts,
     othersCount,
     self: selfSub ? { total: selfTotal, level: selfSub.result.level, createdAt: selfSub.createdAt } : null,
+    // 主管／同儕／部屬各自的整體分數與落點（不混在一起）；沒有該類評分者的不列。
+    groupSummaries: Object.fromEntries(OTHER_TYPES.filter((t) => counts[t] > 0).map((t) => {
+      const total = Math.round(mean(otherSubs.filter((x) => x.raterType === t).map((x) => x.result.total)));
+      return [t, { total, level: levelOfTotal(config, total), count: counts[t] }];
+    })),
     othersSummary: othersCount ? { total: othersTotal, level: othersLevel } : null,
     dimensions,
     strengths, develop, blind, hidden,

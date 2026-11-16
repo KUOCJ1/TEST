@@ -1,3 +1,4 @@
+import { GROUPS } from './threesixty/groups.js';
 import RadarChart from './RadarChart';
 import ResultPanel from './ResultPanel';
 import GroupNarrativeReport from './GroupNarrativeReport';
@@ -214,7 +215,7 @@ export function ThreeSixtyReadView({ report: r, name, date }) {
   const dims = r.dimensions ?? [];
   const pct = (v) => (typeof v === 'number' ? Math.round((v / 5) * 100) : 0);
   const radarSelf = dims.map((d) => ({ id: d.id, name: d.name, subtitle: d.subtitle, color: d.color, percent: pct(d.self ?? d.others) }));
-  const radarCompare = r.hasSelf && r.hasOthers ? dims.map((d) => ({ id: d.id, percent: pct(d.others) })) : null;
+  const extraSeries = ['manager', 'peer', 'subordinate'].filter((t) => r.counts[t] > 0).map((t) => ({ id: t, label: RATER_LABELS[t], color: GROUPS[t].color, values: dims.filter((d) => typeof d[t] === 'number').map((d) => ({ id: d.id, percent: pct(d[t]) })) }));
   const counts = ['manager', 'peer', 'subordinate'].filter((t) => r.counts[t]).map((t) => `${RATER_LABELS[t]} ${r.counts[t]} 位`);
   return (
     <div className="px-4 pb-8 pt-5">
@@ -225,11 +226,13 @@ export function ThreeSixtyReadView({ report: r, name, date }) {
           <p className="text-lg font-extrabold text-slate-800">{r.self ? r.self.total : '—'}</p>
           <p className="text-xs text-slate-500">{r.self ? badgeText(r.self.level?.badge ?? '') : '尚無自評'}</p>
         </div>
-        <div className="rounded-xl bg-white px-4 py-3 ring-1 ring-slate-100">
-          <p className="text-xs text-slate-400">他評（平均）</p>
-          <p className="text-lg font-extrabold text-slate-800">{r.othersSummary ? r.othersSummary.total : '—'}</p>
-          <p className="text-xs text-slate-500">{r.othersSummary ? badgeText(r.othersSummary.level?.badge ?? '') : '尚無他評'}</p>
-        </div>
+        {['manager', 'peer', 'subordinate'].filter((t) => r.groupSummaries?.[t]).map((t) => (
+          <div key={t} className="rounded-xl bg-white px-4 py-3 ring-1 ring-slate-100">
+            <p className="text-xs text-slate-400">{RATER_LABELS[t]}（{r.groupSummaries[t].count} 位）</p>
+            <p className="text-lg font-extrabold text-slate-800">{r.groupSummaries[t].total}</p>
+            <p className="text-xs text-slate-500">{badgeText(r.groupSummaries[t].level?.badge ?? '')}</p>
+          </div>
+        ))}
       </div>
       <p className="mt-2 text-xs text-slate-500">評分者：{r.hasSelf ? '自評 1 份' : '無自評'}{counts.map((c) => `、${c}`).join('')}</p>
 
@@ -247,8 +250,14 @@ export function ThreeSixtyReadView({ report: r, name, date }) {
       </div>
 
       <section className="mt-6" aria-label="各構面雷達">
-        <h3 className="mb-2 text-center font-bold text-slate-700">各構面：自評與他評</h3>
-        <div className="flex justify-center"><RadarChart dimensions={radarSelf} compare={radarCompare} compareLabel="他評" friendly /></div>
+        <h3 className="mb-2 text-center font-bold text-slate-700">各構面：自評與各類評分者</h3>
+        <div className="flex justify-center"><RadarChart dimensions={radarSelf} extraSeries={extraSeries} friendly /></div>
+        {extraSeries.length > 0 && (
+          <p className="mt-1 flex flex-wrap justify-center gap-x-3 text-xs text-slate-600">
+            <span>■ 自評（色塊）</span>
+            {extraSeries.map((x) => <span key={x.id} style={{ color: x.color }} className="font-bold">━ {x.label}</span>)}
+          </p>
+        )}
       </section>
 
       <section className="mt-6 space-y-3" aria-label="構面詳述">

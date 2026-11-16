@@ -39,6 +39,23 @@ describe('build360Report', () => {
     expect(comm.peer).toBeNull();
   });
 
+  it('主管、同儕、部屬各自有整體分數與落點，不混在一起', () => {
+    expect(Object.keys(r.groupSummaries)).toEqual(['manager', 'subordinate']);
+    expect(r.groupSummaries.manager.count).toBe(1);
+    expect(r.groupSummaries.subordinate.count).toBe(3);
+    expect(r.groupSummaries.manager.total).toBe(217); // 70 題 × 3 分，執行力 7 題給 4 分
+    expect(r.groupSummaries.manager.level).toBeTruthy();
+    expect(r.groupSummaries.subordinate.total).not.toBe(r.groupSummaries.manager.total);
+    expect(r.groupSummaries.peer).toBeUndefined();
+  });
+
+  it('每個子能力都有說明（L9D 與八大構面），報告帶出說明', () => {
+    const L9D = getAssessment('leadership-9d');
+    [L9D, config].forEach((c) => c.DIMENSIONS.forEach((d) => d.subDimensions.forEach((sd) => expect(c.SUB_DEFINITIONS[sd.id], `${c.ID}/${sd.id}`).toBeTruthy())));
+    r.dimensions.forEach((d) => d.subs.forEach((s) => expect(s.definition, s.id).toBeTruthy()));
+    r.framework.dimensions.forEach((d) => d.subDefs.forEach((sd) => expect(sd.definition, sd.name).toBeTruthy()));
+  });
+
   it('差距＝自評 − 他評合計；≥ 0.5 是盲點、≤ −0.5 是被低估的優勢', () => {
     const byId = Object.fromEntries(r.dimensions.map((d) => [d.id, d]));
     expect(byId.communication.gap).toBeCloseTo(5 - 4, 1);

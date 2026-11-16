@@ -6,6 +6,7 @@ import { build360Report } from '../utils/report360.js';
 import { RATER_LABELS } from '../constants/raterTypes';
 import { formatDate } from '../utils/format';
 import RadarChart from './RadarChart';
+import { GROUPS } from './threesixty/groups.js';
 import { TONE_COLOR, RATING_SCALE } from './printable-report/tokens.js';
 import { toneOf } from './printable-report/helpers.js';
 import { PageFooter, SectionTitle } from './printable-report/primitives.jsx';
@@ -65,16 +66,17 @@ function Cover({ r, name, date }) {
       <div style={{ padding: '22px 4px 0' }}>
         <div style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', marginBottom: 5 }}>受評者</div>
         <div style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', marginBottom: 22 }}>{name}</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
-          <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 18px' }}>
-            <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700 }}>自評</div>
-            {r.self ? (<><div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{r.self.total}</div><div style={{ fontSize: 11, color: '#475569' }}>{r.self.level?.badge}</div></>) : <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>尚無自評</div>}
-          </div>
-          <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 18px' }}>
-            <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700 }}>他評（平均）</div>
-            {r.othersSummary ? (<><div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{r.othersSummary.total}</div><div style={{ fontSize: 11, color: '#475569' }}>{r.othersSummary.level?.badge}</div></>) : <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>尚無他評</div>}
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 14 }}>
+          {[['self', r.self && { total: r.self.total, level: r.self.level }], ...['manager', 'peer', 'subordinate'].filter((t) => r.groupSummaries?.[t]).map((t) => [t, r.groupSummaries[t]])].map(([t, v]) => (
+            <div key={t} style={{ border: '1px solid #e2e8f0', borderTop: `3px solid ${GROUPS[t].color}`, borderRadius: 10, padding: '12px 16px' }}>
+              <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700 }}>{GROUPS[t].label}{t !== 'self' && v ? `（${v.count} 位）` : ''}</div>
+              {v ? (<><div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{v.total}</div><div style={{ fontSize: 11, color: '#475569' }}>{v.level?.badge}</div></>) : <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>尚無自評</div>}
+            </div>
+          ))}
         </div>
+        {r.othersSummary && Object.keys(r.groupSummaries ?? {}).length > 1 && (
+          <div style={{ fontSize: 10.5, color: '#64748b', marginBottom: 12 }}>他評合計（所有他評評分者平均，僅供對照）：{r.othersSummary.total}&emsp;{r.othersSummary.level?.badge}</div>
+        )}
         <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.7 }}>
           評分者組成：{r.hasSelf ? '自評 1 份' : '無自評'}
           {['manager', 'peer', 'subordinate'].filter((t) => r.counts[t]).map((t) => `、${RATER_LABELS[t]} ${r.counts[t]} 位`).join('')}
@@ -108,7 +110,9 @@ function Framework({ r }) {
                 <div style={{ fontSize: 8.5, fontWeight: 500, color: '#94a3b8', marginLeft: 14 }}>{d.subtitle}</div>
               </td>
               <td style={{ padding: '6px', color: '#334155', lineHeight: 1.7 }}>{d.definition}</td>
-              <td style={{ padding: '6px', color: '#475569', lineHeight: 1.7 }}>{d.subs.join('、')}</td>
+              <td style={{ padding: '6px', color: '#475569', lineHeight: 1.6 }}>
+                {d.subDefs.map((sd) => <div key={sd.name} style={{ marginBottom: 3 }}><b style={{ color: '#334155' }}>{sd.name}</b>{sd.definition && <span>：{sd.definition}</span>}</div>)}
+              </td>
               <td style={{ padding: '6px', textAlign: 'center', color: '#475569' }}>{d.items}</td>
             </tr>
           ))}
@@ -215,15 +219,16 @@ function Compare({ r }) {
   const dims = r.dimensions;
   const pct = (v) => (typeof v === 'number' ? Math.round((v / 5) * 100) : 0);
   const radarSelf = dims.map((d) => ({ id: d.id, name: d.name, subtitle: d.subtitle, color: d.color, percent: pct(d.self ?? d.others) }));
-  const radarCompare = r.hasSelf && r.hasOthers ? dims.map((d) => ({ id: d.id, percent: pct(d.others) })) : null;
+  const groupTypes = ['manager', 'peer', 'subordinate'].filter((t) => r.counts[t] > 0);
+  const extraSeries = groupTypes.map((t) => ({ id: t, label: GROUPS[t].label, color: GROUPS[t].color, values: dims.filter((d) => typeof d[t] === 'number').map((d) => ({ id: d.id, percent: pct(d[t]) })) }));
   return (
     <div style={SECTION}>
       <div style={{ breakInside: 'avoid' }}>
-        <SectionTitle sub="分數為 1–5 的平均；同一類評分者取平均，「他評合計」為所有他評評分者的平均">各構面：自評與各類評分者</SectionTitle>
+        <SectionTitle sub="分數為 1–5 的平均；主管、同儕、部屬各自取平均，分開呈現">各構面：自評與各類評分者</SectionTitle>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
-          <RadarChart dimensions={radarSelf} compare={radarCompare} compareLabel="他評" size={250} />
+          <RadarChart dimensions={radarSelf} extraSeries={extraSeries} size={250} />
         </div>
-        {radarCompare && <div style={{ display: 'flex', gap: 16, justifyContent: 'center', fontSize: 9, color: '#64748b', marginBottom: 14 }}><span>━ 自評</span><span style={{ opacity: 0.65 }}>╌ 他評合計</span></div>}
+        {extraSeries.length > 0 && <div style={{ display: 'flex', gap: 16, justifyContent: 'center', fontSize: 9, color: '#64748b', marginBottom: 14 }}><span style={{ color: '#8a6a2f' }}>■ 自評（色塊）</span>{extraSeries.map((x) => <span key={x.id} style={{ color: x.color, fontWeight: 700 }}>━ {x.label}</span>)}</div>}
       </div>
       <DimGroupBars r={r} labels={r.framework?.scale.labels ?? []} kindInfo={KIND} />
       <div style={{ fontSize: 9, color: '#64748b', marginTop: 8 }}>差距＝自評 − 他評合計；橫條旁的數字是各群組的平均分（1–5）。</div>
@@ -251,7 +256,7 @@ function DimensionDetails({ r }) {
           <div style={{ pageBreakInside: 'avoid', marginBottom: 14, border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: d.color, marginRight: 8 }} />{d.name}</div>
-            <div style={{ fontSize: 11, color: '#475569' }}>自評 <Score value={d.self} bold />&emsp;他評 <Score value={d.others} bold />{d.gap != null && d.kind !== 'aligned' && <> <Chip color={KIND[d.kind].color}>{KIND[d.kind].label} {signed(d.gap)}</Chip></>}</div>
+            <div style={{ fontSize: 11, color: '#475569' }}>自評 <Score value={d.self} bold />{['manager', 'peer', 'subordinate'].filter((t) => r.counts[t] > 0).map((t) => <span key={t}>&emsp;{GROUPS[t].label} <Score value={d[t]} bold /></span>)}{d.gap != null && d.kind !== 'aligned' && <> <Chip color={KIND[d.kind].color}>{KIND[d.kind].label} {signed(d.gap)}</Chip></>}</div>
           </div>
           {r.dimTexts?.[d.id] && <p style={{ fontSize: 11, lineHeight: 1.8, color: '#0f172a', fontWeight: 600, margin: '0 0 8px' }}>{r.dimTexts[d.id]}</p>}
           {r.narratives[d.id] && <p style={{ fontSize: 11, lineHeight: 1.8, color: '#334155', margin: '0 0 10px' }}>{r.narratives[d.id]}</p>}
