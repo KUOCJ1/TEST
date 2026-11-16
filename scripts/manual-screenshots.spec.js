@@ -115,6 +115,11 @@ test('產生使用手冊截圖', async ({ browser }) => {
   await expect(cp.getByText('作答進度')).toBeVisible({ timeout: 20000 });
   await expect(cp.getByRole('heading', { name: '成員比較' })).toBeVisible();
   await shot(cp, 'coach-overview');
+  await cp.getByRole('button', { name: '課堂模式' }).click();
+  await cp.getByRole('dialog', { name: '課堂模式' }).waitFor();
+  await cp.waitForTimeout(500);
+  await shot(cp, 'coach-classroom');
+  await cp.keyboard.press('Escape');
   await cp.getByRole('heading', { name: '成員比較' }).scrollIntoViewIfNeeded();
   await shot(cp, 'coach-members');
   await cp.getByRole('button', { name: '成員與設定' }).click();
