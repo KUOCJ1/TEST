@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { dimTextStyle } from '../utils/color';
 import GoalItem from './GoalItem';
 import { startersFor } from '../data/goal-starters';
+import { toDateInputValue } from '../utils/format';
 
 const MAX_ACTIONS = 5;
 
@@ -19,8 +20,7 @@ const MAX_ACTIONS = 5;
 // 預計檢視日 <input type="date"> 要的是 YYYY-MM-DD；預設抓「今天 + 28 天」
 // （跟後端沒帶 reviewDate 時的預設一致，見 server/src/routes/goals.js）。
 function defaultReviewDateInput() {
-  const d = new Date(Date.now() + 28 * 24 * 60 * 60 * 1000);
-  return d.toISOString().slice(0, 10);
+  return toDateInputValue(new Date(Date.now() + 28 * 24 * 60 * 60 * 1000));
 }
 
 export default function GoalPanel({ assessmentId, weakestDimension, profileMode = false, dimensions = [] }) {

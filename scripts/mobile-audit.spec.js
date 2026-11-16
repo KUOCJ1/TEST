@@ -173,6 +173,7 @@ test('手機介面走查', async ({ browser }) => {
   await step('coach-settings', async () => { await cp.goto('/coach'); await cp.getByRole('button', { name: '成員與設定' }).click({ timeout: 20000 }); await cp.getByRole('heading', { name: '報到 QR Code' }).waitFor({ timeout: 15000 }); await audit(cp, '33-coach-settings-qr', '教練'); });
   await step('coach-multirater', async () => { await cp.goto('/coach'); await cp.getByRole('button', { name: '360° 進度' }).click({ timeout: 20000 }); await cp.waitForTimeout(1200); await audit(cp, '34-coach-360-progress', '教練'); });
   await step('coach-group-report', async () => { await cp.goto('/coach'); await cp.getByRole('button', { name: /班級專業分析報告/ }).click({ timeout: 20000 }); await cp.locator('#report-portal .report-toolbar').waitFor({ timeout: 10000 }); await audit(cp, '35-coach-group-report-overlay', '教練'); });
+  await step('coach-classroom', async () => { await cp.goto('/coach'); await cp.getByRole('button', { name: '課堂模式' }).click({ timeout: 20000 }); await cp.getByRole('dialog', { name: '課堂模式' }).waitFor(); await cp.waitForTimeout(600); await audit(cp, '36-coach-classroom', '教練'); });
   await cc.close();
 
   // ── 管理者 ──

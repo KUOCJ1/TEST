@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Check, Trash2, CalendarClock, Share2, MessageSquarePlus } from 'lucide-react';
+import { Check, Trash2, CalendarClock, CalendarPlus, Share2, MessageSquarePlus } from 'lucide-react';
 import { api } from '../api/client';
-import { formatDate } from '../utils/format';
+import { formatDate, toDateInputValue } from '../utils/format';
 import { useConfirm } from './useConfirm';
+import { buildGoalIcs, downloadIcs } from '../utils/calendarExport';
 
 const URL_RE = /(https?:\/\/[^\s]+)/g;
 // 行動文字裡常帶著文章連結：把網址變成可點的連結（split 搭配單一 capture group：奇數索引是網址）。
@@ -16,7 +17,7 @@ const RATINGS = [
   [1, '幾乎沒做'], [2, '做了一點'], [3, '做了一半'], [4, '大多有做'], [5, '都有做到'],
 ];
 const ratingLabel = (n) => RATINGS.find(([v]) => v === n)?.[1] ?? '';
-const toDateInput = (iso) => (iso ? new Date(iso).toISOString().slice(0, 10) : '');
+const toDateInput = (iso) => (iso ? toDateInputValue(iso) : '');
 
 /** 設定時 → 最新的平均分變化；進步夠明顯時順便問「要不要標記達成」。 */
 function BaselineDelta({ goal, dimensions }) {
@@ -150,6 +151,15 @@ export default function GoalItem({ goal, onChange, onDelete, dimensions }) {
               <button type="button" disabled={busy} onClick={() => run(() => api.snoozeGoal(goal.id, 7))} className="font-semibold text-slate-500 hover:text-brass-600">
                 延後一週
               </button>
+              {goal.reviewDate && (
+                <button
+                  type="button"
+                  onClick={() => { const ics = buildGoalIcs(goal, { appUrl: window.location.origin }); if (ics) downloadIcs(ics, `目標檢視日-${toDateInput(goal.reviewDate)}.ics`); }}
+                  className="inline-flex items-center gap-1 font-semibold text-slate-500 hover:text-brass-600"
+                >
+                  <CalendarPlus className="h-3.5 w-3.5" /> 加入行事曆
+                </button>
+              )}
             </>
           )}
         </div>

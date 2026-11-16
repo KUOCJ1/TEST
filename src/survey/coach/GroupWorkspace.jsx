@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FileText, Copy } from 'lucide-react';
+import { FileText, Copy, Presentation } from 'lucide-react';
 import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
 import PhaseBadge from '../components/PhaseBadge';
@@ -13,6 +13,7 @@ import BatchPrintableReport from '../components/BatchPrintableReport';
 import GroupPrintableReport from '../components/GroupPrintableReport';
 import GroupListPanel from './GroupListPanel';
 import GroupOverviewSection from './GroupOverviewSection';
+import ClassroomMode from './ClassroomMode';
 import GroupSettingsSection from './GroupSettingsSection';
 import MemberDrawer from './MemberDrawer';
 import CohortCompare from './CohortCompare';
@@ -66,6 +67,7 @@ export default function GroupWorkspace({ users, currentUserId, initialGroupId = 
   const [showGroupReport, setShowGroupReport] = useState(false);
   const [pdfMemberIndex, setPdfMemberIndex] = useState(null);
   const [showBatchReport, setShowBatchReport] = useState(false);
+  const [showClassroom, setShowClassroom] = useState(false);
   const [showCohortCompare, setShowCohortCompare] = useState(false);
   const showToast = useToast();
   const confirm = useConfirm();
@@ -256,6 +258,9 @@ export default function GroupWorkspace({ users, currentUserId, initialGroupId = 
               </div>
               {section === 'overview' && groupStats && groupStats.respondents > 0 && getAssessment(groupDetail.group.assessmentId)?.REPORT !== 'compass' && (
                 <div className="flex shrink-0 gap-2">
+                  <button type="button" onClick={() => setShowClassroom(true)} className="btn-secondary btn-sm">
+                    <Presentation className="h-3.5 w-3.5" /> <span className="sr-only sm:not-sr-only">課堂模式</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setShowBatchReport(true)}
@@ -348,6 +353,10 @@ export default function GroupWorkspace({ users, currentUserId, initialGroupId = 
           groupName={groupDetail?.group.name}
           onClose={() => setPdfMemberIndex(null)}
         />
+      )}
+
+      {showClassroom && groupDetail && groupStats && (
+        <ClassroomMode group={groupDetail.group} groupStats={groupStats} onClose={() => setShowClassroom(false)} />
       )}
 
       {showGroupReport && groupDetail && (

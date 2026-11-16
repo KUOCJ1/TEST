@@ -25,6 +25,18 @@ export function formatDate(iso) {
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/**
+ * <input type="date"> 要的 YYYY-MM-DD，用「當地」的年月日。
+ * 不能用 toISOString().slice(0, 10)：那是 UTC 日期，台灣（UTC+8）當地 00:00 存下的時間會變成前一天，
+ * 使用者打開「修改檢視日」看到的日期比自己選的早一天，按儲存還會再往前退一天。
+ */
+export function toDateInputValue(input) {
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 /** 只有日期（YYYY/MM/DD），給開課日這類「時分沒有意義」的欄位用。 */
 export function formatDay(iso) {
   const d = new Date(iso);

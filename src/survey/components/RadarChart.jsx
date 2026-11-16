@@ -7,12 +7,15 @@ import { Fragment, useId } from 'react';
  * @param {Array<{id,percent}>} [compare] 對照數列（如全體 / 班級平均），以虛線疊加
  * @param {string} [compareLabel] 對照數列的圖例文字
  * @param {Array<{id,label,color,values:Array<{id,percent}>}>} [extraSeries] 其他數列（如主管／同儕／部屬各一條實線），圖例請自行放在圖外
+ * @param {boolean} [presentation] 投影／課堂用：友善版的標示方式，畫布最大 420
  * @param {boolean} [friendly] 螢幕（手機）友善版：標籤優先用中文、較小的左右留白、較大的字。列印報告不要開，
  *   維持原本的版面。
  */
-export default function RadarChart({ dimensions, size: sizeProp = 340, compare = null, compareLabel = '全體平均', friendly = false, extraSeries = null }) {
+export default function RadarChart({ dimensions, size: sizeProp = 340, compare = null, compareLabel = '全體平均', friendly: friendlyProp = false, presentation = false, extraSeries = null }) {
+  // presentation：投影／課堂用——沿用友善版的標示方式（百分比大字＋圖例），但畫布可以放大到 420。
+  const friendly = friendlyProp || presentation;
   // 手機友善版：畫布縮小、標籤留白加寬、字放大——viewBox 縮到約 360px 寬時，標籤實際字級才會有 14px 左右。
-  const size = friendly ? Math.min(sizeProp, 280) : sizeProp;
+  const size = friendly ? Math.min(sizeProp, presentation ? 420 : 280) : sizeProp;
   const gradientId = useId();
   const cx = size / 2;
   const cy = size / 2;
@@ -23,8 +26,8 @@ export default function RadarChart({ dimensions, size: sizeProp = 340, compare =
   // 標籤（如 "Succession Readiness"）以 start/end 錨點向外延伸，
   // 這段寬度不在畫布邊界內，需另外留白避免被 SVG 邊界裁切。
   // 手機友善版：圖上只標「百分比」（大字），構面名稱改放圖下方的圖例（HTML 文字，可換行、字級正常）。
-  const padX = friendly ? 52 : 130;
-  const labelFont = friendly ? 24 : 11;
+  const padX = friendly ? (presentation ? 64 : 52) : 130;
+  const labelFont = friendly ? (presentation ? 26 : 24) : 11;
   // 英文構面名稱（如 Communication）又長又不直覺：友善版改用中文名稱；本來就是中文副標的維持原樣。
   const labelOf = (d) => (friendly && /^[\x20-\x7e]+$/.test(d.subtitle ?? '') && d.name ? d.name : d.subtitle);
   const padY = 40;
@@ -157,7 +160,7 @@ export default function RadarChart({ dimensions, size: sizeProp = 340, compare =
     </svg>
 
     {friendly && (
-      <ul className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1 px-2 text-sm text-slate-700" aria-hidden="true">
+      <ul className={`mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1 px-2 text-slate-700 ${presentation ? 'text-lg' : 'text-sm'}`} aria-hidden="true">
         {dimensions.map((d, i) => (
           <li key={d.id ?? i} className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
