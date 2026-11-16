@@ -12,6 +12,7 @@ import { getAssessment } from '../data/assessments/index.js';
 import ProgressPanel from './ProgressPanel';
 import SharedGoalsPanel from './SharedGoalsPanel';
 import GoalActivityPanel from './GoalActivityPanel';
+import ThreeSixtyCoveragePanel from './ThreeSixtyCoveragePanel';
 import CourseSurveyPanel from './CourseSurveyPanel';
 import { useIsMobile } from '../hooks/useIsMobile';
 import LevelBadge from '../components/LevelBadge';
@@ -360,6 +361,7 @@ export default function GroupOverviewSection({
       <PrePostAnalysis group={group} submissions={submissions} members={members} />
       {!supportsPrePost(getAssessment(group.assessmentId)) && <GroupGainReport group={group} submissions={submissions} />}
 
+      <ThreeSixtyCoveragePanel group={group} memberRows={memberRows} mailConfigured={mailConfigured} showToast={showToast} />
       <GoalActivityPanel group={group} summary={goalSummary} mailConfigured={mailConfigured} showToast={showToast} />
       <SharedGoalsPanel goals={sharedGoals} />
 

@@ -302,6 +302,22 @@ function PlanPage({ r }) {
   );
 }
 
+/** 一位受評者的 360° 報告本體（封面到發展建議）。單份報告與批次報告共用。 */
+export function ThreeSixtyBody({ report, name, date }) {
+  return (
+    <>
+            <Cover r={report} name={name} date={date} />
+            <Contents r={report} />
+            <Framework r={report} />
+            <Overall r={report} />
+            <Compare r={report} />
+            <SubRankingSection r={report} />
+            <DimensionDetails r={report} />
+            <PlanPage r={report} />
+    </>
+  );
+}
+
 /**
  * 360° 完整報告（列印／存為 PDF）。自己用 rateeId／assessmentId 載入該受評者的全部作答。
  * 只支援非嚴格隱私的 360° 題庫（領導力羅盤有專屬的匿名化報告）。
@@ -357,18 +373,7 @@ export default function ThreeSixtyReport({ rateeId, rateeName, assessmentId, onC
         {error && <p style={{ padding: 40, color: '#dc2626' }}>{error}</p>}
         {!error && subs === null && <p style={{ padding: 40, color: '#64748b' }}>載入 360° 資料中…</p>}
         {subs !== null && !report && <p style={{ padding: 40, color: '#64748b' }}>這位受評者還沒有可用的評測資料。</p>}
-        {report && (
-          <>
-            <Cover r={report} name={rateeName} date={date} />
-            <Contents r={report} />
-            <Framework r={report} />
-            <Overall r={report} />
-            <Compare r={report} />
-            <SubRankingSection r={report} />
-            <DimensionDetails r={report} />
-            <PlanPage r={report} />
-          </>
-        )}
+        {report && <ThreeSixtyBody report={report} name={rateeName} date={date} />}
       </div>
     </>,
     portal,

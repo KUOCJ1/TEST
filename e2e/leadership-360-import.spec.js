@@ -91,6 +91,19 @@ test('批次匯入 70 題 360 → 建班加入成員 → 教練後台看得到�
   await expect(doc).not.toContainText('主管乙');
   // 對的班級沒有警告；選到用錯評量的班，總覽最上方提醒「成員的匯入作答屬於別份評量」。
   await page.getByRole('button', { name: '✕ 關閉' }).click();
+
+  // Sprint 27：他評收齊清單（只有人數）與批次 360° 報告。
+  const coverage = page.getByRole('region', { name: '360° 他評收齊狀況' });
+  await expect(coverage).toBeVisible();
+  await expect(coverage).toContainText('受評者甲');
+  await expect(coverage).toContainText('同儕');
+  await expect(coverage).not.toContainText('部屬一'); // 只有人數，沒有評分者姓名
+  await coverage.getByRole('button', { name: '批次產出 360° 報告' }).click();
+  await expect(doc.getByText('360° 批次報告').first()).toBeVisible({ timeout: 15000 });
+  await expect(doc.getByText('360° 完整回饋報告').first()).toBeVisible({ timeout: 30000 });
+  await expect(doc).not.toContainText('部屬一');
+  await page.getByRole('button', { name: '✕ 關閉' }).click();
+
   await expect(page.getByText('請先確認這個班的資料')).toHaveCount(0);
   await page.getByText(`用錯評量 ${sfx}`, { exact: true }).first().click();
   await expect(page.getByRole('heading', { name: `用錯評量 ${sfx}` })).toBeVisible({ timeout: 15000 });

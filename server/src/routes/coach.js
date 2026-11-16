@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { publicUser } from '../auth.js';
-import { stripRaterDetails } from '../lib/compassPrivacy.js';
+import { stripRaterDetails, isStrictPrivacy } from '../lib/compassPrivacy.js';
 import {
   asyncHandler,
   normalizeSubmission,
@@ -619,6 +619,67 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     auditLog(req, 'send_goal_reminders', { groupId: group.id, sent });
     res.json({ sent });
   }));
+
+  // 提醒「已被邀請、還沒完成」的評分者（Sprint 27）。只用在非嚴格隱私的 360° 題庫（如 70 題）：
+  // 嚴格隱私題庫（領導力羅盤）連「誰完成了」都不能讓教練知道，所以這裡拒絕。
+  // 教練只拿到寄出的人數，看不到評分者姓名；同班 1 小時冷卻；需 SMTP。
+  router.post('/groups/:id/remind-raters', asyncHandler(async (req, res) => {
+    const group = (db.data.groups ?? []).find((g) => g.id === req.params.id);
+    if (!group) return res.status(404).json({ error: '班別不存在' });
+    if (group.coachId !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: '無權限' });
+    if (isStrictPrivacy(group.assessmentId)) {
+      return res.status(409).json({ code: 'STRICT_PRIVACY', error: '這份評量採嚴格隱私，不開放提醒評分者（避免洩漏誰已完成）。' });
+    }
+    if (!isMailConfigured()) {
+      return res.status(503).json({ code: 'CONFIG_ERROR', error: '尚未設定寄信服務，請聯絡管理員設定 SMTP。' });
+    }
+    const last = group.lastRaterReminderSentAt ? new Date(group.lastRaterReminderSentAt).getTime() : 0;
+    const waitMs = last + REMINDER_COOLDOWN_MS - Date.now();
+    if (waitMs > 0) {
+      return res.status(429).json({ code: 'REMINDER_COOLDOWN', error: `這個班 1 小時內已寄過提醒信，請 ${Math.ceil(waitMs / 60000)} 分鐘後再試。`, retryAfterSeconds: Math.ceil(waitMs / 1000) });
+    }
+    const pending = (db.data.raterInvites ?? [])
+      .filter((i) => i.groupId === group.id && i.status !== 'revoked' && (i.usedPhases ?? []).length === 0);
+    // 同一位評分者被多位受評者邀請時只寄一封，信裡列出要評的人數而不是姓名。
+    const byRater = new Map();
+    for (const inv of pending) byRater.set(inv.raterUserId, (byRater.get(inv.raterUserId) ?? 0) + 1);
+    let sent = 0;
+    for (const [raterId, count] of byRater) {
+      const u = db.data.users.find((x) => x.id === raterId);
+      if (!u?.email || u.disabled) continue;
+      const r = await sendMail({
+        to: u.email,
+        subject: `【${group.name}】請完成您被邀請的 360° 評分`,
+        text: [
+          `${u.name || '您'} 您好：`,
+          '',
+          `您在「${group.name}」有 ${count} 份 360° 評分尚未完成。您的評分只會以類別（主管／同儕／部屬）彙總呈現，不會列出姓名。`,
+          '登入平台後，到「360° 評測」就能看到要評的對象。',
+          '',
+          `前往平台：${appBaseUrl()}/`,
+          '',
+          `（此信由評測平台代 ${group.coachName || '授課教練'} 寄出；已完成的評分不會再收到提醒。）`,
+        ].join('\n'),
+      });
+      if (r.ok) sent += 1;
+    }
+    if (sent > 0) {
+      group.lastRaterReminderSentAt = new Date().toISOString();
+      db.persist();
+    }
+    auditLog(req, 'send_rater_reminders', { groupId: group.id, sent });
+    res.json({ sent });
+  }));
+
+  // 批次匯出報告時留稽核紀錄（Sprint 27）：只記班級與份數。
+  router.post('/groups/:id/report-export', (req, res) => {
+    const group = (db.data.groups ?? []).find((g) => g.id === req.params.id);
+    if (!group) return res.status(404).json({ error: '班別不存在' });
+    if (group.coachId !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: '無權限' });
+    const count = Math.max(0, Math.min(500, Math.floor(Number(req.body?.count) || 0)));
+    auditLog(req, 'export_360_batch', { groupId: group.id, count });
+    res.json({ ok: true });
+  });
 
   // 批量匯入名單。
   router.post('/groups/:id/roster', (req, res) => {
