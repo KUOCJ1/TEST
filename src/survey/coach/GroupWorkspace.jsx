@@ -54,7 +54,8 @@ function GroupHeader({ group, memberCount }) {
   );
 }
 
-export default function GroupWorkspace({ users, currentUserId }) {
+// initialGroupId：工作台（Sprint 29）點「進入班級」時，父層用 key 重新掛載並指定要選的班。
+export default function GroupWorkspace({ users, currentUserId, initialGroupId = null }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [groupDetail, setGroupDetail] = useState(null);
@@ -91,12 +92,12 @@ export default function GroupWorkspace({ users, currentUserId }) {
       .then((list) => {
         if (!active) return;
         setGroups(list);
-        const pick = pickDefaultGroup(list);
+        const pick = list.find((g) => g.id === initialGroupId) ?? pickDefaultGroup(list);
         if (pick) loadGroup(pick.id);
       })
       .catch(() => {});
     return () => { active = false; };
-  }, []);
+  }, [initialGroupId]);
 
   // 使用者「自己點」班別時，窄螢幕（詳情排在清單下方）要自動捲到詳情，否則看起來沒反應。
   const handleSelectGroup = async (id) => {

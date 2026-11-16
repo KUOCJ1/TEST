@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../auth/useAuth';
 import GroupWorkspace from './GroupWorkspace';
+import CoachWorkbench from './CoachWorkbench';
 import MultiRaterTab from './MultiRaterTab';
 import OnboardingBanner from '../components/OnboardingBanner';
 import LoadingState from '../components/LoadingState';
@@ -11,6 +12,7 @@ export default function CoachDashboard() {
   const [tab, setTab] = useState('group');
   const [overview, setOverview] = useState(null);
   const [error, setError] = useState('');
+  const [openRequest, setOpenRequest] = useState(null); // 工作台點「進入班級」：{ id, n }
 
   useEffect(() => {
     api.coachOverview()
@@ -55,7 +57,10 @@ export default function CoachDashboard() {
       {/* 手機：不再是「白色大卡片裡面又一堆卡片」，內容寬度用滿；桌機維持原樣。 */}
       <div className="sm:rounded-2xl sm:bg-white sm:px-7 sm:py-6 sm:shadow-lg sm:shadow-slate-200/60">
         {tab === 'group' && (
-          <GroupWorkspace users={overview.users} currentUserId={user.id} />
+          <>
+            <CoachWorkbench onOpenGroup={(id) => setOpenRequest({ id, n: Date.now() })} />
+            <GroupWorkspace key={openRequest?.n ?? 'initial'} users={overview.users} currentUserId={user.id} initialGroupId={openRequest?.id ?? null} />
+          </>
         )}
         {tab === 'multirater' && (
           <MultiRaterTab users={overview.users} submissions={overview.submissions} />

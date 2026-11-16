@@ -59,6 +59,11 @@ test('批次匯入 70 題 360 → 建班加入成員 → 教練後台看得到�
   // 管理員看得到所有班級（CI 上前面的測試也建過班），不會自動選取：自己點這個班。
   await page.getByText(`森永 360 ${sfx}`, { exact: true }).first().click({ timeout: 20000 });
   await expect(page.getByRole('heading', { name: `森永 360 ${sfx}` })).toBeVisible({ timeout: 20000 });
+  // Sprint 29：教練工作台（只有人數）。
+  const bench = page.getByRole('region', { name: '今天要做什麼' });
+  await expect(bench).toBeVisible();
+  await expect(bench).toContainText(`森永 360 ${sfx}`);
+  await expect(bench).not.toContainText('部屬一'); // 沒有任何姓名
   // 自評結果在班級總覽的成員表裡，落點用 L9D 的等級名稱。
   await expect(page.getByText('受評者甲').first()).toBeVisible({ timeout: 15000 });
   // 成員比較表只列「有自評的受評者」；評分者（部屬一、主管乙…）不會被當成拿到成績的成員，

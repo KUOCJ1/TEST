@@ -23,6 +23,7 @@ import { COURSE_SURVEY_ID, summarizeCourseSurvey } from '../lib/courseSurvey.js'
 import { groupWarnings } from '../lib/groupConsistency.js';
 import { publicTemplate } from '../lib/projectTemplates.js';
 import { followUpProgress } from '../lib/courseFollowUp.js';
+import { buildWorkbench } from '../lib/coachWorkbench.js';
 import { goalSummaryForGroup, membersWithoutGoal, MIN_N as GOAL_MIN_N } from '../lib/goalActivity.js';
 
 // 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
@@ -619,6 +620,11 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     auditLog(req, 'send_goal_reminders', { groupId: group.id, sent });
     res.json({ sent });
   }));
+
+  // 教練工作台（Sprint 29）：每班的待辦人數（只有人數、沒有名單）。
+  router.get('/workbench', (req, res) => {
+    res.json({ groups: buildWorkbench(db, req.user), mailConfigured: isMailConfigured() });
+  });
 
   // 評語範本（Sprint 28）：存在教練帳號上，換電腦、換手機都在。整批取代；數量與長度有上限。
   const MAX_TEMPLATES = 30;
