@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
-import { build360Report } from '../utils/report360.js';
+import { build360Report, MIN_GROUP_SHOWN } from '../utils/report360.js';
 import { RATER_LABELS } from '../constants/raterTypes';
 import { formatDate } from '../utils/format';
 import RadarChart from './RadarChart';
@@ -82,6 +82,11 @@ function Cover({ r, name, date }) {
           {['manager', 'peer', 'subordinate'].filter((t) => r.counts[t]).map((t) => `、${RATER_LABELS[t]} ${r.counts[t]} 位`).join('')}
           {!r.hasOthers && '（尚無他評）'}
         </div>
+        {r.hiddenTypes?.length > 0 && (
+          <div style={{ fontSize: 10, color: '#64748b', marginTop: 6, lineHeight: 1.6 }}>
+            {r.hiddenTypes.map((t) => RATER_LABELS[t]).join('、')}少於 {MIN_GROUP_SHOWN} 位，為保護評分者匿名，不單獨呈現，只併入「他評合計」。
+          </div>
+        )}
       </div>
     </div>
   );
@@ -219,7 +224,7 @@ function Compare({ r }) {
   const dims = r.dimensions;
   const pct = (v) => (typeof v === 'number' ? Math.round((v / 5) * 100) : 0);
   const radarSelf = dims.map((d) => ({ id: d.id, name: d.name, subtitle: d.subtitle, color: d.color, percent: pct(d.self ?? d.others) }));
-  const groupTypes = ['manager', 'peer', 'subordinate'].filter((t) => r.counts[t] > 0);
+  const groupTypes = r.shownTypes;
   const extraSeries = groupTypes.map((t) => ({ id: t, label: GROUPS[t].label, color: GROUPS[t].color, values: dims.filter((d) => typeof d[t] === 'number').map((d) => ({ id: d.id, percent: pct(d[t]) })) }));
   return (
     <div style={SECTION}>
@@ -256,7 +261,7 @@ function DimensionDetails({ r }) {
           <div style={{ pageBreakInside: 'avoid', marginBottom: 14, border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: d.color, marginRight: 8 }} />{d.name}</div>
-            <div style={{ fontSize: 11, color: '#475569' }}>自評 <Score value={d.self} bold />{['manager', 'peer', 'subordinate'].filter((t) => r.counts[t] > 0).map((t) => <span key={t}>&emsp;{GROUPS[t].label} <Score value={d[t]} bold /></span>)}{d.gap != null && d.kind !== 'aligned' && <> <Chip color={KIND[d.kind].color}>{KIND[d.kind].label} {signed(d.gap)}</Chip></>}</div>
+            <div style={{ fontSize: 11, color: '#475569' }}>自評 <Score value={d.self} bold />{r.shownTypes.map((t) => <span key={t}>&emsp;{GROUPS[t].label} <Score value={d[t]} bold /></span>)}{d.gap != null && d.kind !== 'aligned' && <> <Chip color={KIND[d.kind].color}>{KIND[d.kind].label} {signed(d.gap)}</Chip></>}</div>
           </div>
           {r.dimTexts?.[d.id] && <p style={{ fontSize: 11, lineHeight: 1.8, color: '#0f172a', fontWeight: 600, margin: '0 0 8px' }}>{r.dimTexts[d.id]}</p>}
           {r.narratives[d.id] && <p style={{ fontSize: 11, lineHeight: 1.8, color: '#334155', margin: '0 0 10px' }}>{r.narratives[d.id]}</p>}

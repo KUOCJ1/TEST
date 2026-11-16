@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getAssessment } from '../survey/data/assessments/index.js';
 import { buildResult } from '../survey/utils/scoring.js';
-import { build360Report, GAP_THRESHOLD } from '../survey/utils/report360.js';
+import { build360Report, GAP_THRESHOLD, MIN_GROUP_SHOWN } from '../survey/utils/report360.js';
 
 const config = getAssessment('leadership-360-70');
 
@@ -191,7 +191,7 @@ describe('build360Report：子能力排名、評分者群組差距、參考區�
   });
   it('評分者群組差距：構面 ≥ 1.0、子能力 ≥ 1.5 才標；各類子能力平均都有', async () => {
     const { cfg, mk, report } = await build();
-    const wide = report([mk('self', 'r', 5), mk('manager', 'm', 3), mk('subordinate', 's', 4)]);
+    const wide = report([mk('self', 'r', 5), mk('manager', 'm', 3), mk('subordinate', 's1', 4), mk('subordinate', 's2', 4), mk('subordinate', 's3', 4)]);
     const d = wide.dimensions[0];
     expect(d.spread).toBe(2);
     expect(d.wideSpread).toBe(true);
@@ -209,5 +209,39 @@ describe('build360Report：子能力排名、評分者群組差距、參考區�
     const r = report([mk('self', 'r', 4)]);
     expect(r.dimensions[0].spread).toBeNull();
     expect(r.dimensions[0].wideSpread).toBe(false);
+  });
+});
+
+describe('build360Report：少於 3 位的同儕／部屬不單獨呈現', () => {
+  const mk = (peers, subs2) => build360Report([
+    sub('ratee', 'self', resultOf(4)),
+    sub('m1', 'manager', resultOf(3)),
+    ...Array.from({ length: peers }, (_, i) => sub(`p${i}`, 'peer', resultOf(5 - (i % 2)))),
+    ...Array.from({ length: subs2 }, (_, i) => sub(`s${i}`, 'subordinate', resultOf(2))),
+  ], config);
+
+  it('門檻是 3；主管 1 位仍單獨呈現', () => {
+    expect(MIN_GROUP_SHOWN).toBe(3);
+    const r = mk(1, 3);
+    expect(r.shownTypes).toEqual(['manager', 'subordinate']);
+    expect(r.hiddenTypes).toEqual(['peer']);
+  });
+
+  it('不足的類別：各構面與子能力分數是空的、整體摘要沒有，但仍計入他評合計', () => {
+    const r = mk(2, 3);
+    expect(r.groupSummaries.peer).toBeUndefined();
+    expect(r.dimensions.every((d) => d.peer === null && d.subs.every((s) => s.peer === null))).toBe(true);
+    expect(r.counts.peer).toBe(2);
+    // 他評合計＝6 位評分者平均（主管 1 + 同儕 2 + 部屬 3），同儕有被算進去
+    expect(r.othersCount).toBe(6);
+    const without = mk(0, 3);
+    expect(r.othersSummary.total).not.toBe(without.othersSummary.total);
+  });
+
+  it('達到 3 位就單獨呈現', () => {
+    const r = mk(3, 0);
+    expect(r.shownTypes).toContain('peer');
+    expect(r.groupSummaries.peer.count).toBe(3);
+    expect(r.dimensions[0].peer).not.toBeNull();
   });
 });

@@ -1,3 +1,4 @@
+import { MIN_GROUP_SHOWN } from '../utils/report360.js';
 import { GROUPS } from './threesixty/groups.js';
 import RadarChart from './RadarChart';
 import ResultPanel from './ResultPanel';
@@ -215,8 +216,8 @@ export function ThreeSixtyReadView({ report: r, name, date }) {
   const dims = r.dimensions ?? [];
   const pct = (v) => (typeof v === 'number' ? Math.round((v / 5) * 100) : 0);
   const radarSelf = dims.map((d) => ({ id: d.id, name: d.name, subtitle: d.subtitle, color: d.color, percent: pct(d.self ?? d.others) }));
-  const extraSeries = ['manager', 'peer', 'subordinate'].filter((t) => r.counts[t] > 0).map((t) => ({ id: t, label: RATER_LABELS[t], color: GROUPS[t].color, values: dims.filter((d) => typeof d[t] === 'number').map((d) => ({ id: d.id, percent: pct(d[t]) })) }));
-  const groupTypes = ['manager', 'peer', 'subordinate'].filter((t) => r.counts[t] > 0);
+  const extraSeries = r.shownTypes.map((t) => ({ id: t, label: RATER_LABELS[t], color: GROUPS[t].color, values: dims.filter((d) => typeof d[t] === 'number').map((d) => ({ id: d.id, percent: pct(d[t]) })) }));
+  const groupTypes = r.shownTypes;
   const counts = ['manager', 'peer', 'subordinate'].filter((t) => r.counts[t]).map((t) => `${RATER_LABELS[t]} ${r.counts[t]} 位`);
   return (
     <div className="px-4 pb-8 pt-5">
@@ -236,6 +237,7 @@ export function ThreeSixtyReadView({ report: r, name, date }) {
         ))}
       </div>
       <p className="mt-2 text-xs text-slate-500">評分者：{r.hasSelf ? '自評 1 份' : '無自評'}{counts.map((c) => `、${c}`).join('')}</p>
+      {r.hiddenTypes?.length > 0 && <p className="mt-1 text-xs text-slate-500">{r.hiddenTypes.map((t) => RATER_LABELS[t]).join('、')}少於 {MIN_GROUP_SHOWN} 位，為保護評分者匿名，不單獨呈現，只併入「他評合計」。</p>}
 
       {r.summaryText && <p className="mt-5 text-sm leading-relaxed text-slate-700">{r.summaryText}</p>}
 

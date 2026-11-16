@@ -41,8 +41,8 @@ function GapArrow({ spread, title }) {
 }
 
 /** 圖例：群組顏色、穩定展現區間、落差箭頭。 */
-function Legend({ counts = {}, hasPeer }) {
-  const items = GROUP_ORDER.filter((g) => g !== 'peer' || hasPeer);
+function Legend({ counts = {}, shown = [] }) {
+  const items = GROUP_ORDER.filter((g) => g === 'self' || g === 'others' || shown.includes(g));
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', fontSize: 9, color: '#475569', alignItems: 'center', marginBottom: 6 }}>
       {items.map((g) => (
@@ -81,7 +81,7 @@ export function SubRanking({ r, labels }) {
   );
   return (
     <div id="chart-sub-ranking">
-      <Legend counts={r.counts} hasPeer={r.counts.peer > 0} />
+      <Legend counts={r.counts} shown={r.shownTypes} />
       <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 70px', gap: 8 }}><div /><Axis labels={labels} /><div /></div>
       {group(`穩定展現以上（${basis} ≥ ${rk.band.min}）`, `${rk.strengths.length} 項：落在穩定展現區間內或以上；綠色為 ≥ ${rk.band.max} 的優秀表現。`, rk.strengths, '沒有子能力達到這個水準。')}
       {group(`有發展機會（${basis} < ${rk.band.min}）`, `${rk.opportunities.length} 項：低於穩定展現區間，是優先投入的練習方向。`, rk.opportunities, '沒有低於 3.5 的子能力。')}
@@ -93,7 +93,7 @@ export function SubRanking({ r, labels }) {
 export function DimGroupBars({ r, labels, kindInfo }) {
   return (
     <div id="chart-dim-groups">
-      <Legend counts={r.counts} hasPeer={r.counts.peer > 0} />
+      <Legend counts={r.counts} shown={r.shownTypes} />
       <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 18px', gap: 8 }}><div /><Axis labels={labels} offset={56} /><div /></div>
       {r.dimensions.map((d) => (
         <div key={d.id} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 18px', gap: 8, padding: '7px 0', borderTop: '0.5px solid #e2e8f0', breakInside: 'avoid', pageBreakInside: 'avoid' }}>

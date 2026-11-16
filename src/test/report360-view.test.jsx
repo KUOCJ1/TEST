@@ -13,8 +13,16 @@ describe('360° 報告新版面：目錄、評分者群組橫條、子能力排�
   beforeEach(() => { portal = document.createElement('div'); portal.id = 'report-portal'; document.body.appendChild(portal); });
   afterEach(() => { portal.remove(); vi.restoreAllMocks(); });
 
+  it('同儕／部屬少於 3 位：不單獨畫橫條，封面說明併入他評合計', async () => {
+    vi.spyOn(api, 'rateeSubmissions').mockResolvedValue([sub('self', 'r', 5), sub('manager', 'm', 3), sub('peer', 'p1', 4)]);
+    render(<ThreeSixtyReport rateeId="r" rateeName="受評者" assessmentId="leadership-360-70" onClose={() => {}} />);
+    await waitFor(() => expect(screen.getByText('報告目錄與閱讀指引')).toBeInTheDocument());
+    expect(portal.querySelectorAll('#chart-dim-groups [aria-label*="同儕"]')).toHaveLength(0);
+    expect(portal.textContent).toContain('同儕少於 3 位，為保護評分者匿名，不單獨呈現，只併入「他評合計」');
+  });
+
   it('依序出現：目錄、評量項目與定義、評估方式、…、子能力排名；群組橫條只畫有人評分的群組', async () => {
-    vi.spyOn(api, 'rateeSubmissions').mockResolvedValue([sub('self', 'r', 5), sub('manager', 'm', 3), sub('subordinate', 's1', 4)]);
+    vi.spyOn(api, 'rateeSubmissions').mockResolvedValue([sub('self', 'r', 5), sub('manager', 'm', 3), sub('subordinate', 's1', 4), sub('subordinate', 's2', 4), sub('subordinate', 's3', 4)]);
     render(<ThreeSixtyReport rateeId="r" rateeName="受評者" assessmentId="leadership-360-70" onClose={() => {}} />);
     await waitFor(() => expect(screen.getByText('報告目錄與閱讀指引')).toBeInTheDocument());
     const text = portal.textContent;

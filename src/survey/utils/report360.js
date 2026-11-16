@@ -17,6 +17,10 @@ export const REF_BAND = { min: 3.5, max: 4.5 };
 export const GROUP_GAP_DIM = 1.0;
 export const GROUP_GAP_SUB = 1.5;
 const OTHER_TYPES = ['manager', 'peer', 'subordinate'];
+// 同儕／部屬要至少這麼多位，才單獨呈現該類的分數；不足的只併入「他評合計」，避免個別評分者被認出。
+// 主管通常只有 1 位、角色本身就是公開的，不套用這條（教練端的覆蓋率面板會提醒補齊同儕／部屬）。
+export const MIN_GROUP_SHOWN = 3;
+export const isGroupShown = (type, n) => n > 0 && (type === 'manager' || n >= MIN_GROUP_SHOWN);
 const round2 = (n) => Math.round(n * 100) / 100;
 const mean = (xs) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
 
@@ -107,7 +111,10 @@ export function build360Report(submissions, config) {
   const othersCount = otherSubs.length;
 
   const selfDims = selfSub ? averageDimensions([selfSub.result]) : new Map();
-  const typeDims = Object.fromEntries(OTHER_TYPES.map((t) => [t, averageDimensions(otherSubs.filter((s) => s.raterType === t).map((s) => s.result))]));
+  const shownTypes = OTHER_TYPES.filter((t) => isGroupShown(t, counts[t]));
+  const hiddenTypes = OTHER_TYPES.filter((t) => counts[t] > 0 && !shownTypes.includes(t));
+  // 不單獨呈現的類別：不算各類平均（欄位留空），但仍計入「他評合計」。
+  const typeDims = Object.fromEntries(OTHER_TYPES.map((t) => [t, shownTypes.includes(t) ? averageDimensions(otherSubs.filter((s) => s.raterType === t).map((s) => s.result)) : new Map()]));
   const othersDims = averageDimensions(otherSubs.map((s) => s.result));
 
   // 這份問卷沒有題目（沒有任何作答）的構面不列入報告：不是「零分的弱項」，而是沒有評量。
@@ -183,10 +190,12 @@ export function build360Report(submissions, config) {
     hasSelf: !!selfSub,
     hasOthers: othersCount > 0,
     counts,
+    shownTypes,
+    hiddenTypes,
     othersCount,
     self: selfSub ? { total: selfTotal, level: selfSub.result.level, createdAt: selfSub.createdAt } : null,
     // 主管／同儕／部屬各自的整體分數與落點（不混在一起）；沒有該類評分者的不列。
-    groupSummaries: Object.fromEntries(OTHER_TYPES.filter((t) => counts[t] > 0).map((t) => {
+    groupSummaries: Object.fromEntries(shownTypes.map((t) => {
       const total = Math.round(mean(otherSubs.filter((x) => x.raterType === t).map((x) => x.result.total)));
       return [t, { total, level: levelOfTotal(config, total), count: counts[t] }];
     })),

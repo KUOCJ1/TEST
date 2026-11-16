@@ -1,3 +1,4 @@
+import { dimLabel } from '../utils/dimensionLabel';
 import { useEffect, useRef, useState } from 'react';
 import { X, Plus, Bookmark, BookmarkPlus, Trash2 } from 'lucide-react';
 import { api } from '../api/client';
@@ -121,8 +122,6 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
   };
 
   // 一鍵插入這位學員的最強／待強化構面名稱，不必自己回頭翻報告找怎麼稱呼。
-  // 構面的稱呼：副標是英文（如 Task Management）而有中文名稱時用中文——學員看得懂的是中文（與雷達圖手機版同一條規則）。
-  const dimLabel = (dim) => (/^[\x20-\x7e]+$/.test(dim?.subtitle ?? '') && dim?.name ? dim.name : dim?.subtitle);
   const insertDimension = (dim) => {
     const label = dimLabel(dim);
     if (!label) return;

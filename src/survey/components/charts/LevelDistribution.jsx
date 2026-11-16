@@ -21,14 +21,14 @@ export default function LevelDistribution({ distribution }) {
               ) : null,
             )}
       </div>
-      <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+      <ul className="mt-4 grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
         {distribution.map((d) => (
-          <li key={d.id} className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-slate-600">
-              <span className="inline-block h-3 w-3 rounded-full" style={{ background: d.color }} />
+          <li key={d.id} className="flex items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-2 text-slate-600">
+              <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ background: d.color }} />
               {d.badge}
             </span>
-            <span className="font-semibold text-slate-700">
+            <span className="shrink-0 font-semibold text-slate-700">
               {d.count}
               <span className="ml-1 text-xs font-normal text-slate-400">
                 （{total ? Math.round((d.count / total) * 100) : 0}%）
