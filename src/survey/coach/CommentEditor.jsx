@@ -2,15 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { X, Plus, Bookmark, BookmarkPlus, Trash2 } from 'lucide-react';
 import { api } from '../api/client';
 import { readJSON, writeJSON, uid } from '../utils/storage';
+import { getAssessment } from '../data/assessments/index.js';
+import { build360Report } from '../utils/report360.js';
+import { buildCommentDraft, DRAFT_MARKER } from '../utils/commentDraft.js';
 
 const draftKey = (id) => `aiassess_comment_draft_${id}_v1`;
 const TEMPLATES_KEY = 'aiassess_comment_templates_v1';
 
-// 評語範本是教練個人的寫作素材庫，不是評測資料本身，跟草稿一樣存在本機
-// localStorage 即可——不需要跨裝置同步，也不必為此另外開一支後端 API。
-function loadTemplates() {
-  return readJSON(TEMPLATES_KEY, []);
-}
+// 評語範本（Sprint 28 起存在教練帳號上，換電腦也在）。舊版存在本機 localStorage：
+// 第一次載入時若伺服器沒有範本、本機有，提示一鍵匯入。草稿（寫到一半的評語）仍只存本機。
+const loadLocalTemplates = () => readJSON(TEMPLATES_KEY, []);
 
 export default function CommentEditor({ submission, existingComment, onSaved, onCancel }) {
   const [text, setText] = useState(() => {
@@ -24,10 +25,21 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [templates, setTemplates] = useState(loadTemplates);
+  const [templates, setTemplates] = useState([]);
+  const [localLegacy, setLocalLegacy] = useState([]);
+  const [confirmOverwrite, setConfirmOverwrite] = useState(false);
+  const [drafting, setDrafting] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [namingTemplate, setNamingTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    api.commentTemplates()
+      .then((list) => { if (!active) return; setTemplates(list); if (list.length === 0) setLocalLegacy(loadLocalTemplates()); })
+      .catch(() => { if (active) setTemplates(loadLocalTemplates()); });
+    return () => { active = false; };
+  }, []);
 
   const timerRef = useRef(null);
   useEffect(() => {
@@ -57,8 +69,36 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
 
   const persistTemplates = (list) => {
     setTemplates(list);
-    writeJSON(TEMPLATES_KEY, list);
+    api.saveCommentTemplates(list).then(setTemplates).catch(() => setError('範本儲存失敗，請稍後再試'));
   };
+
+  const importLegacy = () => {
+    persistTemplates(localLegacy);
+    setLocalLegacy([]);
+    try { localStorage.removeItem(TEMPLATES_KEY); } catch { /* ignore */ }
+  };
+
+  // 規則式草稿（肯定導向，不呼叫外部 AI）。有內容時先確認再覆蓋。
+  const applyDraft = async () => {
+    setDrafting(true);
+    setConfirmOverwrite(false);
+    try {
+      let threeSixty = null;
+      const cfg = getAssessment(submission.assessmentId);
+      if (cfg?.SUPPORTS_360 && !cfg?.STRICT_RATER_PRIVACY) {
+        try {
+          const subs = await api.rateeSubmissions(submission.userId, submission.assessmentId);
+          const rep = build360Report(subs, cfg);
+          if (rep) threeSixty = { blind: rep.blind, hidden: rep.hidden };
+        } catch { /* 沒有 360° 資料就只用自評 */ }
+      }
+      const d = buildCommentDraft(submission.result, { threeSixty });
+      setText(d.text);
+      setTips(d.tips.length ? d.tips : ['']);
+    } finally { setDrafting(false); }
+  };
+  const hasContent = text.trim() !== '' || tips.some((t) => t.trim());
+  const onDraftClick = () => (hasContent ? setConfirmOverwrite(true) : applyDraft());
 
   const applyTemplate = () => {
     const t = templates.find((x) => x.id === selectedTemplateId);
@@ -88,6 +128,7 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
 
   const handleSave = async () => {
     if (!text.trim()) { setError('請輸入評語內容'); return; }
+    if (text.includes(DRAFT_MARKER)) { setError('這是系統草稿，請依你對這位學員的觀察修改後，刪除最上面「草稿」那一行再儲存。'); return; }
     setSaving(true);
     setError('');
     try {
@@ -162,6 +203,24 @@ export default function CommentEditor({ submission, existingComment, onSaved, on
           </button>
         )}
       </div>
+
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <button type="button" onClick={onDraftClick} disabled={drafting} className="btn-secondary btn-sm">{drafting ? '產生中…' : '帶入草稿'}</button>
+        {confirmOverwrite && (
+          <span className="flex items-center gap-1.5 text-xs text-slate-600">
+            會覆蓋目前的內容，確定嗎？
+            <button type="button" onClick={applyDraft} className="btn-primary btn-sm">覆蓋</button>
+            <button type="button" onClick={() => setConfirmOverwrite(false)} className="btn-ghost btn-sm">取消</button>
+          </span>
+        )}
+        <span className="text-xs text-slate-400">依這位學員的結果組出草稿（肯定導向），只是起點，請依你的觀察修改。</span>
+      </div>
+      {localLegacy.length > 0 && (
+        <p className="mb-2 flex flex-wrap items-center gap-2 rounded-lg bg-white/60 px-3 py-2 text-xs text-slate-600">
+          偵測到這台電腦上有 {localLegacy.length} 個舊的範本。
+          <button type="button" onClick={importLegacy} className="btn-secondary btn-sm">匯入到我的帳號</button>
+        </p>
+      )}
 
       {(strongest || weakest) && (
         <div className="mb-2 flex flex-wrap items-center gap-1.5 text-xs">

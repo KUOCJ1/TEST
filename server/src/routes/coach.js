@@ -620,6 +620,26 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
     res.json({ sent });
   }));
 
+  // 評語範本（Sprint 28）：存在教練帳號上，換電腦、換手機都在。整批取代；數量與長度有上限。
+  const MAX_TEMPLATES = 30;
+  const cleanTemplates = (input) => (Array.isArray(input) ? input : []).slice(0, MAX_TEMPLATES).map((t) => ({
+    id: typeof t?.id === 'string' && t.id ? t.id.slice(0, 64) : randomUUID(),
+    name: String(t?.name ?? '').trim().slice(0, 40),
+    text: String(t?.text ?? '').slice(0, 2000),
+    tips: (Array.isArray(t?.tips) ? t.tips : []).map((x) => String(x ?? '').slice(0, 300)).filter((x) => x.trim()).slice(0, 5),
+  })).filter((t) => t.name && t.text.trim());
+  router.get('/comment-templates', (req, res) => {
+    res.json({ templates: cleanTemplates(req.user.commentTemplates) });
+  });
+  router.put('/comment-templates', (req, res) => {
+    const templates = cleanTemplates(req.body?.templates);
+    const user = db.data.users.find((u) => u.id === req.user.id);
+    if (!user) return res.status(404).json({ error: '使用者不存在' });
+    user.commentTemplates = templates;
+    db.persist();
+    res.json({ templates });
+  });
+
   // 提醒「已被邀請、還沒完成」的評分者（Sprint 27）。只用在非嚴格隱私的 360° 題庫（如 70 題）：
   // 嚴格隱私題庫（領導力羅盤）連「誰完成了」都不能讓教練知道，所以這裡拒絕。
   // 教練只拿到寄出的人數，看不到評分者姓名；同班 1 小時冷卻；需 SMTP。

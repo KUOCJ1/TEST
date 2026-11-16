@@ -155,6 +155,8 @@ export const api = {
   publishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'POST' }).then((d) => d.group),
   unpublishGroup: (id) => request(`/coach/groups/${id}/publish`, { method: 'DELETE' }).then((d) => d.group),
   // 回傳 { phase, sent, failed:[email], group }；群組帶新的 lastReminderSentAt（冷卻用）。
+  commentTemplates: () => request('/coach/comment-templates').then((d) => d.templates),
+  saveCommentTemplates: (templates) => request('/coach/comment-templates', { method: 'PUT', body: { templates } }).then((d) => d.templates),
   remindGroupRaters: (id) => request(`/coach/groups/${id}/remind-raters`, { method: 'POST' }),
   logReportExport: (id, count) => request(`/coach/groups/${id}/report-export`, { method: 'POST', body: { count } }),
   remindGroupGoals: (id) => request(`/coach/groups/${id}/remind-goals`, { method: 'POST' }),

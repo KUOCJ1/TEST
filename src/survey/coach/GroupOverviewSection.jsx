@@ -13,6 +13,7 @@ import ProgressPanel from './ProgressPanel';
 import SharedGoalsPanel from './SharedGoalsPanel';
 import GoalActivityPanel from './GoalActivityPanel';
 import ThreeSixtyCoveragePanel from './ThreeSixtyCoveragePanel';
+import { buildGroupCommentDraft, DRAFT_MARKER } from '../utils/commentDraft.js';
 import CourseSurveyPanel from './CourseSurveyPanel';
 import { useIsMobile } from '../hooks/useIsMobile';
 import LevelBadge from '../components/LevelBadge';
@@ -126,7 +127,18 @@ export default function GroupOverviewSection({
   const [savingComment, setSavingComment] = useState(false);
   const [commentError, setCommentError] = useState('');
 
+  const applyGroupDraft = () => {
+    if ((groupComment.trim() || groupTips.some((t) => t.trim())) && !window.confirm('會覆蓋目前的班級評語與建議，確定嗎？')) return;
+    const d = buildGroupCommentDraft({ ...groupStats, assessmentId: group.assessmentId });
+    setGroupComment(d.text);
+    setGroupTips(d.tips.length ? d.tips : ['']);
+  };
+
   const handleSaveComment = async () => {
+    if (groupComment.includes(DRAFT_MARKER)) {
+      setCommentError('這是系統草稿，請依你對這個班的觀察修改後，刪除最上面「草稿」那一行再儲存。');
+      return;
+    }
     setSavingComment(true);
     setCommentError('');
     try {
@@ -375,6 +387,10 @@ export default function GroupOverviewSection({
           </p>
         )}
 
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <button type="button" onClick={applyGroupDraft} disabled={!groupStats || groupStats.respondents === 0} className="btn-secondary btn-sm">帶入草稿</button>
+          <span className="text-xs text-slate-500">依全班的優勢與待加強構面組出草稿，只是起點，請依你的觀察修改。</span>
+        </div>
         <textarea value={groupComment} onChange={(e) => setGroupComment(e.target.value)} rows={4}
           placeholder="針對本班整體觀察與評語…"
           className="input"
