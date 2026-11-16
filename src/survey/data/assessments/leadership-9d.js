@@ -64,7 +64,7 @@ export const DIMENSIONS = [
     ],
   },
   {
-    id: 'collaboration', index: 2, name: '協作關係', subtitle: 'Collaboration', color: '#38a169', layer: 'interpersonal',
+    id: 'collaboration', index: 2, name: '建立關係', subtitle: 'Collaboration', color: '#38a169', layer: 'interpersonal',
     subDimensions: [
       { id: 'build-relations', name: '建立人員關係' },
       { id: 'lead-team', name: '引領團隊成功' },
@@ -297,7 +297,7 @@ export const COMMENTARY = {
     mid: '授權與交辦日益清晰，部分情境中回饋與放手仍可更為彈性',
     low: '對任務控制過度或角色模糊，可能壓抑他人主動性與團隊效能',
   },
-  // 協作關係
+  // 建立關係
   'build-relations': {
     high: '關注他人情緒並給予建設性回饋，營造尊重與包容的團隊文化',
     mid: '與同事互動融洽，能主動關心並提供支持，是穩定合作的夥伴',
