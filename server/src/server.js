@@ -55,6 +55,7 @@ const app = createApp({
   jwtSecret: JWT_SECRET,
   secureCookies: process.env.NODE_ENV === 'production',
   trustProxy: TRUST_PROXY,
+  staticDir: process.env.STATIC_DIR || '',
 });
 
 app.listen(PORT, () => {

@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import { createAuthContext } from './lib/authContext.js';
@@ -24,9 +26,11 @@ export {
 
 /**
  * 建立 Express app（不啟動監聽），方便測試直接以 supertest 注入。
- * @param {{db, jwtSecret:string, secureCookies?:boolean, trustProxy?:number}} opts
+ * @param {{db, jwtSecret:string, secureCookies?:boolean, trustProxy?:number, staticDir?:string}} opts
+ * staticDir：選填。有設定（且資料夾存在）時，由這支 Node 程式一併提供前端靜態檔與 SPA 回退，
+ * 給「只能跑單一 Node.js 應用」的主機（如 Hostinger Node.js 託管）用；VPS 正式站由 Nginx 提供，不設定。
  */
-export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0 }) {
+export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0, staticDir = '' }) {
   if (!jwtSecret) throw new Error('createApp 需要 jwtSecret');
 
   const app = express();
@@ -94,6 +98,23 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   // admin router 的 requireAdmin 擋下）。
   app.use('/api/admin', createAdminRouter({ db, requireAuth, requireAdmin }));
   app.use('/api/coach', createCoachRouter({ db, requireAuth, requireCoach }));
+
+  // ── 前端靜態檔（選用）──────────────────────────────────────
+  if (staticDir && fs.existsSync(path.join(staticDir, 'index.html'))) {
+    const root = path.resolve(staticDir);
+    app.use(express.static(root, {
+      index: false,
+      setHeaders: (res, file) => {
+        // 入口頁與 service worker 不快取，其餘（檔名含雜湊）可長期快取。
+        if (/(index\.html|sw\.js|registerSW\.js|manifest\.webmanifest)$/.test(file)) res.setHeader('Cache-Control', 'no-cache');
+        else if (/[\\/]assets[\\/]/.test(file)) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      },
+    }));
+    app.get(/^\/(?!api(\/|$)).*/, (_req, res) => {
+      res.setHeader('Cache-Control', 'no-cache');
+      res.sendFile(path.join(root, 'index.html'));
+    });
+  }
 
   // ── 全域錯誤處理 ───────────────────────────────────────────
   // eslint-disable-next-line no-unused-vars
