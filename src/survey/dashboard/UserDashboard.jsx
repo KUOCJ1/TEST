@@ -7,6 +7,7 @@ import ResultPanel from '../components/ResultPanel';
 import PrintableReport from '../components/PrintableReport';
 import TrendChart from '../components/charts/TrendChart';
 import JourneyTimeline from '../components/JourneyTimeline';
+import { buildGrowthEvents } from '../utils/growthTimeline';
 import GoalPanel from '../components/GoalPanel';
 import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachCommentPanel';
 import { computePercentile } from '../utils/analytics';
@@ -28,6 +29,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
   const [selectedId, setSelectedId] = useState(initialAssessmentId ?? null);
   const [showReport, setShowReport] = useState(false);
   const [viewingSubId, setViewingSubId] = useState(null);
+  const [growth, setGrowth] = useState({ goals: [], practice: null, sessions: [] });
   const benchmarkCache = useRef({});
   const [retryKey, setRetryKey] = useState(0);
   const loadData = useCallback(() => { setError(''); setRetryKey((k) => k + 1); }, []);
@@ -48,6 +50,19 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
       .catch((e) => active && setError(e.message || '載入失敗'));
     return () => { active = false; };
   }, [retryKey]);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 成長紀錄的素材（目標、微練習、會談與反思）：任何一項失敗都只是少那一類事件，不影響分析頁。
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      api.myGoals?.().catch(() => []),
+      api.myPractice?.().catch(() => null),
+      api.myReflections?.().catch(() => []),
+    ]).then(([goals, practice, sessions]) => {
+      if (active) setGrowth({ goals: goals ?? [], practice: practice ?? null, sessions: sessions ?? [] });
+    });
+    return () => { active = false; };
+  }, [retryKey]);
 
   // Notify parent of the currently displayed result for ChatBot context.
   useEffect(() => {
@@ -264,6 +279,7 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
             submissions={filtered}
             onSelect={setViewingSubId}
             profileMode={profileMode}
+            events={buildGrowthEvents({ ...growth, assessmentId: activeId })}
           />
 
           <GoalPanel

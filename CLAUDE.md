@@ -158,6 +158,8 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - 學員旅程（Sprint 41）：課後複測提示要課前滿 21 天或班級結束前 7 天（`nextStep.js` `retestDueAt`），之前是 `keep-going`；全站焦點構面只用 `utils/focus.js` 的 `focusDimension`（不要自己排序）；微練習與目標的行動用文字相同連結（`routes/practice.js` `links`，單一事實來源是目標行動的 done）；首頁只有一張 `ThisWeekCard`，新增學員待辦要加進 `utils/thisWeek.js` 而不是再加一條 chip；走查 `npm run audit:journey`。
 - 教練會談與會後反思（Sprint 40）：集合 `coachingSessions`、`sessionReflections`（`lib/coaching.js`、`routes/coaching.js`、`coach/CoachingSessionsSection.jsx`、`components/ReflectionsPanel.jsx`）。反思全文只有該場會談的教練與管理者看得到；班級報告只放 `coachingSummaryForGroup` 的彙總（回饋 < 3 份不給平均）。期限預設 3 天、第 2 天提醒（`sendReflectionReminders`）。已列入刪除帳號的搬移與下載資料。
 
+- 成長紀錄時間軸（Sprint 42）：`utils/growthTimeline.js` 把本人的目標／微練習／會談／反思整理成事件，穿插進 `JourneyTimeline`（分析頁）。新增「屬於使用者的活動」想進時間軸要改這支；只放本人資料，不放教練回覆全文與分數。
+
 ## 課後學習成效問卷（ai-course-post，班級限定）
 
 - 客戶工作坊的課後問卷（韋能《AI 深度整合工作坊》）：滿意度、課前 vs 現在的能力自評、情境檢核、30 天承諾。設計稿 `docs/post-course-survey-design.md`；說明見 `docs/PLATFORM_MANUAL.md` 5.1。
