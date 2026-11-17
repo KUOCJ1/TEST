@@ -155,6 +155,7 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - 走查：`npm run audit:mobile`（390 寬）、`npm run audit:desktop`（1280 寬），輸出 `mobile-audit-out/`、`desktop-audit-out/`（不進版控）；**要逐屏看截圖**，數字全綠不代表好用。新增入口（信件連結、導覽）要補 `e2e/entry-links.spec.js`。
 - 計畫：`docs/IMPROVEMENT_PLAN_2026-11-C.md`。
 - 學員端（Sprint 37–39）：報告一分鐘版 `utils/oneMinute.js`；四週微練習存在 `user.practice`（`routes/practice.js`，只有本人，第 2–4 週提醒信 `sendPracticeNudges`）；自助下載／刪除 `routes/me.js` + `lib/accountDeletion.js`——申請時把本人資料搬到 `user.deletionHold`（**新增任何「屬於某位使用者」的集合時，要同步加進 `requestDeletion`／`cancelDeletion`／`exportUserData`**），等待期間 `requireAuth` 只放行 `DELETION_ALLOWED` 的路徑，到期由 `purgeDueDeletions`（每小時）永久刪除，他評去識別化保留。
+- 學員旅程（Sprint 41）：課後複測提示要課前滿 21 天或班級結束前 7 天（`nextStep.js` `retestDueAt`），之前是 `keep-going`；全站焦點構面只用 `utils/focus.js` 的 `focusDimension`（不要自己排序）；微練習與目標的行動用文字相同連結（`routes/practice.js` `links`，單一事實來源是目標行動的 done）；首頁只有一張 `ThisWeekCard`，新增學員待辦要加進 `utils/thisWeek.js` 而不是再加一條 chip；走查 `npm run audit:journey`。
 - 教練會談與會後反思（Sprint 40）：集合 `coachingSessions`、`sessionReflections`（`lib/coaching.js`、`routes/coaching.js`、`coach/CoachingSessionsSection.jsx`、`components/ReflectionsPanel.jsx`）。反思全文只有該場會談的教練與管理者看得到；班級報告只放 `coachingSummaryForGroup` 的彙總（回饋 < 3 份不給平均）。期限預設 3 天、第 2 天提醒（`sendReflectionReminders`）。已列入刪除帳號的搬移與下載資料。
 
 ## 課後學習成效問卷（ai-course-post，班級限定）

@@ -1,4 +1,5 @@
-import { ClipboardCheck, RotateCcw, Users, ChartColumn, Sparkles } from 'lucide-react';
+import { ClipboardCheck, RotateCcw, Users, ChartColumn, Sparkles, Footprints } from 'lucide-react';
+import { formatDay } from '../utils/format';
 
 const KIND_CONFIG = {
   pre: {
@@ -12,6 +13,12 @@ const KIND_CONFIG = {
     title: (s) => `該回來複測了：「${s.assessmentName}」課後複測`,
     desc: () => '完成後即可在「我的分析」看到與課前相比的學習成長。',
     cta: '開始課後複測',
+  },
+  'keep-going': {
+    Icon: Footprints,
+    title: () => '先練習，過一陣子再複測',
+    desc: (s) => `評測只是起點。先把這週的小步做起來，大約 ${formatDay(s.retestAt)} 之後再做課後複測，才看得出變化。`,
+    cta: '看這週的小步',
   },
   'rate-others': {
     Icon: Users,
@@ -44,13 +51,14 @@ const KIND_CONFIG = {
  * 告訴學員現在該做什麼。資料判斷邏輯在 utils/nextStep.js（純函式、有獨立測試），
  * 這裡只負責依 kind 呈現對應文案與 CTA。
  */
-export default function NextStepCard({ nextStep, onStartSurvey, onGoTo360, onViewAnalysis }) {
+export default function NextStepCard({ nextStep, onStartSurvey, onGoTo360, onViewAnalysis, onGoToLearning }) {
   if (!nextStep) return null;
   const cfg = KIND_CONFIG[nextStep.kind];
   if (!cfg) return null;
 
   const handleClick = () => {
     if (nextStep.kind === 'rate-others') { onGoTo360(nextStep.assessmentId); return; }
+    if (nextStep.kind === 'keep-going') { onGoToLearning?.(); return; }
     if (nextStep.kind === 'view-report') { onViewAnalysis(nextStep.assessmentId); return; }
     onStartSurvey(nextStep.assessmentId);
   };

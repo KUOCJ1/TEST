@@ -28,16 +28,24 @@ test('手機：分析頁有「一分鐘看懂」；開始四週微練習 → 首
   await expect(one).toBeVisible({ timeout: 20000 });
   await expect(one).toContainText('最值得先練');
   await expect(one).toContainText('執行力');
+  // 先「選一件事」建立目標，再開始微練習：第一週接在那件事上（同一件事不用勾兩次）。
+  await page.getByRole('button', { name: '就做這件事' }).click();
   const practice = page.getByRole('region', { name: '四週微練習' });
   await practice.getByRole('button', { name: '開始四週微練習' }).click();
   await expect(practice).toContainText('第 1／4 週');
 
   await page.goto('/home');
-  await page.getByRole('button', { name: /本週微練習（1／4）/ }).click();
-  await expect(page).toHaveURL(/\/learning$/);
+  // 首頁「這週你的小步」：直接在卡片上按「我做了」
+  const week = page.getByRole('region', { name: '這週你的小步' });
+  await expect(week).toContainText('第 1／4 週');
+  await week.getByRole('button', { name: /我做了/ }).click();
+  await expect(week.getByRole('status')).toContainText('本週的小步完成了');
+  await page.goto('/learning');
   const panel = page.getByRole('region', { name: '四週微練習' });
-  await panel.getByRole('button', { name: '第 1 週標記為完成' }).click();
   await expect(panel.getByRole('button', { name: '第 1 週已完成，按一下取消' })).toBeVisible();
+  await expect(panel.getByText('也是你目標裡的行動')).toBeVisible();
+  // 同一件事：目標那邊的行動也已經勾了
+  await expect(page.getByRole('button', { name: /^已完成： / }).first()).toBeVisible();
   await expect(panel.getByText('第 2 週開始時出現')).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);

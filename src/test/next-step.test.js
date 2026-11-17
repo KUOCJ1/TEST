@@ -33,11 +33,38 @@ describe('computeNextStep', () => {
     });
   });
 
-  it('②：課前已完成、班級進行中 → 開始課後複測', () => {
-    const myGroups = [{ id: 'g1', assessmentId: 'leadership-9d', phase: 'in_progress' }];
-    const mySubmissions = [{ assessmentId: 'leadership-9d', groupId: 'g1', phase: 'pre', raterType: 'self' }];
-    const result = computeNextStep({ assessments, mySubmissions, myGroups, groupMembers: [] });
+  const DAY = 864e5;
+  const preAt = (daysAgo) => [{ assessmentId: 'leadership-9d', groupId: 'g1', phase: 'pre', raterType: 'self', createdAt: new Date(Date.now() - daysAgo * DAY).toISOString() }];
+  const inProgress = (extra = {}) => [{ id: 'g1', assessmentId: 'leadership-9d', phase: 'in_progress', ...extra }];
+
+  it('②：課前已完成滿 21 天、班級進行中 → 開始課後複測', () => {
+    const result = computeNextStep({ assessments, mySubmissions: preAt(22), myGroups: inProgress(), groupMembers: [] });
     expect(result).toMatchObject({ kind: 'post', assessmentId: 'leadership-9d', groupId: 'g1' });
+  });
+
+  it('②：剛做完課前（不到 21 天）→ 不叫人複測，改成「先練習」', () => {
+    const result = computeNextStep({ assessments, mySubmissions: preAt(0), myGroups: inProgress(), groupMembers: [] });
+    expect(result).toMatchObject({ kind: 'keep-going', assessmentId: 'leadership-9d', groupId: 'g1' });
+    const days = Math.round((new Date(result.retestAt).getTime() - Date.now()) / DAY);
+    expect(days).toBe(21);
+    expect(computeNextStep({ assessments, mySubmissions: preAt(20), myGroups: inProgress(), groupMembers: [] }).kind).toBe('keep-going');
+  });
+
+  it('②：班級快結束（結束前 7 天內）就算課前才剛做完，也提示複測', () => {
+    const endDate = new Date(Date.now() + 5 * DAY).toISOString();
+    expect(computeNextStep({ assessments, mySubmissions: preAt(2), myGroups: inProgress({ endDate }), groupMembers: [] }).kind).toBe('post');
+    const far = new Date(Date.now() + 60 * DAY).toISOString();
+    expect(computeNextStep({ assessments, mySubmissions: preAt(2), myGroups: inProgress({ endDate: far }), groupMembers: [] }).kind).toBe('keep-going');
+  });
+
+  it('②：舊資料沒有作答時間 → 不阻擋，視為到了', () => {
+    const mySubmissions = [{ assessmentId: 'leadership-9d', groupId: 'g1', phase: 'pre', raterType: 'self' }];
+    expect(computeNextStep({ assessments, mySubmissions, myGroups: inProgress(), groupMembers: [] }).kind).toBe('post');
+  });
+
+  it('先練習的提示比「評測他人」「目標複測」晚：他評與到期的目標比較急', () => {
+    const groupMembers = [{ id: 'u2', name: '小華' }];
+    expect(computeNextStep({ assessments, mySubmissions: preAt(0), myGroups: inProgress(), groupMembers }).kind).toBe('rate-others');
   });
 
   it('班級「尚未開始」時不會被當成①或②的候選', () => {

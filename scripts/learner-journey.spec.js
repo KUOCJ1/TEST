@@ -125,7 +125,12 @@ test('學員成長旅程', async ({ browser }) => {
     await panel.getByLabel(/一個行動/).fill('每週一寫下三件最重要的事，週五回顧');
     await panel.getByRole('radio', { name: '5' }).check({ force: true });
     await panel.getByRole('checkbox', { name: /變成我的發展目標/ }).check();
-    await panel.getByRole('button', { name: '送出反思' }).click();
+    const sendBtn = panel.getByRole('button', { name: '送出反思' });
+    await sendBtn.scrollIntoViewIfNeeded();
+    await shot(p, 'reflection-form-filled', '反思填好、準備送出（按鈕是否被擋住）');
+    const cover = await sendBtn.evaluate((el) => { const r = el.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { top: Math.round(r.top), bottom: Math.round(r.bottom), vh: window.innerHeight, covered: t && !el.contains(t) ? `${t.tagName}.${String(t.className).slice(0, 40)}` : null, disabled: el.disabled }; });
+    notes.push({ file: 'reflection-submit-check', note: JSON.stringify({ ...cover, overflowPx: await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth) }) });
+    await sendBtn.click({ timeout: 10000 });
     await p.waitForTimeout(800);
     await p.evaluate(() => window.scrollTo(0, 0));
     await shot(p, 'learning-after-reflection', '交完反思之後的我的學習');

@@ -13,9 +13,7 @@ import { computeNextStep } from './utils/nextStep';
 import AssessmentCard from './components/AssessmentCard';
 import NextStepCard from './components/NextStepCard';
 import GroupStatusBar from './components/GroupStatusBar';
-import GoalProgressChip from './components/GoalProgressChip';
-import PracticeChip from './components/PracticeChip';
-import ReflectionChip from './components/ReflectionChip';
+import ThisWeekCard from './components/ThisWeekCard';
 import GroupInvites from './components/GroupInvites';
 import GoalReminders from './components/GoalReminders';
 import RedeemInviteBox from './components/RedeemInviteBox';
@@ -146,20 +144,21 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
       <InstallPrompt />
       <FollowUpBanner />
       <GroupInvites invites={groupInvites} onChanged={() => { setLoading(true); setReloadTick((t) => t + 1); }} />
-      <RedeemInviteBox onJoined={() => { setLoading(true); setReloadTick((t) => t + 1); }} />
+      {/* 已經在班上的人不需要「有邀請碼？」這一行（Sprint 41 走查：它佔著首頁最上面一行，卻跟他無關）。 */}
+      {myGroups.length === 0 && <RedeemInviteBox onJoined={() => { setLoading(true); setReloadTick((t) => t + 1); }} />}
       <GoalReminders
         goals={goals}
         skipOverdue={nextStep?.kind === 'retest-reminder'}
         onGoalChanged={(g) => setGoals((prev) => prev.map((x) => (x.id === g.id ? g : x)))}
       />
-      <NextStepCard nextStep={nextStep} onStartSurvey={onStartSurvey} onGoTo360={onGoTo360} onViewAnalysis={onViewAnalysis} />
+      {/* 還在練習期（先練習、再複測）：這週的小步比「為什麼還不複測」更重要，放在前面。 */}
+      {nextStep?.kind === 'keep-going' && <ThisWeekCard goals={goals} onGoLearning={() => navigate('/learning')} />}
+      <NextStepCard nextStep={nextStep} onStartSurvey={onStartSurvey} onGoTo360={onGoTo360} onViewAnalysis={onViewAnalysis} onGoToLearning={() => navigate('/learning')} />
       {/* 班級狀態與目標摘要並排成一條資訊列（Sprint 8），不再各佔一整列。 */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row [&>*]:flex-1 [&:empty]:hidden">
         <GroupStatusBar group={statusGroup} />
-        <GoalProgressChip goals={goals} onClick={() => navigate('/learning')} />
-        <PracticeChip onClick={() => navigate('/learning')} />
-        <ReflectionChip onClick={() => navigate('/learning')} />
       </div>
+      {nextStep?.kind !== 'keep-going' && <ThisWeekCard goals={goals} onGoLearning={() => navigate('/learning')} />}
       <header id="assessment-cards" className="mb-6 scroll-mt-20">
         <h2 className="font-serif text-2xl font-bold text-slate-900">選擇評量</h2>
         <p className="mt-1 text-sm text-slate-500">選擇一個題庫開始作答，或點擊「查看分析」瀏覽歷次結果。</p>

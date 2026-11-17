@@ -3,6 +3,7 @@ import { Footprints, Check } from 'lucide-react';
 import { api } from '../api/client';
 import { startersFor } from '../data/goal-starters.js';
 import { dimLabel } from '../utils/dimensionLabel';
+import { focusDimension } from '../utils/focus.js';
 
 // 結果頁的「選一件事」（Sprint 25）：看完報告離開之前，先留下一個具體的第一步。
 // 沒有進行中的目標：從最弱構面的起手行動挑一個，一鍵建立發展目標（預設只有本人看得到）。
@@ -13,14 +14,8 @@ const PROGRESS = [
   { rating: 1, label: '還沒開始' },
 ];
 
-function pickFocusDimension(dimensions = []) {
-  const scored = dimensions.filter((d) => typeof d.average === 'number' && d.average > 0);
-  if (!scored.length) return null;
-  return [...scored].sort((a, b) => a.average - b.average)[0];
-}
-
 export default function FirstActionCard({ result }) {
-  const dim = useMemo(() => pickFocusDimension(result.dimensions), [result.dimensions]);
+  const dim = useMemo(() => focusDimension(result.dimensions), [result.dimensions]);
   const [goals, setGoals] = useState(null);
   const [picked, setPicked] = useState(0);
   const [note, setNote] = useState('');

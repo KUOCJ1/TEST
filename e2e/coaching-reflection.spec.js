@@ -44,7 +44,7 @@ test('一對一會談 → 會後反思 → 教練回覆', async ({ browser }) =>
   const lp = await lctx.newPage();
   await lp.goto('/home');
   await acceptConsentIfAsked(lp);
-  await lp.getByRole('button', { name: /待填會後反思 1 份/ }).click();
+  await lp.getByRole('region', { name: '這週你的小步' }).getByRole('button', { name: /會後反思待填 1 份/ }).click();
   const panel = lp.getByRole('region', { name: '會後反思' });
   await expect(panel).toContainText('溝通很清楚，下一步練授權。');
   await panel.getByLabel(/最大的收穫/).fill('我習慣自己做完，沒有交出去');

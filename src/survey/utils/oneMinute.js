@@ -4,6 +4,7 @@ import { dimensionText } from './narrative.js';
 import { badgeText } from './levelBadge.js';
 import { dimLabel } from './dimensionLabel.js';
 import { startersFor } from '../data/goal-starters.js';
+import { focusDimension, strongestDimension } from './focus.js';
 
 // 最高與最低構面差不到這麼多時，不硬挑「最該練」（反向題、四捨五入造成的小差異不算弱項）。
 export const CLOSE_GAP = 0.3;
@@ -36,8 +37,8 @@ export function buildOneMinute(result, config) {
     };
   }
 
-  const top = sorted[0];
-  const low = sorted[sorted.length - 1];
+  const top = strongestDimension(dims);
+  const low = focusDimension(dims);
   const level = result.level ?? {};
   // 上面的主視覺已經有落點名稱與分數：這裡不重複名稱，改用該落點說明的第一句講白話。
   const where = firstSentence(level.desc) || (level.badge ? `你目前在「${badgeText(level.badge)}」。` : '你已完成這份評量。');

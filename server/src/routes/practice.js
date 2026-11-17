@@ -19,7 +19,15 @@ export function isPracticeActive(practice, now = Date.now()) {
   return Boolean(practice) && !practice.stoppedAt && practiceWeek(practice, now) <= PRACTICE_WEEKS;
 }
 
-export function publicPractice(p, now = Date.now()) {
+// 微練習與發展目標合併（Sprint 41）：某一週的任務如果就是目標裡的一個行動，兩邊是同一件事——
+// 勾其中一邊，另一邊也算完成（單一事實來源是目標的行動 done 狀態），不再要學員重複勾兩次。
+const linkedAction = (p, week, goals) => {
+  const id = p.links?.[week];
+  const goal = (goals ?? []).find((g) => g.id === p.goalId);
+  return id && goal ? (goal.actions ?? []).find((a) => a.id === id) ?? null : null;
+};
+
+export function publicPractice(p, now = Date.now(), goals = []) {
   if (!p) return null;
   const week = practiceWeek(p, now);
   return {
@@ -36,8 +44,10 @@ export function publicPractice(p, now = Date.now()) {
     weeks: p.tasks.map((task, i) => ({
       week: i + 1,
       task: i + 1 <= week ? task : null,
-      doneAt: p.done?.[i + 1] ?? null,
+      doneAt: p.done?.[i + 1] ?? (linkedAction(p, i + 1, goals)?.done ? (linkedAction(p, i + 1, goals).doneAt ?? p.startedAt) : null),
+      goalLinked: Boolean(linkedAction(p, i + 1, goals)),
     })),
+    goalId: p.goalId ?? null,
   };
 }
 
@@ -46,9 +56,11 @@ const clean = (v) => (typeof v === 'string' ? v.trim().slice(0, MAX_TASK) : '');
 export function createPracticeRouter({ db, requireAuth }) {
   const router = Router();
   const me = (req) => db.data.users.find((u) => u.id === req.user.id);
+  const myGoals = (req) => (db.data.goals ?? []).filter((g) => g.userId === req.user.id);
+  const view = (req, p) => publicPractice(p, Date.now(), myGoals(req));
 
   router.get('/practice', requireAuth, (req, res) => {
-    res.json({ practice: publicPractice(me(req)?.practice) });
+    res.json({ practice: view(req, me(req)?.practice) });
   });
 
   router.post('/practice', requireAuth, (req, res) => {
@@ -62,8 +74,14 @@ export function createPracticeRouter({ db, requireAuth }) {
     if (typeof assessmentId !== 'string' || !assessmentId || tasks.length !== PRACTICE_WEEKS) {
       return res.status(400).json({ error: `需要評量與 ${PRACTICE_WEEKS} 週的練習內容` });
     }
+    // 這組微練習接在哪個目標上：任務文字和目標的行動一樣的那幾週，視為同一件事（links）。
+    const goal = typeof req.body?.goalId === 'string' ? myGoals(req).find((g) => g.id === req.body.goalId && !g.achievedAt) : null;
+    const links = {};
+    if (goal) tasks.forEach((t, i) => { const a = (goal.actions ?? []).find((x) => x.text === t); if (a) links[i + 1] = a.id; });
     user.practice = {
       id: randomUUID(),
+      goalId: goal?.id ?? null,
+      links,
       assessmentId: assessmentId.slice(0, 80),
       dimensionId: typeof dimensionId === 'string' ? dimensionId.slice(0, 80) : null,
       dimensionName: clean(dimensionName).slice(0, 40) || null,
@@ -74,7 +92,7 @@ export function createPracticeRouter({ db, requireAuth }) {
       nudgesSent: [],
     };
     db.persist();
-    res.status(201).json({ practice: publicPractice(user.practice) });
+    res.status(201).json({ practice: view(req, user.practice) });
   });
 
   router.post('/practice/weeks/:week', requireAuth, (req, res) => {
@@ -86,18 +104,22 @@ export function createPracticeRouter({ db, requireAuth }) {
       return res.status(400).json({ error: '這一週還沒開始' });
     }
     p.done = { ...(p.done ?? {}) };
-    if (req.body?.done === false) delete p.done[week];
+    const undo = req.body?.done === false;
+    if (undo) delete p.done[week];
     else p.done[week] = p.done[week] ?? new Date().toISOString();
+    // 同步到目標的行動（同一件事）
+    const act = linkedAction(p, week, myGoals(req));
+    if (act) { act.done = !undo; act.doneAt = undo ? null : (act.doneAt ?? new Date().toISOString()); }
     db.persist();
-    res.json({ practice: publicPractice(p) });
+    res.json({ practice: view(req, p) });
   });
 
   router.delete('/practice', requireAuth, (req, res) => {
     const user = me(req);
-    if (!user?.practice || user.practice.stoppedAt) return res.json({ practice: publicPractice(user?.practice) });
+    if (!user?.practice || user.practice.stoppedAt) return res.json({ practice: view(req, user?.practice) });
     user.practice.stoppedAt = new Date().toISOString();
     db.persist();
-    res.json({ practice: publicPractice(user.practice) });
+    res.json({ practice: view(req, user.practice) });
   });
 
   return router;

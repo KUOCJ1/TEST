@@ -5,6 +5,23 @@ import { getAssessment } from '../data/assessments/index.js';
 // 兩處重複這幾行而不是抽成共用函式，是因為 SurveyApp 那邊是單一班別、單一
 // assessmentId 的 in-component 邏輯，這裡則要一次掃過使用者所有的班——直接
 // 抽共用函式反而要多繞一層參數轉換，不如各自維持小而直接。
+// 課後複測的時機（2026-11-17 決定）：課前完成滿 21 天，或班級結束前 7 天。
+// 之前只要「課前做完、班級進行中」就叫人複測，學員剛做完評測、還沒練習，首頁最大的卡片就寫「該回來複測了」。
+export const POST_RETEST_DAYS = 21;
+export const POST_BEFORE_END_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** 這個班的課後複測時間到了嗎？沒有課前紀錄時間（舊資料）視為到了，不阻擋。 */
+export function retestDueAt(mySubmissions, group) {
+  const pre = mySubmissions
+    .filter((s) => (s.raterType ?? 'self') === 'self' && s.groupId === group.id && (s.phase ?? 'pre') === 'pre' && s.createdAt)
+    .map((s) => new Date(s.createdAt).getTime())
+    .sort((a, b) => a - b)[0];
+  const byPre = pre != null ? pre + POST_RETEST_DAYS * DAY_MS : 0;
+  const end = group.endDate ? new Date(group.endDate).getTime() - POST_BEFORE_END_DAYS * DAY_MS : Infinity;
+  return Math.min(byPre, end);
+}
+
 function selfDonePhases(mySubmissions, groupId) {
   const done = new Set();
   mySubmissions.forEach((s) => {
@@ -19,7 +36,8 @@ function selfDonePhases(mySubmissions, groupId) {
  * 首頁「下一步」卡片的優先序判斷（見 docs/archive/sprints-1-5.md Sprint 2 驗收條件 2.1，
  * ④ 是 Sprint 3 驗收條件 3.4 加的複測提醒）：
  *   ① 所屬班級課前未作答 → 開始課前評測
- *   ② 課前已完成、班級進行中 → 開始課後複測
+ *   ② 課前已完成、班級進行中，且課前滿 21 天（或班級結束前 7 天）→ 開始課後複測；
+ *      還沒到 → 'keep-going'（先練習，之後再複測），排在 ③④ 之後
  *   ③ 360° 他評邀請未完成 → 還有 N 位同事等你評分
  *   ④ 有目標的建議複測日已到 → 提醒回來複測看看有沒有變化
  *   ⑤ 都完成 → 看看你的成長報告
@@ -41,6 +59,7 @@ export function computeNextStep({ assessments = [], mySubmissions = [], myGroups
   const nameOf = (id) => assessments.find((a) => a.id === id)?.name ?? id;
 
   // ① / ②：逐一檢查目前「進行中」的班別，看自己還缺課前還是課後。
+  let keepGoing = null;
   for (const group of myGroups) {
     if (group.phase !== 'in_progress') continue;
     const done = selfDonePhases(mySubmissions, group.id);
@@ -57,12 +76,17 @@ export function computeNextStep({ assessments = [], mySubmissions = [], myGroups
     if (group.phase !== 'in_progress') continue;
     const done = selfDonePhases(mySubmissions, group.id);
     if (done.has('pre') && !done.has('post')) {
-      return {
-        kind: 'post',
-        assessmentId: group.assessmentId,
-        assessmentName: nameOf(group.assessmentId),
-        groupId: group.id,
-      };
+      const dueAt = retestDueAt(mySubmissions, group);
+      if (Date.now() >= dueAt) {
+        return {
+          kind: 'post',
+          assessmentId: group.assessmentId,
+          assessmentName: nameOf(group.assessmentId),
+          groupId: group.id,
+        };
+      }
+      // 還沒到複測時間：先練習。記下來，等 ③④ 判斷完再回傳（他評與到期的目標複測比較急）。
+      keepGoing ??= { kind: 'keep-going', assessmentId: group.assessmentId, assessmentName: nameOf(group.assessmentId), groupId: group.id, retestAt: new Date(dueAt).toISOString() };
     }
   }
 
@@ -100,6 +124,9 @@ export function computeNextStep({ assessments = [], mySubmissions = [], myGroups
       goalText: dueGoal.text,
     };
   }
+
+  // 課前做完、還沒到複測時間：先練習（取代「該回來複測了」）。
+  if (keepGoing) return keepGoing;
 
   // ⑤：有作答紀錄就導去看最新一筆的分析報告。
   // 班級限定的問卷（課後問卷）沒有「成長報告」可看，不算在內。

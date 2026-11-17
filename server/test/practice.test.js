@@ -123,3 +123,38 @@ describe('微練習提醒信', () => {
     assert.ok(WEEK_MS > 0);
   });
 });
+
+describe('微練習與目標合併（Sprint 41）', () => {
+  const goalBody = (actions) => ({ assessmentId: 'leadership-9d', dimensionId: 'communication', dimensionName: '溝通力', text: '把溝通力往前推一步', actions: actions.map((text) => ({ text })) });
+
+  test('任務和目標的行動一樣的那幾週算同一件事：勾微練習也勾了目標的行動，反過來也一樣', async () => {
+    const { A, db, a } = await setup();
+    const goal = (await A.post('/api/goals').send(goalBody([TASKS[0], TASKS[1]]))).body.goal;
+    const p = (await start(A, { goalId: goal.id })).body.practice;
+    assert.equal(p.goalId, goal.id);
+    assert.deepEqual(p.weeks.map((w) => w.goalLinked), [true, true, false, false]);
+    // 勾微練習第 1 週 → 目標的行動也勾了
+    await A.post('/api/practice/weeks/1').send({});
+    assert.equal(db.data.goals[0].actions[0].done, true);
+    // 在目標那邊勾第二個行動、往回撥 8 天（第 2 週）→ 微練習第 2 週自動算完成
+    await A.patch(`/api/goals/${goal.id}`).send({ actions: db.data.goals[0].actions.map((x, i) => ({ ...x, done: true })) });
+    db.data.users.find((u) => u.id === a.id).practice.startedAt = new Date(Date.now() - 8 * 864e5).toISOString();
+    const after = (await A.get('/api/practice')).body.practice;
+    assert.ok(after.weeks[1].doneAt, '目標裡勾了，微練習這週也算做了');
+    // 取消微練習第 1 週 → 目標行動也取消
+    await A.post('/api/practice/weeks/1').send({ done: false });
+    assert.equal(db.data.goals[0].actions[0].done, false);
+  });
+
+  test('沒有帶 goalId、或目標已達成、或別人的目標：不連結', async () => {
+    const { A, B, db } = await setup();
+    const own = (await A.post('/api/goals').send(goalBody([TASKS[0]]))).body.goal;
+    assert.equal((await start(A)).body.practice.weeks[0].goalLinked, false);
+    await A.delete('/api/practice');
+    const theirs = (await B.post('/api/goals').send(goalBody([TASKS[0]]))).body.goal;
+    assert.equal((await start(A, { goalId: theirs.id })).body.practice.goalId, null);
+    await A.delete('/api/practice');
+    db.data.goals.find((g) => g.id === own.id).achievedAt = new Date().toISOString();
+    assert.equal((await start(A, { goalId: own.id })).body.practice.goalId, null);
+  });
+});

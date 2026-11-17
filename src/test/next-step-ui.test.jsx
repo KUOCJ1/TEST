@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import NextStepCard from '../survey/components/NextStepCard';
 import GroupStatusBar from '../survey/components/GroupStatusBar';
-import GoalProgressChip from '../survey/components/GoalProgressChip';
 
 describe('NextStepCard', () => {
   it('nextStep 為 null 時不渲染任何東西', () => {
@@ -96,23 +95,14 @@ describe('GroupStatusBar', () => {
   });
 });
 
-describe('GoalProgressChip', () => {
-  it('沒有進行中目標時不渲染', () => {
-    const { container } = render(<GoalProgressChip goals={[]} onClick={vi.fn()} />);
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  it('顯示進行中目標數與行動完成率，點擊觸發 onClick', () => {
-    const onClick = vi.fn();
-    const goals = [
-      { achievedAt: null, actions: [{ done: true }, { done: false }] },
-      { achievedAt: null, actions: [{ done: true }] },
-      { achievedAt: '2026-01-01', actions: [{ done: true }] }, // 已達成，不計入
-    ];
-    render(<GoalProgressChip goals={goals} onClick={onClick} />);
-    expect(screen.getByText(/2 個進行中/)).toBeInTheDocument();
-    expect(screen.getByText(/行動完成率 67%/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button'));
-    expect(onClick).toHaveBeenCalledTimes(1);
+describe('NextStepCard：先練習，再複測', () => {
+  it('keep-going：不說「該回來複測了」，說明大約何時複測，按鈕去我的學習', () => {
+    const onGoToLearning = vi.fn();
+    render(<NextStepCard nextStep={{ kind: 'keep-going', assessmentId: 'leadership-9d', assessmentName: 'X', retestAt: '2026-12-08T00:00:00Z' }} onStartSurvey={vi.fn()} onGoTo360={vi.fn()} onViewAnalysis={vi.fn()} onGoToLearning={onGoToLearning} />);
+    expect(screen.getByText('先練習，過一陣子再複測')).toBeInTheDocument();
+    expect(screen.queryByText(/該回來複測了/)).toBeNull();
+    expect(screen.getByText(/2026\/12\/08 之後再做課後複測/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /看這週的小步/ }));
+    expect(onGoToLearning).toHaveBeenCalledTimes(1);
   });
 });
