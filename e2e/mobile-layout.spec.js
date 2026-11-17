@@ -103,6 +103,9 @@ test('我的分析：不溢出、小幫手不蓋內容', async ({ browser }) => 
 
 test('作答：無底部導覽、捲到第 10 題進度列仍看得到、送出後結果不溢出', async ({ browser }) => {
   const { context, page } = await newLearner(browser, '手機學員丙', { submit: false });
+  // 延伸閱讀文章來自外部知識庫：CI 連得到、本機常連不到，篇數不固定會讓頁高忽長忽短。
+  // 這裡量的是「結果頁本身」的長度，所以固定回傳空清單。
+  await page.route('**/api/learning-resources?**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ byDimension: [] }) }));
   await page.goto('/survey/ai-competency');
   await page.waitForSelector('fieldset[data-question-id]', { timeout: 20000 });
   await expectNoHorizontalOverflow(page, '作答頁');
@@ -144,6 +147,7 @@ test('作答：無底部導覽、捲到第 10 題進度列仍看得到、送出�
   await expect(page.getByText(/查看我的作答/)).toBeVisible();
   await expect(sets.first()).toBeHidden();
   const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  console.log(`[mobile-layout] 結果頁高度 ${height}px`);
   expect(height, `結果頁高度 ${height}px 應小於 6000px`).toBeLessThan(6000);
   // 區段跳轉列固定在頁首下方：捲到下面後仍看得到，且沒被頁首蓋住。
   await page.evaluate(() => window.scrollTo(0, 1500));
