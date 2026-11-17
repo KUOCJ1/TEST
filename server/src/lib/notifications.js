@@ -8,6 +8,7 @@
 // 之後設定好了再照常寄。
 import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from './mailer.js';
 import { practiceWeek, isPracticeActive, PRACTICE_WEEKS } from '../routes/practice.js';
+import { dueReflectionReminders } from './coaching.js';
 
 // 同一份作答的評語在這段時間內反覆修改只通知一次：教練常常存了又改。
 export const COMMENT_NOTIFY_COOLDOWN_MS = 60 * 60 * 1000;
@@ -204,5 +205,38 @@ export async function sendPracticeNudges(db, { now = Date.now(), send = sendMail
     else { failed += 1; p.nudgesSent = p.nudgesSent.filter((w) => w !== week); }
   }
   if (dirty) db.persist();
+  return { sent, failed };
+}
+
+/**
+ * 會後反思（Sprint 40）：會談後第 2 天還沒繳交，寄一次提醒（每人每場一次，s.remindedIds）。
+ */
+export async function sendReflectionReminders(db, { now = Date.now(), send = sendMail, configured = isMailConfigured() } = {}) {
+  if (!configured) return { sent: 0, failed: 0 };
+  let sent = 0;
+  let failed = 0;
+  const due = dueReflectionReminders(db, now);
+  for (const { session: s, userId } of due) {
+    s.remindedIds = [...new Set([...(s.remindedIds ?? []), userId])];
+    const user = db.data.users.find((u) => u.id === userId);
+    if (!wants(user, 'notifyAssessment') || user.deletionScheduledFor) continue;
+    const result = await send({
+      to: user.email,
+      subject: `會後反思還沒填：${truncate(s.title, 24)}（期限 ${formatTaipeiDate(s.dueAt)}）`,
+      text: [
+        `${user.name || '您'} 您好：`,
+        '',
+        `「${s.title}」的會後反思還沒繳交，期限是 ${formatTaipeiDate(s.dueAt)}。`,
+        '四個問題，大約 5 分鐘。趁印象還清楚的時候寫下來，下一次會談會更有焦點。',
+        '',
+        `前往填寫：${appBaseUrl()}/learning`,
+        '',
+        footer('評測提醒'),
+      ].join('\n'),
+    });
+    if (result.ok) sent += 1;
+    else { failed += 1; s.remindedIds = s.remindedIds.filter((id) => id !== userId); }
+  }
+  if (due.length) db.persist();
   return { sent, failed };
 }

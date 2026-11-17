@@ -9,11 +9,11 @@ import { useIsMobile } from '../hooks/useIsMobile';
 // 教練「今天要做什麼」工作台（Sprint 29）：每班的待辦只有人數，沒有名單（延續「教練看不到誰沒設定目標」的隱私決定）。
 // 一鍵動作沿用各自的既有 API 與冷卻；要看名單、要處理，進入該班原本的頁面。
 
-function Chip({ label, n, action }) {
+function Chip({ label, n, action, unit = '人' }) {
   if (!n) return null;
   return (
     <li className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm">
-      <span className="text-slate-600">{label} <strong className="text-slate-800">{n}</strong> 人</span>
+      <span className="text-slate-600">{label} <strong className="text-slate-800">{n}</strong> {unit}</span>
       {action}
     </li>
   );
@@ -68,6 +68,7 @@ export default function CoachWorkbench({ onOpenGroup }) {
                 <Chip label="還沒作答" n={g.notDone} action={btn(`${g.id}:pre`, '催交', () => api.sendGroupReminders(g.id), (r) => (r.sent > 0 ? `已寄出 ${r.sent} 封催交信` : '目前沒有需要催交的人'), g.phase !== 'in_progress')} />
                 <Chip label="他評不足的受評者" n={g.ratersLow} action={btn(`${g.id}:rater`, '提醒評分者', () => api.remindGroupRaters(g.id), (r) => (r.sent > 0 ? `已提醒 ${r.sent} 位評分者` : '目前沒有需要提醒的評分者'))} />
                 <Chip label="還沒收到你的評語" n={g.uncommented} />
+                <Chip label="會後反思未繳" n={g.reflectionsPending} unit="份" />
                 <Chip label="還沒設定目標" n={g.noGoal} action={btn(`${g.id}:goal`, '提醒', () => api.remindGroupGoals(g.id), (r) => (r.sent > 0 ? `已提醒 ${r.sent} 位成員` : '目前沒有需要提醒的成員'))} />
                 {g.warnings > 0 && (
                   <li className="flex items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">

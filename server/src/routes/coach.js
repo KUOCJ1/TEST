@@ -25,6 +25,7 @@ import { publicTemplate } from '../lib/projectTemplates.js';
 import { followUpProgress } from '../lib/courseFollowUp.js';
 import { buildWorkbench } from '../lib/coachWorkbench.js';
 import { goalSummaryForGroup, membersWithoutGoal, MIN_N as GOAL_MIN_N } from '../lib/goalActivity.js';
+import { coachingSummaryForGroup } from '../lib/coaching.js';
 
 // 同一班寄一次催交信後的冷卻時間：避免誤觸連按、把學員信箱洗版。
 export const REMINDER_COOLDOWN_MS = 60 * 60 * 1000;
@@ -274,6 +275,8 @@ export function createCoachRouter({ db, requireAuth, requireCoach }) {
       mailConfigured: isMailConfigured(),
       // 班級行動概況（Sprint 26）：只有人數；少於 3 位成員時不顯示。
       goalSummary: goalSummaryForGroup(db, group),
+      // 教練會談與會後反思的彙總（Sprint 40）：場次、繳交率、會談回饋平均（≥3 份才有）；沒有姓名與內容。
+      coachingSummary: coachingSummaryForGroup(db, group.id),
       // 學員「選擇分享給教練」的發展目標（預設私密）；只含本班評量、本班成員，且不含追蹤筆記。
       sharedGoals: (db.data.goals ?? [])
         .filter((g) => g.sharedWithCoach === true

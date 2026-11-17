@@ -42,3 +42,10 @@ export function buildPrePostChapter(prepost) {
     unpaired: prepost.unpaired,
   };
 }
+
+// 教練會談的彙總（Sprint 40）：只有場次、繳交率與會談回饋平均（≥3 份才有平均），沒有姓名與內容。
+export function coachingLine(c) {
+  const kinds = [c.oneOnOne ? `一對一 ${c.oneOnOne} 場` : '', c.team ? `團隊 ${c.team} 場` : ''].filter(Boolean).join('、');
+  return `共 ${c.sessions} 場（${kinds}），會後反思繳交 ${c.submitted}／${c.assigned} 份（${c.rate ?? 0}%）`
+    + (c.avgRating != null ? `，學員對會談的回饋平均 ${c.avgRating}／5（${c.ratingCount} 份）。` : '。');
+}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, X, FileText, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, FileText, Pencil, CalendarPlus } from 'lucide-react';
 import ResultPanel from '../components/ResultPanel';
 import TrendChart from '../components/charts/TrendChart';
 import { CoachCommentPanel } from '../components/CoachCommentPanel';
@@ -22,6 +22,7 @@ export default function MemberDrawer({
   currentUserId,
   onCommentSaved,
   onExportPdf,
+  onPlanSession,
 }) {
   const member = members[selectedIndex] ?? null;
   const [editing, setEditing] = useState(false);
@@ -166,6 +167,11 @@ export default function MemberDrawer({
             </div>
 
             <div ref={commentRef} className="scroll-mt-3 lg:sticky lg:top-0">
+              {onPlanSession && (
+                <button type="button" onClick={() => onPlanSession(member)} className="btn-secondary btn-sm mb-3 w-full justify-center">
+                  <CalendarPlus className="h-3.5 w-3.5" aria-hidden="true" /> 安排一對一會談（會後請他填反思）
+                </button>
+              )}
               {editing || !myComment ? (
                 <CommentEditor
                   submission={member.submission}

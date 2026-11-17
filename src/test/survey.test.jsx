@@ -20,6 +20,7 @@ vi.mock('../survey/api/client', () => ({
     trackArticleClick: async () => {},
     myGoals: async () => [],
     myPractice: async () => null,
+    myReflections: async () => [],
   },
 }));
 

@@ -5,6 +5,7 @@ import { groupWarnings } from './groupConsistency.js';
 import { goalSummaryForGroup } from './goalActivity.js';
 import { isStrictPrivacy } from './compassPrivacy.js';
 import { COURSE_SURVEY_ID } from './courseSurvey.js';
+import { pendingReflectionsForGroup } from './coaching.js';
 
 const GROUP_MIN = 3; // 同儕／部屬少於這個數字視為「他評不足」
 
@@ -56,10 +57,12 @@ export function workbenchForGroup(db, group, coachId) {
     uncommented,
     warnings: groupWarnings(db.data, group).length,
     noGoal: goals.hidden ? null : goals.noGoal,
+    // 會後反思還沒繳的份數（Sprint 40；這是教練自己建立的會談，份數就夠，名單在會談頁）
+    reflectionsPending: pendingReflectionsForGroup(db, group.id),
   };
 }
 
-export const todoTotal = (w) => w.notDone + (w.ratersLow ?? 0) + w.uncommented + w.warnings + (w.noGoal ?? 0);
+export const todoTotal = (w) => w.notDone + (w.ratersLow ?? 0) + w.uncommented + w.warnings + (w.noGoal ?? 0) + (w.reflectionsPending ?? 0);
 
 /** 這位教練（或管理員）名下的班；已發佈（結案）的班不列入。待辦多的排前面。 */
 export function buildWorkbench(db, user) {

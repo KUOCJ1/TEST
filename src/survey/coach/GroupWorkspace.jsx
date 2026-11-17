@@ -14,6 +14,7 @@ import GroupPrintableReport from '../components/GroupPrintableReport';
 import GroupListPanel from './GroupListPanel';
 import GroupOverviewSection from './GroupOverviewSection';
 import ClassroomMode from './ClassroomMode';
+import CoachingSessionsSection from './CoachingSessionsSection';
 import GroupSettingsSection from './GroupSettingsSection';
 import MemberDrawer from './MemberDrawer';
 import CohortCompare from './CohortCompare';
@@ -30,6 +31,7 @@ import { useConfirm } from '../components/useConfirm';
 
 const SECTIONS = [
   { id: 'overview', label: '總覽' },
+  { id: 'sessions', label: '會談' },
   { id: 'settings', label: '成員與設定' },
 ];
 // 領導力羅盤的班級多一個「組織診斷」分頁（依 REPORT 旗標判斷，其他評量不受影響）。
@@ -68,6 +70,8 @@ export default function GroupWorkspace({ users, currentUserId, initialGroupId = 
   const [pdfMemberIndex, setPdfMemberIndex] = useState(null);
   const [showBatchReport, setShowBatchReport] = useState(false);
   const [showClassroom, setShowClassroom] = useState(false);
+  // 從成員抽屜按「安排一對一會談」：切到「會談」分頁並帶入這位學員。
+  const [sessionPrefill, setSessionPrefill] = useState(null);
   const [showCohortCompare, setShowCohortCompare] = useState(false);
   const showToast = useToast();
   const confirm = useConfirm();
@@ -242,7 +246,7 @@ export default function GroupWorkspace({ users, currentUserId, initialGroupId = 
             <GroupHeader group={groupDetail.group} memberCount={groupDetail.members.length} />
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm font-semibold">
-                {(getAssessment(groupDetail.group.assessmentId)?.REPORT === 'compass' ? [SECTIONS[0], DIAGNOSIS_SECTION, SECTIONS[1]] : SECTIONS).map((s) => (
+                {(getAssessment(groupDetail.group.assessmentId)?.REPORT === 'compass' ? [SECTIONS[0], DIAGNOSIS_SECTION, ...SECTIONS.slice(1)] : SECTIONS).map((s) => (
                   <button
                     key={s.id}
                     type="button"
@@ -296,6 +300,7 @@ export default function GroupWorkspace({ users, currentUserId, initialGroupId = 
                 pendingInviteCount={(groupDetail.memberInvites ?? []).filter((i) => i.state === 'invited').length}
                 sharedGoals={groupDetail.sharedGoals ?? []}
                 goalSummary={groupDetail.goalSummary ?? null}
+          coachingSummary={groupDetail.coachingSummary ?? null}
                 mailConfigured={groupDetail.mailConfigured ?? false}
                 warnings={groupDetail.warnings ?? []}
               />
@@ -307,6 +312,17 @@ export default function GroupWorkspace({ users, currentUserId, initialGroupId = 
                 group={groupDetail.group}
                 members={groupDetail.members}
                 submissions={patchedSubmissions}
+              />
+            )}
+
+            {section === 'sessions' && (
+              <CoachingSessionsSection
+                key={`sessions-${groupDetail.group.id}`}
+                group={groupDetail.group}
+                members={groupDetail.members}
+                prefill={sessionPrefill}
+                onPrefillUsed={() => setSessionPrefill(null)}
+                showToast={showToast}
               />
             )}
 
@@ -340,6 +356,7 @@ export default function GroupWorkspace({ users, currentUserId, initialGroupId = 
           currentUserId={currentUserId}
           onCommentSaved={handleCommentSaved}
           onExportPdf={() => setPdfMemberIndex(drawerIndex)}
+          onPlanSession={(m) => { setSessionPrefill({ userId: m.userId, title: `一對一：${m.name}` }); setSection('sessions'); setDrawerIndex(null); }}
         />
       )}
 

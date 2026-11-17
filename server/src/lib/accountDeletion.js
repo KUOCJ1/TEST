@@ -35,6 +35,7 @@ export function requestDeletion(db, user, now = Date.now()) {
     goals: take('goals', (g) => g.userId === id),
     readingList: take('readingList', (r) => r.userId === id),
     courseFollowUps: take('courseFollowUps', (r) => r.userId === id),
+    sessionReflections: take('sessionReflections', (r) => r.userId === id),
   };
   user.deletionRequestedAt = new Date(now).toISOString();
   user.deletionScheduledFor = new Date(now + DELETION_GRACE_MS).toISOString();
@@ -45,7 +46,7 @@ export function requestDeletion(db, user, now = Date.now()) {
 /** 取消：原封搬回、回到原本的班級（班級已被刪除的略過）。 */
 export function cancelDeletion(db, user) {
   const h = user.deletionHold ?? {};
-  for (const key of ['submissions', 'goals', 'readingList', 'courseFollowUps']) {
+  for (const key of ['submissions', 'goals', 'readingList', 'courseFollowUps', 'sessionReflections']) {
     if (h[key]?.length) (db.data[key] ??= []).push(...h[key]);
   }
   for (const g of db.data.groups ?? []) {
@@ -79,6 +80,11 @@ export function purgeUser(db, user) {
     if ((g.excludedUserIds ?? []).includes(id)) g.excludedUserIds = g.excludedUserIds.filter((m) => m !== id);
   }
   db.data.learningResourceClicks = (db.data.learningResourceClicks ?? []).filter((c) => c.userId !== id);
+  for (const s of db.data.coachingSessions ?? []) {
+    if ((s.participantIds ?? []).includes(id)) s.participantIds = s.participantIds.filter((m) => m !== id);
+    if ((s.remindedIds ?? []).includes(id)) s.remindedIds = s.remindedIds.filter((m) => m !== id);
+  }
+  db.data.sessionReflections = (db.data.sessionReflections ?? []).filter((r) => r.userId !== id);
   // 稽核紀錄保留「做了什麼、什麼時候」，不再保留 Email
   for (const e of db.data.auditLog ?? []) {
     if (e.actor === id && e.actorEmail) e.actorEmail = null;
@@ -125,5 +131,9 @@ export function exportUserData(db, user) {
     practice: user.practice ?? null,
     readingList: all('readingList').filter((r) => r.userId === id).map(({ userId, ...r }) => r),
     courseFollowUps: all('courseFollowUps').filter((r) => r.userId === id).map(({ userId, ...r }) => r),
+    coachingReflections: all('sessionReflections').filter((r) => r.userId === id).map(({ userId, ...r }) => {
+      const s = (db.data.coachingSessions ?? []).find((x) => x.id === r.sessionId);
+      return { ...r, session: s ? { title: s.title, type: s.type, sessionDate: s.sessionDate } : null };
+    }),
   };
 }

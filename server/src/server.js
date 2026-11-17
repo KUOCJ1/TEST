@@ -4,7 +4,7 @@ import { createDb } from './db.js';
 import { hashPassword } from './auth.js';
 import { checkAndAlert } from './lib/health.js';
 import { isMailConfigured } from './lib/mailer.js';
-import { sendDueRetestReminders, sendGoalNudges, sendPracticeNudges } from './lib/notifications.js';
+import { sendDueRetestReminders, sendGoalNudges, sendPracticeNudges, sendReflectionReminders } from './lib/notifications.js';
 import { purgeDueDeletions } from './lib/accountDeletion.js';
 import { sendDueCourseFollowUps } from './lib/courseFollowUp.js';
 
@@ -130,11 +130,20 @@ if (NOTIFY_INTERVAL_MINUTES > 0) {
       })
       .catch((err) => console.error('[notify] 微練習提醒失敗', err?.message ?? err));
   };
+  // 會後反思：會談後第 2 天還沒繳的提醒（見 lib/notifications.js sendReflectionReminders）。
+  const runReflectionReminders = () => {
+    sendReflectionReminders(db)
+      .then(({ sent, failed }) => {
+        if (sent || failed) console.log(`[notify] 會後反思提醒：寄出 ${sent} 封、失敗 ${failed} 封`);
+      })
+      .catch((err) => console.error('[notify] 會後反思提醒失敗', err?.message ?? err));
+  };
   runRetestReminders();
   runCourseFollowUps();
   runGoalNudges();
   runPracticeNudges();
-  setInterval(() => { runRetestReminders(); runCourseFollowUps(); runGoalNudges(); runPracticeNudges(); }, NOTIFY_INTERVAL_MINUTES * 60 * 1000).unref();
+  runReflectionReminders();
+  setInterval(() => { runRetestReminders(); runCourseFollowUps(); runGoalNudges(); runPracticeNudges(); runReflectionReminders(); }, NOTIFY_INTERVAL_MINUTES * 60 * 1000).unref();
 }
 
 if (!isMailConfigured()) {

@@ -6,6 +6,7 @@ import LoadingState from '../components/LoadingState';
 import GoalItem from '../components/GoalItem';
 import GoalReminders from '../components/GoalReminders';
 import PracticePanel from '../components/PracticePanel';
+import ReflectionsPanel from '../components/ReflectionsPanel';
 
 /**
  * 「我的學習」：把目前散落在各評量報告頁的「發展目標」與「延伸閱讀學習清單」
@@ -60,6 +61,8 @@ export default function MyLearningPage() {
       </header>
 
       <GoalReminders goals={goals} onGoalChanged={updateGoal} />
+
+      <ReflectionsPanel />
 
       <PracticePanel />
 

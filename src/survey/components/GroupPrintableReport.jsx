@@ -4,7 +4,7 @@ import { useReportFilename } from '../hooks/useReportFilename.js';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { buildPrePost } from '../utils/prePost.js';
-import { buildExecutiveSummary, buildPrePostChapter } from '../utils/groupSummary.js';
+import { buildExecutiveSummary, buildPrePostChapter, coachingLine } from '../utils/groupSummary.js';
 import { dimLabel } from '../utils/dimensionLabel';
 import { useIsMobile } from '../hooks/useIsMobile.js';
 import { GroupReadView } from './MobileReportViews.jsx';
@@ -406,6 +406,11 @@ function ExecutiveSummaryPage({ group, summary, date }) {
           <strong>行動成果：</strong>{s.goals.members} 位成員中，{s.goals.withGoal} 位（{Math.round((s.goals.withGoal / s.goals.members) * 100)}%）已設定發展目標，近 {s.goals.recentDays} 天有 {s.goals.recentCheckin} 位回報進度。
         </div>
       )}
+      {s.coaching && (
+        <div style={{ ...box, marginBottom: 14, fontSize: 11, color: '#334155' }}>
+          <strong>教練會談：</strong>{coachingLine(s.coaching)}
+        </div>
+      )}
       {s.nextSteps.length > 0 && (
         <div style={{ ...box, background: '#fbf7ef', borderColor: '#e6dcc8' }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: '#8a5200', marginBottom: 8 }}>建議的下一步</div>
@@ -480,7 +485,7 @@ function CourseSurveyPage({ group, summary, date }) {
 }
 
 // ─── Main export ───────────────────────────────────────────────
-export default function GroupPrintableReport({ group, submissions, users, goalSummary = null, onClose }) {
+export default function GroupPrintableReport({ group, submissions, users, goalSummary = null, coachingSummary = null, onClose }) {
   // 客戶版：給 HR／老闆，不含個人排名與成員個別頁；教練版：保留排名與成員頁。預設客戶版。
   const [variant, setVariant] = useState('client');
   const isClient = variant === 'client';
@@ -526,7 +531,7 @@ export default function GroupPrintableReport({ group, submissions, users, goalSu
     .sort((a, b) => b.total - a.total);
   const results = latest.map((s) => s.result);
   const memberCount = group.memberIds?.length ?? rows.length;
-  const summary = { ...buildExecutiveSummary({ stats, memberCount, prepost }), goals: goalSummary && !goalSummary.hidden ? goalSummary : null };
+  const summary = { ...buildExecutiveSummary({ stats, memberCount, prepost }), goals: goalSummary && !goalSummary.hidden ? goalSummary : null, coaching: coachingSummary?.sessions ? coachingSummary : null };
   const prePostChapter = buildPrePostChapter(prepost);
 
   const pages = (

@@ -18,7 +18,7 @@ const { members } = vi.hoisted(() => ({ members: { list: [] } }));
 vi.mock('../survey/api/client', () => ({
   api: {
     createSubmission: vi.fn(), myGroups: async () => [], mySubmissions: async () => [], learningResources: async () => [],
-    myReadingList: async () => [], addToReadingList: async () => ({}), trackArticleClick: async () => {}, myGoals: async () => [], myPractice: async () => null,
+    myReadingList: async () => [], addToReadingList: async () => ({}), trackArticleClick: async () => {}, myGoals: async () => [], myPractice: async () => null, myReflections: async () => [],
     assessments: async () => [{ id: 'leadership-9d', name: 'L9D', description: 'x', enabled: true }],
     groupMembers: async () => members.list, rateeSubmissions: async () => [],
   },

@@ -17,7 +17,7 @@ const {
 }));
 
 vi.mock('../survey/api/client', () => ({
-  api: { myGoals, myReadingList, markReadingListItem, removeReadingListItem, myPractice: async () => null },
+  api: { myGoals, myReadingList, markReadingListItem, removeReadingListItem, myPractice: async () => null, myReflections: async () => [] },
 }));
 
 const goal = {

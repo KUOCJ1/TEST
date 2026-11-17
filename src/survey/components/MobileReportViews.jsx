@@ -1,4 +1,5 @@
 import { MIN_GROUP_SHOWN, MIN_OTHERS_SHOWN } from '../utils/report360.js';
+import { coachingLine } from '../utils/groupSummary.js';
 import { GROUPS } from './threesixty/groups.js';
 import RadarChart from './RadarChart';
 import ResultPanel from './ResultPanel';
@@ -120,6 +121,7 @@ export function GroupReadView({ group, stats, rows, results, config, date, summa
           <p className="text-sm text-slate-600">參與率 {summary.participation}%（{summary.respondents}／{summary.memberCount} 人）{summary.change ? `；課前課後平均變化 ${summary.change.meanDelta > 0 ? '+' : ''}${summary.change.meanDelta} 分（${summary.change.n} 人配對）` : ''}</p>
           <ListCard title="三個優勢構面" tone="border-emerald-200 bg-emerald-50 read-card-ok" items={summary.strengths.map((d) => ({ id: d.id, name: dimLabel(d), v: `${d.percent}%` }))} valueKey="v" empty="資料不足" />
           <ListCard title="三個優先發展構面" tone="border-brass-200 bg-brass-50 read-card-dev" items={summary.priorities.map((d) => ({ id: d.id, name: dimLabel(d), v: `${d.percent}%` }))} valueKey="v" empty="資料不足" />
+          {summary.coaching && <p className="text-sm text-slate-600"><strong>教練會談：</strong>{coachingLine(summary.coaching)}</p>}
           {summary.goals && <p className="text-sm text-slate-600"><strong>行動成果：</strong>{summary.goals.members} 位成員中，{summary.goals.withGoal} 位已設定發展目標，近 {summary.goals.recentDays} 天有 {summary.goals.recentCheckin} 位回報進度。</p>}
           {summary.nextSteps.length > 0 && (
             <div className="rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm leading-relaxed text-slate-600">

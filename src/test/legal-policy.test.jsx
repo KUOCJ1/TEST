@@ -56,7 +56,7 @@ describe('政策內容與實際行為一致（關鍵揭露都在）', () => {
     const terms = textOf(TERMS_SECTIONS);
     expect(terms).toContain('領導力羅盤');
     expect(terms).toContain('接班準備度評測');
-    expect(POLICY_VERSION).toBe('2026-11-17.1');
+    expect(POLICY_VERSION).toBe('2026-11-17.2');
   });
 
   it('隱私權政策揭露第三方（OpenRouter、第二大腦、SMTP）與傳送內容，且不送姓名與 Email', () => {
@@ -77,6 +77,11 @@ describe('政策內容與實際行為一致（關鍵揭露都在）', () => {
     for (const k of ['自助下載', '自助刪除帳號', '7 天內', '去識別化保留', '不再保留你的 Email', '教練與管理者的帳號']) expect(t).toContain(k);
     expect(t).not.toContain('沒有「自助刪除帳號」');
     expect(t).toContain('備份');
+  });
+
+  it('教練會談與會後反思：蒐集的內容、只有該場會談的教練看得到、提醒信', () => {
+    const t = textOf(PRIVACY_SECTIONS);
+    for (const k of ['教練會談與會後反思', '會後反思全文', '只有那場會談的教練看得到', '會後反思的通知與第 2 天提醒']) expect(t).toContain(k);
   });
 
   it('360° 匿名門檻：各類（含主管）達 3 位才單獨顯示、合計不足 3 位不顯示；微練習信只在開啟後寄', () => {
