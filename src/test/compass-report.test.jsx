@@ -8,7 +8,7 @@ import { computeGaps } from '../survey/utils/compassScoring.js';
 import { loopBalanceText, tensionText, tensionLabel } from '../survey/utils/compassText.js';
 
 vi.mock('../survey/api/client', () => ({
-  api: { learningResources: async () => [], myReadingList: async () => [], addToReadingList: async () => ({}), trackArticleClick: async () => {}, myGoals: async () => [] },
+  api: { learningResources: async () => [], myReadingList: async () => [], addToReadingList: async () => ({}), trackArticleClick: async () => {}, myGoals: async () => [], myPractice: async () => null },
 }));
 
 const resultFor = (form, fn = () => 4) => {

@@ -178,6 +178,15 @@ export const api = {
   myGoals: (assessmentId) =>
     request(`/goals${assessmentId ? `?assessmentId=${encodeURIComponent(assessmentId)}` : ''}`).then((d) => d.goals),
   createGoal: (body) => request('/goals', { method: 'POST', body }).then((d) => d.goal),
+  // 課後四週微練習（Sprint 38，僅本人）
+  // 本人的資料權利（Sprint 39）：下載我的資料（JSON）、申請刪除帳號（7 天內可取消）
+  exportMyData: () => request('/me/export'),
+  requestDeletion: (password) => request('/me/deletion', { method: 'POST', body: { password } }).then((d) => d.user),
+  cancelDeletion: () => request('/me/deletion/cancel', { method: 'POST' }).then((d) => d.user),
+  myPractice: () => request('/practice').then((d) => d.practice),
+  startPractice: (body) => request('/practice', { method: 'POST', body }).then((d) => d.practice),
+  markPracticeWeek: (week, done = true) => request(`/practice/weeks/${week}`, { method: 'POST', body: { done } }).then((d) => d.practice),
+  stopPractice: () => request('/practice', { method: 'DELETE' }).then((d) => d.practice),
   updateGoal: (id, body) => request(`/goals/${id}`, { method: 'PATCH', body }).then((d) => d.goal),
   deleteGoal: (id) => request(`/goals/${id}`, { method: 'DELETE' }),
   // 發展閉環（Sprint 20）：延後檢視日、追蹤紀錄（一句話＋自評 1–5）。都回傳更新後的目標。

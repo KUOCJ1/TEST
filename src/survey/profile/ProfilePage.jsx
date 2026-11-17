@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../auth/useAuth';
 import InstallPrompt from '../pwa/InstallPrompt.jsx';
+import MyDataCard from '../account/MyDataCard';
 
 function Card({ title, desc, children }) {
   return (
@@ -213,6 +214,8 @@ export default function ProfilePage() {
           </button>
         </div>
       </Card>
+
+      <MyDataCard />
     </main>
   );
 }

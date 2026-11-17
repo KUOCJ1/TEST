@@ -4,7 +4,8 @@ import { createDb } from './db.js';
 import { hashPassword } from './auth.js';
 import { checkAndAlert } from './lib/health.js';
 import { isMailConfigured } from './lib/mailer.js';
-import { sendDueRetestReminders, sendGoalNudges } from './lib/notifications.js';
+import { sendDueRetestReminders, sendGoalNudges, sendPracticeNudges } from './lib/notifications.js';
+import { purgeDueDeletions } from './lib/accountDeletion.js';
 import { sendDueCourseFollowUps } from './lib/courseFollowUp.js';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -57,6 +58,16 @@ const app = createApp({
   trustProxy: TRUST_PROXY,
   staticDir: process.env.STATIC_DIR || '',
 });
+
+// 自助刪除帳號（Sprint 39）：7 天等待期到了就永久刪除。跟寄信無關，啟動時與每小時各檢查一次。
+const runAccountPurge = () => {
+  try {
+    const n = purgeDueDeletions(db);
+    if (n) console.log(`[account] 已永久刪除 ${n} 個到期的帳號`);
+  } catch (err) { console.error('[account] 刪除到期帳號失敗', err?.message ?? err); }
+};
+runAccountPurge();
+setInterval(runAccountPurge, 60 * 60 * 1000).unref();
 
 app.listen(PORT, () => {
   console.log(`✓ AI 評測 API 已啟動，監聽 :${PORT}（資料檔：${DB_PATH}）`);
@@ -111,10 +122,19 @@ if (NOTIFY_INTERVAL_MINUTES > 0) {
       })
       .catch((err) => console.error('[notify] 目標回報提醒失敗', err?.message ?? err));
   };
+  // 課後四週微練習：第 2、3、4 週各一封（見 lib/notifications.js sendPracticeNudges）。
+  const runPracticeNudges = () => {
+    sendPracticeNudges(db)
+      .then(({ sent, failed }) => {
+        if (sent || failed) console.log(`[notify] 微練習提醒：寄出 ${sent} 封、失敗 ${failed} 封`);
+      })
+      .catch((err) => console.error('[notify] 微練習提醒失敗', err?.message ?? err));
+  };
   runRetestReminders();
   runCourseFollowUps();
   runGoalNudges();
-  setInterval(() => { runRetestReminders(); runCourseFollowUps(); runGoalNudges(); }, NOTIFY_INTERVAL_MINUTES * 60 * 1000).unref();
+  runPracticeNudges();
+  setInterval(() => { runRetestReminders(); runCourseFollowUps(); runGoalNudges(); runPracticeNudges(); }, NOTIFY_INTERVAL_MINUTES * 60 * 1000).unref();
 }
 
 if (!isMailConfigured()) {

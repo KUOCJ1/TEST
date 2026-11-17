@@ -48,6 +48,18 @@ export function AuthProvider({ children }) {
     return u;
   }, []);
 
+  // 自助刪除帳號（Sprint 39）：申請後 user.deletionScheduledFor 有值，App 顯示等待畫面；取消就回到平常。
+  const requestDeletion = useCallback(async (password) => {
+    const u = await api.requestDeletion(password);
+    setUser(u);
+    return u;
+  }, []);
+  const cancelDeletion = useCallback(async () => {
+    const u = await api.cancelDeletion();
+    setUser(u);
+    return u;
+  }, []);
+
   const setCompassManagerShare = useCallback(async (granted) => {
     const u = await api.setCompassManagerShare(granted);
     setUser(u);
@@ -88,8 +100,10 @@ export function AuthProvider({ children }) {
       updateProfile,
       acceptPolicy,
       setCompassManagerShare,
+      requestDeletion,
+      cancelDeletion,
     }),
-    [user, ready, register, login, logout, updateProfile, acceptPolicy, setCompassManagerShare],
+    [user, ready, register, login, logout, updateProfile, acceptPolicy, setCompassManagerShare, requestDeletion, cancelDeletion],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

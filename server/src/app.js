@@ -11,6 +11,8 @@ import { createCoachRouter } from './routes/coach.js';
 import { createGroupsRouter } from './routes/groups.js';
 import { createInvitesRouter } from './routes/invites.js';
 import { createGoalsRouter } from './routes/goals.js';
+import { createPracticeRouter } from './routes/practice.js';
+import { createMeRouter } from './routes/me.js';
 import { createChatRouter } from './routes/chat.js';
 import { createPublicRouter } from './routes/public.js';
 import { createLearningResourcesRouter } from './routes/learningResources.js';
@@ -90,6 +92,8 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   app.use('/api', createInvitesRouter({ db, requireAuth }));
   app.use('/api', createGroupsRouter({ db, requireAuth }));
   app.use('/api', createGoalsRouter({ db, requireAuth }));
+  app.use('/api', createPracticeRouter({ db, requireAuth }));
+  app.use('/api', createMeRouter({ db, requireAuth }));
   app.use('/api', createChatRouter({ requireAuth }));
   app.use('/api', createLearningResourcesRouter({ db, requireAuth }));
   app.use('/api', createReadingListRouter({ db, requireAuth }));

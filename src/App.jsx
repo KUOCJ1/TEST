@@ -11,6 +11,7 @@ import { useToast } from './survey/components/useToast';
 import { ConfirmProvider } from './survey/components/ConfirmDialog';
 import LoadingState from './survey/components/LoadingState';
 import ConsentGate from './survey/legal/ConsentGate';
+import DeletionPendingGate from './survey/account/DeletionPendingGate';
 import { needsConsentGate } from './survey/legal/policy';
 
 // 行銷頁不是首次進站的關鍵路徑（大多數訪客只會看到 LandingPage／登入頁），
@@ -213,6 +214,7 @@ function AppRoutes() {
     return <LoadingState fullScreen />;
   }
   // 還沒同意目前版本政策的既有用戶：先看到同意畫面（政策還是草稿時不擋，見 legal/policy.js）。
+  if (user?.deletionScheduledFor) return <DeletionPendingGate />;
   if (user && needsConsentGate(user)) return <ConsentGate />;
   if (user) {
     return (

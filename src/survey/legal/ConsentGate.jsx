@@ -35,7 +35,7 @@ export default function ConsentGate() {
           <li>我們蒐集你的姓名、Email、作答與成績、目標與學習清單，用於評測、報告與班級課程。</li>
           <li>你的成績只有你本人、所屬班級的教練與管理者看得到；他人對你的評分，你看不到評分者是誰，教練與管理者看得到。</li>
           <li>使用 AI 小幫手時，你輸入的文字與當次評測結果摘要（不含姓名與 Email）會送往第三方 AI 服務。</li>
-          <li>想查詢、更正或刪除你的資料，請依政策中的方式聯絡我們。</li>
+          <li>你可以在「個人設定 → 我的資料」自己下載資料或刪除帳號（7 天內可取消）；其他要求請依政策中的方式聯絡我們。</li>
         </ul>
         <p className="mt-4 text-sm">
           <a href={`${base}privacy`} target="_blank" rel="noopener noreferrer" className="font-semibold text-ink-700 underline underline-offset-2">閱讀完整隱私權政策</a>

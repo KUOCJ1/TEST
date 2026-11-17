@@ -119,7 +119,7 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - 題庫設定由 `scripts/build-compass-config.mjs` 從 `docs/leadership-new/items-candidates-*.json` 產生 `compass-items.generated.js`（勿手改）；計分是各自獨立的純函式（`utils/compassScoring.js`、`utils/successionScoring.js`），**不走共用的 `scoring.js`**，題庫以 `SCORING`／`selectForm`／`REPORT` 讓 `SurveyApp`、`ResultPanel`、`PrintableReport` 分派到專屬元件。
 - 沒有總分與排名；切分點（`THRESHOLDS`、`NARRATIVE_BANDS`、`STANCE_BANDS`）都是暫定值，試測後校準。
 - 360° 隱私由伺服器強制（`server/src/lib/compassPrivacy.js`）：同類 ≥3 位才單獨顯示（「他評合計」不得被相減還原）、上級評分須受評者同意、教練看不到評分者身分、管理員還原須填理由並留稽核（admin 總覽也去識別化）。**他評須先有邀請**（`routes/invites.js`：受評者或班級教練邀請同班成員，`raterInvites`）；教練對已有帳號的人只能發班級邀請（`groupInvites`），本人接受才入班。改動這些規則要同步改政策文字與測試。稽核紀錄用 `auditLog(req, action, extra)`（`lib/helpers.js`）：同時寫日誌與資料庫 `auditLog` 集合，管理後台可查；新增敏感操作時記得呼叫。
-- 後端 `KNOWN_ASSESSMENTS` 預設 `enabled: false`；啟用前要先部署新版隱私權政策（`POLICY_VERSION` `2026-11-14.1`；政策目前為「暫定版」`POLICY_META.provisional`，法務審閱後移除旗標）。
+- 後端 `KNOWN_ASSESSMENTS` 預設 `enabled: false`；啟用前要先部署新版隱私權政策（`POLICY_VERSION` `2026-11-17.1`；政策目前為「暫定版」`POLICY_META.provisional`，法務審閱後移除旗標）。
 - 備份還原演練：`bash deploy/restore-drill.sh`（不動正式資料庫）。
 
 ## 隱私權政策與註冊同意（Sprint 12）
@@ -154,6 +154,7 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - 日期輸入一律用 `utils/format.js` 的 `toDateInputValue`（當地日期）；不要用 `toISOString().slice(0, 10)`（台灣會少一天）。
 - 走查：`npm run audit:mobile`（390 寬）、`npm run audit:desktop`（1280 寬），輸出 `mobile-audit-out/`、`desktop-audit-out/`（不進版控）；**要逐屏看截圖**，數字全綠不代表好用。新增入口（信件連結、導覽）要補 `e2e/entry-links.spec.js`。
 - 計畫：`docs/IMPROVEMENT_PLAN_2026-11-C.md`。
+- 學員端（Sprint 37–39）：報告一分鐘版 `utils/oneMinute.js`；四週微練習存在 `user.practice`（`routes/practice.js`，只有本人，第 2–4 週提醒信 `sendPracticeNudges`）；自助下載／刪除 `routes/me.js` + `lib/accountDeletion.js`——申請時把本人資料搬到 `user.deletionHold`（**新增任何「屬於某位使用者」的集合時，要同步加進 `requestDeletion`／`cancelDeletion`／`exportUserData`**），等待期間 `requireAuth` 只放行 `DELETION_ALLOWED` 的路徑，到期由 `purgeDueDeletions`（每小時）永久刪除，他評去識別化保留。
 
 ## 課後學習成效問卷（ai-course-post，班級限定）
 

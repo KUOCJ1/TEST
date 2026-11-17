@@ -14,6 +14,7 @@ import AssessmentCard from './components/AssessmentCard';
 import NextStepCard from './components/NextStepCard';
 import GroupStatusBar from './components/GroupStatusBar';
 import GoalProgressChip from './components/GoalProgressChip';
+import PracticeChip from './components/PracticeChip';
 import GroupInvites from './components/GroupInvites';
 import GoalReminders from './components/GoalReminders';
 import RedeemInviteBox from './components/RedeemInviteBox';
@@ -155,6 +156,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
       <div className="mb-6 flex flex-col gap-3 sm:flex-row [&>*]:flex-1 [&:empty]:hidden">
         <GroupStatusBar group={statusGroup} />
         <GoalProgressChip goals={goals} onClick={() => navigate('/learning')} />
+        <PracticeChip onClick={() => navigate('/learning')} />
       </div>
       <header id="assessment-cards" className="mb-6 scroll-mt-20">
         <h2 className="font-serif text-2xl font-bold text-slate-900">選擇評量</h2>

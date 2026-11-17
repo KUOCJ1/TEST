@@ -7,6 +7,7 @@
 // 開關影響。寄信本身走 lib/mailer.js，沒設定 SMTP 時整個略過、不留任何紀錄，等
 // 之後設定好了再照常寄。
 import { isMailConfigured, sendMail, appBaseUrl, formatTaipeiDate } from './mailer.js';
+import { practiceWeek, isPracticeActive, PRACTICE_WEEKS } from '../routes/practice.js';
 
 // 同一份作答的評語在這段時間內反覆修改只通知一次：教練常常存了又改。
 export const COMMENT_NOTIFY_COOLDOWN_MS = 60 * 60 * 1000;
@@ -162,4 +163,46 @@ export async function notifyNewComment(db, submission, coachName, { now = Date.n
   }
   db.persist();
   return 'sent';
+}
+
+/**
+ * 課後四週微練習（Sprint 38）：第 2、3、4 週開始時各寄一封「本週的小練習」。
+ * 學員自己開啟才會有（user.practice）；結束（stoppedAt）或關閉「評測提醒」就不寄。每週只寄一次（nudgesSent）。
+ * 第 1 週不寄：開啟的當下畫面上就看得到。
+ */
+export async function sendPracticeNudges(db, { now = Date.now(), send = sendMail, configured = isMailConfigured() } = {}) {
+  if (!configured) return { sent: 0, failed: 0 };
+  let sent = 0;
+  let failed = 0;
+  let dirty = false;
+  for (const user of db.data.users ?? []) {
+    const p = user.practice;
+    if (!isPracticeActive(p, now)) continue;
+    const week = practiceWeek(p, now);
+    if (week < 2 || (p.nudgesSent ?? []).includes(week)) continue;
+    p.nudgesSent = [...new Set([...(p.nudgesSent ?? []), ...Array.from({ length: week - 1 }, (_, i) => i + 2)])].filter((w) => w <= week);
+    dirty = true;
+    if (!wants(user, 'notifyAssessment') || user.deletionRequestedAt) continue;
+    const task = p.tasks?.[week - 1] ?? '';
+    const result = await send({
+      to: user.email,
+      subject: `第 ${week} 週微練習（共 ${PRACTICE_WEEKS} 週）：${truncate(task, 24)}`,
+      text: [
+        `${user.name || '您'} 您好：`,
+        '',
+        `這是你在 ${formatTaipeiDate(p.startedAt)} 開始的四週微練習${p.dimensionName ? `（${p.dimensionName}）` : ''}，本週是第 ${week} 週。`,
+        `本週的小練習：${task}`,
+        '大約 5 分鐘就好。做完到平台勾一下，沒做也沒關係，下週還有一次機會。',
+        '',
+        `前往勾選：${appBaseUrl()}/learning`,
+        '',
+        '（想停止微練習：到「我的學習」按「結束微練習」。）',
+        footer('評測提醒'),
+      ].join('\n'),
+    });
+    if (result.ok) sent += 1;
+    else { failed += 1; p.nudgesSent = p.nudgesSent.filter((w) => w !== week); }
+  }
+  if (dirty) db.persist();
+  return { sent, failed };
 }

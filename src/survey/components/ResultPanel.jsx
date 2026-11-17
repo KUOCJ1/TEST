@@ -3,6 +3,8 @@ import { Lightbulb, Target, Copy, Check, RotateCcw } from 'lucide-react';
 import RadarChart from './RadarChart';
 import NarrativeReport from './NarrativeReport';
 import FirstActionCard from './FirstActionCard';
+import OneMinuteSummary from './OneMinuteSummary';
+import PracticePanel from './PracticePanel';
 import LearningResources from './LearningResources';
 import { getAssessment } from '../data/assessments/index.js';
 import { buildSuggestions } from '../utils/suggestions';
@@ -114,7 +116,6 @@ const ResultPanel = forwardRef(function ResultPanel(
         )}
       </div>
 
-      {!readOnly && !profileMode && <FirstActionCard result={result} />}
 
       {sections.length > 1 && (
         <nav
@@ -132,6 +133,11 @@ const ResultPanel = forwardRef(function ResultPanel(
           ))}
         </nav>
       )}
+
+      {/* 章節導覽放在主視覺正下方（會黏在頁首下）；一分鐘版與行動卡片接在後面。 */}
+      <OneMinuteSummary result={result} config={config} nextHint={!readOnly && !profileMode} />
+      {!readOnly && !profileMode && <FirstActionCard result={result} />}
+      {!readOnly && !profileMode && <PracticePanel offerFrom={result} compact />}
 
       <div className="px-5 py-6 sm:px-7">
         {GUIDES[result.assessmentId] && (

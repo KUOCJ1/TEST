@@ -57,3 +57,14 @@
 1. 「更多功能」會稀釋「看清落點，走好下一步」的主軸；Sprint 33 的原則是**收斂**（一張卡一件事），不是再加入口。
 2. 課堂模式若被拿去投影含少數人的班級，仍可能被推回個人；門檻與提示文字要寫清楚。
 3. 沒有真機：觸控、鍵盤彈出、iOS Safari 捲動仍需產品負責人實測（清單見 `docs/MOBILE_APP_PLAN.md`）。
+
+## Sprint 36–39（2026-11-17，產品負責人指定：主管門檻、報告一分鐘版、四週微練習、自助下載／刪除）
+
+| Sprint | 內容 | 決定 |
+|---|---|---|
+| 36 | 360° 匿名門檻擴及主管、防相減還原、合計 < 3 不顯示；檢視日台灣時區 e2e | 主管也套用 3 位 |
+| 37 | 報告一分鐘版（`utils/oneMinute.js`、`OneMinuteSummary.jsx`） | 不重複落點名稱；差距 < 0.3 不挑弱項 |
+| 38 | 四週微練習（`routes/practice.js`、`PracticePanel.jsx`、`sendPracticeNudges`） | 學員自己開啟；存在 `user.practice`；第 2–4 週寄信 |
+| 39 | 下載我的資料、刪除帳號（`lib/accountDeletion.js`、`routes/me.js`、`DeletionPendingGate`） | 7 天反悔期；他評去識別化保留；政策升版 `2026-11-17.1` |
+
+刪除的作法是「暫存移出」：申請時把本人資料從集合搬到 `user.deletionHold`，所有班級報告與統計自然不含；取消原封搬回；到期丟掉。等待期間 `requireAuth` 只放行帳號、下載、取消（其餘 423）。

@@ -50,6 +50,8 @@ export function publicUser(user) {
     // 隱私權政策同意紀錄（Sprint 12）：沒有＝還沒同意過，登入後前端會先要求同意。
     consent: user.consent ? { version: user.consent.version, acceptedAt: user.consent.acceptedAt } : null,
     // 領導力羅盤：是否同意讓「上級」的評分顯示在自己的報告中（沒有紀錄＝未同意）。
+    // 自助刪除帳號（Sprint 39）：已申請時是排定刪除的時間，前端據此顯示「可取消」的畫面。
+    deletionScheduledFor: user.deletionScheduledFor ?? null,
     compassManagerShare: user.compassManagerShare ? { granted: Boolean(user.compassManagerShare.granted), at: user.compassManagerShare.at } : null,
   };
 }

@@ -52,11 +52,11 @@ describe('政策內容與實際行為一致（關鍵揭露都在）', () => {
 
   it('領導力羅盤與接班準備度評測（2026-10-18 改版）：揭露新增的資料與可見對象', () => {
     const t = textOf(PRIVACY_SECTIONS);
-    for (const k of ['職涯意向資料', '去留想法', '上級評分顯示同意', '同一類評分者達 3 位', '須由你同意', '稽核紀錄', '教練只看到彙整結果', '不是人才評分']) expect(t).toContain(k);
+    for (const k of ['職涯意向資料', '去留想法', '上級評分顯示同意', '同一類達 3 位', '須由你同意', '稽核紀錄', '教練只看到彙整結果', '不是人才評分']) expect(t).toContain(k);
     const terms = textOf(TERMS_SECTIONS);
     expect(terms).toContain('領導力羅盤');
     expect(terms).toContain('接班準備度評測');
-    expect(POLICY_VERSION).toBe('2026-11-14.1');
+    expect(POLICY_VERSION).toBe('2026-11-17.1');
   });
 
   it('隱私權政策揭露第三方（OpenRouter、第二大腦、SMTP）與傳送內容，且不送姓名與 Email', () => {
@@ -71,11 +71,17 @@ describe('政策內容與實際行為一致（關鍵揭露都在）', () => {
     expect(t).toContain('邀請紀錄');
   });
 
-  it('如實說明保存與刪除：沒有自助刪除／匯出、沒有自動清除期限、備份輪替', () => {
+  it('如實說明保存與刪除：自助下載與刪除（7 天可取消、他評去識別化）、沒有自動清除期限、備份輪替', () => {
     const t = textOf(PRIVACY_SECTIONS);
     expect(t).toContain('尚未設定自動清除期限');
-    expect(t).toContain('沒有「自助刪除帳號」');
+    for (const k of ['自助下載', '自助刪除帳號', '7 天內', '去識別化保留', '不再保留你的 Email', '教練與管理者的帳號']) expect(t).toContain(k);
+    expect(t).not.toContain('沒有「自助刪除帳號」');
     expect(t).toContain('備份');
+  });
+
+  it('360° 匿名門檻：各類（含主管）達 3 位才單獨顯示、合計不足 3 位不顯示；微練習信只在開啟後寄', () => {
+    const t = textOf(PRIVACY_SECTIONS);
+    for (const k of ['各類評分者（主管、同儕、部屬）同一類達 3 位才單獨顯示', '他評合計不足 3 位則整份他評都不顯示', '四週微練習']) expect(t).toContain(k);
   });
 
   it('提到瀏覽器儲存、登入 cookie、不使用廣告或第三方追蹤', () => {
