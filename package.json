@@ -14,6 +14,7 @@
     "generate-manual": "node scripts/generate-manual-pdf.js",
     "manual:screenshots": "playwright test -c playwright.screenshots.config.js",
     "audit:mobile": "playwright test -c playwright.mobile-audit.config.js",
+    "audit:journey": "playwright test -c playwright.journey.config.js",
     "audit:desktop": "AUDIT_DESKTOP=1 AUDIT_OUT=desktop-audit-out playwright test -c playwright.mobile-audit.config.js"
   },
   "dependencies": {
