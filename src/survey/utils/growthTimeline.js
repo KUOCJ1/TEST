@@ -41,3 +41,27 @@ export function buildGrowthEvents({ goals = [], practice = null, sessions = [], 
 
   return ev.sort((a, b) => ts(b.at) - ts(a.at));
 }
+
+const KIND_LABEL = {
+  'action-done': (n) => `完成 ${n} 個行動`,
+  checkin: (n) => `寫了 ${n} 則追蹤紀錄`,
+  'practice-week': (n) => `做完 ${n} 週微練習`,
+  session: (n) => `參加 ${n} 場教練會談`,
+  reflection: (n) => `寫了 ${n} 份會後反思`,
+  'goal-achieved': (n) => `達成 ${n} 個目標`,
+};
+
+/**
+ * 複測前「回頭看這段時間」（Sprint 43）：統計 sinceAt 之後的事件。沒有任何事件時回傳 total 0，
+ * 讓畫面用鼓勵語氣而不是責備。純函式。
+ * @returns {{total:number, parts:string[], latest: {title:string, detail?:string}|null}}
+ */
+export function summarizeSince(events = [], sinceAt = null) {
+  const from = sinceAt ? ts(sinceAt) : null;
+  const inRange = events.filter((e) => from === null || ts(e.at) > from);
+  const counts = {};
+  for (const e of inRange) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
+  const parts = Object.keys(KIND_LABEL).filter((k) => counts[k]).map((k) => KIND_LABEL[k](counts[k]));
+  const meaningful = inRange.filter((e) => KIND_LABEL[e.kind]);
+  return { total: meaningful.length, parts, latest: meaningful[0] ? { title: meaningful[0].title, detail: meaningful[0].detail } : null };
+}

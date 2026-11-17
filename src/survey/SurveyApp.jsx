@@ -1,3 +1,4 @@
+import SinceLastCard from './components/SinceLastCard';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -288,6 +289,8 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
             <span className="ml-1 text-brass-600">{config.RATER_PROMPT ?? '的日常行為表現'}</span>
           </div>
         )}
+
+        {!result && (!raterType || raterType === 'self') && <SinceLastCard assessmentId={assessmentId} enabled={phase === 'post'} />}
 
         {autoPhase ? (
           <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 px-4 py-2.5">

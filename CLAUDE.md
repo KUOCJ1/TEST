@@ -160,6 +160,8 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 
 - 成長紀錄時間軸（Sprint 42）：`utils/growthTimeline.js` 把本人的目標／微練習／會談／反思整理成事件，穿插進 `JourneyTimeline`（分析頁）。新增「屬於使用者的活動」想進時間軸要改這支；只放本人資料，不放教練回覆全文與分數。
 
+- 複測前回顧（Sprint 43）：`components/SinceLastCard.jsx` 在 `SurveyApp` 課後複測作答前顯示，資料來自 `summarizeSince`（與時間軸同一套事件）。
+
 ## 課後學習成效問卷（ai-course-post，班級限定）
 
 - 客戶工作坊的課後問卷（韋能《AI 深度整合工作坊》）：滿意度、課前 vs 現在的能力自評、情境檢核、30 天承諾。設計稿 `docs/post-course-survey-design.md`；說明見 `docs/PLATFORM_MANUAL.md` 5.1。
