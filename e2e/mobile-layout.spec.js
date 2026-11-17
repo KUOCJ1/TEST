@@ -143,12 +143,16 @@ test('作答：無底部導覽、捲到第 10 題進度列仍看得到、送出�
   await page.getByRole('button', { name: /送出評測/ }).click();
   await expect(page.getByText('您的總得分')).toBeVisible({ timeout: 15000 });
   await expectNoHorizontalOverflow(page, '結果頁');
-  // 結果頁不再接著整份題目：題目收在「查看我的作答」裡，整頁高度 < 6000px。
+  // 結果頁不再接著整份題目：題目收在「查看我的作答」裡（整份題目接在後面時約 13000px）。
+  // 上限 7000px：2026-11-17 起結果頁多了「一分鐘看懂」與「四週微練習」兩張卡（約 +900px）。
+  // 先等非同步載入的卡片都出現再量，否則量到的是載入中的高度、忽高忽低。
   await expect(page.getByText(/查看我的作答/)).toBeVisible();
   await expect(sets.first()).toBeHidden();
+  await expect(page.getByRole('region', { name: '一分鐘看懂' })).toBeVisible();
+  await expect(page.getByRole('region', { name: '四週微練習' })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole('button', { name: '就做這件事' })).toBeVisible({ timeout: 10000 });
   const height = await page.evaluate(() => document.documentElement.scrollHeight);
-  console.log(`[mobile-layout] 結果頁高度 ${height}px`);
-  expect(height, `結果頁高度 ${height}px 應小於 6000px`).toBeLessThan(6000);
+  expect(height, `結果頁高度 ${height}px 應小於 7000px`).toBeLessThan(7000);
   // 區段跳轉列固定在頁首下方：捲到下面後仍看得到，且沒被頁首蓋住。
   await page.evaluate(() => window.scrollTo(0, 1500));
   const jump = page.getByRole('navigation', { name: '報告章節導覽' });
