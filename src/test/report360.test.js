@@ -17,6 +17,8 @@ describe('build360Report', () => {
   const subs = [
     sub('ratee', 'self', resultOf(4, { communication: 5, execution: 2 })),
     sub('m1', 'manager', resultOf(3, { communication: 3, execution: 4 })),
+    sub('m2', 'manager', resultOf(3, { communication: 3, execution: 4 })),
+    sub('m3', 'manager', resultOf(3, { communication: 3, execution: 4 })),
     sub('s1', 'subordinate', resultOf(4)),
     sub('s2', 'subordinate', resultOf(4)),
     sub('s3', 'subordinate', resultOf(5)),
@@ -28,20 +30,20 @@ describe('build360Report', () => {
     expect(build360Report(subs, null)).toBeNull();
   });
 
-  it('評分者組成：自評 1、主管 1、部屬 3；他評合計平均 = 每位評分者等權重', () => {
+  it('評分者組成：自評 1、主管 3、部屬 3；他評合計平均 = 每位評分者等權重', () => {
     expect(r.hasSelf).toBe(true);
-    expect(r.counts).toEqual({ manager: 1, peer: 0, subordinate: 3 });
-    expect(r.othersCount).toBe(4);
+    expect(r.counts).toEqual({ manager: 3, peer: 0, subordinate: 3 });
+    expect(r.othersCount).toBe(6);
     const comm = r.dimensions.find((d) => d.id === 'communication');
     expect(comm.manager).toBe(3);
     expect(comm.subordinate).toBeCloseTo((4 + 4 + 5) / 3, 5);
-    expect(comm.others).toBeCloseTo((3 + 4 + 4 + 5) / 4, 5);
+    expect(comm.others).toBeCloseTo((3 + 3 + 3 + 4 + 4 + 5) / 6, 5);
     expect(comm.peer).toBeNull();
   });
 
   it('主管、同儕、部屬各自有整體分數與落點，不混在一起', () => {
     expect(Object.keys(r.groupSummaries)).toEqual(['manager', 'subordinate']);
-    expect(r.groupSummaries.manager.count).toBe(1);
+    expect(r.groupSummaries.manager.count).toBe(3);
     expect(r.groupSummaries.subordinate.count).toBe(3);
     expect(r.groupSummaries.manager.total).toBe(217); // 70 題 × 3 分，執行力 7 題給 4 分
     expect(r.groupSummaries.manager.level).toBeTruthy();
@@ -58,9 +60,9 @@ describe('build360Report', () => {
 
   it('差距＝自評 − 他評合計；≥ 0.5 是盲點、≤ −0.5 是被低估的優勢', () => {
     const byId = Object.fromEntries(r.dimensions.map((d) => [d.id, d]));
-    expect(byId.communication.gap).toBeCloseTo(5 - 4, 1);
+    expect(byId.communication.gap).toBeCloseTo(5 - (3 + 3 + 3 + 4 + 4 + 5) / 6, 1);
     expect(byId.communication.kind).toBe('blind');
-    expect(byId.execution.kind).toBe('hidden'); // 自評 2、他評 (4+4+4+5)/4
+    expect(byId.execution.kind).toBe('hidden'); // 自評 2、他評 (4×3+4+4+5)/6
     expect(byId.collaboration.kind).toBe('aligned');
     expect(GAP_THRESHOLD).toBe(0.5);
     expect(r.blind.map((d) => d.id)).toContain('communication');
@@ -69,8 +71,8 @@ describe('build360Report', () => {
 
   it('同一位評分者重複送出只取最新一筆；每個構面有子能力的自評與他評', () => {
     const again = build360Report([...subs, sub('m1', 'manager', resultOf(5, { communication: 5 }))], config);
-    expect(again.counts.manager).toBe(1);
-    expect(again.dimensions.find((d) => d.id === 'communication').manager).toBe(5);
+    expect(again.counts.manager).toBe(3);
+    expect(again.dimensions.find((d) => d.id === 'communication').manager).toBeCloseTo((5 + 3 + 3) / 3, 5);
     const comm = r.dimensions.find((d) => d.id === 'communication');
     expect(comm.subs.map((s) => s.id)).toEqual(['listening', 'processing', 'expressing']);
     expect(comm.subs.every((s) => typeof s.self === 'number' && typeof s.others === 'number')).toBe(true);
@@ -103,7 +105,7 @@ describe('build360Report', () => {
   });
 
   it('只有他評（沒有自評）：以他評為依據，不產生差距', () => {
-    const only = build360Report([sub('m1', 'manager', resultOf(4))], config);
+    const only = build360Report([sub('m1', 'manager', resultOf(4)), sub('m2', 'manager', resultOf(4)), sub('m3', 'manager', resultOf(4))], config);
     expect(only.hasSelf).toBe(false);
     expect(only.basis).toBe('others');
     expect(only.dimensions.every((d) => d.gap === null)).toBe(true);
@@ -119,6 +121,8 @@ describe('build360Report', () => {
     const partial = build360Report([
       sub('ratee', 'self', blank(resultOf(4), ids)),
       sub('m1', 'manager', blank(resultOf(3), ids)),
+      sub('m2', 'manager', blank(resultOf(3), ids)),
+      sub('m3', 'manager', blank(resultOf(3), ids)),
     ], config);
     expect(partial.dimensions.map((d) => d.id)).not.toContain('self-development');
     expect(partial.dimensions.map((d) => d.id)).not.toContain('adaptive-innovation');
@@ -175,7 +179,7 @@ describe('build360Report：子能力排名、評分者群組差距、參考區�
     const mixed = (q) => (lowIds.has(q.id) ? 2 : 5);
     const r2 = report([
       { userId: 'r', raterType: 'self', createdAt: '2026-11-01T00:00:00Z', result: buildResult(Object.fromEntries(cfg.ALL_QUESTIONS.map((q) => [q.id, 4])), cfg) },
-      { userId: 'm', raterType: 'manager', createdAt: '2026-11-01T00:00:00Z', result: buildResult(Object.fromEntries(cfg.ALL_QUESTIONS.map((q) => [q.id, mixed(q)])), cfg) },
+      ...['m1', 'm2', 'm3'].map((u) => ({ userId: u, raterType: 'manager', createdAt: '2026-11-01T00:00:00Z', result: buildResult(Object.fromEntries(cfg.ALL_QUESTIONS.map((q) => [q.id, mixed(q)])), cfg) })),
     ]);
     const vals = r2.subRanking.all.map((s) => s.value);
     expect([...vals].sort((a, b) => b - a)).toEqual(vals);
@@ -191,14 +195,14 @@ describe('build360Report：子能力排名、評分者群組差距、參考區�
   });
   it('評分者群組差距：構面 ≥ 1.0、子能力 ≥ 1.5 才標；各類子能力平均都有', async () => {
     const { cfg, mk, report } = await build();
-    const wide = report([mk('self', 'r', 5), mk('manager', 'm', 3), mk('subordinate', 's1', 4), mk('subordinate', 's2', 4), mk('subordinate', 's3', 4)]);
+    const wide = report([mk('self', 'r', 5), mk('manager', 'm1', 3), mk('manager', 'm2', 3), mk('manager', 'm3', 3), mk('subordinate', 's1', 4), mk('subordinate', 's2', 4), mk('subordinate', 's3', 4)]);
     const d = wide.dimensions[0];
     expect(d.spread).toBe(2);
     expect(d.wideSpread).toBe(true);
     expect(d.subs[0]).toMatchObject({ manager: 3, subordinate: 4, peer: null, self: 5 });
     expect(d.subs[0].spread).toBe(2);
     expect(d.subs[0].wideSpread).toBe(true);
-    const narrow = report([mk('self', 'r', 4), mk('manager', 'm', 3)]);
+    const narrow = report([mk('self', 'r', 4), mk('manager', 'm1', 3), mk('manager', 'm2', 3), mk('manager', 'm3', 3)]);
     expect(narrow.dimensions[0].spread).toBe(1);
     expect(narrow.dimensions[0].wideSpread).toBe(true); // 剛好 1.0 → 標
     expect(narrow.dimensions[0].subs[0].wideSpread).toBe(false); // 1.0 < 1.5
@@ -212,36 +216,69 @@ describe('build360Report：子能力排名、評分者群組差距、參考區�
   });
 });
 
-describe('build360Report：少於 3 位的同儕／部屬不單獨呈現', () => {
-  const mk = (peers, subs2) => build360Report([
+describe('build360Report：匿名門檻（每類至少 3 位，主管也一樣）', () => {
+  const mk = (m, p, sb) => build360Report([
     sub('ratee', 'self', resultOf(4)),
-    sub('m1', 'manager', resultOf(3)),
-    ...Array.from({ length: peers }, (_, i) => sub(`p${i}`, 'peer', resultOf(5 - (i % 2)))),
-    ...Array.from({ length: subs2 }, (_, i) => sub(`s${i}`, 'subordinate', resultOf(2))),
+    ...Array.from({ length: m }, (_, i) => sub(`m${i}`, 'manager', resultOf(3))),
+    ...Array.from({ length: p }, (_, i) => sub(`p${i}`, 'peer', resultOf(5 - (i % 2)))),
+    ...Array.from({ length: sb }, (_, i) => sub(`s${i}`, 'subordinate', resultOf(2))),
   ], config);
 
-  it('門檻是 3；主管 1 位仍單獨呈現', () => {
+  it('門檻是 3；主管 1 位也不單獨呈現', () => {
     expect(MIN_GROUP_SHOWN).toBe(3);
-    const r = mk(1, 3);
-    expect(r.shownTypes).toEqual(['manager', 'subordinate']);
-    expect(r.hiddenTypes).toEqual(['peer']);
+    const r = mk(1, 0, 3); // 主管 1 + 部屬 3
+    // 部屬 3 位若單獨呈現，剩下的合計只有主管 1 位，會被「他評合計 − 部屬」還原 → 部屬也併入合計
+    expect(r.shownTypes).toEqual([]);
+    expect(r.hiddenTypes).toEqual(['manager', 'subordinate']);
+    expect(r.othersCount).toBe(4);
+    expect(r.hasOthers).toBe(true);
   });
 
-  it('不足的類別：各構面與子能力分數是空的、整體摘要沒有，但仍計入他評合計', () => {
-    const r = mk(2, 3);
-    expect(r.groupSummaries.peer).toBeUndefined();
-    expect(r.dimensions.every((d) => d.peer === null && d.subs.every((s) => s.peer === null))).toBe(true);
-    expect(r.counts.peer).toBe(2);
-    // 他評合計＝6 位評分者平均（主管 1 + 同儕 2 + 部屬 3），同儕有被算進去
-    expect(r.othersCount).toBe(6);
-    const without = mk(0, 3);
-    expect(r.othersSummary.total).not.toBe(without.othersSummary.total);
-  });
-
-  it('達到 3 位就單獨呈現', () => {
-    const r = mk(3, 0);
-    expect(r.shownTypes).toContain('peer');
+  it('典型：主管 1、同儕 3、部屬 3 → 只能單獨呈現其中一類（人數相同先併入部屬），另一類與主管併成合計', () => {
+    const r = mk(1, 3, 3);
+    expect(r.shownTypes).toEqual(['peer']);
+    expect(r.hiddenTypes).toEqual(['manager', 'subordinate']);
     expect(r.groupSummaries.peer.count).toBe(3);
-    expect(r.dimensions[0].peer).not.toBeNull();
+    expect(r.dimensions.every((d) => d.manager === null && d.subordinate === null && d.peer !== null)).toBe(true);
+    // 剩下的合計（主管＋部屬）有 4 位 ≥ 3，無法還原到任何一位
+    const rest = r.counts.manager + r.counts.subordinate;
+    expect(rest).toBeGreaterThanOrEqual(3);
+  });
+
+  it('各類都 ≥ 3 且剩下為 0：全部單獨呈現', () => {
+    const r = mk(3, 3, 3);
+    expect(r.shownTypes).toEqual(['manager', 'peer', 'subordinate']);
+    expect(r.hiddenTypes).toEqual([]);
+  });
+
+  it('剩下 1–2 位時，人數最少的已呈現類別併入，直到剩下 ≥ 3 位', () => {
+    const r = mk(0, 4, 3); // 同儕 4、部屬 3、沒有「剩下」 → 都呈現
+    expect(r.shownTypes).toEqual(['peer', 'subordinate']);
+    const r2 = mk(2, 3, 4); // 主管 2 不夠 → 剩下 2；併入最少的同儕(3) → 剩下 5
+    expect(r2.shownTypes).toEqual(['subordinate']);
+    expect(r2.hiddenTypes).toEqual(['manager', 'peer']);
+  });
+
+  it('他評合計不足 3 位：整份他評不顯示，只剩自評；人數照實回報', () => {
+    for (const [m, p, sb] of [[1, 0, 0], [1, 1, 0], [0, 2, 0]]) {
+      const r = mk(m, p, sb);
+      expect(r.othersSuppressed).toBe(true);
+      expect(r.hasOthers).toBe(false);
+      expect(r.othersCount).toBe(0);
+      expect(r.othersSummary).toBeNull();
+      expect(r.shownTypes).toEqual([]);
+      expect(r.counts.manager + r.counts.peer + r.counts.subordinate).toBe(m + p + sb);
+      expect(r.dimensions.every((d) => d.others === null && d.manager === null && d.peer === null)).toBe(true);
+      expect(r.blind).toEqual([]);
+    }
+    expect(mk(0, 0, 0).othersSuppressed).toBe(false); // 沒有他評不是「被隱藏」
+    expect(mk(1, 1, 1).othersSuppressed).toBe(false); // 剛好 3 位合計可顯示（各類不單獨列）
+    expect(mk(1, 1, 1).hasOthers).toBe(true);
+  });
+
+  it('不足的類別仍計入他評合計', () => {
+    const withPeers = mk(3, 3, 3);
+    const lessPeers = mk(3, 0, 3);
+    expect(withPeers.othersSummary.total).not.toBe(lessPeers.othersSummary.total);
   });
 });

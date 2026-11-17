@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../api/client';
 import { getAssessment } from '../data/assessments/index.js';
-import { build360Report, MIN_GROUP_SHOWN } from '../utils/report360.js';
+import { build360Report, MIN_GROUP_SHOWN, MIN_OTHERS_SHOWN } from '../utils/report360.js';
 import { RATER_LABELS } from '../constants/raterTypes';
 import { formatDate } from '../utils/format';
 import RadarChart from './RadarChart';
@@ -80,11 +80,16 @@ function Cover({ r, name, date }) {
         <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.7 }}>
           評分者組成：{r.hasSelf ? '自評 1 份' : '無自評'}
           {['manager', 'peer', 'subordinate'].filter((t) => r.counts[t]).map((t) => `、${RATER_LABELS[t]} ${r.counts[t]} 位`).join('')}
-          {!r.hasOthers && '（尚無他評）'}
+          {!r.hasOthers && !r.othersSuppressed && '（尚無他評）'}
         </div>
-        {r.hiddenTypes?.length > 0 && (
+        {r.othersSuppressed && (
           <div style={{ fontSize: 10, color: '#64748b', marginTop: 6, lineHeight: 1.6 }}>
-            {r.hiddenTypes.map((t) => RATER_LABELS[t]).join('、')}少於 {MIN_GROUP_SHOWN} 位，為保護評分者匿名，不單獨呈現，只併入「他評合計」。
+            他評共 {r.counts.manager + r.counts.peer + r.counts.subordinate} 位，少於 {MIN_OTHERS_SHOWN} 位，為保護評分者匿名，暫不顯示他評結果；補齊後會自動出現。
+          </div>
+        )}
+        {!r.othersSuppressed && r.hiddenTypes?.length > 0 && (
+          <div style={{ fontSize: 10, color: '#64748b', marginTop: 6, lineHeight: 1.6 }}>
+            {r.hiddenTypes.map((t) => RATER_LABELS[t]).join('、')}不單獨呈現（每類至少 {MIN_GROUP_SHOWN} 位，且不能讓剩下的合計少於 {MIN_GROUP_SHOWN} 位），只併入「他評合計」。
           </div>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { MIN_GROUP_SHOWN } from '../utils/report360.js';
+import { MIN_GROUP_SHOWN, MIN_OTHERS_SHOWN } from '../utils/report360.js';
 import { GROUPS } from './threesixty/groups.js';
 import RadarChart from './RadarChart';
 import ResultPanel from './ResultPanel';
@@ -237,7 +237,8 @@ export function ThreeSixtyReadView({ report: r, name, date }) {
         ))}
       </div>
       <p className="mt-2 text-xs text-slate-500">評分者：{r.hasSelf ? '自評 1 份' : '無自評'}{counts.map((c) => `、${c}`).join('')}</p>
-      {r.hiddenTypes?.length > 0 && <p className="mt-1 text-xs text-slate-500">{r.hiddenTypes.map((t) => RATER_LABELS[t]).join('、')}少於 {MIN_GROUP_SHOWN} 位，為保護評分者匿名，不單獨呈現，只併入「他評合計」。</p>}
+      {r.othersSuppressed && <p className="mt-1 text-xs text-slate-500">他評共 {r.counts.manager + r.counts.peer + r.counts.subordinate} 位，少於 {MIN_OTHERS_SHOWN} 位，為保護評分者匿名，暫不顯示他評結果；補齊後會自動出現。</p>}
+      {!r.othersSuppressed && r.hiddenTypes?.length > 0 && <p className="mt-1 text-xs text-slate-500">{r.hiddenTypes.map((t) => RATER_LABELS[t]).join('、')}不單獨呈現（每類至少 {MIN_GROUP_SHOWN} 位，且不能讓剩下的合計少於 {MIN_GROUP_SHOWN} 位），只併入「他評合計」。</p>}
 
       {r.summaryText && <p className="mt-5 text-sm leading-relaxed text-slate-700">{r.summaryText}</p>}
 

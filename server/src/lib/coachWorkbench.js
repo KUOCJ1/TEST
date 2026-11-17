@@ -40,7 +40,7 @@ export function workbenchForGroup(db, group, coachId) {
       }
       const by = { peer: 0, subordinate: 0, total: latest.size };
       for (const s of latest.values()) if (by[s.raterType] !== undefined) by[s.raterType] += 1;
-      if (by.total === 0 || (by.peer > 0 && by.peer < GROUP_MIN) || (by.subordinate > 0 && by.subordinate < GROUP_MIN)) ratersLow += 1;
+      if (by.total < GROUP_MIN || (by.peer > 0 && by.peer < GROUP_MIN) || (by.subordinate > 0 && by.subordinate < GROUP_MIN)) ratersLow += 1;
     }
   }
 

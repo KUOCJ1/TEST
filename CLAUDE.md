@@ -148,8 +148,9 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 
 ## 360° 匿名門檻、課堂模式、入口連結檢查（Sprint 30–35）
 
-- 360° 報告同儕／部屬少於 `MIN_GROUP_SHOWN`（3）位不單獨呈現分數，只併入「他評合計」（`utils/report360.js` 的 `shownTypes`／`hiddenTypes`；A4 與手機閱讀版都用它）；主管不套用。改報告畫面時用 `r.shownTypes`，不要自己用 `r.counts[t] > 0` 判斷。
+- 360° 報告同儕／部屬少於 `MIN_GROUP_SHOWN`（3）位不單獨呈現分數，只併入「他評合計」（`utils/report360.js` 的 `shownTypes`／`hiddenTypes`；A4 與手機閱讀版都用它）；改報告畫面時用 `r.shownTypes`，不要自己用 `r.counts[t] > 0` 判斷。
 - 教練「課堂模式」（`coach/ClassroomMode.jsx`、`utils/classroom.js`）：只有班級彙總，少於 3 位完成不給數字；不得加入姓名或個人分數。
+- 他評匿名門檻（Sprint 36）：`planVisibility`——每類（含主管）≥3 位才單獨呈現；剩下的合計 1–2 位時把人數最少的已呈現類別併入；他評合計 < 3 位整份不顯示（`othersSuppressed`）。教練端 `coverage360.js`／`coachWorkbench.js` 的「他評不足」同步（合計 < 3 或同儕/部屬 1–2 位）。
 - 日期輸入一律用 `utils/format.js` 的 `toDateInputValue`（當地日期）；不要用 `toISOString().slice(0, 10)`（台灣會少一天）。
 - 走查：`npm run audit:mobile`（390 寬）、`npm run audit:desktop`（1280 寬），輸出 `mobile-audit-out/`、`desktop-audit-out/`（不進版控）；**要逐屏看截圖**，數字全綠不代表好用。新增入口（信件連結、導覽）要補 `e2e/entry-links.spec.js`。
 - 計畫：`docs/IMPROVEMENT_PLAN_2026-11-C.md`。

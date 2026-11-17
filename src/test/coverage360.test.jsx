@@ -20,6 +20,12 @@ describe('360° 他評收齊清單', () => {
     expect(GROUP_MIN).toBe(3);
   });
 
+  it('buildCoverage：他評合計不足 3 位標 short（報告暫不顯示他評）', () => {
+    const c = buildCoverage([row('甲', { manager: 1, peer: 1, subordinate: 0 }), row('乙', { manager: 1, peer: 1, subordinate: 1 })]);
+    expect(c[0]).toMatchObject({ short: true, total: 2 });
+    expect(c[1]).toMatchObject({ short: false, total: 3 });
+  });
+
   it('面板只有人數與狀態、不含評分者姓名；提醒呼叫 API 並顯示寄出人數', async () => {
     api.remindGroupRaters.mockResolvedValue({ sent: 4 });
     const toast = vi.fn();

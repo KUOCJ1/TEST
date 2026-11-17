@@ -13,16 +13,26 @@ describe('360° 報告新版面：目錄、評分者群組橫條、子能力排�
   beforeEach(() => { portal = document.createElement('div'); portal.id = 'report-portal'; document.body.appendChild(portal); });
   afterEach(() => { portal.remove(); vi.restoreAllMocks(); });
 
-  it('同儕／部屬少於 3 位：不單獨畫橫條，封面說明併入他評合計', async () => {
-    vi.spyOn(api, 'rateeSubmissions').mockResolvedValue([sub('self', 'r', 5), sub('manager', 'm', 3), sub('peer', 'p1', 4)]);
+  it('各類少於 3 位：不單獨畫橫條，封面說明併入他評合計（主管也一樣）', async () => {
+    vi.spyOn(api, 'rateeSubmissions').mockResolvedValue([sub('self', 'r', 5), sub('manager', 'm', 3), sub('peer', 'p1', 4), sub('peer', 'p2', 4), sub('peer', 'p3', 4), sub('subordinate', 's1', 2), sub('subordinate', 's2', 2), sub('subordinate', 's3', 2)]);
     render(<ThreeSixtyReport rateeId="r" rateeName="受評者" assessmentId="leadership-360-70" onClose={() => {}} />);
     await waitFor(() => expect(screen.getByText('報告目錄與閱讀指引')).toBeInTheDocument());
-    expect(portal.querySelectorAll('#chart-dim-groups [aria-label*="同儕"]')).toHaveLength(0);
-    expect(portal.textContent).toContain('同儕少於 3 位，為保護評分者匿名，不單獨呈現，只併入「他評合計」');
+    expect(portal.querySelectorAll('#chart-dim-groups [aria-label*="主管"]')).toHaveLength(0);
+    expect(portal.querySelectorAll('#chart-dim-groups [aria-label*="同儕"]').length).toBe(8);
+    expect(portal.querySelectorAll('#chart-dim-groups [aria-label*="部屬"]')).toHaveLength(0); // 部屬同樣 3 位：留同儕、部屬併入合計，避免剩下的合計只有主管 1 位
+    expect(portal.textContent).toContain('主管、部屬不單獨呈現');
+  });
+
+  it('他評合計不足 3 位：只有自評，封面說明暫不顯示他評結果', async () => {
+    vi.spyOn(api, 'rateeSubmissions').mockResolvedValue([sub('self', 'r', 5), sub('manager', 'm', 3)]);
+    render(<ThreeSixtyReport rateeId="r" rateeName="受評者" assessmentId="leadership-360-70" onClose={() => {}} />);
+    await waitFor(() => expect(screen.getByText('報告目錄與閱讀指引')).toBeInTheDocument());
+    expect(portal.textContent).toContain('他評共 1 位，少於 3 位，為保護評分者匿名，暫不顯示他評結果');
+    expect(portal.querySelectorAll('#chart-dim-groups [aria-label*="主管"]')).toHaveLength(0);
   });
 
   it('依序出現：目錄、評量項目與定義、評估方式、…、子能力排名；群組橫條只畫有人評分的群組', async () => {
-    vi.spyOn(api, 'rateeSubmissions').mockResolvedValue([sub('self', 'r', 5), sub('manager', 'm', 3), sub('subordinate', 's1', 4), sub('subordinate', 's2', 4), sub('subordinate', 's3', 4)]);
+    vi.spyOn(api, 'rateeSubmissions').mockResolvedValue([sub('self', 'r', 5), sub('manager', 'm1', 3), sub('manager', 'm2', 3), sub('manager', 'm3', 3), sub('subordinate', 's1', 4), sub('subordinate', 's2', 4), sub('subordinate', 's3', 4)]);
     render(<ThreeSixtyReport rateeId="r" rateeName="受評者" assessmentId="leadership-360-70" onClose={() => {}} />);
     await waitFor(() => expect(screen.getByText('報告目錄與閱讀指引')).toBeInTheDocument());
     const text = portal.textContent;

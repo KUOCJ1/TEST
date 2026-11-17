@@ -154,7 +154,7 @@ export default function GoalItem({ goal, onChange, onDelete, dimensions }) {
               {goal.reviewDate && (
                 <button
                   type="button"
-                  onClick={() => { const ics = buildGoalIcs(goal, { appUrl: window.location.origin }); if (ics) downloadIcs(ics, `目標檢視日-${toDateInput(goal.reviewDate)}.ics`); }}
+                  onClick={() => { const ics = buildGoalIcs(goal, { appUrl: window.location.origin }); if (ics) downloadIcs(ics, `goal-review-${toDateInput(goal.reviewDate)}.ics`); }}
                   className="inline-flex items-center gap-1 font-semibold text-slate-500 hover:text-brass-600"
                 >
                   <CalendarPlus className="h-3.5 w-3.5" /> 加入行事曆

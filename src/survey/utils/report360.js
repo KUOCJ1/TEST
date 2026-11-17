@@ -17,10 +17,26 @@ export const REF_BAND = { min: 3.5, max: 4.5 };
 export const GROUP_GAP_DIM = 1.0;
 export const GROUP_GAP_SUB = 1.5;
 const OTHER_TYPES = ['manager', 'peer', 'subordinate'];
-// 同儕／部屬要至少這麼多位，才單獨呈現該類的分數；不足的只併入「他評合計」，避免個別評分者被認出。
-// 主管通常只有 1 位、角色本身就是公開的，不套用這條（教練端的覆蓋率面板會提醒補齊同儕／部屬）。
+// 匿名門檻（所有評分者類別一視同仁，主管也一樣）：
+// 1. 單獨呈現某一類（主管／同儕／部屬）的分數，該類至少要有 MIN_GROUP_SHOWN 位；
+// 2. 剩下「不單獨呈現」的評分者合計若只有 1–2 位，會被「他評合計減掉各類分數」還原出來，
+//    所以要把人數最少的已呈現類別也併進去，直到剩下的合計有 3 位以上（或沒有）；
+// 3. 全部他評合計少於 MIN_OTHERS_SHOWN 位時，整份他評都不顯示（只剩自評），避免把 1–2 位的評分看成「他評平均」。
+// 與領導力羅盤的規則一致（server/src/lib/compassPrivacy.js）。
 export const MIN_GROUP_SHOWN = 3;
-export const isGroupShown = (type, n) => n > 0 && (type === 'manager' || n >= MIN_GROUP_SHOWN);
+export const MIN_OTHERS_SHOWN = 3;
+export function planVisibility(counts) {
+  const total = OTHER_TYPES.reduce((n, t) => n + (counts[t] ?? 0), 0);
+  if (total < MIN_OTHERS_SHOWN) return { shownTypes: [], hiddenTypes: OTHER_TYPES.filter((t) => counts[t] > 0), othersSuppressed: total > 0 };
+  let shown = OTHER_TYPES.filter((t) => counts[t] >= MIN_GROUP_SHOWN);
+  const remainder = () => total - shown.reduce((n, t) => n + counts[t], 0);
+  while (shown.length > 0 && remainder() > 0 && remainder() < MIN_OTHERS_SHOWN) {
+    // 人數最少的先併入合計；同樣多時，部屬 → 同儕 → 主管的順序先併入（保留較能代表團隊的類別）。
+    const drop = [...shown].sort((x, y) => counts[x] - counts[y] || OTHER_TYPES.indexOf(y) - OTHER_TYPES.indexOf(x))[0];
+    shown = shown.filter((t) => t !== drop);
+  }
+  return { shownTypes: shown, hiddenTypes: OTHER_TYPES.filter((t) => counts[t] > 0 && !shown.includes(t)), othersSuppressed: false };
+}
 const round2 = (n) => Math.round(n * 100) / 100;
 const mean = (xs) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
 
@@ -105,14 +121,15 @@ export function build360Report(submissions, config) {
 
   const selfSub = subs.filter((s) => (s.raterType ?? 'self') === 'self')
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ?? null;
-  const otherSubs = latestPerRater(subs.filter((s) => OTHER_TYPES.includes(s.raterType)));
+  const allOtherSubs = latestPerRater(subs.filter((s) => OTHER_TYPES.includes(s.raterType)));
 
-  const counts = Object.fromEntries(OTHER_TYPES.map((t) => [t, otherSubs.filter((s) => s.raterType === t).length]));
+  const counts = Object.fromEntries(OTHER_TYPES.map((t) => [t, allOtherSubs.filter((s) => s.raterType === t).length]));
+  const { shownTypes, hiddenTypes, othersSuppressed } = planVisibility(counts);
+  // 他評不足門檻時，整份報告當作沒有他評來算（counts 仍照實回報人數，給「評分者組成」用）。
+  const otherSubs = othersSuppressed ? [] : allOtherSubs;
   const othersCount = otherSubs.length;
 
   const selfDims = selfSub ? averageDimensions([selfSub.result]) : new Map();
-  const shownTypes = OTHER_TYPES.filter((t) => isGroupShown(t, counts[t]));
-  const hiddenTypes = OTHER_TYPES.filter((t) => counts[t] > 0 && !shownTypes.includes(t));
   // 不單獨呈現的類別：不算各類平均（欄位留空），但仍計入「他評合計」。
   const typeDims = Object.fromEntries(OTHER_TYPES.map((t) => [t, shownTypes.includes(t) ? averageDimensions(otherSubs.filter((s) => s.raterType === t).map((s) => s.result)) : new Map()]));
   const othersDims = averageDimensions(otherSubs.map((s) => s.result));
@@ -192,6 +209,7 @@ export function build360Report(submissions, config) {
     counts,
     shownTypes,
     hiddenTypes,
+    othersSuppressed,
     othersCount,
     self: selfSub ? { total: selfTotal, level: selfSub.result.level, createdAt: selfSub.createdAt } : null,
     // 主管／同儕／部屬各自的整體分數與落點（不混在一起）；沒有該類評分者的不列。

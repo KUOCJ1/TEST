@@ -68,6 +68,8 @@ describe('360° 報告帶出構面說明與落差提示', () => {
     const report = build360Report([
       sub(answersWith(C70, () => 4)),
       sub(ans, { userId: 'm1', raterType: 'manager' }),
+      sub(ans, { userId: 'm2', raterType: 'manager' }),
+      sub(ans, { userId: 'm3', raterType: 'manager' }),
     ], C70);
     expect(report.insights.map((i) => i.id)).toEqual(['execution-over-task-management']);
     expect(report.dimTexts['task-management']).toBe(C70.DIMENSION_COMMENTARY['task-management'].low);

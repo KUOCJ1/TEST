@@ -2,12 +2,16 @@ import { useState, useId } from 'react';
 import PhaseBadge from './PhaseBadge';
 import { useToast } from './useToast';
 import { api } from '../api/client';
+import { toDateInputValue } from '../utils/format';
+
+// 教練輸入的是純日期（YYYY-MM-DD，原樣回填）；系統自動帶入的開課日是含時間的 ISO，要換成當地日期（台灣不能直接切 UTC 前 10 碼）。
+const dateInput = (v) => (!v ? '' : /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : toDateInputValue(v));
 
 export default function GroupTimelineCard({ group, onUpdated, showHeader = false }) {
   // 管理後台一頁會有好幾張這個卡片，標籤與欄位的關聯 id 必須唯一。
   const idBase = useId();
-  const [startDate, setStartDate] = useState(group.startDate ? group.startDate.slice(0, 10) : '');
-  const [endDate, setEndDate] = useState(group.endDate ? group.endDate.slice(0, 10) : '');
+  const [startDate, setStartDate] = useState(dateInput(group.startDate));
+  const [endDate, setEndDate] = useState(dateInput(group.endDate));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const showToast = useToast();

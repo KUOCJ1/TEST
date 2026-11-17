@@ -51,6 +51,7 @@ export default function ThreeSixtyCoveragePanel({ group, memberRows, mailConfigu
                 {COVERAGE_TYPES.map(([id]) => <td key={id} className="py-2 pr-3 text-slate-600">{r.counts[id]}</td>)}
                 <td className="py-2 text-xs font-semibold">
                   {r.none ? <span className="text-red-600">尚無他評</span>
+                    : r.short ? <span className="text-amber-700">他評共 {r.total} 位，未達 {GROUP_MIN} 位（報告暫不顯示他評）</span>
                     : r.low.length > 0 ? <span className="text-amber-700">{r.low.map((t) => (t === 'peer' ? '同儕' : '部屬')).join('、')}未達 {GROUP_MIN} 位</span>
                       : <span className="text-emerald-700">已收齊</span>}
                 </td>
