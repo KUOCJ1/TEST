@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { buildGrowthEvents } from '../survey/utils/growthTimeline';
 import JourneyTimeline from '../survey/components/JourneyTimeline';
 
@@ -48,5 +48,13 @@ describe('JourneyTimeline 穿插成長事件', () => {
     render(<JourneyTimeline narrative="" submissions={subs} onSelect={() => {}} />);
     expect(screen.getByText('我的歷程')).toBeInTheDocument();
     expect(screen.queryByTestId('growth-event')).toBeNull();
+  });
+  it('事件超過 8 筆先收合，按鈕可展開，作答節點不受影響', () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({ id: `e${i}`, at: `2026-05-${String(i + 10).padStart(2, '0')}T00:00:00Z`, kind: 'checkin', title: `事件${i}` }));
+    render(<JourneyTimeline narrative="" submissions={subs} events={many} onSelect={() => {}} />);
+    expect(screen.getAllByTestId('growth-event')).toHaveLength(8);
+    expect(screen.getByText('100')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /顯示更早的 4 筆紀錄/ }));
+    expect(screen.getAllByTestId('growth-event')).toHaveLength(12);
   });
 });

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { formatDate } from '../utils/format';
 import { badgeBg } from '../utils/color';
 import { badgeText } from '../utils/levelBadge';
@@ -8,12 +9,16 @@ import { badgeText } from '../utils/levelBadge';
  * 不只是一張表，而是看得出走向的故事。
  */
 export default function JourneyTimeline({ narrative, submissions, onSelect, profileMode = false, events = [] }) {
+  const [showAll, setShowAll] = useState(false);
   if (!submissions?.length) return null;
+  const EVENT_LIMIT = 8; // 事件很多時先只看最近 8 筆，作答節點一律全部顯示
+  const hiddenCount = showAll ? 0 : Math.max(0, events.length - EVENT_LIMIT);
+  const shownEvents = showAll ? events : events.slice(0, EVENT_LIMIT);
 
   // 作答節點與成長事件（目標、練習、會談、反思）依時間穿插，新到舊。delta 仍以作答陣列的相鄰兩筆計算。
   const nodes = [
     ...submissions.map((s, i) => ({ type: 'sub', s, i, at: new Date(s.createdAt).getTime() })),
-    ...events.map((e) => ({ type: 'ev', e, at: new Date(e.at).getTime() })),
+    ...shownEvents.map((e) => ({ type: 'ev', e, at: new Date(e.at).getTime() })),
   ].sort((a, b) => b.at - a.at);
 
   return (
@@ -102,6 +107,11 @@ export default function JourneyTimeline({ narrative, submissions, onSelect, prof
           })}
         </ol>
       </div>
+      {hiddenCount > 0 && (
+        <button type="button" onClick={() => setShowAll(true)} className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-slate-50">
+          顯示更早的 {hiddenCount} 筆紀錄
+        </button>
+      )}
     </section>
   );
 }

@@ -151,6 +151,15 @@ test('學員成長旅程', async ({ browser }) => {
     await p.goto('/analysis');
     await p.waitForTimeout(1500);
     await shot(p, 'analysis-top', '我的分析第一屏');
+    const tl = p.getByRole('heading', { name: /我的成長紀錄|我的歷程/ });
+    await tl.scrollIntoViewIfNeeded().catch(() => {});
+    await shot(p, 'analysis-timeline', '成長紀錄時間軸（作答、目標、練習、反思穿插）');
+  });
+
+  await step('retest-intro', async () => {
+    await p.goto('/survey/leadership-9d');
+    await p.waitForTimeout(1500);
+    await shot(p, 'retest-intro', '課後複測作答前：回頭看這段時間');
   });
 
   await ctx.close();
