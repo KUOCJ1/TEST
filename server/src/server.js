@@ -57,6 +57,7 @@ const app = createApp({
   secureCookies: process.env.NODE_ENV === 'production',
   trustProxy: TRUST_PROXY,
   staticDir: process.env.STATIC_DIR || '',
+  cspMode: process.env.CSP_MODE || 'report-only',
 });
 
 // 自助刪除帳號（Sprint 39）：7 天等待期到了就永久刪除。跟寄信無關，啟動時與每小時各檢查一次。

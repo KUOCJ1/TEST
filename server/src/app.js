@@ -21,6 +21,8 @@ import { createReadingListRouter } from './routes/readingList.js';
 import { deepHealthCheck } from './lib/health.js';
 import { getBuildInfo } from './lib/buildInfo.js';
 
+const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'";
+
 export {
   sanitizeFocusDimensionIds,
   sanitizeTargetHeadcount,
@@ -30,10 +32,12 @@ export {
 /**
  * 建立 Express app（不啟動監聽），方便測試直接以 supertest 注入。
  * @param {{db, jwtSecret:string, secureCookies?:boolean, trustProxy?:number, staticDir?:string}} opts
+ * cspMode：只在 staticDir 模式有作用（VPS 正式站的標頭由 Nginx 加）。'report-only'（預設，只回報不擋）、
+ *   'enforce'（正式啟用）、'off'。政策與 deploy/nginx/ai-assessment-behind-traefik.conf 相同。
  * staticDir：選填。有設定（且資料夾存在）時，由這支 Node 程式一併提供前端靜態檔與 SPA 回退，
  * 給「只能跑單一 Node.js 應用」的主機（如 Hostinger Node.js 託管）用；VPS 正式站由 Nginx 提供，不設定。
  */
-export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0, staticDir = '' }) {
+export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0, staticDir = '', cspMode = 'report-only' }) {
   if (!jwtSecret) throw new Error('createApp 需要 jwtSecret');
 
   const app = express();
@@ -108,6 +112,17 @@ export function createApp({ db, jwtSecret, secureCookies = false, trustProxy = 0
   // ── 前端靜態檔（選用）──────────────────────────────────────
   if (staticDir && fs.existsSync(path.join(staticDir, 'index.html'))) {
     const root = path.resolve(staticDir);
+    // 安全標頭（與 Nginx 設定同一組）。CSP 預設只回報不擋，確認瀏覽器主控台沒有違規後再設 CSP_MODE=enforce。
+    app.use((_req, res, next) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+      res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+      if (secureCookies) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+      if (cspMode === 'enforce') res.setHeader('Content-Security-Policy', CSP);
+      else if (cspMode !== 'off') res.setHeader('Content-Security-Policy-Report-Only', CSP);
+      next();
+    });
     app.use(express.static(root, {
       index: false,
       setHeaders: (res, file) => {
