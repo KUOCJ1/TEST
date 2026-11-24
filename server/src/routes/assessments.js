@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { isStrictPrivacy } from '../lib/compassPrivacy.js';
+import { isTrialUser, TRIAL_ASSESSMENT_IDS } from '../lib/trial.js';
 
 /** @param {{db, requireAuth}} deps */
 export function createAssessmentsRouter({ db, requireAuth }) {
@@ -30,6 +31,8 @@ export function createAssessmentsRouter({ db, requireAuth }) {
         list = list.filter((a) => allowed.has(a.id));
       }
     }
+    // 試用帳號（推廣期自行註冊）：只看得到開放試用的評量（見 lib/trial.js）。
+    if (isTrialUser(db, req.user)) list = list.filter((a) => TRIAL_ASSESSMENT_IDS.has(a.id));
     res.json({ assessments: list });
   });
 

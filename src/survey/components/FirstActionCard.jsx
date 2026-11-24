@@ -4,6 +4,8 @@ import { api } from '../api/client';
 import { startersFor } from '../data/goal-starters.js';
 import { dimLabel } from '../utils/dimensionLabel';
 import { focusDimension } from '../utils/focus.js';
+import TrialLock from '../trial/TrialLock';
+import { useIsTrial } from '../trial/useIsTrial';
 
 // 結果頁的「選一件事」（Sprint 25）：看完報告離開之前，先留下一個具體的第一步。
 // 沒有進行中的目標：從最弱構面的起手行動挑一個，一鍵建立發展目標（預設只有本人看得到）。
@@ -14,7 +16,7 @@ const PROGRESS = [
   { rating: 1, label: '還沒開始' },
 ];
 
-export default function FirstActionCard({ result }) {
+function FirstActionCardInner({ result }) {
   const dim = useMemo(() => focusDimension(result.dimensions), [result.dimensions]);
   const [goals, setGoals] = useState(null);
   const [picked, setPicked] = useState(0);
@@ -103,4 +105,11 @@ export default function FirstActionCard({ result }) {
       {error && <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>}
     </section>
   );
+}
+
+// 試用帳號：看得到這個功能的介紹，但不能使用（見 trial/TrialLock.jsx）。
+export default function FirstActionCard(props) {
+  const trial = useIsTrial();
+  if (trial) return <TrialLock feature="goals" compact />;
+  return <FirstActionCardInner {...props} />;
 }

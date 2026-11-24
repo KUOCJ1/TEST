@@ -47,6 +47,10 @@ export function publicUser(user) {
     preferences: user.preferences ?? {},
     // 管理者停用的帳號（Sprint 11）：不能登入、不收通知信、不出現在教練的成員搜尋。
     disabled: Boolean(user.disabled),
+    // 試用帳號（推廣期自行註冊，見 lib/trial.js）：只開放部分評量，360° 與發展功能鎖定。
+    trial: Boolean(user.trial),
+    // 信箱是否已驗證（點過驗證信，或用邀請碼註冊）。
+    emailVerified: Boolean(user.emailVerifiedAt),
     // 隱私權政策同意紀錄（Sprint 12）：沒有＝還沒同意過，登入後前端會先要求同意。
     consent: user.consent ? { version: user.consent.version, acceptedAt: user.consent.acceptedAt } : null,
     // 領導力羅盤：是否同意讓「上級」的評分顯示在自己的報告中（沒有紀錄＝未同意）。

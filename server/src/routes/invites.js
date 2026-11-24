@@ -7,6 +7,7 @@ import {
 } from '../lib/invites.js';
 import { POLICY_VERSION } from '../lib/policy.js';
 import { findInviteByCode, checkInviteUsable, claimInvite, maskEmail } from '../lib/memberInvites.js';
+import { isTrialUser, trialLocked } from '../lib/trial.js';
 
 /**
  * 他評邀請與班級邀請（見 lib/invites.js 的說明）。
@@ -20,6 +21,7 @@ export function createInvitesRouter({ db, requireAuth }) {
   // ── 他評邀請 ──────────────────────────────────────────────
   // 受評者本人（邀請同班的人評自己）或該班教練／管理員（替班上的人安排）都可以發。
   router.post('/rater-invites', requireAuth, (req, res) => {
+    if (isTrialUser(db, req.user)) return trialLocked(res, '360');
     const { assessmentId, raterUserId, raterType, groupId } = req.body ?? {};
     const rateeId = typeof req.body?.rateeId === 'string' && req.body.rateeId ? req.body.rateeId : req.user.id;
     if (typeof assessmentId !== 'string' || !isStrictPrivacy(assessmentId)) {

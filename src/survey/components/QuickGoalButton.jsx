@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Target, Check } from 'lucide-react';
 import { api } from '../api/client';
+import { TrialLockedButton } from '../trial/TrialLock';
+import { useIsTrial } from '../trial/useIsTrial';
 
 /**
  * 「訂成目標」：把看到的需求（教練的精進建議、360° 落差…）一步接成發展目標，不必重打一遍。
  * 點開後文字已預填，可以先改再建立；也可帶入起手行動。建立後在「我的學習」可以繼續編輯。
  * 目標預設只有本人看得到。
  */
-export default function QuickGoalButton({ assessmentId, dimension = null, text, actions = [], label = '訂成目標' }) {
+function QuickGoalButtonInner({ assessmentId, dimension = null, text, actions = [], label = '訂成目標' }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(text);
   const [saving, setSaving] = useState(false);
@@ -66,4 +68,11 @@ export default function QuickGoalButton({ assessmentId, dimension = null, text, 
       </div>
     </div>
   );
+}
+
+// 試用帳號：按鈕顯示成停用並說明原因（見 trial/TrialLock.jsx）。
+export default function QuickGoalButton(props) {
+  const trial = useIsTrial();
+  if (trial) return <TrialLockedButton label={props.label ?? '訂成目標'} />;
+  return <QuickGoalButtonInner {...props} />;
 }

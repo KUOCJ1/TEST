@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Target, Check } from 'lucide-react';
 import { api } from '../api/client';
+import { TrialLockedButton } from '../trial/TrialLock';
+import { useIsTrial } from '../trial/useIsTrial';
 
 function actionTextFor(article) {
   return `閱讀：《${article.title}》 ${article.url}`;
@@ -15,7 +17,7 @@ function actionTextFor(article) {
  * 取捨：透過這裡加的行動，若 GoalPanel 剛好也在畫面上，要等下次重新整理／切換
  * 分頁才會顯示最新內容。
  */
-export default function AddToGoalButton({ assessmentId, dimension, article, goals, onGoalsChange }) {
+function AddToGoalButtonInner({ assessmentId, dimension, article, goals, onGoalsChange }) {
   const [open, setOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState('');
   const [saving, setSaving] = useState(false);
@@ -107,4 +109,11 @@ export default function AddToGoalButton({ assessmentId, dimension, article, goal
       </div>
     </div>
   );
+}
+
+// 試用帳號：按鈕顯示成停用並說明原因（見 trial/TrialLock.jsx）。
+export default function AddToGoalButton(props) {
+  const trial = useIsTrial();
+  if (trial) return <TrialLockedButton label="加入目標" />;
+  return <AddToGoalButtonInner {...props} />;
 }

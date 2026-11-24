@@ -14,7 +14,7 @@ function readUrlParams() {
   };
 }
 
-export default function LoginPage({ onBack, joinCode, joinInfo, inviteCode, inviteInfo, onInviteResult }) {
+export default function LoginPage({ onBack, joinCode, joinInfo, inviteCode, inviteInfo, onInviteResult, trialStart = false }) {
   const { login, register } = useAuth();
   const [{ fromAI, name: prefillName, email: prefillEmail }] = useState(readUrlParams);
   // 邀請連結（Sprint 19）：邀請有效時 Email 與姓名由邀請帶入（Email 鎖定，伺服器也會強制）；
@@ -22,7 +22,7 @@ export default function LoginPage({ onBack, joinCode, joinInfo, inviteCode, invi
   const inviteOk = Boolean(inviteCode && inviteInfo && !inviteInfo.error);
   const lockedEmail = inviteOk ? inviteInfo.email : null;
   const [modeOverride, setModeOverride] = useState(null);
-  const defaultMode = inviteOk ? (inviteInfo.accountExists ? 'login' : 'register') : (fromAI || joinCode ? 'register' : 'login');
+  const defaultMode = inviteOk ? (inviteInfo.accountExists ? 'login' : 'register') : (fromAI || joinCode || trialStart ? 'register' : 'login');
   const mode = modeOverride ?? defaultMode;
   const setMode = setModeOverride;
   const [form, setForm] = useState({ name: prefillName || undefined, email: prefillEmail, password: '' });
@@ -89,6 +89,13 @@ export default function LoginPage({ onBack, joinCode, joinInfo, inviteCode, invi
           <InviteBanner info={inviteInfo} />
         ) : joinCode ? (
           <JoinClassBanner info={joinInfo} />
+        ) : trialStart ? (
+          <div className="mb-5 rounded-md bg-ink-700 px-5 py-4 text-paper-50">
+            <div className="mb-1 font-serif text-sm font-semibold">免費試用</div>
+            <div className="text-xs leading-relaxed text-paper-50/75">
+              用 Email 註冊就能開始：AI 職能評測、DISC 行為風格評測，做完立即看報告，之後隨時回來看自己的紀錄。
+            </div>
+          </div>
         ) : (
           fromAI && (
             <div className="mb-5 rounded-md bg-ink-700 px-5 py-4 text-paper-50">

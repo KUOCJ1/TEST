@@ -34,6 +34,9 @@ import ErrorBoundary from './components/ErrorBoundary';
 import LoadingState from './components/LoadingState';
 import FollowUpBanner from './course/FollowUpBanner.jsx';
 import InstallPrompt from './pwa/InstallPrompt.jsx';
+import TrialLock from './trial/TrialLock';
+import { useIsTrial } from './trial/useIsTrial';
+import VerifyEmailBanner from './trial/VerifyEmailBanner';
 
 const CoachDashboard = lazy(() => import('./coach/CoachDashboard'));
 
@@ -142,6 +145,7 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
           只是重複（Sprint 11 走查：掃 QR 加入的新學員首頁同時出現三個橫幅）。 */}
       <OnboardingBanner role="user" show={mySubmissions.length === 0 && myGroups.length === 0} />
       <InstallPrompt />
+      <VerifyEmailBanner />
       <FollowUpBanner />
       <GroupInvites invites={groupInvites} onChanged={() => { setLoading(true); setReloadTick((t) => t + 1); }} />
       {/* 已經在班上的人不需要「有邀請碼？」這一行（Sprint 41 走查：它佔著首頁最上面一行，卻跟他無關）。 */}
@@ -207,6 +211,9 @@ function AnalysisRoute({ user, refreshKey, onTakeSurvey, onResultLoad }) {
 
 function MultiRaterRoute({ user, refreshKey, onRateOthers }) {
   const { assessmentId = null } = useParams();
+  // 試用帳號：360° 看得到介紹但不能用（伺服器也會擋）。
+  const trial = useIsTrial();
+  if (trial) return <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10"><TrialLock feature="360" /></main>;
   return (
     <MultiRaterHome
       key={`${refreshKey}-${assessmentId ?? ''}`}

@@ -51,3 +51,23 @@ export async function logout(page) {
   await page.getByRole('button', { name: /的帳號選單/ }).click();
   await page.getByRole('menuitem', { name: '登出' }).click();
 }
+
+// 推廣期起，自行註冊（沒有邀請碼或報到碼）的帳號是試用帳號（server/src/lib/trial.js），只能用部分評量。
+// 測「一般學員完整功能」的測試，註冊後用這個把帳號轉為一般學員（等同管理員在後台按「轉為一般學員」）。
+export async function makeFullMember(email) {
+  const { request: pwRequest } = await import('@playwright/test');
+  const admin = await pwRequest.newContext({ baseURL: 'http://localhost:3001' });
+  try {
+    const login = await admin.post('/api/auth/login', { data: { email: 'admin@e2e.test', password: 'E2eTest1234' } });
+    if (!login.ok()) throw new Error(`admin login: ${login.status()}`);
+    const { users = [] } = await (await admin.get('/api/admin/overview')).json();
+    const u = users.find((x) => x.email === email.toLowerCase());
+    if (!u) throw new Error(`找不到使用者 ${email}`);
+    if (u.trial) {
+      const r = await admin.patch(`/api/admin/users/${u.id}/trial`, { data: { trial: false } });
+      if (!r.ok()) throw new Error(`end trial: ${r.status()} ${await r.text()}`);
+    }
+  } finally {
+    await admin.dispose();
+  }
+}

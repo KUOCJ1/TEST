@@ -262,6 +262,19 @@ export function createAdminRouter({ db, requireAuth, requireAdmin }) {
 
   // 停用／重新啟用帳號：停用後無法登入、現有 session 立即失效、不寄通知信；
   // 作答紀錄與班級成員資格都保留，重新啟用即恢復。
+  // 試用帳號轉為一般學員（推廣期，見 lib/trial.js）。只能解除，不能把人改回試用。
+  router.patch('/users/:id/trial', (req, res) => {
+    if (req.body?.trial !== false) return res.status(400).json({ error: '只能把試用帳號轉為一般學員（trial: false）' });
+    const user = db.data.users.find((u) => u.id === req.params.id);
+    if (!user) return res.status(404).json({ error: '使用者不存在' });
+    if (!user.trial) return res.status(400).json({ error: '這個帳號不是試用帳號' });
+    delete user.trial;
+    user.trialEndedAt = new Date().toISOString();
+    db.persist();
+    auditLog(req, 'end_trial', { targetUserId: user.id });
+    res.json({ user: publicUser(user) });
+  });
+
   router.patch('/users/:id/disabled', (req, res) => {
     if (typeof req.body?.disabled !== 'boolean') return res.status(400).json({ error: '請指定要停用或啟用' });
     const disabled = req.body.disabled;

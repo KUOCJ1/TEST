@@ -1,7 +1,7 @@
 import { test, expect, request as pwRequest } from '@playwright/test';
 import { buildResult } from '../src/survey/utils/scoring.js';
 import { getAssessment } from '../src/survey/data/assessments/index.js';
-import { acceptConsentIfAsked } from './helpers.js';
+import { acceptConsentIfAsked, makeFullMember } from './helpers.js';
 
 // Sprint 37–39：報告一分鐘版、四週微練習、下載我的資料、刪除帳號（7 天內可取消）。手機尺寸。
 
@@ -14,6 +14,7 @@ async function learner(tag) {
   const email = `e2e-${tag}-${Date.now()}@example.com`;
   const s = await pwRequest.newContext({ baseURL: API });
   await ok(await s.post('/api/auth/register', { data: { acceptPolicy: true, name: `學員${tag}`, email, password: 'abcdef12' } }), 'register');
+  await makeFullMember(email);
   await ok(await s.post('/api/submissions', { data: { assessmentId: 'leadership-9d', phase: 'pre', result: resultOf(), answers: {} } }), 'submit');
   return { s, email };
 }

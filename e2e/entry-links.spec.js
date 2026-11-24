@@ -100,3 +100,28 @@ test('班級報到連結 ?join= 與邀請連結 ?invite= 顯示對應班級；�
   }
   await admin.dispose();
 });
+
+test('推廣連結 /start：直接到註冊畫面；註冊後是試用帳號（只看得到 AI 職能與 DISC，360° 顯示鎖定說明）', async ({ browser }) => {
+  for (const viewport of [MOBILE, DESKTOP]) {
+    const ctx = await browser.newContext({ viewport });
+    const page = await ctx.newPage();
+    await page.goto('/start');
+    await expect(page.getByText('免費試用')).toBeVisible({ timeout: 20000 });
+    await page.getByPlaceholder('您的姓名').fill('試用者');
+    await page.getByPlaceholder('you@example.com').fill(`e2e-trial-${Date.now()}-${viewport.width}@example.com`);
+    await page.getByPlaceholder('至少 8 碼').fill('abcdef12');
+    await page.getByRole('checkbox', { name: /隱私權政策/ }).check();
+    await page.getByRole('button', { name: /建立帳號/ }).click();
+    await acceptConsentIfAsked(page);
+    await expect(page.getByRole('heading', { name: '選擇評量' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText(/請到信箱點驗證連結/)).toBeVisible();
+    const main = page.locator('main').first();
+    await expect(main).toContainText('DISC');
+    await expect(main).not.toContainText('九大構面');
+    await page.goto('/360');
+    await expect(page.getByRole('region', { name: /360° 多元評測（試用帳號未開放）/ })).toBeVisible({ timeout: 20000 });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    await ctx.close();
+  }
+});

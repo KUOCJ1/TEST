@@ -13,6 +13,8 @@ import { POLICY_VERSION } from '../lib/policy.js';
 import { findGroupByJoinCode, joinGroupByCode, joinRestriction } from '../lib/joinCode.js';
 import { createLoginGuard } from '../lib/loginGuard.js';
 import { findInviteByCode, checkInviteUsable, claimInvite, normalizeEmail, maskEmail } from '../lib/memberInvites.js';
+import { refreshTrial } from '../lib/trial.js';
+import { sendVerificationMail, verifyEmailToken, RESEND_COOLDOWN_MS } from '../lib/emailVerification.js';
 
 // register/login 回傳的「剛加入的班級」只給前端導頁需要的最小資訊，不含成員、
 // 成績或其他班級設定——這支 API 在使用者剛登入的當下就會被讀到。
@@ -135,6 +137,8 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
       role: 'user',
       createdAt: new Date().toISOString(),
       consent: { version: POLICY_VERSION, acceptedAt: new Date().toISOString() },
+      // 推廣期：沒有邀請碼、也不是掃報到 QR 進來的，就是試用帳號（見 lib/trial.js）。
+      ...(!invite && !joinCode ? { trial: true } : {}),
     };
     db.data.users.push(user);
     db.persist();
@@ -143,6 +147,10 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     let joinedGroup = null;
     if (invite) joinedGroup = claimInvite(db, invite, user, inviteGroup);
     else if (joinCode) joinedGroup = joinGroupByCode(db, user, joinCode);
+    // 用邀請碼註冊的人信箱已經驗證過（持有碼）；其他人寄驗證信。寄信失敗不影響註冊。
+    if (!user.emailVerifiedAt) {
+      sendVerificationMail(db, user).catch((err) => console.error('[verify-email] send failed', err?.message ?? err));
+    }
     setAuthCookie(res, user);
     res.status(201).json({ user: publicUser(user), joinedGroup: joinedGroupInfo(joinedGroup) });
   }));
@@ -181,6 +189,7 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
         inviteError = { code: 'INVITE_EMAIL_MISMATCH', error: `這個邀請是寄給另一個 Email（${maskEmail(invite.email)}）。請用那個 Email 登入，或向教練確認。` };
       } else joinedGroup = claimInvite(db, invite, user, usable.group);
     }
+    if (joinedGroup) refreshTrial(db, user);
     setAuthCookie(res, user);
     res.json({
       user: publicUser(user),
@@ -224,6 +233,30 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     db.persist();
     auditLog(req, 'compass_manager_share', { granted: req.body.granted });
     res.json({ user: publicUser(req.user) });
+  });
+
+  // ── Email 驗證（推廣期，見 lib/emailVerification.js）──────────────
+  // 重寄驗證信：已驗證就不寄；同一帳號 1 分鐘內只寄一次；沒有設定寄信服務回 503。
+  router.post('/auth/verify-email/send', requireAuth, sensitiveLimiter, asyncHandler(async (req, res) => {
+    const user = req.user;
+    if (user.emailVerifiedAt) return res.json({ ok: true, alreadyVerified: true });
+    const last = user.emailVerifySentAt ? new Date(user.emailVerifySentAt).getTime() : 0;
+    if (Date.now() - last < RESEND_COOLDOWN_MS) {
+      return res.status(429).json({ code: 'VERIFY_COOLDOWN', error: '驗證信剛寄出，請稍候一分鐘再試，也請檢查垃圾信件匣。' });
+    }
+    const result = await sendVerificationMail(db, user);
+    if (result.code === 'MAIL_NOT_CONFIGURED') return res.status(503).json({ code: 'MAIL_NOT_CONFIGURED', error: '系統目前無法寄信，請稍後再試。' });
+    if (!result.sent) return res.status(502).json({ code: 'MAIL_SEND_FAILED', error: '驗證信寄送失敗，請稍後再試。' });
+    res.json({ ok: true });
+  }));
+
+  // 點驗證信的連結：不需要登入（可能在別的裝置開信）。驗證成功時，寄到這個 Email 的入班邀請會自動兌換。
+  router.post('/auth/verify-email', sensitiveLimiter, (req, res) => {
+    const out = verifyEmailToken(db, req.body?.token);
+    if (!out) return res.status(400).json({ code: 'INVALID_VERIFY_TOKEN', error: '驗證連結無效或已過期，請登入後重新寄送驗證信。' });
+    refreshTrial(db, out.user);
+    auditLog(req, 'verify_email', { userId: out.user.id, joinedGroupIds: out.joinedGroups.map((g) => g.id) });
+    res.json({ ok: true, joinedGroups: out.joinedGroups.map(joinedGroupInfo) });
   });
 
   router.get('/auth/me', requireAuth, (req, res) => {

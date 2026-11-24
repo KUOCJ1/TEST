@@ -66,6 +66,13 @@ export function AuthProvider({ children }) {
     return u;
   }, []);
 
+  // 重新讀取目前的帳號狀態（例如信箱驗證完成、試用轉正之後）。
+  const refreshUser = useCallback(async () => {
+    const u = await api.session();
+    setUser(u);
+    return u;
+  }, []);
+
   const updateProfile = useCallback(async (payload) => {
     const u = await api.updateProfile(payload);
     setUser(u);
@@ -98,12 +105,13 @@ export function AuthProvider({ children }) {
       login,
       logout,
       updateProfile,
+      refreshUser,
       acceptPolicy,
       setCompassManagerShare,
       requestDeletion,
       cancelDeletion,
     }),
-    [user, ready, register, login, logout, updateProfile, acceptPolicy, setCompassManagerShare, requestDeletion, cancelDeletion],
+    [user, ready, register, login, logout, updateProfile, refreshUser, acceptPolicy, setCompassManagerShare, requestDeletion, cancelDeletion],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

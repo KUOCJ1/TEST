@@ -41,6 +41,9 @@ export const api = {
   me: () => request('/auth/me').then((d) => d.user),
   // 啟動時查登入狀態：未登入回 { user: null }（200），不會在 console 留 401。
   session: () => request('/auth/session').then((d) => d.user),
+  // Email 驗證（推廣期）：點信裡的連結時呼叫（可不登入）；登入後可重寄。
+  verifyEmail: (token) => request('/auth/verify-email', { method: 'POST', body: { token } }),
+  resendVerifyEmail: () => request('/auth/verify-email/send', { method: 'POST' }),
   updateProfile: (payload) => request('/auth/profile', { method: 'PATCH', body: payload }).then((d) => d.user),
   changePassword: (payload) => request('/auth/password', { method: 'POST', body: payload }),
   resetPassword: (payload) => request('/auth/reset-password', { method: 'POST', body: payload }),
@@ -124,6 +127,8 @@ export const api = {
   deleteImportedSubmissions: (assessmentId) => request(`/admin/batch-import/${assessmentId}`, { method: 'DELETE' }),
   setUserRole: (userId, role) =>
     request(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role } }).then((d) => d.user),
+  endUserTrial: (userId) =>
+    request(`/admin/users/${userId}/trial`, { method: 'PATCH', body: { trial: false } }).then((d) => d.user),
   setUserDisabled: (userId, disabled) =>
     request(`/admin/users/${userId}/disabled`, { method: 'PATCH', body: { disabled } }).then((d) => d.user),
   transferGroup: (groupId, coachId) =>

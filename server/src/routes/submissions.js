@@ -7,6 +7,7 @@ import { POLICY_VERSION, CONSENT_REQUIRED_ASSESSMENTS } from '../lib/policy.js';
 import { isActiveInvite } from '../lib/invites.js';
 import { COURSE_SURVEY_ID, sanitizeCourseAnswers, buildCourseResult } from '../lib/courseSurvey.js';
 import { followUpStatus, submitFollowUp } from '../lib/courseFollowUp.js';
+import { isTrialUser, trialLocked, TRIAL_ASSESSMENT_IDS } from '../lib/trial.js';
 
 const VALID_RATER_TYPES = new Set(['self', 'manager', 'peer', 'subordinate']);
 
@@ -16,6 +17,10 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
 
   router.post('/submissions', requireAuth, (req, res) => {
     const { answers, result, assessmentId, phase, rateeId, raterType } = req.body || {};
+    // 試用帳號（見 lib/trial.js）：只能做開放的評量，而且只能自評。
+    if (isTrialUser(db, req.user) && (!TRIAL_ASSESSMENT_IDS.has(assessmentId) || (raterType && raterType !== 'self'))) {
+      return trialLocked(res, 'assessment');
+    }
 
     // 課後問卷（classOnly）：結果由伺服器依清洗後的答案計算，不採用前端送來的 result；
     // 只有被附加這份問卷的班級成員能提交，每人每班一次。

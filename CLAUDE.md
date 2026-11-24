@@ -119,7 +119,7 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - 題庫設定由 `scripts/build-compass-config.mjs` 從 `docs/leadership-new/items-candidates-*.json` 產生 `compass-items.generated.js`（勿手改）；計分是各自獨立的純函式（`utils/compassScoring.js`、`utils/successionScoring.js`），**不走共用的 `scoring.js`**，題庫以 `SCORING`／`selectForm`／`REPORT` 讓 `SurveyApp`、`ResultPanel`、`PrintableReport` 分派到專屬元件。
 - 沒有總分與排名；切分點（`THRESHOLDS`、`NARRATIVE_BANDS`、`STANCE_BANDS`）都是暫定值，試測後校準。
 - 360° 隱私由伺服器強制（`server/src/lib/compassPrivacy.js`）：同類 ≥3 位才單獨顯示（「他評合計」不得被相減還原）、上級評分須受評者同意、教練看不到評分者身分、管理員還原須填理由並留稽核（admin 總覽也去識別化）。**他評須先有邀請**（`routes/invites.js`：受評者或班級教練邀請同班成員，`raterInvites`）；教練對已有帳號的人只能發班級邀請（`groupInvites`），本人接受才入班。改動這些規則要同步改政策文字與測試。稽核紀錄用 `auditLog(req, action, extra)`（`lib/helpers.js`）：同時寫日誌與資料庫 `auditLog` 集合，管理後台可查；新增敏感操作時記得呼叫。
-- 後端 `KNOWN_ASSESSMENTS` 預設 `enabled: false`；啟用前要先部署新版隱私權政策（`POLICY_VERSION` `2026-11-17.2`；政策目前為「暫定版」`POLICY_META.provisional`，法務審閱後移除旗標）。
+- 後端 `KNOWN_ASSESSMENTS` 預設 `enabled: false`；啟用前要先部署新版隱私權政策（`POLICY_VERSION` `2026-11-24.1`；政策目前為「暫定版」`POLICY_META.provisional`，法務審閱後移除旗標）。
 - 備份還原演練：`bash deploy/restore-drill.sh`（不動正式資料庫）。
 
 ## 隱私權政策與註冊同意（Sprint 12）
@@ -128,6 +128,11 @@ docs/                 規格書（leadership-9d-spec.md / .pdf）
 - 註冊要帶 `acceptPolicy: true`（伺服器強制）；`user.consent = { version, acceptedAt }`；`POST /auth/consent` 給既有用戶補同意。
 - `POLICY_VERSION` 前後端各一份（`server/src/lib/policy.js`、`src/survey/legal/policy.js`）必須一致，有測試檢查。
 - 政策文字要對照程式行為：改了資料處理方式（第三方、蒐集欄位、保存）就要回來改文字。
+
+## 推廣期試用帳號與 Email 驗證（2026-11-24）
+
+- 推廣連結 `/start`（`App.jsx` 的 `TRIAL_START_PATH`）直接開註冊畫面。沒帶邀請碼／報到碼的註冊 → `user.trial = true`（`server/src/lib/trial.js`）：只看得到與作答 `TRIAL_ASSESSMENT_IDS`（AI 職能、DISC），他評、發展目標、微練習、邀請他評由伺服器回 403 `TRIAL_LOCKED`；前端用 `trial/TrialLock.jsx` 顯示「看得到但不能用」（`useIsTrial()`，元件外層包一層）。加入任何班級後由 `refreshTrial`（在 `currentUser` 裡）永久清掉旗標；管理員 `PATCH /admin/users/:id/trial`。**新增「學員功能」時要決定試用帳號能不能用，並在伺服器端擋。**
+- Email 驗證（`lib/emailVerification.js`）：註冊時寄信、`?verify=token`（72 小時）、`POST /auth/verify-email`（不需登入）、`POST /auth/verify-email/send`（重寄，1 分鐘冷卻）。驗證完成時自動兌換寄到這個 Email 的 `memberInvites`（等同用了邀請連結）。不擋使用；提醒只給試用帳號（`trial/VerifyEmailBanner.jsx`）。
 
 ## 邀請制入班（Sprint 19）
 

@@ -1,5 +1,6 @@
 import { signToken, verifyToken } from '../auth.js';
 import { recordActivity } from './goalActivity.js';
+import { refreshTrial } from './trial.js';
 
 const COOKIE_NAME = 'aiassess_token';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 天
@@ -33,6 +34,8 @@ export function createAuthContext({ db, jwtSecret, secureCookies = false }) {
     // 兩邊都用 ?? 0 是為了與尚未帶 tokenVersion 欄位的舊使用者／舊 token 相容，
     // 部署當下不會讓所有人被迫重新登入，只有實際被撤銷過的帳號才會生效。
     if ((payload.v ?? 0) !== (user.tokenVersion ?? 0)) return null;
+    // 試用帳號加入班級後自動轉正（見 lib/trial.js）。
+    try { refreshTrial(db, user); } catch { /* 不影響請求 */ }
     return user;
   }
 

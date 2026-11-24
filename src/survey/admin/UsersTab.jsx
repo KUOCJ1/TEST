@@ -112,6 +112,17 @@ export default function UsersTab({ users, onUserChanged }) {
     await run(u, () => api.setUserDisabled(u.id, disabling), disabling ? `已停用 ${u.name}` : `已重新啟用 ${u.name}`);
   };
 
+  // 試用帳號（推廣期自行註冊）轉為一般學員：開放全部評量、360° 與發展功能。
+  const handleEndTrial = async (u) => {
+    const ok = await confirm({
+      title: '轉為一般學員',
+      message: `把「${u.name}」從試用帳號轉為一般學員？對方之後可以使用全部評量、360° 與發展功能。這個動作不能反向。`,
+      confirmLabel: '轉為一般學員',
+    });
+    if (!ok) return;
+    await run(u, () => api.endUserTrial(u.id), `已將 ${u.name} 轉為一般學員`);
+  };
+
   const handleGenerateReset = async (u) => {
     setResetGenerating(u.id);
     setError('');
@@ -212,6 +223,7 @@ export default function UsersTab({ users, onUserChanged }) {
                         {ROLE_LABEL[u.role] ?? u.role}
                       </span>
                       {u.disabled && <span className="inline-block rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">已停用</span>}
+                      {u.trial && <span className="inline-block rounded-full bg-brass-50 px-2.5 py-0.5 text-xs font-semibold text-brass-600">試用</span>}
                     </p>
                     <p className="truncate text-sm text-slate-500 sm:hidden">{u.email}</p>
                   </div>
@@ -238,6 +250,17 @@ export default function UsersTab({ users, onUserChanged }) {
                     >
                       {u.disabled ? '重新啟用' : '停用'}
                     </button>
+                    {u.trial && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => handleEndTrial(u)}
+                        className="btn-secondary btn-sm whitespace-nowrap"
+                        aria-label={`將 ${u.name} 轉為一般學員`}
+                      >
+                        轉為一般學員
+                      </button>
+                    )}
                     <button
                       type="button"
                       disabled={resetGenerating === u.id}

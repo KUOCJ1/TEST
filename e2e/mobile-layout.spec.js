@@ -1,6 +1,7 @@
 import { test, expect, request as pwRequest } from '@playwright/test';
 import { buildResult } from '../src/survey/utils/scoring.js';
 import { getAssessment } from '../src/survey/data/assessments/index.js';
+import { makeFullMember } from './helpers.js';
 
 // 手機版面防護網（docs/MOBILE_APP_PLAN.md M1-1）：手機尺寸（390×844、觸控）下，主要畫面
 // 不得水平溢出、底部導覽在該在的地方、主要按鈕夠大、AI 小幫手不蓋內容、作答進度列看得到。
@@ -57,6 +58,7 @@ async function newLearner(browser, name, { submit = true } = {}) {
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 1e4)}`;
   const api = await pwRequest.newContext({ baseURL: API });
   await ok(await api.post('/api/auth/register', { data: { acceptPolicy: true, name, email: `e2e-mobile-${suffix}@example.com`, password: 'abcdef12' } }), 'register');
+  await makeFullMember(`e2e-mobile-${suffix}@example.com`);
   if (submit) {
     await ok(await api.post('/api/submissions', { data: { assessmentId: 'ai-competency', phase: 'pre', result: resultOf(3), answers: {} } }), 'submit');
   }
@@ -262,6 +264,7 @@ test('報告預覽：工具列兩列、按鈕 ≥44px 單行、內容縮放到�
   const suffix = `${Date.now()}`;
   const api = await pwRequest.newContext({ baseURL: API });
   await ok(await api.post('/api/auth/register', { data: { acceptPolicy: true, name: '手機報告學員', email: `e2e-mobile-report-${suffix}@example.com`, password: 'abcdef12' } }), 'register');
+  await makeFullMember(`e2e-mobile-report-${suffix}@example.com`);
   const result = buildResult(Object.fromEntries(l9d.ALL_QUESTIONS.map((q) => [q.id, 4])), l9d);
   await ok(await api.post('/api/submissions', { data: { assessmentId: 'leadership-9d', phase: 'pre', result, answers: {} } }), 'submit');
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, storageState: await api.storageState() });

@@ -14,7 +14,7 @@ async function acceptAll(agent) {
 
 const JWT_SECRET = 'test-secret-please-change';
 
-async function setupWithDb({ withAdmin = false, trustProxy = 0 } = {}) {
+async function setupWithDb({ withAdmin = false, trustProxy = 0, trial = false } = {}) {
   const db = createDb(':memory:');
   if (withAdmin) {
     db.data.users.push({
@@ -25,6 +25,13 @@ async function setupWithDb({ withAdmin = false, trustProxy = 0 } = {}) {
       role: 'admin',
       createdAt: new Date().toISOString(),
     });
+  }
+  // 這些測試寫在「試用帳號」之前，測的是完整功能：自行註冊的帳號在這裡直接當一般學員
+  // （試用帳號的限制另在 trial.test.js 測）。
+  if (!trial) {
+    const users = db.data.users;
+    const push = users.push.bind(users);
+    users.push = (...list) => push(...list.map((u) => { delete u.trial; return u; }));
   }
   return { app: createApp({ db, jwtSecret: JWT_SECRET, trustProxy }), db };
 }

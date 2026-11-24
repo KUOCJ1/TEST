@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
+import { isTrialUser, trialLocked } from '../lib/trial.js';
 
 // 課後四週微練習（Sprint 38）：學員自己開啟，每週一個 5 分鐘的小練習，做完勾選。
 // 存在使用者自己的紀錄上（user.practice），同時只有一組進行中；只有本人讀得到，教練與管理者都不經這裡看。
@@ -64,6 +65,7 @@ export function createPracticeRouter({ db, requireAuth }) {
   });
 
   router.post('/practice', requireAuth, (req, res) => {
+    if (isTrialUser(db, req.user)) return trialLocked(res, 'practice');
     const user = me(req);
     if (!user) return res.status(404).json({ error: '找不到帳號' });
     if (isPracticeActive(user.practice)) {
@@ -96,6 +98,7 @@ export function createPracticeRouter({ db, requireAuth }) {
   });
 
   router.post('/practice/weeks/:week', requireAuth, (req, res) => {
+    if (isTrialUser(db, req.user)) return trialLocked(res, 'practice');
     const user = me(req);
     const p = user?.practice;
     const week = Number(req.params.week);

@@ -5,11 +5,13 @@ import { buildPracticeTasks, PRACTICE_WEEKS } from '../utils/practice.js';
 import { focusDimension } from '../utils/focus.js';
 import { dimLabel } from '../utils/dimensionLabel';
 import { ConfirmContext } from './useConfirm';
+import TrialLock from '../trial/TrialLock';
+import { useIsTrial } from '../trial/useIsTrial';
 
 // 課後四週微練習（Sprint 38）：學員自己開啟；每週一個約 5 分鐘的小練習，做完勾一下。
 // - 結果頁（offerFrom＝這次的結果）：還沒開始時邀請開始；已經在進行時只顯示精簡狀態。
 // - 我的學習（不帶 offerFrom）：顯示四週清單、勾選、結束。
-export default function PracticePanel({ offerFrom = null, compact = false }) {
+function PracticePanelInner({ offerFrom = null, compact = false }) {
   const [p, setP] = useState(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -114,4 +116,11 @@ export default function PracticePanel({ offerFrom = null, compact = false }) {
       </button>
     </>,
   );
+}
+
+// 試用帳號：看得到這個功能的介紹，但不能使用（見 trial/TrialLock.jsx）。
+export default function PracticePanel(props) {
+  const trial = useIsTrial();
+  if (trial) return <TrialLock feature="practice" compact />;
+  return <PracticePanelInner {...props} />;
 }

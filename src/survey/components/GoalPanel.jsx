@@ -5,6 +5,8 @@ import { dimTextStyle } from '../utils/color';
 import GoalItem from './GoalItem';
 import { startersFor } from '../data/goal-starters';
 import { toDateInputValue } from '../utils/format';
+import TrialLock from '../trial/TrialLock';
+import { useIsTrial } from '../trial/useIsTrial';
 
 const MAX_ACTIONS = 5;
 
@@ -23,7 +25,7 @@ function defaultReviewDateInput() {
   return toDateInputValue(new Date(Date.now() + 28 * 24 * 60 * 60 * 1000));
 }
 
-export default function GoalPanel({ assessmentId, weakestDimension, profileMode = false, dimensions = [] }) {
+function GoalPanelInner({ assessmentId, weakestDimension, profileMode = false, dimensions = [] }) {
   const [goals, setGoals] = useState(null);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
@@ -225,4 +227,11 @@ export default function GoalPanel({ assessmentId, weakestDimension, profileMode 
       </ul>
     </section>
   );
+}
+
+// 試用帳號：看得到這個功能的介紹，但不能使用（見 trial/TrialLock.jsx）。
+export default function GoalPanel(props) {
+  const trial = useIsTrial();
+  if (trial) return <TrialLock feature="goals" />;
+  return <GoalPanelInner {...props} />;
 }

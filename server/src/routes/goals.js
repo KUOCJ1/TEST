@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
+import { isTrialUser, trialLocked } from '../lib/trial.js';
 
 const MAX_ACTIONS = 5;
 const MAX_TEXT = 500;
@@ -101,6 +102,7 @@ export function createGoalsRouter({ db, requireAuth }) {
   });
 
   router.post('/goals', requireAuth, (req, res) => {
+    if (isTrialUser(db, req.user)) return trialLocked(res, 'goals');
     const { assessmentId, dimensionId, dimensionName, text, actions, baselineAverage, reviewDate } = req.body ?? {};
     const cleanText = sanitizeText(text);
     if (!cleanText) {
@@ -188,6 +190,7 @@ export function createGoalsRouter({ db, requireAuth }) {
 
   // 追蹤紀錄：一句話＋自評 1–5。內容只有本人看得到（分享目標時也不給教練）。
   router.post('/goals/:id/checkins', requireAuth, (req, res) => {
+    if (isTrialUser(db, req.user)) return trialLocked(res, 'goals');
     const goal = ownGoal(req);
     if (!goal) return res.status(404).json({ code: 'NOT_FOUND', error: '找不到這個目標' });
     const text = sanitizeText(req.body?.text, 300);

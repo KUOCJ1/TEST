@@ -56,13 +56,22 @@ function readInviteCode() {
   return params.get('invite');
 }
 
+// Email 驗證信的連結：?verify=token（推廣期，見 server/src/lib/emailVerification.js）。
+function readVerifyToken() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('verify');
+}
+
+// 推廣用的專用連結：/start 直接打開註冊畫面（試用帳號）。
+const TRIAL_START_PATH = '/start';
+
 const MARKETING_TITLES = {
   '/about': '平台理念', '/how-it-works': '功能總覽', '/showcase': '範例報告', '/faq': '常見問題',
   '/privacy': '隱私權政策', '/terms': '服務條款', '/framework': '領導力羅盤八向評測', '/welcome': '首頁',
 };
 
 function AppRoutes() {
-  const { user, ready } = useAuth();
+  const { user, ready, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [resetToken, setResetToken] = useState(readResetToken);
@@ -81,6 +90,25 @@ function AppRoutes() {
   const openedLoggedIn = useRef(null);
   const showToast = useToast();
   const inviting = Boolean(user && inviteCode && !inviteResolved);
+
+  // 驗證信連結：不論有沒有登入都先驗證，結果用提示說明；已登入時順便更新帳號狀態（可能已自動入班、轉為一般學員）。
+  const [verifyToken] = useState(readVerifyToken);
+  const verifyStarted = useRef(false);
+  useEffect(() => {
+    if (!verifyToken || !ready || verifyStarted.current) return;
+    verifyStarted.current = true;
+    const params = new URLSearchParams(window.location.search);
+    params.delete('verify');
+    const rest = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${rest ? `?${rest}` : ''}`);
+    api.verifyEmail(verifyToken)
+      .then((r) => {
+        const joined = r?.joinedGroups ?? [];
+        showToast(joined.length ? `Email 已驗證，已幫你加入「${joined.map((g) => g.name).join('」「')}」。` : 'Email 已驗證，謝謝！', 'success');
+        if (user) refreshUser().catch(() => {});
+      })
+      .catch((e) => showToast(e?.message || '驗證連結無效或已過期', 'error'));
+  }, [verifyToken, ready, user, refreshUser, showToast]);
 
   const clearReset = () => {
     setResetToken(null);
@@ -223,10 +251,12 @@ function AppRoutes() {
       </Suspense>
     );
   }
-  if (view === 'auth' || joinCode || inviteCode) {
+  const trialStart = location.pathname === TRIAL_START_PATH && !joinCode && !inviteCode;
+  if (view === 'auth' || joinCode || inviteCode || trialStart) {
     return (
       <LoginPage
-        onBack={joinCode || inviteCode ? undefined : () => setView('landing')}
+        trialStart={trialStart}
+        onBack={joinCode || inviteCode ? undefined : () => { if (trialStart) navigate('/', { replace: true }); setView('landing'); }}
         joinCode={joinCode}
         joinInfo={joinInfo}
         inviteCode={inviteCode}
