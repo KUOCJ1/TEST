@@ -92,7 +92,7 @@ function MemberCards({ memberRows, groupStats, has360, sortBy, setSortBy, onOpen
   );
 }
 
-function MobileKpis({ group, members, groupStats }) {
+function MobileKpis({ group, members, groupStats, commentedCount = 0, memberTotal = 0 }) {
   const expected = members.length || group.memberIds.length;
   const done = groupStats.respondents;
   const rate = expected > 0 ? Math.round((done / expected) * 100) : 0;
@@ -102,11 +102,13 @@ function MobileKpis({ group, members, groupStats }) {
     { label: '已作答／應作答', value: `${done}／${expected}` },
     { label: '平均總分', value: done > 0 ? String(groupStats.avgTotal) : '—' },
     { label: '未完成', value: `${pending} 人`, warn: pending > 0 },
+    // 桌機版 KPI 列有「已寫評語」，手機版以前沒有，教練看不出還剩幾位要寫。
+    { label: '已寫評語', value: `${commentedCount}／${memberTotal} 人`, wide: true },
   ];
   return (
     <dl className="grid grid-cols-2 gap-2" aria-label="班級關鍵數字">
       {tiles.map((t) => (
-        <div key={t.label} className={`rounded-xl px-4 py-3 ring-1 ${t.strong ? 'ring-transparent' : 'bg-white ring-slate-100'}`} style={t.strong ? { background: '#1f5d4a', color: '#ffffff' } : undefined}>
+        <div key={t.label} className={`${t.wide ? 'col-span-2 ' : ''}rounded-xl px-4 py-3 ring-1 ${t.strong ? 'ring-transparent' : 'bg-white ring-slate-100'}`} style={t.strong ? { background: '#1f5d4a', color: '#ffffff' } : undefined}>
           <dt className={`text-xs ${t.strong ? '' : 'text-slate-500'}`} style={t.strong ? { color: '#cfe5d6' } : undefined}>{t.label}</dt>
           <dd className={`font-serif mt-0.5 text-2xl font-bold tabular-nums ${t.strong ? '' : t.warn ? 'text-amber-600' : 'text-slate-900'}`}>{t.value}</dd>
         </div>
@@ -159,7 +161,7 @@ export default function GroupOverviewSection({
   return (
     <div className="space-y-5">
       {/* 手機第一屏：四個數字（完成率、已作答／應作答、平均、未完成人數），其餘往下捲。 */}
-      {mobile && groupStats && <MobileKpis group={group} members={members} groupStats={groupStats} />}
+      {mobile && groupStats && <MobileKpis group={group} members={members} groupStats={groupStats} commentedCount={commentedCount} memberTotal={memberRows.length} />}
 
       <ProgressPanel
         group={group}

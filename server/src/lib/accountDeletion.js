@@ -115,6 +115,8 @@ export function exportUserData(db, user) {
       id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt,
       consent: user.consent ?? null, preferences: user.preferences ?? {},
       activeDays: user.activeDays ?? [],
+      emailVerifiedAt: user.emailVerifiedAt ?? null,
+      trial: Boolean(user.trial), trialEndedAt: user.trialEndedAt ?? null,
       deletionScheduledFor: user.deletionScheduledFor ?? null,
     },
     groups: [...new Set([...(db.data.groups ?? []).filter((g) => (g.memberIds ?? []).includes(id)).map((g) => g.id), ...(hold.groupIds ?? [])])]

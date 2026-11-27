@@ -137,8 +137,6 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
       role: 'user',
       createdAt: new Date().toISOString(),
       consent: { version: POLICY_VERSION, acceptedAt: new Date().toISOString() },
-      // 推廣期：沒有邀請碼、也不是掃報到 QR 進來的，就是試用帳號（見 lib/trial.js）。
-      ...(!invite && !joinCode ? { trial: true } : {}),
     };
     db.data.users.push(user);
     db.persist();
@@ -147,6 +145,12 @@ export function createAuthRouter({ db, requireAuth, setAuthCookie, COOKIE_NAME, 
     let joinedGroup = null;
     if (invite) joinedGroup = claimInvite(db, invite, user, inviteGroup);
     else if (joinCode) joinedGroup = joinGroupByCode(db, user, joinCode);
+    // 推廣期：沒有真的加入任何班級（沒帶邀請碼／報到碼，或帶了無效、已撤銷的碼）就是試用帳號（見 lib/trial.js）。
+    // 要看「實際有沒有入班」而不是「有沒有帶碼」，否則隨便填一個報到碼就能跳過試用限制。
+    if (!joinedGroup) {
+      user.trial = true;
+      db.persist();
+    }
     // 用邀請碼註冊的人信箱已經驗證過（持有碼）；其他人寄驗證信。寄信失敗不影響註冊。
     if (!user.emailVerifiedAt) {
       sendVerificationMail(db, user).catch((err) => console.error('[verify-email] send failed', err?.message ?? err));

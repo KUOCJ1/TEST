@@ -134,7 +134,9 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
   const myGroupForActive = myGroups.find((g) => g.assessmentId === activeId);
 
   const activeConfig = getAssessment(activeId);
-  const supports360 = !!activeConfig?.SUPPORTS_360;
+  // 試用帳號不推 360°（首頁卡片也不顯示），與 AssessmentCard 一致。
+  const isTrial = Boolean(user?.trial);
+  const supports360 = !!activeConfig?.SUPPORTS_360 && !isTrial;
   // 風格輪廓型題庫（如 DISC）構面之間沒有優劣，總分／百分比／構面升降的「進步
   // 退步」語言在這裡沒有意義，整頁改用中性的「風格變化」呈現（見下方各區塊）。
   const profileMode = !!activeConfig?.PROFILE_MODE;

@@ -16,7 +16,6 @@ export function issueVerifyToken(db, user, now = Date.now()) {
   const token = randomBytes(24).toString('hex');
   user.emailVerifyTokenHash = hashToken(token);
   user.emailVerifyExpires = now + VERIFY_TTL_MS;
-  user.emailVerifySentAt = new Date(now).toISOString();
   db.persist();
   return token;
 }
@@ -45,6 +44,11 @@ export async function sendVerificationMail(db, user) {
   if (user.emailVerifiedAt) return { sent: false, code: 'ALREADY_VERIFIED' };
   const token = issueVerifyToken(db, user);
   const result = await sendMail(buildVerificationMail(user, token));
+  // 重寄冷卻只在「真的寄出」之後才開始，寄失敗時使用者可以馬上再試。
+  if (result.ok) {
+    user.emailVerifySentAt = new Date().toISOString();
+    db.persist();
+  }
   return result.ok ? { sent: true } : { sent: false, code: result.code };
 }
 

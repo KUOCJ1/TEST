@@ -29,9 +29,9 @@ async function setupWithDb({ withAdmin = false, trustProxy = 0, trial = false } 
   // 這些測試寫在「試用帳號」之前，測的是完整功能：自行註冊的帳號在這裡直接當一般學員
   // （試用帳號的限制另在 trial.test.js 測）。
   if (!trial) {
-    const users = db.data.users;
-    const push = users.push.bind(users);
-    users.push = (...list) => push(...list.map((u) => { delete u.trial; return u; }));
+    // 註冊時 trial 旗標是入班判斷之後才設、並隨後 persist；在 persist 前清掉，讓這裡的註冊帳號是一般學員。
+    const persist = db.persist.bind(db);
+    db.persist = (...args) => { for (const u of db.data.users) delete u.trial; return persist(...args); };
   }
   return { app: createApp({ db, jwtSecret: JWT_SECRET, trustProxy }), db };
 }

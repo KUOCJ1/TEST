@@ -13,15 +13,18 @@ export default function ThisWeekCard({ goals, onGoLearning, footnote = null, emp
   const [pending, setPending] = useState(0);
   const [busy, setBusy] = useState(false);
   const [justDone, setJustDone] = useState(false);
+  // 兩個請求都回來（或失敗）才決定顯示卡片或替代內容，否則練習期的首頁會先閃一下替代的大卡再換成這張。
+  const [loaded, setLoaded] = useState({ practice: false, reflections: false });
   useEffect(() => {
     let alive = true;
-    api.myPractice().then((p) => alive && setPractice(p)).catch(() => {});
-    api.myReflections().then((s) => alive && setPending(s.filter((x) => !x.reflection).length)).catch(() => {});
+    const done = (k) => () => { if (alive) setLoaded((l) => ({ ...l, [k]: true })); };
+    api.myPractice().then((p) => alive && setPractice(p)).catch(() => {}).finally(done('practice'));
+    api.myReflections().then((s) => alive && setPending(s.filter((x) => !x.reflection).length)).catch(() => {}).finally(done('reflections'));
     return () => { alive = false; };
   }, []);
 
   const items = buildThisWeek({ practice, reflectionsPending: pending, goals });
-  if (items.length === 0 && !justDone) return emptyFallback;
+  if (items.length === 0 && !justDone) return loaded.practice && loaded.reflections ? emptyFallback : null;
 
   const markDone = async (week) => {
     setBusy(true);

@@ -40,6 +40,16 @@ describe('ThisWeekCard', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('資料還沒回來時不先顯示替代內容（避免練習期首頁閃一下大卡再換成這張）', async () => {
+    let resolvePractice;
+    api.myPractice.mockReturnValue(new Promise((r) => { resolvePractice = r; }));
+    render(<ThisWeekCard goals={[]} onGoLearning={() => {}} emptyFallback={<p>下一步大卡</p>} />);
+    expect(screen.queryByText('下一步大卡')).toBeNull();
+    resolvePractice(practice());
+    expect(await screen.findByRole('region', { name: '這週你的小步' })).toBeInTheDocument();
+    expect(screen.queryByText('下一步大卡')).toBeNull();
+  });
+
   it('練習期：卡片底下有複測時間一行；沒有待辦時改顯示替代內容（原本的下一步大卡）', async () => {
     const { rerender } = render(<ThisWeekCard goals={goals} onGoLearning={() => {}} footnote="大約 12/18 之後再做課後複測" />);
     expect(await screen.findByText('大約 12/18 之後再做課後複測')).toBeInTheDocument();

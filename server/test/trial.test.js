@@ -63,6 +63,26 @@ describe('試用帳號', () => {
     assert.equal(q.res.body.user.trial, false);
   });
 
+  test('帶了無效或已撤銷的報到碼註冊：沒有真的入班，仍是試用帳號（不能用假碼跳過限制）', async () => {
+    const { register, group } = await setup();
+    const fake = await register({ email: 'fake@b.co', joinCode: 'NOTAREALCODE' });
+    assert.equal(fake.res.status, 201);
+    assert.equal(fake.res.body.user.trial, true);
+    assert.equal(fake.res.body.joinedGroup, null);
+    const list = (await fake.agent.get('/api/assessments')).body.assessments.map((a) => a.id);
+    assert.ok(!list.includes('leadership-9d'));
+    group.joinCode = null; // 撤銷
+    const revoked = await register({ email: 'revoked@b.co', joinCode: 'QRCODE12' });
+    assert.equal(revoked.res.body.user.trial, true);
+  });
+
+  test('作答沒帶 assessmentId 視為 ai-competency：試用帳號可以送出', async () => {
+    const { register } = await setup();
+    const { agent } = await register({ email: 'noid@b.co' });
+    const r = await agent.post('/api/submissions').send({ result: sampleResult() });
+    assert.equal(r.status, 201);
+  });
+
   test('只看得到、只能作答 AI 職能與 DISC；其他評量與他評都擋下', async () => {
     const { register } = await setup();
     const { agent } = await register({ email: 'trial@b.co' });
@@ -170,6 +190,27 @@ describe('Email 驗證', () => {
     assert.ok(group.memberIds.includes(user.id));
     assert.equal(db.data.memberInvites[0].status, 'joined');
     assert.equal((await agent.get('/api/auth/me')).body.user.trial, false);
+  });
+
+  test('寄信失敗不啟動重寄冷卻：可以馬上再試（不會被誤告知「剛寄出」）', async () => {
+    const { register, db } = await setup();
+    process.env.SMTP_HOST = 'smtp.invalid'; process.env.SMTP_USER = 'u'; process.env.SMTP_PASS = 'p';
+    const { agent, res } = await register({ email: 'smtpfail@b.co' });
+    await new Promise((r) => setTimeout(r, 50)); // 註冊時背景寄信（失敗）
+    const user = db.data.users.find((u) => u.id === res.body.user.id);
+    assert.equal(user.emailVerifySentAt, undefined);
+    const again = await agent.post('/api/auth/verify-email/send');
+    assert.notEqual(again.status, 429);
+  });
+
+  test('下載我的資料含信箱驗證時間與試用狀態', async () => {
+    const { register, db } = await setup();
+    const { agent, res } = await register({ email: 'export@b.co' });
+    db.data.users.find((u) => u.id === res.body.user.id).emailVerifiedAt = '2026-11-24T00:00:00.000Z';
+    const out = await agent.get('/api/me/export');
+    assert.equal(out.status, 200);
+    assert.equal(out.body.account.emailVerifiedAt, '2026-11-24T00:00:00.000Z');
+    assert.equal(out.body.account.trial, true);
   });
 
   test('重寄驗證信：沒有設定寄信服務回 503；已驗證回 alreadyVerified', async () => {

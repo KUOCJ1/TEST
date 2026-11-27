@@ -18,7 +18,8 @@ export function createSubmissionsRouter({ db, requireAuth, requireCoach }) {
   router.post('/submissions', requireAuth, (req, res) => {
     const { answers, result, assessmentId, phase, rateeId, raterType } = req.body || {};
     // 試用帳號（見 lib/trial.js）：只能做開放的評量，而且只能自評。
-    if (isTrialUser(db, req.user) && (!TRIAL_ASSESSMENT_IDS.has(assessmentId) || (raterType && raterType !== 'self'))) {
+    // 沒帶 assessmentId 時，伺服器其他地方都視為 ai-competency，這裡一致。
+    if (isTrialUser(db, req.user) && (!TRIAL_ASSESSMENT_IDS.has(typeof assessmentId === 'string' ? assessmentId : 'ai-competency') || (raterType && raterType !== 'self'))) {
       return trialLocked(res, 'assessment');
     }
 

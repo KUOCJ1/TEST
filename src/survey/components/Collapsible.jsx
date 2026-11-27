@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 // 可展開的報告區塊：報告細節預設收起，讓第一次看的人先看到重點（走查：結果頁與我的分析頁都超過一萬像素）。
@@ -11,10 +11,21 @@ export default function Collapsible({ id, title, summary = null, defaultOpen = f
     if (!id) return undefined;
     const openIfTarget = () => { if (window.location.hash === `#${id}`) setOpen(true); };
     openIfTarget();
+    // 已經在 #id 時再點同一個章節連結不會觸發 hashchange（讀者收合後再點就打不開），所以也聽連結的點擊。
+    const onClick = (e) => {
+      const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+      if (a && a.getAttribute('href') === `#${id}`) setOpen(true);
+    };
     window.addEventListener('hashchange', openIfTarget);
-    return () => window.removeEventListener('hashchange', openIfTarget);
+    document.addEventListener('click', onClick);
+    return () => {
+      window.removeEventListener('hashchange', openIfTarget);
+      document.removeEventListener('click', onClick);
+    };
   }, [id]);
-  const bodyId = id ? `${id}-body` : undefined;
+  // 同一頁可能同時有兩份報告（例如我的分析＋歷次作答視窗）：內容區的 id 用唯一值，避免 aria-controls 指到別份。
+  const uid = useId();
+  const bodyId = `${id ?? 'collapsible'}-body-${uid.replace(/:/g, '')}`;
   return (
     <section id={id} className={`scroll-mt-14 ${variant === 'plain' ? '' : 'mt-4 rounded-xl bg-white ring-1 ring-slate-200'}`}>
       <h3 className="m-0">

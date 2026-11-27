@@ -125,3 +125,18 @@ test('推廣連結 /start：直接到註冊畫面；註冊後是試用帳號（�
     await ctx.close();
   }
 });
+
+test('驗證信連結 ?verify=：無效或過期的連結顯示說明、不白屏，網址上的 verify 參數會被清掉', async ({ browser }) => {
+  for (const viewport of [MOBILE, DESKTOP]) {
+    const ctx = await browser.newContext({ viewport });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/?verify=not-a-real-token');
+    await expect(page.getByText(/驗證連結無效或已過期/)).toBeVisible({ timeout: 20000 });
+    await expect(page.getByPlaceholder('you@example.com').or(page.getByRole('button', { name: /登入平台|登入帳號/ }).first())).toBeVisible({ timeout: 20000 });
+    expect(page.url()).not.toContain('verify=');
+    expect(errors, errors.join('\n')).toHaveLength(0);
+    await ctx.close();
+  }
+});
