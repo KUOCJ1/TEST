@@ -27,7 +27,7 @@ export default function VerifyEmailBanner() {
     <div className="mb-4 flex items-center gap-2 rounded-xl bg-brass-50 px-3 py-2 text-sm text-slate-700" role="status">
       <MailCheck className="h-4 w-4 flex-none text-brass-600" aria-hidden="true" />
       <span className="min-w-0 flex-1">
-        {message || <>請到信箱收信並點驗證連結（<span className="break-all">{user.email}</span>）</>}
+        {message || '請到信箱收信，點驗證連結確認你的 Email。'}
       </span>
       <button type="button" className="btn-ghost btn-sm shrink-0" onClick={resend} disabled={state === 'sending' || state === 'sent'}>
         {state === 'sending' ? '寄送中…' : state === 'sent' ? '已寄出' : '重寄驗證信'}
