@@ -15,6 +15,7 @@ import LevelBadge from './LevelBadge';
 import { stageOf, STAGE_NAMES, STAGE_HEADLINES } from '../utils/levelBadge';
 import CompassResultPanel from './compass/CompassResultPanel.jsx';
 import SuccessionResultPanel from './succession/SuccessionResultPanel.jsx';
+import Collapsible from './Collapsible';
 
 const ResultPanel = forwardRef(function ResultPanel(
   { result, onRetake, onCopy, copied, percentile = null, benchmarkDims = null, readOnly = false, focusDimensionIds = [] },
@@ -156,7 +157,8 @@ const ResultPanel = forwardRef(function ResultPanel(
           />
         </div>
 
-        <div className="mt-6 space-y-3">
+        <Collapsible id="section-scores" title="各構面分數明細" summary={`${dimCount} 個構面的分數與評等`}>
+        <div className="space-y-3">
           {dimensions.map((d) => (
             <div key={d.id}>
               <div className="mb-1 flex items-start justify-between gap-3 text-sm">
@@ -188,9 +190,9 @@ const ResultPanel = forwardRef(function ResultPanel(
             </div>
           ))}
         </div>
+        </Collapsible>
 
-        <div id="section-suggestions" className="scroll-mt-14">
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {/* PROFILE_MODE：構面沒有優劣之分，兩個框都用同樣中性的配色（不用
                 綠色／琥珀色的「好／待改進」對比），文字也改成「主要／次要風格」
                 而非「最強／優先強化」。 */}
@@ -214,7 +216,8 @@ const ResultPanel = forwardRef(function ResultPanel(
             </div>
           </div>
 
-          <div className="mt-6 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+        <Collapsible id="section-suggestions" title={profileMode ? '風格說明與建議' : '落點說明與行動建議'} summary={profileMode ? '你的風格怎麼發揮、與不同風格合作' : '為什麼落在這裡、接下來怎麼練'}>
+          <div className="rounded-xl bg-paper-50 p-4 ring-1 ring-paper-300">
             <p className="leading-relaxed text-slate-700">{level.desc}</p>
           </div>
 
@@ -260,10 +263,13 @@ const ResultPanel = forwardRef(function ResultPanel(
               )}
             </div>
           )}
-        </div>
+        </Collapsible>
 
-        {showNarrativeSection && <div id="section-narrative" className="scroll-mt-14" />}
-        <NarrativeReport result={result} focusDimensionIds={focusDimensionIds} />
+        {showNarrativeSection && (
+          <Collapsible id="section-narrative" title="完整敘事報告" summary="逐一說明每個構面的表現與建議">
+            <NarrativeReport result={result} focusDimensionIds={focusDimensionIds} />
+          </Collapsible>
+        )}
 
         {/* 放在整份報告最後——所有章節（雷達圖、強弱項、敘事報告）都看完後，
             最後給一個「接下來可以怎麼學」的收尾，而不是夾在中間打斷報告本身。 */}

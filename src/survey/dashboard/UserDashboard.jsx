@@ -8,7 +8,6 @@ import PrintableReport from '../components/PrintableReport';
 import TrendChart from '../components/charts/TrendChart';
 import JourneyTimeline from '../components/JourneyTimeline';
 import { buildGrowthEvents } from '../utils/growthTimeline';
-import GoalPanel from '../components/GoalPanel';
 import { CoachCommentPanel, GroupCommentPanel } from '../components/CoachCommentPanel';
 import { computePercentile } from '../utils/analytics';
 import { buildJourneyNarrative } from '../utils/narrative';
@@ -282,12 +281,12 @@ export default function UserDashboard({ user, initialAssessmentId, onTakeSurvey,
             events={buildGrowthEvents({ ...growth, assessmentId: activeId })}
           />
 
-          <GoalPanel
-            assessmentId={activeId}
-            weakestDimension={latest.result.weakest}
-            profileMode={profileMode}
-            dimensions={latest.result.dimensions}
-          />
+          {/* 發展目標：報告上方已有「選一件事」可以直接訂目標，完整的目標清單在「我的學習」——
+              這裡不再重複放一整塊目標面板（走查：我的分析頁超過一萬像素），只留一行入口。 */}
+          <p className="mt-6 text-center text-sm text-slate-500">
+            你的發展目標與微練習都在
+            <button type="button" onClick={() => navigate('/learning')} className="tap ml-1 font-semibold text-brass-600 underline">我的學習</button>
+          </p>
 
           {/* PROFILE_MODE（如 DISC）：構面沒有優劣，總分沒有心理計量意義，「增益」
               這個詞本身就暗示越高越好——改成中性的「風格變化」，比較課前／課後
