@@ -75,7 +75,9 @@ test('管理者改題庫文字並發佈，學員看到新文字；還原後恢�
   const oldPage = await oldCtx.newPage();
   await oldPage.goto('/analysis');
   await expect(oldPage.getByText('我的能力分析')).toBeVisible({ timeout: 20000 });
-  await expect(oldPage.getByText(newDimName).first()).toBeVisible();
+  // 構面分數明細預設收起（報告簡化）：展開後看構面名稱。
+  await oldPage.getByRole('button', { name: /各構面分數明細/ }).click();
+  await expect(oldPage.locator('#section-scores').getByText(newDimName).first()).toBeVisible();
   await expect(oldPage.getByText(dim1, { exact: true })).toHaveCount(0);
   await oldCtx.close();
 

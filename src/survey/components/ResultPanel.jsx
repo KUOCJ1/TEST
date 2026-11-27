@@ -45,6 +45,8 @@ const ResultPanel = forwardRef(function ResultPanel(
   const learningDimensions = profileMode
     ? [primary, secondary].filter(Boolean)
     : [...dimensions].sort((a, b) => a.average - b.average).slice(0, 3);
+  // 最強／優先強化卡：副標是英文（如 L9D 的 Collaboration）時改用中文名稱，與雷達圖手機版一致。
+  const cardLabel = (d) => (/^[\x20-\x7e]+$/.test(d?.subtitle ?? '') && d?.name ? d.name : d?.subtitle);
   const hasSubs = dimensions.some((d) => d.subs?.length > 0);
   const showNarrativeSection = !!(config?.COMMENTARY && hasSubs);
 
@@ -201,7 +203,7 @@ const ResultPanel = forwardRef(function ResultPanel(
                 {profileMode ? '主要風格' : '最強構面'}
               </p>
               <p className={`mt-1 font-bold ${profileMode ? 'text-ink-700' : 'text-ink-700'}`}>
-                {primary.subtitle}
+                {cardLabel(primary)}
                 <span className={`ml-2 text-sm font-normal ${profileMode ? 'text-brass-600' : 'text-ink-700'}`}>平均 {primary.average.toFixed(1)} 分</span>
               </p>
             </div>
@@ -210,7 +212,7 @@ const ResultPanel = forwardRef(function ResultPanel(
                 {profileMode ? '次要風格' : '優先強化'}
               </p>
               <p className={`mt-1 font-bold ${profileMode ? 'text-ink-700' : 'text-brass-600'}`}>
-                {secondary.subtitle}
+                {cardLabel(secondary)}
                 <span className={`ml-2 text-sm font-normal ${profileMode ? 'text-brass-600' : 'text-brass-500'}`}>平均 {secondary.average.toFixed(1)} 分</span>
               </p>
             </div>
