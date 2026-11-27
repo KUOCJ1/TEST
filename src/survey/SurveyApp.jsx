@@ -55,6 +55,8 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
   // 選（S-04）。autoPhase 非 null 時代表已判定並鎖定，只顯示結果供確認；仍在載入
   // 或本來就不屬於任何班別（例如自主重測）時維持原本可手動切換的行為。
   const [autoPhase, setAutoPhase] = useState(null);
+  // 做過這份評量才需要選「課前／課後」；第一次作答一律是課前，不讓新使用者面對看不懂的選項。
+  const [hasPrior, setHasPrior] = useState(false);
   const [result, setResult] = useState(null);
   const [invalidIds, setInvalidIds] = useState([]);
   const [copied, setCopied] = useState(false);
@@ -76,6 +78,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
     Promise.all([api.myGroups(), api.mySubmissions()])
       .then(([groups, subs]) => {
         if (!active) return;
+        setHasPrior(subs.some((s) => (s.raterType ?? 'self') === 'self' && (s.assessmentId ?? 'ai-competency') === assessmentId));
         const group = groups.find((g) => (g.assessmentId ?? 'ai-competency') === assessmentId);
         if (!group) return; // 不屬於任何班別：系統無從判斷，保留手動切換
         const done = new Set(
@@ -229,7 +232,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
       <div className="rounded-2xl bg-white px-5 py-7 shadow-lg shadow-slate-200/60 sm:px-8">
         <header className="text-center">
           <h1 className="font-serif text-2xl font-bold text-slate-900 sm:text-3xl">{config.NAME}</h1>
-          <p className="mt-2 text-sm text-slate-400">{config.DESCRIPTION}</p>
+          {!result && <p className="mt-2 text-sm text-slate-400">{config.DESCRIPTION}</p>}
         </header>
 
         {baseConfig.REPORT === 'compass' && !result && <CompassIntro rater={rater} />}
@@ -239,6 +242,8 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           </p>
         )}
 
+        {/* 送出後只留標題與結果：作答說明、課前課後的選項都不再需要（走查：結果頁第一屏全是作答說明）。 */}
+        {!result && (
         <div className="mt-5 rounded-xl bg-slate-50 p-4 text-[15px] leading-relaxed text-slate-600">
           歡迎填寫本評測系統。共 <strong className="text-slate-700">{TOTAL_QUESTIONS} 題</strong>
           {paginated && <>，分成 <strong className="text-slate-700">{DIMENSIONS.length} 段</strong>，可分段作答</>}
@@ -251,6 +256,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
           </span>
           {baseConfig.SCALE_HINT && <span className="mt-1 block text-sm text-slate-500">{baseConfig.SCALE_HINT}</span>}
         </div>
+        )}
 
         {baseConfig.FORMS && !result && (
           <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="題集版本">
@@ -292,7 +298,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
 
         {!result && (!raterType || raterType === 'self') && <SinceLastCard assessmentId={assessmentId} enabled={phase === 'post'} />}
 
-        {autoPhase ? (
+        {result ? null : autoPhase ? (
           <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 px-4 py-2.5">
             <span className="text-sm font-medium text-slate-500">本次填答屬於：</span>
             <span className="rounded-full bg-ink-700 px-4 py-1.5 text-sm font-semibold text-white shadow-sm">
@@ -300,7 +306,7 @@ export default function SurveyApp({ user = { id: 'guest', name: '訪客' }, asse
             </span>
             <span className="text-xs text-slate-400">依所屬班別目前階段自動判定</span>
           </div>
-        ) : (
+        ) : !hasPrior ? null : (
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium text-slate-500">本次填答屬於：</span>
             {[

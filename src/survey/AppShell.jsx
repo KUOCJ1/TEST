@@ -10,6 +10,7 @@ import { useContent } from './content/useContent';
 import { api } from './api/client';
 import { getAssessment } from './data/assessments/index.js';
 import { computeNextStep } from './utils/nextStep';
+import { formatDay } from './utils/format';
 import AssessmentCard from './components/AssessmentCard';
 import NextStepCard from './components/NextStepCard';
 import GroupStatusBar from './components/GroupStatusBar';
@@ -25,7 +26,6 @@ import MultiRaterHome from './analysis/MultiRaterHome';
 import MyLearningPage from './learning/MyLearningPage';
 import ProfilePage from './profile/ProfilePage';
 import HelpModal from './components/HelpModal';
-import OnboardingBanner from './components/OnboardingBanner';
 import ChatBot from './components/ChatBot';
 import UserMenu from './components/UserMenu';
 import OfflineBanner from './components/OfflineBanner';
@@ -141,23 +141,31 @@ function AssessmentHome({ onStartSurvey, onViewAnalysis, onGoTo360, refreshKey }
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
-      {/* 已加入班級的學員，下面的「下一步」卡片與班級狀態已經在講該做什麼，再疊一個新手引導
-          只是重複（Sprint 11 走查：掃 QR 加入的新學員首頁同時出現三個橫幅）。 */}
-      <OnboardingBanner role="user" show={mySubmissions.length === 0 && myGroups.length === 0} />
+      {/* 學員首頁不再放三步驟新手引導：新學員的「下一步」大卡（開始你的第一次評測）已經在講同一件事，
+          兩張疊在一起把開始按鈕擠到第一屏外（走查）。教練後台仍保留引導。 */}
       <InstallPrompt />
       <VerifyEmailBanner />
       <FollowUpBanner />
       <GroupInvites invites={groupInvites} onChanged={() => { setLoading(true); setReloadTick((t) => t + 1); }} />
-      {/* 已經在班上的人不需要「有邀請碼？」這一行（Sprint 41 走查：它佔著首頁最上面一行，卻跟他無關）。 */}
-      {myGroups.length === 0 && <RedeemInviteBox onJoined={() => { setLoading(true); setReloadTick((t) => t + 1); }} />}
       <GoalReminders
         goals={goals}
         skipOverdue={nextStep?.kind === 'retest-reminder'}
         onGoalChanged={(g) => setGoals((prev) => prev.map((x) => (x.id === g.id ? g : x)))}
       />
       {/* 還在練習期（先練習、再複測）：這週的小步比「為什麼還不複測」更重要，放在前面。 */}
-      {nextStep?.kind === 'keep-going' && <ThisWeekCard goals={goals} onGoLearning={() => navigate('/learning')} />}
-      <NextStepCard nextStep={nextStep} onStartSurvey={onStartSurvey} onGoTo360={onGoTo360} onViewAnalysis={onViewAnalysis} onGoToLearning={() => navigate('/learning')} />
+      {nextStep?.kind === 'keep-going' ? (
+        // 練習期：只留「這週你的小步」，複測時間收成卡片底下的一行；沒有待辦時才顯示原本的大卡。
+        <ThisWeekCard
+          goals={goals}
+          onGoLearning={() => navigate('/learning')}
+          footnote={nextStep.retestAt ? `大約 ${formatDay(nextStep.retestAt)} 之後再做課後複測，才看得出變化。` : null}
+          emptyFallback={<NextStepCard nextStep={nextStep} onStartSurvey={onStartSurvey} onGoTo360={onGoTo360} onViewAnalysis={onViewAnalysis} onGoToLearning={() => navigate('/learning')} />}
+        />
+      ) : (
+        <NextStepCard nextStep={nextStep} onStartSurvey={onStartSurvey} onGoTo360={onGoTo360} onViewAnalysis={onViewAnalysis} onGoToLearning={() => navigate('/learning')} />
+      )}
+      {/* 已經在班上的人不需要「有邀請碼？」這一行；沒有班級的人放在「下一步」之後（次要入口，不擋開始作答）。 */}
+      {myGroups.length === 0 && <RedeemInviteBox onJoined={() => { setLoading(true); setReloadTick((t) => t + 1); }} />}
       {/* 班級狀態與目標摘要並排成一條資訊列（Sprint 8），不再各佔一整列。 */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row [&>*]:flex-1 [&:empty]:hidden">
         <GroupStatusBar group={statusGroup} />

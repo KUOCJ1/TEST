@@ -5,7 +5,10 @@ import { buildThisWeek } from '../utils/thisWeek.js';
 
 // 首頁「這週你的小步」：取代原本分散的「我的目標」「本週微練習」「待填會後反思」三條。
 // 本週微練習可以直接在這裡按「我做了」；其他一步到位去「我的學習」。沒有任何待辦時整張卡不出現。
-export default function ThisWeekCard({ goals, onGoLearning }) {
+// footnote：卡片底下的一行補充（例如「大約何時再複測」）；emptyFallback：沒有待辦時改顯示的內容。
+// 練習期的首頁以前同時有這張卡和「先練習，過一陣子再複測」大卡，兩張都指向同一件事（走查），
+// 現在練習期只顯示這張，複測時間收成一行 footnote。
+export default function ThisWeekCard({ goals, onGoLearning, footnote = null, emptyFallback = null }) {
   const [practice, setPractice] = useState(null);
   const [pending, setPending] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -18,7 +21,7 @@ export default function ThisWeekCard({ goals, onGoLearning }) {
   }, []);
 
   const items = buildThisWeek({ practice, reflectionsPending: pending, goals });
-  if (items.length === 0 && !justDone) return null;
+  if (items.length === 0 && !justDone) return emptyFallback;
 
   const markDone = async (week) => {
     setBusy(true);
@@ -50,6 +53,7 @@ export default function ThisWeekCard({ goals, onGoLearning }) {
           </li>
         ))}
       </ul>
+      {footnote && <p className="mt-1 border-t border-slate-100 pt-2.5 text-xs text-slate-500">{footnote}</p>}
     </section>
   );
 }

@@ -114,7 +114,7 @@ test('推廣連結 /start：直接到註冊畫面；註冊後是試用帳號（�
     await page.getByRole('button', { name: /建立帳號/ }).click();
     await acceptConsentIfAsked(page);
     await expect(page.getByRole('heading', { name: '選擇評量' })).toBeVisible({ timeout: 20000 });
-    await expect(page.getByText(/請到信箱點驗證連結/)).toBeVisible();
+    await expect(page.getByText(/點驗證連結/)).toBeVisible();
     const main = page.locator('main').first();
     await expect(main).toContainText('DISC');
     await expect(main).not.toContainText('九大構面');

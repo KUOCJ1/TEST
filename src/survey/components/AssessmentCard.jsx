@@ -4,6 +4,7 @@ import { englishNameOf } from '../data/assessment-english-names.js';
 import { formatDate } from '../utils/format';
 import PhaseBadge from './PhaseBadge';
 import LevelBadge from './LevelBadge';
+import { useIsTrial } from '../trial/useIsTrial';
 
 export default function AssessmentCard({
   assessment, latestSubmission, groupPhase, submittedPhases, onStart, onViewAnalysis, onGoTo360,
@@ -15,7 +16,9 @@ export default function AssessmentCard({
   // 課前、課後都做過才算「這個班真的沒有可以再做的了」；只做過課前的話，
   // 按鈕仍要能點——使用者要靠它才能進去選「課後複測」。
   const alreadySubmitted = inGroup && !!submittedPhases?.has('pre') && !!submittedPhases?.has('post');
-  const supports360 = !!config?.SUPPORTS_360;
+  // 試用帳號不推 360°（試用不開放，360° 分頁有說明），卡片上不顯示 360° 標籤與按鈕。
+  const trial = useIsTrial();
+  const supports360 = !!config?.SUPPORTS_360 && !trial;
   // 班級限定的問卷（課後問卷）：做完只能回到問卷頁看結果，沒有分析頁，也不能重做。
   const classOnly = !!config?.CLASS_ONLY;
 

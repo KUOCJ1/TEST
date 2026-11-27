@@ -40,6 +40,13 @@ describe('ThisWeekCard', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('練習期：卡片底下有複測時間一行；沒有待辦時改顯示替代內容（原本的下一步大卡）', async () => {
+    const { rerender } = render(<ThisWeekCard goals={goals} onGoLearning={() => {}} footnote="大約 12/18 之後再做課後複測" />);
+    expect(await screen.findByText('大約 12/18 之後再做課後複測')).toBeInTheDocument();
+    rerender(<ThisWeekCard goals={[]} onGoLearning={() => {}} emptyFallback={<p>下一步大卡</p>} />);
+    expect(await screen.findByText('下一步大卡')).toBeInTheDocument();
+  });
+
   it('本週的小步可以直接按「我做了」；做完後顯示鼓勵', async () => {
     api.myPractice.mockResolvedValue(practice());
     api.markPracticeWeek.mockResolvedValue(practice(true));

@@ -45,9 +45,14 @@ describe('試用帳號的鎖定畫面', () => {
 
   it('結果頁「選一件事」與「訂成目標」按鈕：鎖定', () => {
     withUser(trialUser, <><FirstActionCard result={{ assessmentId: 'ai-competency', dimensions: [] }} /><QuickGoalButton assessmentId="ai-competency" text="x" /></>);
-    expect(screen.getByRole('note', { name: /發展目標（試用帳號未開放）/ })).toBeInTheDocument();
+    expect(screen.getByRole('note', { name: /發展目標與四週微練習（試用帳號未開放）/ })).toBeInTheDocument();
     const btn = screen.getByRole('button', { name: /訂成目標（完整版）/ });
     expect(btn).toBeDisabled();
+  });
+
+  it('結果頁的微練習邀請（offerFrom）：試用時不另外出現，只留合併後的一張說明卡', () => {
+    const { container } = withUser(trialUser, <PracticePanel offerFrom={{ assessmentId: 'ai-competency', dimension: { id: 'x', name: 'x' } }} />);
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('一般學員：照原本的功能顯示', async () => {
@@ -66,7 +71,7 @@ describe('Email 驗證提醒', () => {
   it('試用且未驗證：顯示提醒，可重寄驗證信', async () => {
     api.resendVerifyEmail.mockResolvedValue({ ok: true });
     withUser(trialUser, <VerifyEmailBanner />);
-    expect(screen.getByText(/請到信箱點驗證連結/)).toBeInTheDocument();
+    expect(screen.getByText(/點驗證連結/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '重寄驗證信' }));
     expect(await screen.findByRole('button', { name: '已寄出' })).toBeDisabled();
     expect(api.resendVerifyEmail).toHaveBeenCalledTimes(1);

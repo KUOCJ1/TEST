@@ -24,12 +24,12 @@ export default function VerifyEmailBanner() {
   };
 
   return (
-    <div className="mx-auto mt-3 flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-brass-50 px-4 py-2 text-sm text-slate-700" role="status">
+    <div className="mb-4 flex items-center gap-2 rounded-xl bg-brass-50 px-3 py-2 text-sm text-slate-700" role="status">
       <MailCheck className="h-4 w-4 flex-none text-brass-600" aria-hidden="true" />
-      <span className="flex-1">
-        請到信箱點驗證連結，確認 {user.email} 是你的 Email。{message && <span className="ml-1 text-slate-500">{message}</span>}
+      <span className="min-w-0 flex-1">
+        {message || <>請到信箱收信並點驗證連結（<span className="break-all">{user.email}</span>）</>}
       </span>
-      <button type="button" className="btn-secondary btn-sm" onClick={resend} disabled={state === 'sending' || state === 'sent'}>
+      <button type="button" className="btn-ghost btn-sm shrink-0" onClick={resend} disabled={state === 'sending' || state === 'sent'}>
         {state === 'sending' ? '寄送中…' : state === 'sent' ? '已寄出' : '重寄驗證信'}
       </button>
     </div>

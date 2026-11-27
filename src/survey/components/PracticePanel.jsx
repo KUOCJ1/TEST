@@ -121,6 +121,7 @@ function PracticePanelInner({ offerFrom = null, compact = false }) {
 // 試用帳號：看得到這個功能的介紹，但不能使用（見 trial/TrialLock.jsx）。
 export default function PracticePanel(props) {
   const trial = useIsTrial();
-  if (trial) return <TrialLock feature="practice" compact />;
+  // 結果頁（有 offerFrom）已由「選一件事」的位置合併說明；這裡只在「我的學習」顯示。
+  if (trial) return props.offerFrom ? null : <TrialLock feature="practice" compact />;
   return <PracticePanelInner {...props} />;
 }

@@ -110,6 +110,6 @@ function FirstActionCardInner({ result }) {
 // 試用帳號：看得到這個功能的介紹，但不能使用（見 trial/TrialLock.jsx）。
 export default function FirstActionCard(props) {
   const trial = useIsTrial();
-  if (trial) return <TrialLock feature="goals" compact />;
+  if (trial) return <TrialLock feature="development" compact />;
   return <FirstActionCardInner {...props} />;
 }
