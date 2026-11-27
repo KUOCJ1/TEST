@@ -18,6 +18,7 @@ import CourseSurveyPanel from './CourseSurveyPanel';
 import { useIsMobile } from '../hooks/useIsMobile';
 import LevelBadge from '../components/LevelBadge';
 import { dimLabel } from '../utils/dimensionLabel';
+import Collapsible from '../components/Collapsible';
 
 // 「總覽」分頁內容：KPI 卡、班級雷達圖、能力熱力圖、成員比較表、班級敘事報告、
 // 學習成效面板、班級整體評語表單。從 GroupWorkspace 拆出（Sprint 5.6）——
@@ -189,60 +190,6 @@ export default function GroupOverviewSection({
         </div>
       ) : groupStats && (
         <>
-          {/* KPI 列（榕光 D4）：「已填答」是主數字（品牌深綠色塊），其餘為支撐數字。
-              宋體大數字＋等寬數字，一眼先看到「這班現在怎麼樣」。 */}
-          <div role="group" aria-label="班級統計" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            <div className="surface-hero col-span-2 lg:col-span-1">
-              <p className="text-xs font-medium" style={{ color: '#cfe5d6' }}>已填答</p>
-              <p className="font-serif mt-1 text-4xl font-bold leading-none tabular-nums">
-                {groupStats.respondents}
-                <span className="ml-1 text-base font-semibold" style={{ color: '#cfe5d6' }}>/{group.memberIds.length} 人</span>
-              </p>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,.2)' }} aria-hidden="true">
-                <div className="h-full rounded-full" style={{ width: `${group.memberIds.length ? Math.min(100, Math.round((groupStats.respondents / group.memberIds.length) * 100)) : 0}%`, background: '#f2b544' }} />
-              </div>
-            </div>
-            <div className="surface">
-              <p className="text-xs font-medium text-slate-500">已寫評語</p>
-              <p className="font-serif mt-1 text-3xl font-bold tabular-nums text-brass-500">
-                {commentedCount}
-                <span className="ml-1 text-sm font-semibold text-slate-500">/{memberRows.length} 人</span>
-              </p>
-            </div>
-            <div className="surface">
-              <p className="text-xs font-medium text-slate-500">平均總分</p>
-              <p className="font-serif mt-1 text-3xl font-bold tabular-nums text-slate-900">{groupStats.avgTotal}</p>
-            </div>
-            <div className="surface">
-              <p className="text-xs font-medium text-slate-500">平均達成率</p>
-              <p className="font-serif mt-1 text-3xl font-bold tabular-nums text-slate-900">{groupStats.avgPercent}%</p>
-            </div>
-            {strongestWeakest && (
-              <div className="surface col-span-2 lg:col-span-1">
-                <p className="text-xs font-medium text-slate-500">最強／待強化</p>
-                <p className="mt-1 text-sm font-bold text-ink-700">{dimLabel(strongestWeakest.strongest)}</p>
-                <p className="text-sm font-bold text-brass-500">{dimLabel(strongestWeakest.weakest)}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="panel">
-            <h4 className="mb-2 text-center font-semibold text-slate-700">班級整體能力雷達</h4>
-            <p className="mb-3 text-center text-xs text-slate-400">{groupStats.respondents} 人作答平均</p>
-            <div className="flex justify-center">
-              <RadarChart dimensions={groupStats.dimensionAverages} friendly />
-            </div>
-          </div>
-
-          {mobile ? (
-            <details className="panel">
-              <summary className="tap cursor-pointer font-semibold text-slate-700">構面 × 成員熱力圖（展開後可左右滑動，成員姓名固定在左側）</summary>
-              <div className="mt-2 -mx-4"><DimensionHeatmap dimensions={groupStats.dimensionAverages} memberRows={memberRows} bare /></div>
-            </details>
-          ) : (
-            <DimensionHeatmap dimensions={groupStats.dimensionAverages} memberRows={memberRows} />
-          )}
-
           {/* Member table：達成率加長條、總分加「與班平均差距」，純數字表格
               不容易一眼掃描的問題（V-01）。 */}
           {mobile ? (
@@ -359,6 +306,65 @@ export default function GroupOverviewSection({
           </div>
           )}
 
+          {/* 教練總覽簡化：先看成員（要寫評語、追進度的地方），班級分析預設收起。 */}
+          {!mobile && (<>
+          {/* KPI 列（榕光 D4）：「已填答」是主數字（品牌深綠色塊），其餘為支撐數字。
+              宋體大數字＋等寬數字，一眼先看到「這班現在怎麼樣」。 */}
+          <div role="group" aria-label="班級統計" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <div className="surface-hero col-span-2 lg:col-span-1">
+              <p className="text-xs font-medium" style={{ color: '#cfe5d6' }}>已填答</p>
+              <p className="font-serif mt-1 text-4xl font-bold leading-none tabular-nums">
+                {groupStats.respondents}
+                <span className="ml-1 text-base font-semibold" style={{ color: '#cfe5d6' }}>/{group.memberIds.length} 人</span>
+              </p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,.2)' }} aria-hidden="true">
+                <div className="h-full rounded-full" style={{ width: `${group.memberIds.length ? Math.min(100, Math.round((groupStats.respondents / group.memberIds.length) * 100)) : 0}%`, background: '#f2b544' }} />
+              </div>
+            </div>
+            <div className="surface">
+              <p className="text-xs font-medium text-slate-500">已寫評語</p>
+              <p className="font-serif mt-1 text-3xl font-bold tabular-nums text-brass-500">
+                {commentedCount}
+                <span className="ml-1 text-sm font-semibold text-slate-500">/{memberRows.length} 人</span>
+              </p>
+            </div>
+            <div className="surface">
+              <p className="text-xs font-medium text-slate-500">平均總分</p>
+              <p className="font-serif mt-1 text-3xl font-bold tabular-nums text-slate-900">{groupStats.avgTotal}</p>
+            </div>
+            <div className="surface">
+              <p className="text-xs font-medium text-slate-500">平均達成率</p>
+              <p className="font-serif mt-1 text-3xl font-bold tabular-nums text-slate-900">{groupStats.avgPercent}%</p>
+            </div>
+            {strongestWeakest && (
+              <div className="surface col-span-2 lg:col-span-1">
+                <p className="text-xs font-medium text-slate-500">最強／待強化</p>
+                <p className="mt-1 text-sm font-bold text-ink-700">{dimLabel(strongestWeakest.strongest)}</p>
+                <p className="text-sm font-bold text-brass-500">{dimLabel(strongestWeakest.weakest)}</p>
+              </div>
+            )}
+          </div>
+
+          </>)}
+          <Collapsible id="coach-analysis" variant="plain" title="班級整體分析" summary={strongestWeakest ? `最強：${dimLabel(strongestWeakest.strongest)}；待強化：${dimLabel(strongestWeakest.weakest)}` : '雷達圖、構面熱力圖與班級敘事'}>
+          <div className="space-y-5">
+          <div className="panel">
+            <h4 className="mb-2 text-center font-semibold text-slate-700">班級整體能力雷達</h4>
+            <p className="mb-3 text-center text-xs text-slate-400">{groupStats.respondents} 人作答平均</p>
+            <div className="flex justify-center">
+              <RadarChart dimensions={groupStats.dimensionAverages} friendly />
+            </div>
+          </div>
+
+          {mobile ? (
+            <details className="panel">
+              <summary className="tap cursor-pointer font-semibold text-slate-700">構面 × 成員熱力圖（展開後可左右滑動，成員姓名固定在左側）</summary>
+              <div className="mt-2 -mx-4"><DimensionHeatmap dimensions={groupStats.dimensionAverages} memberRows={memberRows} bare /></div>
+            </details>
+          ) : (
+            <DimensionHeatmap dimensions={groupStats.dimensionAverages} memberRows={memberRows} />
+          )}
+
           {memberRows.length >= 2 && (
             <GroupNarrativeReport
               results={memberRows.map((r) => r.submission.result)}
@@ -366,6 +372,8 @@ export default function GroupOverviewSection({
               focusDimensionIds={group.focusDimensionIds ?? []}
             />
           )}
+          </div>
+          </Collapsible>
         </>
       )}
 
@@ -377,7 +385,8 @@ export default function GroupOverviewSection({
       <GoalActivityPanel group={group} summary={goalSummary} mailConfigured={mailConfigured} showToast={showToast} />
       <SharedGoalsPanel goals={sharedGoals} />
 
-      {/* 班級整體評語（教練撰寫，學員在分析頁看得到） */}
+      {/* 班級整體評語（教練撰寫，學員在分析頁看得到）：預設收起，標題列顯示有沒有寫過。 */}
+      <Collapsible id="coach-group-comment" variant="plain" title="班級整體評語與精進建議" summary={groupComment.trim() ? '已撰寫，學員在「我的分析」看得到' : '尚未撰寫'}>
       <div className="rounded-xl border border-brass-200 bg-brass-50 p-4">
         <h3 className="mb-2 font-semibold text-brass-600">班級整體評語</h3>
 
@@ -427,6 +436,7 @@ export default function GroupOverviewSection({
           {savingComment ? '儲存中…' : '儲存評語與建議'}
         </button>
       </div>
+      </Collapsible>
     </div>
   );
 }

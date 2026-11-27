@@ -5,6 +5,7 @@ import { buildCsvBlob } from '../utils/csvExport.js';
 import { dimTextStyle } from '../utils/color';
 import InfoTip from '../components/InfoTip';
 import { dimLabel } from '../utils/dimensionLabel';
+import Collapsible from '../components/Collapsible';
 
 const RATING_COLOR = { strong: '#2f855a', good: '#68a37f', mid: '#d69e2e', low: '#dd6b20', weak: '#c53030' };
 const signed = (n) => (n > 0 ? `+${n}` : String(n));
@@ -239,7 +240,9 @@ export default function PrePostAnalysis({ group, submissions, members }) {
   const config = getAssessment(group.assessmentId);
   const data = buildPrePost(submissions, config, members);
   if (!data) return null;
+  // 教練總覽簡化：分析內容很長，預設收起（點開才看）。
   return (
+    <Collapsible id="coach-prepost" variant="plain" title="前測分布與前後測比較" summary={data.paired ? '前測、後測都有資料：看整體與個人的變化' : '目前只有前測：看全班的落點分布'}>
     <div className="panel space-y-6">
       <h4 className="flex items-center gap-1.5 font-semibold text-slate-700">
         <BarChart3 className="h-4 w-4 text-brass-500" /> 前測分布與前後測比較
@@ -250,5 +253,6 @@ export default function PrePostAnalysis({ group, submissions, members }) {
         ? <ComparisonSection data={data} config={config} />
         : <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">還沒有成員同時完成前測與後測，後測有人完成後這裡會出現前後測比較。</p>}
     </div>
+    </Collapsible>
   );
 }

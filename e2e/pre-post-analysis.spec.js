@@ -44,7 +44,11 @@ test('教練總覽：前測分布與前後測比較', async ({ browser }) => {
   await page.goto('/');
   await page.getByRole('button', { name: '教練後台', exact: true }).click();
   await expect(page.getByRole('heading', { name: groupName })).toBeVisible({ timeout: 20000 });
-  await expect(page.getByText('前測分布與前後測比較')).toBeVisible({ timeout: 15000 });
+  // 教練總覽簡化後預設收起：標題列有摘要，點開才看內容。
+  const prepost = page.getByRole('button', { name: /前測分布與前後測比較/ });
+  await expect(prepost).toBeVisible({ timeout: 15000 });
+  await expect(prepost).toContainText('前測、後測都有資料');
+  await prepost.click();
   await expect(page.getByText('前測分布（6 人）')).toBeVisible();
   await expect(page.getByText('前後測比較（配對 5 人）')).toBeVisible();
   await expect(page.getByRole('table', { name: '落點等級變化矩陣' })).toBeVisible();

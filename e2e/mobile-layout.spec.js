@@ -208,7 +208,10 @@ test('教練：切換班級、總覽第一屏、成員卡片、QR 置頂、刪�
   await expect(card.getByText(/分/)).toBeVisible();
   await expectMinHeight(card.getByRole('button', { name: /查看/ }), '成員卡片「查看」');
   await expectNoHorizontalOverflow(page, '成員卡片');
-  // 熱力圖預設收合。
+  // 班級分析（雷達、熱力圖、敘事）預設收合；展開後熱力圖仍是收合的明細。
+  const analysis = page.getByRole('button', { name: /班級整體分析/ });
+  await expect(analysis).toHaveAttribute('aria-expanded', 'false');
+  await analysis.click();
   await expect(page.getByText(/構面 × 成員熱力圖（展開後/)).toBeVisible();
   // 打開一位成員的結果。
   await card.getByRole('button', { name: /查看/ }).click();
